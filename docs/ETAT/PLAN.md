@@ -57,7 +57,7 @@ Les jalons suivent le §5 du brief et le chapitre 17 de la référence (phases 1
 - [x] Faux serveur SMTP (EHLO, AUTH, MAIL, RCPT, DATA, refus injectables) et faux serveur d'autorisation OAuth (code + PKCE, rafraîchissement, révocation).
 - **Acceptation** : tests propres au testkit ; profils de capacités : complet, sans QRESYNC, sans MOVE, minimal.
 
-## J5 — Synchronisation — EN COURS (J5a)
+## J5 — Synchronisation — PARTIEL (J5a client IMAP + MIME FAIT ; J5b orchestrateur de synchro À FAIRE)
 
 - [ ] Client IMAP encapsulé (annexe H) ; analyse MIME tolérante (§12.7).
 - [ ] Descente par étapes (D-20), fenêtre de 90 jours, « remonter plus loin » en tâche longue (D-21).
@@ -66,14 +66,14 @@ Les jalons suivent le §5 du brief et le chapitre 17 de la référence (phases 1
 - [ ] Le serveur gagne ; les actions locales sont rejouées par-dessus (D-23) ; repère avancé après écriture (invariant 20).
 - **Acceptation** : S4, S5, S8, S11, S12, S13 et invariants 20, 21, 23, 24, 25 contre le testkit, avec les 4 profils de capacités ; reprise après coupure au milieu d'une synchro.
 
-## J6 — Messages, boîtes, vues, fils — EN COURS
+## J6 — Messages, boîtes, vues, fils — FAIT
 
 - [ ] Lister une boîte ou une vue (curseur, tri, filtres), en-têtes, corps (« indisponible hors ligne » si absent, S6), source brute, pièces jointes.
 - [ ] Vues calculées : boîte unifiée, non lus, suivis (§7.10) ; recherche FTS locale avec filtres.
 - [ ] Fils calculés par MIRA (en-têtes de réponse, repli sur l'objet normalisé, indice serveur), recalculables (D-15, invariant 13).
 - **Acceptation** : S6, S11 (vue unifiée : un seul message), invariants 12, 13, 27 ; liste paginée < 50 ms sur 100 000 messages (test de performance).
 
-## J7 — Écritures et file d'actions — EN COURS (J7a)
+## J7 — Écritures et file d'actions — PARTIEL (J7a SMTP + OAuth FAIT ; dépôt de file idempotent FAIT ; soumission, rejeu, envoi À FAIRE)
 
 - [ ] Intentions → identifiant d'action, clé d'idempotence ; écriture en base avant tentative (invariant 17) ; ordre par compte (invariant 19) ; application locale optimiste ; erreur définitive → effet local annulé et événement (invariant 22) ; erreur passagère → backoff ; regroupement ; annulation (undo).
 - [ ] Traduction des actions (archiver, corbeille, déplacer, libellés) par le provider ; D-17 refus.
@@ -81,19 +81,19 @@ Les jalons suivent le §5 du brief et le chapitre 17 de la référence (phases 1
 - [ ] Jeton expiré : rafraîchissement silencieux ; en cas d'échec, état « authentification requise » et file conservée (S10).
 - **Acceptation** : S7, S8, S9, S10 et invariants 17, 18, 19, 22, 26, 28 ; tests de crash entre les étapes de l'envoi.
 
-## J8 — Façade du contrat d'API — À FAIRE
+## J8 — Façade du contrat d'API — PARTIEL (squelette, verrou, version, 9 opérations, bus d'événements, opérations longues)
 
 - [ ] Toutes les opérations v1 du §12.4, un handler par opération ; lectures locales ; tâches longues (identifiant d'opération, progression, annulation) ; événements numérotés avec reprise et filtres ; contrôle de version à l'ouverture ; aucune fuite de secret.
 - [ ] Comptes : préparer, tester, ajouter, modifier, pause, supprimer (S14) ; OAuth PKCE avec écouteur sur la boucle locale ; mot de passe d'application ; export JSON (D-29) ; maintenance.
 - **Acceptation** : test de contrat versionné (instantané JSON des opérations, événements et erreurs) ; invariants 15, 27–33 ; S1, S2, S3, S14.
 
-## J9 — CLI — À FAIRE
+## J9 — CLI — PARTIEL (provider list/detect, --json versionné, codes de sortie)
 
 - [ ] `mira <domaine> <verbe>` pour chaque opération ; `--json` = enveloppe versionnée ; codes de sortie 0 / 10–19 / 84 ; erreurs sur stderr ; `--profile`.
 - [ ] Scénarios S1–S14 exécutés comme tests via le CLI en processus contre le testkit.
 - **Acceptation** : invariant 6 (couverture CLI = façade, testée par énumération) ; S1–S14 verts.
 
-## J10 — Rendu sûr et durcissement — À FAIRE (au mieux)
+## J10 — Rendu sûr et durcissement — PARTIEL (assainissement HTML fait)
 
 - [ ] HTML assaini dans le moteur (sans script, contenu distant bloqué, liste des ressources retirées) ; autorisation par message ou expéditeur ; pièces jointes à la demande, sans fichier partiel exposé.
 - [ ] proptest sur les invariants 7–12 ; fuzz léger des parseurs ; revue des invariants 1–33 un par un ; performance sur 100 000 messages ; `README.md`, `ARCHITECTURE-IMPLEMENTEE.md`, `GUIDE-RUST-POUR-CPP.md`.

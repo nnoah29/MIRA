@@ -14,3 +14,6 @@
 - **02:53 (1 h 44)** — Reprise après arrêt de la session principale : fusion J7a terminée (SMTP, composition MIME, OAuth PKCE, coffre d'identifiants, 62 tests) ; faux positif A9 (« fenêtre » dans la page de confirmation OAuth) corrigé par reformulation. Relecteur lancé, J5a et J6 relancés.
 - **02:55 → 06:40** — Limite d'usage : tous les agents arrêtés (BLOQUÉ-03).
 - **06:42 (5 h 33)** — Reprise : J5a et J6 relancés avec budget temps ; J7b (actions locales, brouillons) lancé. Périmètre réduit pour tenir l'arrêt doux de 09:08.
+- **08:20 (7 h 11)** — Nouvelle reprise après redémarrage de session. Les agents J5a, J6 et J7b s'étaient arrêtés ; J7b n'avait rien commité (abandonné). Handlers comptes/identités/auth de la façade inachevés mis en `git stash` (ne compilaient pas).
+- **08:22** — J5a fusionné (client IMAP de haut niveau, MIME tolérant). J6 fusionné (lectures, vues standard, recherche filtrée, fils, perf 20 000 messages) ; marqueurs de conflit commités par la branche J6 corrigés ; garde-fou ajouté. CI vert : 478 tests.
+- **08:25 (7 h 16)** — Documents de fin : README, ARCHITECTURE-IMPLEMENTEE, PROPOSITIONS (PR-02 à PR-06), PLAN, TESTS, RAPPORT-FINAL. Arrêt doux.

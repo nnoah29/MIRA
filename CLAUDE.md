@@ -7,7 +7,7 @@ Moteur Rust (backend) de MIRA, un client mail Linux offline-first, utilisable en
 
 1. Relire ce fichier, `docs/ETAT/DECISIONS-DE-DEPART.md`, `docs/ETAT/HORLOGE.md`, `docs/ETAT/PLAN.md`, et la fin de `docs/ETAT/JOURNAL.md`.
 2. `date +%s` → calculer le temps écoulé depuis le début (HORLOGE.md) et le noter dans JOURNAL.md.
-3. **Plancher 4 h** : pas de rapport final ni d'arrêt avant. **Arrêt doux à 8 h**, **limite absolue 09:30**.
+3. **Consigne utilisateur du 2026-10-11 08:44** : plus de limite horaire ; continuer jusqu'à ce que tous les jalons J5–J10 soient FAITS (critères de « terminé » ci-dessous), sans raccourci, ou jusqu'à ce que l'utilisateur arrête.
 4. Après le GO : **aucune question à l'utilisateur**. Une ambiguïté se tranche en choisissant l'option la plus simple et réversible, consignée dans `docs/DECISIONS-AGENT.md` (contexte / choix / raison / retour arrière).
 
 ## Règles absolues

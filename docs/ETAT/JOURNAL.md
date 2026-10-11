@@ -19,3 +19,5 @@
 - **08:25 (7 h 16)** — Documents de fin : README, ARCHITECTURE-IMPLEMENTEE, PROPOSITIONS (PR-02 à PR-06), PLAN, TESTS, RAPPORT-FINAL. Arrêt doux.
 - **08:44** — Nouvelle consigne de l'utilisateur : continuer tous les jalons jusqu'à la fin, rigoureusement, sans limite horaire (CLAUDE.md mis à jour). Restes intégrés : déclarations `labels`/`idle` du client IMAP (non compilées jusque-là) + tests IDLE. Worktrees nettoyés. Stash des handlers comptes → branche `feat/E-01-j8-accounts` (commit WIP).
 - **08:47** — Vague de reprise lancée : J5b (orchestrateur de synchro), J7b (actions locales + brouillons), J8a (comptes, identités, authentification de la façade, S1/S2/S3/S14).
+- **~09:00 → 11:40** — Troisième limite d'usage de l'API : les agents J5b, J7b, J8a se sont arrêtés (J5b : 2 commits, J8a : 1 commit, J7b : non commité).
+- **12:03** — Reprise des trois agents depuis leur historique.

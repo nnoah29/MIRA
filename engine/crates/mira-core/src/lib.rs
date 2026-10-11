@@ -3,7 +3,9 @@
 
 pub mod capabilities;
 pub mod events;
+pub mod imap;
 pub mod mailboxes;
+pub mod mime;
 pub mod ports;
 pub mod profile;
 pub mod registry;

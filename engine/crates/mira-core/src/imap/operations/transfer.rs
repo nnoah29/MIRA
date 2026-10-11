@@ -29,4 +29,3 @@ impl ImapClient {
         self.transfer("MOVE", uids, to).await
     }
 }
-

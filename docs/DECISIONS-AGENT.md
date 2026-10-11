@@ -80,3 +80,11 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - Stratégie `Qresync` dès que QRESYNC est annoncé (il implique CONDSTORE) ; `COMPRESS` = `COMPRESS=DEFLATE`.
 - `X-GM-LABELS` : les noms sont supposés déjà décodés (UTF-7 modifié) par le client IMAP.
 - Registre : pas d'élimination des doublons d'identifiant ; `find` renvoie le premier.
+
+## AG-13 — Écarts acceptés de J2b
+- Revalidation (10.5) : `mark_mailbox_for_revalidation` passe les UID en négatif pour éviter la collision `UNIQUE(mailbox_id, uid)` quand le serveur renumérote à partir de 1 ; les lectures rendent l'UID positif.
+- `purge_unrevalidated` rend les orphelins sans les supprimer ; l'appelant supprime (et désindexe).
+- `upsert_thread(account, root_key, subject, candidate_id)` : le dépôt ne génère pas d'identifiant.
+- Recherche : ET implicite mot par mot, tri par date (pas de pertinence) pour permettre la pagination par curseur.
+- `Attachment.cache` déduit de `cache_path`. **Reste à faire (J10)** : supprimer les fichiers de cache des pièces jointes lors de `discard_account_mirror` et de la suppression d'un compte.
+- Curseur : chaîne hexadécimale opaque (`mira1|<date>|<id>`), invalide → `invalid_input.cursor`.

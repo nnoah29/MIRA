@@ -1,3 +1,6 @@
 # Journal
 
 - **01:08 (0 h 00)** — GO reçu. Branche `feat/E-01-engine-overnight` créée depuis `dev`. Dossier vide `engine_/` supprimé (décision 35). Installation de cargo-nextest et cargo-deny lancée en arrière-plan. Début de J0.
+- **01:14 (0 h 06)** — J0 FAIT et tagué `jalon/J0` (5 commits) : garde-fous `check-norms` et `check-architecture` avec auto-tests, `check-forbidden-patterns`, `ci.sh`, `Makefile`, workspace de 9 crates, 8 rôles d'agents. cargo-deny installé ; cargo-nextest en échec (BLOQUÉ-01, contourné par `cargo test`).
+- **01:16 (0 h 07)** — Spécifications J1 (vocabulaire) et J4 (testkit) écrites. Vague V1 lancée : 3 sous-agents (J1 vocabulaire, J4 faux IMAP, J4 faux SMTP+OAuth) en worktrees. Types d'agents personnalisés non chargés → `general-purpose` (AG-02).
+- **01:22 (0 h 13)** — Pendant V1 : `docs/specs/CORE-ARCHITECTURE.md` (modules, ports, schéma), `J2-stockage.md`, `J3-providers.md`, migration SQL v1. Décisions AG-03 à AG-07.

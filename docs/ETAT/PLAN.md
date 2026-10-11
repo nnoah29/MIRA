@@ -15,18 +15,18 @@ Les jalons suivent le §5 du brief et le chapitre 17 de la référence (phases 1
 | V5 | J8 façade · auteur-de-tests : tests de contrat en boîte noire | La façade assemble tout |
 | V6 | J9 CLI et scénarios S1–S14 · J10 durcissement | Le CLI reflète la façade |
 
-## J0 — Squelette — À FAIRE
+## J0 — Squelette — FAIT (jalon/J0)
 
-- [ ] Branche `feat/E-01-engine-overnight`, référence commitée telle quelle, `engine_/` remplacé par `engine/`.
-- [ ] Workspace `engine/` : 9 crates (vocabulary, core, 4 providers, assembly, cli, testkit), `rust-toolchain.toml` (1.99.0), `rustfmt.toml`, lints de workspace (`unsafe_code = "forbid"`, clippy `unwrap_used`, `expect_used`, `panic` = deny hors tests).
-- [ ] `tools/check-norms` (Python 3, bibliothèque standard) : ≤ 30 lignes par fonction, ≤ 6 fonctions par fichier, aucun commentaire dans un corps, `///` avant chaque `fn`, noms de fichiers interdits. Ses propres tests (fixtures conformes et non conformes).
-- [ ] `tools/check-architecture` (Python 3 + `cargo metadata`) : le cœur ne dépend d'aucun provider ; un provider ne dépend que de `mira-vocabulary` (ni cœur, ni tokio, ni rusqlite, ni réseau, ni autre provider) ; le vocabulaire ne dépend que de serde et thiserror ; aucun nom de provider dans le code du cœur (invariant 1).
-- [ ] `./ci.sh` (fmt, clippy `-D warnings`, build, tests, deux garde-fous, grep unwrap/expect/panic hors tests), `Makefile` (`make check`), `deny.toml`.
-- [ ] `.claude/agents/` : les 8 rôles, outils minimaux ; web seulement pour architecte, relecteur et qualite-securite.
-- [ ] Fichiers d'état initialisés : HORLOGE, JOURNAL, PLAN, BLOCAGES, TESTS, INVARIANTS ; `docs/DECISIONS-AGENT.md`, `PROPOSITIONS-REFERENCE.md`, `SOURCES.md`.
+- [x] Branche `feat/E-01-engine-overnight`, référence commitée telle quelle, `engine_/` remplacé par `engine/`.
+- [x] Workspace `engine/` : 9 crates (vocabulary, core, 4 providers, assembly, cli, testkit), `rust-toolchain.toml` (1.99.0), `rustfmt.toml`, lints de workspace (`unsafe_code = "forbid"`, clippy `unwrap_used`, `expect_used`, `panic` = deny hors tests).
+- [x] `tools/check-norms` (Python 3, bibliothèque standard) : ≤ 30 lignes par fonction, ≤ 6 fonctions par fichier, aucun commentaire dans un corps, `///` avant chaque `fn`, noms de fichiers interdits. Ses propres tests (fixtures conformes et non conformes).
+- [x] `tools/check-architecture` (Python 3 + `cargo metadata`) : le cœur ne dépend d'aucun provider ; un provider ne dépend que de `mira-vocabulary` (ni cœur, ni tokio, ni rusqlite, ni réseau, ni autre provider) ; le vocabulaire ne dépend que de serde et thiserror ; aucun nom de provider dans le code du cœur (invariant 1).
+- [x] `./ci.sh` (fmt, clippy `-D warnings`, build, tests, deux garde-fous, grep unwrap/expect/panic hors tests), `Makefile` (`make check`), `deny.toml`.
+- [x] `.claude/agents/` : les 8 rôles, outils minimaux ; web seulement pour architecte, relecteur et qualite-securite.
+- [x] Fichiers d'état initialisés : HORLOGE, JOURNAL, PLAN, BLOCAGES, TESTS, INVARIANTS ; `docs/DECISIONS-AGENT.md`, `PROPOSITIONS-REFERENCE.md`, `SOURCES.md`.
 - **Acceptation** : `./ci.sh` vert ; un fichier de test volontairement non conforme fait échouer `check-norms` ; une dépendance interdite ajoutée à un provider fait échouer `check-architecture`.
 
-## J1 — Vocabulaire et domaine — À FAIRE
+## J1 — Vocabulaire et domaine — EN COURS
 
 - [ ] Identifiants opaques typés (profil, compte, identité, boîte, message, pièce jointe, fil, brouillon, action, opération, événement), UUID v7 sous forme de chaîne (invariant 30).
 - [ ] Entités D-19 et états (compte, message, action, brouillon) ; rôles de boîte ; drapeaux au niveau du message (D-14).
@@ -51,7 +51,7 @@ Les jalons suivent le §5 du brief et le chapitre 17 de la référence (phases 1
 - [ ] Assemblage : une ligne par provider.
 - **Acceptation** : `mira provider detect <adresse>` correct ; invariants 1–3 testés ; le cœur est testé avec un faux provider défini dans ses tests.
 
-## J4 — Testkit protocoles — À FAIRE
+## J4 — Testkit protocoles — EN COURS
 
 - [ ] Faux serveur IMAP : LOGIN / AUTHENTICATE XOAUTH2, CAPABILITY, LIST (SPECIAL-USE), SELECT / EXAMINE, UIDVALIDITY, UID FETCH / SEARCH / STORE / COPY / MOVE / EXPUNGE, APPEND, CONDSTORE / QRESYNC, IDLE, extensions Gmail (X-GM-MSGID, X-GM-LABELS, X-GM-THRID). Extensions activables une à une ; renumérotation et coupure injectables.
 - [ ] Faux serveur SMTP (EHLO, AUTH, MAIL, RCPT, DATA, refus injectables) et faux serveur d'autorisation OAuth (code + PKCE, rafraîchissement, révocation).

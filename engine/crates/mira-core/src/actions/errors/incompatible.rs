@@ -50,3 +50,21 @@ pub(crate) fn action_not_retryable(id: &ActionId) -> MiraError {
         ..ErrorContext::default()
     })
 }
+
+/// Aucun envoi en attente à annuler pour ce brouillon
+pub(crate) fn no_send_to_cancel() -> MiraError {
+    MiraError::new(
+        ErrorCategory::IncompatibleState,
+        incompatible_state::ACTION_NOT_CANCELLABLE,
+        "aucun envoi en attente à annuler pour ce brouillon",
+    )
+}
+
+/// Le brouillon n'est plus en cours d'édition
+pub(crate) fn draft_not_editable() -> MiraError {
+    MiraError::new(
+        ErrorCategory::IncompatibleState,
+        incompatible_state::DRAFT_NOT_EDITABLE,
+        "le brouillon est planifié ou en cours d'envoi : annulez l'envoi avant de le modifier",
+    )
+}

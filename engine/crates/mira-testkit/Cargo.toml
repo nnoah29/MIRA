@@ -11,3 +11,7 @@ description = "Faux serveurs IMAP, SMTP et OAuth pour tester MIRA sans réseau"
 workspace = true
 
 [dependencies]
+tokio.workspace = true
+base64.workspace = true
+sha2.workspace = true
+serde_json.workspace = true

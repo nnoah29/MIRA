@@ -1,8 +1,9 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use mira_vocabulary::{
-    Account, AccountId, AccountState, ActionKind, AuthMethod, AuthMethodKind, EmailAddress,
-    MailboxId, MailboxRole, ProfileId, ProviderId, SecretKind, SecretRef, SyncSettings, Timestamp,
+    Account, AccountId, AccountState, ActionKind, ArchiveStrategy, AuthMethod, AuthMethodKind,
+    EmailAddress, MailboxId, MailboxModel, MailboxRole, ProfileId, ProviderId, ProviderLimits,
+    ProviderQuirks, SecretKind, SecretRef, SyncSettings, Timestamp,
 };
 
 /// La clé de stockage d'un secret contient le profil, le compte et la nature.
@@ -43,6 +44,19 @@ fn sync_settings_default_to_ninety_days() {
     assert_eq!(settings.window_days, 90);
     assert_eq!(settings.prefetch_bodies, 50);
     assert_eq!(settings.synced_mailboxes, None);
+}
+
+/// Les limites et particularités par défaut d'un provider sont prudentes et conformes à la norme.
+#[test]
+fn provider_defaults_are_cautious_and_standard() {
+    let limits = ProviderLimits::default();
+    assert_eq!(limits.max_connections, 3);
+    assert_eq!(limits.min_poll_interval_secs, 300);
+    let quirks = ProviderQuirks::default();
+    assert_eq!(quirks.mailbox_model, MailboxModel::Folders);
+    assert_eq!(quirks.archive, ArchiveStrategy::MoveToArchiveMailbox);
+    assert!(!quirks.server_saves_sent_copy);
+    assert!(quirks.unreliable_extensions.is_empty());
 }
 
 /// Une action sérialisée porte son type en `snake_case` et ses paramètres.

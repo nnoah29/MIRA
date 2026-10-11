@@ -2,9 +2,9 @@
 
 ## Durée
 
-- Début (GO) : 2026-10-11 01:08:54. Fin : ~08:35 (arrêt doux, avant 09:08 et la limite de 09:30). Écoulé : ~7 h 26.
+- Début (GO) : 2026-10-11 01:08:54. Fin : 08:25 (arrêt doux, avant 09:08 et la limite de 09:30). Écoulé : 7 h 16.
 - **Temps de travail effectif : ~3 h 35.** Environ 3 h 50 ont été perdues : arrêt de la session principale vers 02:10, puis limite d'usage de l'API (HTTP 429) jusqu'à 06:40, puis un second redémarrage de session vers 08:20 (BLOQUÉ-02 et BLOQUÉ-03).
-- 82 commits sur `feat/E-01-engine-overnight` (dont 9 fusions de branches d'agents, sans squash), 13 sous-agents lancés (dont 3 interrompus avant la fin). Tags locaux : `jalon/J0`, `J1`, `J2`, `J3`, `J4`, `J6`. Aucun push, rien fusionné dans `dev` ni `main`.
+- 83 commits sur `feat/E-01-engine-overnight` (dont 12 fusions de branches d'agents, sans squash), 13 sous-agents lancés (dont 3 interrompus avant la fin). Tags locaux : `jalon/J0`, `J1`, `J2`, `J3`, `J4`, `J6`. Aucun push, rien fusionné dans `dev` ni `main`.
 
 ## Résultat de `./ci.sh` (dernier commit)
 

@@ -21,6 +21,10 @@ serde_json.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 tokio.workspace = true
+mail-parser.workspace = true
+rustls.workspace = true
+tokio-rustls.workspace = true
+webpki-roots.workspace = true
 ammonia.workspace = true
 lettre.workspace = true
 mail-builder.workspace = true
@@ -32,3 +36,4 @@ rand.workspace = true
 [dev-dependencies]
 tempfile.workspace = true
 mira-testkit.workspace = true
+proptest.workspace = true

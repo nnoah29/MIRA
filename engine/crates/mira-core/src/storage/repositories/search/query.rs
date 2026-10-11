@@ -8,7 +8,7 @@ use crate::storage::pagination::{cursor_bounds, finish_page};
 use crate::storage::repositories::messages::MESSAGE_COLUMNS;
 
 /// Échappe une requête libre : chaque mot devient une phrase entre guillemets doubles (aucune syntaxe FTS5 injectable)
-pub(super) fn escape_match_query(query: &str) -> Option<String> {
+pub(crate) fn escape_match_query(query: &str) -> Option<String> {
     let words: Vec<String> = query
         .split_whitespace()
         .map(|word| format!("\"{}\"", word.replace('"', "\"\"")))

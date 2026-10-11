@@ -19,3 +19,7 @@ pub const ACTION_NOT_CANCELLABLE: ErrorCode =
     ErrorCode("incompatible_state.action_not_cancellable");
 /// Le compte est en pause.
 pub const ACCOUNT_PAUSED: ErrorCode = ErrorCode("incompatible_state.account_paused");
+/// Le brouillon n'est plus en cours d'édition (planifié ou en envoi).
+pub const DRAFT_NOT_EDITABLE: ErrorCode = ErrorCode("incompatible_state.draft_not_editable");
+/// Seule une action échouée peut être relancée.
+pub const ACTION_NOT_RETRYABLE: ErrorCode = ErrorCode("incompatible_state.action_not_retryable");

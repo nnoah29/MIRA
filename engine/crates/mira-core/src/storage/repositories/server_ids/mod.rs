@@ -2,5 +2,6 @@
 
 mod kind;
 mod map;
+mod reverse;
 
 pub use kind::ServerIdKind;

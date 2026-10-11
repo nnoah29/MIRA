@@ -1,1 +1,6 @@
-//! Dépôt « server_ids » (voir docs/specs/J2-stockage.md).
+//! Dépôt « server_ids » : correspondance entre identifiants serveur et identifiants internes (D-13).
+
+mod kind;
+mod map;
+
+pub use kind::ServerIdKind;

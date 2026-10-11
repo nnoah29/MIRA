@@ -1,1 +1,4 @@
-//! Dépôt « search » (voir docs/specs/J2-stockage.md).
+//! Dépôt « search » : index plein texte FTS5 des messages, requêtes échappées.
+
+mod index;
+mod query;

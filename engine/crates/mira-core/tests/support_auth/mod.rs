@@ -2,6 +2,8 @@
 //! Fabriques partagées par les tests d'authentification : faux service OAuth, aléa, navigateur.
 
 pub mod browser;
+pub mod canned;
+pub mod flow;
 
 use std::time::Duration;
 

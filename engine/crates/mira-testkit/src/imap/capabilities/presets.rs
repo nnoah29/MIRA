@@ -33,6 +33,11 @@ impl CapabilitySet {
         Self::full().without(Capability::Move)
     }
 
+    /// Ajoute l'extension de libellés (X-GM-EXT-1) à l'ensemble, sans nommer de service
+    pub fn with_label_extensions(self) -> Self {
+        self.with(Capability::Gmail)
+    }
+
     /// Profil proche de Gmail : X-GM-EXT-1, sans QRESYNC
     pub fn gmail() -> Self {
         Self::minimal()

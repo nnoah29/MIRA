@@ -4,6 +4,7 @@ pub(crate) mod admin;
 mod control;
 pub(crate) mod data;
 pub(crate) mod deliver;
+mod deliver_labelled;
 pub(crate) mod entry_flags;
 pub(crate) mod faults;
 pub(crate) mod gmail_labels;

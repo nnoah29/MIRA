@@ -7,6 +7,10 @@ license.workspace = true
 publish.workspace = true
 description = "Client en ligne de commande de MIRA"
 
+[lib]
+name = "mira_cli"
+path = "src/lib.rs"
+
 [[bin]]
 name = "mira"
 path = "src/main.rs"
@@ -16,3 +20,6 @@ workspace = true
 
 [dependencies]
 mira-assembly.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true

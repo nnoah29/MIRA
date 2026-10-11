@@ -1,6 +1,6 @@
 //! Réponses du contrat : une variante par forme de données rendue.
 
-use mira_vocabulary::{Account, ContractVersion, Event, ProfileId, ProviderDescriptor};
+use mira_vocabulary::{Account, ContractVersion, Event, Identity, ProfileId, ProviderDescriptor, ServerSettings};
 use serde::{Deserialize, Serialize};
 
 use crate::operations::OperationInfo;
@@ -27,6 +27,13 @@ pub struct AccountStatus {
     pub pending_actions: u64,
 }
 
+/// Préparation d'un compte : provider retenu et serveurs proposés (S1–S3).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AccountPreparation {
+    pub provider: ProviderDescriptor,
+    pub servers: ServerSettings,
+}
+
 /// Toute réponse du moteur.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "snake_case")]
@@ -36,6 +43,11 @@ pub enum Response {
     Status(EngineStatus),
     Providers(Vec<ProviderDescriptor>),
     Provider(ProviderDescriptor),
+    AccountPreparation(AccountPreparation),
+    Accounts(Vec<Account>),
+    Account(Account),
+    Identities(Vec<Identity>),
+    Identity(Identity),
     Operation(OperationInfo),
     Events(Vec<Event>),
 }

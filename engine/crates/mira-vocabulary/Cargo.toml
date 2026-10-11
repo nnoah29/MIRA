@@ -1,0 +1,15 @@
+[package]
+name = "mira-vocabulary"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Vocabulaire commun de MIRA : types du domaine et interface provider"
+
+[lints]
+workspace = true
+
+[dependencies]
+serde.workspace = true
+thiserror.workspace = true

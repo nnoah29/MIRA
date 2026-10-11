@@ -1,0 +1,13 @@
+[package]
+name = "mira-testkit"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Faux serveurs IMAP, SMTP et OAuth pour tester MIRA sans réseau"
+
+[lints]
+workspace = true
+
+[dependencies]

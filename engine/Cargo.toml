@@ -1,0 +1,36 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "MIT OR Apache-2.0"
+publish = false
+
+[workspace.dependencies]
+mira-vocabulary = { path = "crates/mira-vocabulary" }
+mira-core = { path = "crates/mira-core" }
+mira-provider-gmail = { path = "crates/mira-provider-gmail" }
+mira-provider-outlook = { path = "crates/mira-provider-outlook" }
+mira-provider-yahoo = { path = "crates/mira-provider-yahoo" }
+mira-provider-generic = { path = "crates/mira-provider-generic" }
+mira-assembly = { path = "crates/mira-assembly" }
+mira-testkit = { path = "crates/mira-testkit" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+dbg_macro = "deny"
+print_stdout = "warn"

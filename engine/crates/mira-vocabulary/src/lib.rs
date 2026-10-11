@@ -6,6 +6,7 @@ pub mod domain;
 pub mod error;
 pub mod events;
 pub mod ids;
+pub mod provider;
 pub mod time;
 
 pub use address::EmailAddress;
@@ -39,4 +40,9 @@ pub use ids::kinds::{
     AccountId, ActionId, AttachmentId, DraftId, IdentityId, MailboxId, MessageId, OperationId,
     ProfileId, ThreadId, ViewId,
 };
+pub use provider::descriptor::ProviderDescriptor;
+pub use provider::limits::ProviderLimits;
+pub use provider::provider::Provider;
+pub use provider::quirks::{ArchiveStrategy, MailboxModel, ProviderQuirks};
+pub use provider::raw::{RawMailbox, RawMessageAttributes, ServerMessageTranslation};
 pub use time::Timestamp;

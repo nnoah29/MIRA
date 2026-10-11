@@ -6,6 +6,8 @@ mod expunge;
 mod fetch_flags;
 mod fetch_headers;
 mod fetch_source;
+mod idle;
+mod labels;
 mod list_mailboxes;
 mod logout;
 mod mailbox_admin;

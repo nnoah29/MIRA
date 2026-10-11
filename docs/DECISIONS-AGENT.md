@@ -100,3 +100,10 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 
 ## AG-15 — Profils de build allégés
 - `/home` a atteint 99 % (répertoires `target/` de 16 à 30 Go par worktree). `[profile.dev]` et `[profile.test]` : `debug = "line-tables-only"`, `incremental = false`. `target/` principal : 30 Go → 5 Go.
+
+## AG-16 — File d'actions locale et brouillons (rapport J7b)
+- Une action est résolue en `LocalIntent` (selon `ProviderQuirks`), déroulée en `LocalStep` idempotents ; `UndoRecord { intent, inverse }` dans `undo_json`. Le rebase (D-23) re-déroule l'intention et n'applique que les étapes absentes.
+- Apparition provisoire (déplacement ou libellé hors ligne) : UID stocké < −2³², lu `0`, `needs_revalidation` ; `add_appearance` la remplace par l'apparition réelle lors de la synchro.
+- `cancel` possible tant que l'action est `Pending` ; `submit(Send)` refusé (passer par `schedule_send`) ; archive/corbeille/spam sans boîte de rôle → `server.mailbox_missing` dès la soumission ; `RemoveFromMailbox` sur compte à dossiers = archiver.
+- Nouveaux codes : `incompatible_state.draft_not_editable`, `incompatible_state.action_not_retryable`.
+- Garde-fou A6 : `ymail` détecté seulement hors d'un identifiant (faux positif `EmptyMailbox`) ; auto-test étendu.

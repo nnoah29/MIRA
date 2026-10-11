@@ -5,6 +5,7 @@ mod errors;
 mod introspection;
 mod json_columns;
 mod migrations;
+mod pagination;
 pub mod repositories;
 mod tx;
 

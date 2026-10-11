@@ -1,1 +1,7 @@
-//! Dépôt « appearances » (voir docs/specs/J2-stockage.md).
+//! Dépôt « appearances » : présence d'un message dans une boîte, UID et revalidation (D-12, D-14).
+
+mod add;
+mod purge;
+mod read;
+mod rows;
+mod state;

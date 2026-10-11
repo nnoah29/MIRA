@@ -35,20 +35,20 @@ Les jalons suivent le §5 du brief et le chapitre 17 de la référence (phases 1
 - [x] Interface provider (§6.3) : gestion d'une adresse, serveurs, méthodes d'authentification, rôle d'un dossier, limites, exceptions, traductions (identifiant stable, libellés, indice de fil, copie automatique dans Envoyés).
 - **Acceptation** : tests unitaires de sérialisation JSON stable, codes d'erreur uniques, ordre des événements ; `check-architecture` vert.
 
-## J2 — Stockage — EN COURS
+## J2 — Stockage — FAIT (jalon/J2)
 
-- [ ] Une base SQLite par profil, migrations versionnées ; schéma en trois familles (D-18) ; table de correspondance des identifiants serveur (D-13).
-- [ ] Source brute compressée (zstd) et cache d'analyse reconstruisible (D-16, invariant 14) ; FTS5 sur objet, expéditeurs, destinataires, texte.
-- [ ] Verrou de profil (D-27) ; interface du trousseau : `keyring` en production, faux en mémoire en test ; clé = profil + compte + type (D-10).
-- [ ] Horloge et générateur d'identifiants injectables (annexe H).
+- [x] Une base SQLite par profil, migrations versionnées ; schéma en trois familles (D-18) ; table de correspondance des identifiants serveur (D-13).
+- [x] Source brute compressée (zstd) et cache d'analyse reconstruisible (D-16, invariant 14) ; FTS5 sur objet, expéditeurs, destinataires, texte.
+- [x] Verrou de profil (D-27) ; interface du trousseau : `keyring` en production, faux en mémoire en test ; clé = profil + compte + type (D-10).
+- [x] Horloge et générateur d'identifiants injectables (annexe H).
 - **Acceptation** : invariants 7–12, 14, 15 (aucun secret en base), 16 (jeter le miroir conserve configuration et intentions), 29 (pagination par curseur) testés ; second verrou refusé.
 
-## J3 — Providers et registre — EN COURS
+## J3 — Providers et registre — FAIT (jalon/J3)
 
-- [ ] 4 crates providers purs, tests par tables (§6.11) : reconnaissance d'adresses (pièges : majuscules, sous-domaines, adresses invalides), serveurs, rôles de dossiers, traductions, limites.
-- [ ] Registre dans le cœur : enregistrement, recherche par identifiant, détection avec repli sur generic (§6.6) ; provider introuvable → compte en erreur, données conservées (§7.8).
-- [ ] Capacités effectives = annonce du serveur moins les exceptions du provider (D-08).
-- [ ] Assemblage : une ligne par provider.
+- [x] 4 crates providers purs, tests par tables (§6.11) : reconnaissance d'adresses (pièges : majuscules, sous-domaines, adresses invalides), serveurs, rôles de dossiers, traductions, limites.
+- [x] Registre dans le cœur : enregistrement, recherche par identifiant, détection avec repli sur generic (§6.6) ; provider introuvable → compte en erreur, données conservées (§7.8).
+- [x] Capacités effectives = annonce du serveur moins les exceptions du provider (D-08).
+- [x] Assemblage : une ligne par provider.
 - **Acceptation** : `mira provider detect <adresse>` correct ; invariants 1–3 testés ; le cœur est testé avec un faux provider défini dans ses tests.
 
 ## J4 — Testkit protocoles — FAIT
@@ -57,7 +57,7 @@ Les jalons suivent le §5 du brief et le chapitre 17 de la référence (phases 1
 - [x] Faux serveur SMTP (EHLO, AUTH, MAIL, RCPT, DATA, refus injectables) et faux serveur d'autorisation OAuth (code + PKCE, rafraîchissement, révocation).
 - **Acceptation** : tests propres au testkit ; profils de capacités : complet, sans QRESYNC, sans MOVE, minimal.
 
-## J5 — Synchronisation — À FAIRE
+## J5 — Synchronisation — EN COURS (J5a)
 
 - [ ] Client IMAP encapsulé (annexe H) ; analyse MIME tolérante (§12.7).
 - [ ] Descente par étapes (D-20), fenêtre de 90 jours, « remonter plus loin » en tâche longue (D-21).
@@ -66,14 +66,14 @@ Les jalons suivent le §5 du brief et le chapitre 17 de la référence (phases 1
 - [ ] Le serveur gagne ; les actions locales sont rejouées par-dessus (D-23) ; repère avancé après écriture (invariant 20).
 - **Acceptation** : S4, S5, S8, S11, S12, S13 et invariants 20, 21, 23, 24, 25 contre le testkit, avec les 4 profils de capacités ; reprise après coupure au milieu d'une synchro.
 
-## J6 — Messages, boîtes, vues, fils — À FAIRE
+## J6 — Messages, boîtes, vues, fils — EN COURS
 
 - [ ] Lister une boîte ou une vue (curseur, tri, filtres), en-têtes, corps (« indisponible hors ligne » si absent, S6), source brute, pièces jointes.
 - [ ] Vues calculées : boîte unifiée, non lus, suivis (§7.10) ; recherche FTS locale avec filtres.
 - [ ] Fils calculés par MIRA (en-têtes de réponse, repli sur l'objet normalisé, indice serveur), recalculables (D-15, invariant 13).
 - **Acceptation** : S6, S11 (vue unifiée : un seul message), invariants 12, 13, 27 ; liste paginée < 50 ms sur 100 000 messages (test de performance).
 
-## J7 — Écritures et file d'actions — À FAIRE
+## J7 — Écritures et file d'actions — EN COURS (J7a)
 
 - [ ] Intentions → identifiant d'action, clé d'idempotence ; écriture en base avant tentative (invariant 17) ; ordre par compte (invariant 19) ; application locale optimiste ; erreur définitive → effet local annulé et événement (invariant 22) ; erreur passagère → backoff ; regroupement ; annulation (undo).
 - [ ] Traduction des actions (archiver, corbeille, déplacer, libellés) par le provider ; D-17 refus.

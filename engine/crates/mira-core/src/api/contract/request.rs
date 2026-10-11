@@ -1,0 +1,45 @@
+//! Requêtes du contrat, regroupées par domaine (12.4) ; une variante = une opération = un handler.
+
+use mira_vocabulary::{EventFilter, OperationId};
+use serde::{Deserialize, Serialize};
+
+/// Toute requête qu'un client peut adresser au moteur.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "domain", content = "request", rename_all = "snake_case")]
+pub enum Request {
+    Engine(EngineRequest),
+    Provider(ProviderRequest),
+    Operation(OperationRequest),
+    Event(EventRequest),
+}
+
+/// Requêtes sur le moteur lui-même.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "op", rename_all = "snake_case")]
+pub enum EngineRequest {
+    GetContractInfo,
+    GetStatus,
+}
+
+/// Requêtes sur le catalogue des providers.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "op", rename_all = "snake_case")]
+pub enum ProviderRequest {
+    ListProviders,
+    DetectProvider { address: String },
+}
+
+/// Requêtes sur les opérations longues.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "op", rename_all = "snake_case")]
+pub enum OperationRequest {
+    GetOperation { operation: OperationId },
+    CancelOperation { operation: OperationId },
+}
+
+/// Lecture des événements par numéro (clients sans abonnement, comme le CLI).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "op", rename_all = "snake_case")]
+pub enum EventRequest {
+    GetEvents { filter: EventFilter, limit: u32 },
+}

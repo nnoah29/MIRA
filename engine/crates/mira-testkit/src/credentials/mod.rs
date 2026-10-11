@@ -3,13 +3,15 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
 
+mod redacted_debug;
+
 /// Registre partagé, clonable, des identifiants acceptés par les faux serveurs.
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct Credentials {
     table: Arc<Mutex<CredentialTable>>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 struct CredentialTable {
     passwords: HashMap<String, String>,
     access_tokens: HashMap<String, String>,

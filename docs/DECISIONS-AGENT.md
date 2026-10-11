@@ -57,3 +57,11 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - SMTP : `MAIL FROM` avant `AUTH` → `530` (comme un serveur de soumission réel) ; `fail_next` est une file FIFO ; une panne en fin de DATA n'enregistre pas le message ; `drop_after_data_once` enregistre puis coupe sans répondre.
 - OAuth : `approve`/`deny` refusent toute requête invalide et tout `redirect_uri` qui n'est pas en boucle locale ; code à usage unique consommé même si le vérificateur est faux ; le rafraîchissement ne renouvelle pas le jeton de rafraîchissement ; jetons générés par compteur, jamais journalisés.
 - Modules `oauth::pkce` et `oauth::form` publics (fonctions pures testées).
+
+## AG-10 — Comportements du faux IMAP (rapport J4 partie A)
+- Un seul commit pour tout le serveur (niveaux interdépendants).
+- `connection_count()` = total des connexions acceptées ; `active_connections()` = connexions ouvertes (à utiliser pour l'invariant 25).
+- QRESYNC exige `ENABLE QRESYNC` avant SELECT (sinon `BAD`), comme un serveur réel ; MODSEQ n'apparaît dans les FETCH qu'une fois CONDSTORE activé.
+- `renumber` redémarre les UID à 1 et change UIDVALIDITY ; `deliver_dated` permet des dates internes contrôlées (fenêtre de 90 jours).
+- `X-GM-LABELS` : noms des boîtes contenant le message (`INBOX` → `\Inbox`, boîtes `\All` exclues).
+- Non supportés : BODYSTRUCTURE, sections numérotées, LSUB, UNSELECT, NAMESPACE, STARTTLS, X-GM-RAW.

@@ -51,10 +51,10 @@ Les jalons suivent le §5 du brief et le chapitre 17 de la référence (phases 1
 - [ ] Assemblage : une ligne par provider.
 - **Acceptation** : `mira provider detect <adresse>` correct ; invariants 1–3 testés ; le cœur est testé avec un faux provider défini dans ses tests.
 
-## J4 — Testkit protocoles — EN COURS
+## J4 — Testkit protocoles — FAIT
 
-- [ ] Faux serveur IMAP : LOGIN / AUTHENTICATE XOAUTH2, CAPABILITY, LIST (SPECIAL-USE), SELECT / EXAMINE, UIDVALIDITY, UID FETCH / SEARCH / STORE / COPY / MOVE / EXPUNGE, APPEND, CONDSTORE / QRESYNC, IDLE, extensions Gmail (X-GM-MSGID, X-GM-LABELS, X-GM-THRID). Extensions activables une à une ; renumérotation et coupure injectables.
-- [ ] Faux serveur SMTP (EHLO, AUTH, MAIL, RCPT, DATA, refus injectables) et faux serveur d'autorisation OAuth (code + PKCE, rafraîchissement, révocation).
+- [x] Faux serveur IMAP : LOGIN / AUTHENTICATE XOAUTH2, CAPABILITY, LIST (SPECIAL-USE), SELECT / EXAMINE, UIDVALIDITY, UID FETCH / SEARCH / STORE / COPY / MOVE / EXPUNGE, APPEND, CONDSTORE / QRESYNC, IDLE, extensions Gmail (X-GM-MSGID, X-GM-LABELS, X-GM-THRID). Extensions activables une à une ; renumérotation et coupure injectables.
+- [x] Faux serveur SMTP (EHLO, AUTH, MAIL, RCPT, DATA, refus injectables) et faux serveur d'autorisation OAuth (code + PKCE, rafraîchissement, révocation).
 - **Acceptation** : tests propres au testkit ; profils de capacités : complet, sans QRESYNC, sans MOVE, minimal.
 
 ## J5 — Synchronisation — À FAIRE

@@ -28,6 +28,18 @@ impl Tx<'_> {
         rows.collect::<Result<Vec<_>, _>>().map_err(storage_error)
     }
 
+    /// Donne les positions stockées des pièces jointes d'un brouillon, dans l'ordre d'ajout
+    pub fn list_draft_attachment_positions(&self, draft: &DraftId) -> Result<Vec<u32>, MiraError> {
+        let mut statement = self
+            .sql()
+            .prepare("SELECT position FROM draft_attachments WHERE draft_id = ?1 ORDER BY position")
+            .map_err(storage_error)?;
+        let rows = statement
+            .query_map([draft.as_str()], |row| row.get::<_, u32>(0))
+            .map_err(storage_error)?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(storage_error)
+    }
+
     /// Relit le contenu d'une pièce jointe de brouillon, ou rien si la position est inconnue
     pub fn read_draft_attachment_data(
         &self,

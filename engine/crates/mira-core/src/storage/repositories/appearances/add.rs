@@ -10,9 +10,10 @@ use crate::storage::repositories::mailboxes::mailbox_not_found;
 use crate::storage::repositories::messages::message_not_found;
 
 impl Tx<'_> {
-    /// Ajoute une apparition ; la boîte doit appartenir au compte du message
+    /// Ajoute une apparition (elle remplace une apparition provisoire) ; la boîte doit appartenir au compte du message
     pub fn add_appearance(&self, appearance: &Appearance) -> Result<(), MiraError> {
         self.require_same_account(&appearance.message, &appearance.mailbox)?;
+        self.remove_local_appearance(&appearance.message, &appearance.mailbox)?;
         self.sql()
             .execute(
                 "INSERT INTO appearances (message_id, mailbox_id, uid, deleted, needs_revalidation) VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -44,7 +45,7 @@ impl Tx<'_> {
     }
 
     /// Refuse une apparition dont la boîte et le message sont de comptes différents
-    fn require_same_account(
+    pub(super) fn require_same_account(
         &self,
         message: &MessageId,
         mailbox: &MailboxId,

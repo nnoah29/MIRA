@@ -21,5 +21,6 @@ sabotage; echo 'mira-core.workspace = true' >> "$tmp/engine/crates/mira-cli/Carg
 sabotage; echo 'mira-core.workspace = true' >> "$tmp/engine/crates/mira-vocabulary/Cargo.toml"; expect A1
 sabotage; echo '//! Cas Gmail' >> "$tmp/engine/crates/mira-core/src/lib.rs"; expect A6
 sabotage; printf '//! x\npub fn f() { let _ = rusqlite::version(); }\n' > "$tmp/engine/crates/mira-core/src/registry/leak.rs"; expect A8
+sabotage; printf '//! x\npub const ADDRESS: &str = "x@ymail.com";\n' >> "$tmp/engine/crates/mira-core/src/lib.rs"; expect A6
 [[ $fail -eq 0 ]] && echo "test-check-architecture : OK"
 exit $fail

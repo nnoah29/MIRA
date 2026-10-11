@@ -14,6 +14,9 @@ fi
 if grep -rnE 'TODO|FIXME|XXX' --include='*.rs' . | grep -vE 'BLOQUÉ-|AG-[0-9]+'; then
     echo "check-forbidden-patterns : TODO non référencé (citer BLOQUÉ-<id> ou AG-<n>)"; fail=1
 fi
+if grep -rnE '^(<<<<<<<|>>>>>>>)( |$)' --include='*.rs' --include='*.toml' --include='*.sql' .; then
+    echo "check-forbidden-patterns : marqueur de conflit git oublié"; fail=1
+fi
 grep -rqE 'libloading|dlopen' --include='Cargo.toml' . && { echo "check-forbidden-patterns : chargement dynamique interdit (D-02)"; fail=1; }
 [[ $fail -eq 0 ]] && echo "check-forbidden-patterns : OK"
 exit $fail

@@ -13,8 +13,8 @@
 | 9 | Apparition → boîte du même compte | `invariant_9_appearance_mailbox_same_account` (mira-core) |
 | 10 | Message → un compte ; compte → un profil | manquant |
 | 11 | Compte : au moins une identité | `invariant_11_set_default_identity_leaves_only_one` (mira-core) |
-| 12 | Drapeaux utilisateur au niveau du message (D-14) | `invariant_12_flags_live_on_message` (mira-core) |
-| 13 | Fil dérivé, recalculable (D-15) | manquant |
+| 12 | Drapeaux utilisateur au niveau du message (D-14) | `invariant_12_flags_live_on_message` (mira-core)<br>`invariant_12_mark_read_applies_to_message_once` (mira-core) |
+| 13 | Fil dérivé, recalculable (D-15) | `invariant_13_threads_recomputed_identically` (mira-core) |
 | 14 | Source brute conservée, analyse en cache (D-16) | `invariant_14_raw_source_roundtrip_compressed` (mira-core) |
 | 15 | Aucun secret en base, journaux, événements, API (P9) | `invariant_15_no_secret_in_database` (mira-core) |
 | 16 | Miroir jetable sans perte (8.1) | `invariant_16_discard_mirror_keeps_config_and_intentions` (mira-core) |
@@ -28,9 +28,9 @@
 | 24 | Une tâche de synchro par compte | manquant |
 | 25 | Connexions ≤ plafond du provider | manquant |
 | 26 | Jamais deux envois sans décision de l'utilisateur | manquant |
-| 27 | Aucune lecture ordinaire par le réseau (P5) | manquant |
+| 27 | Aucune lecture ordinaire par le réseau (P5) | `invariant_27_reads_never_touch_network` (mira-core) |
 | 28 | Toute écriture rend la main sans réseau | manquant |
-| 29 | Toute liste paginée par curseur | `invariant_29_list_is_cursor_paginated` (mira-core) |
+| 29 | Toute liste paginée par curseur | `invariant_29_list_is_cursor_paginated` (mira-core)<br>`invariant_29_unified_view_paginates_without_duplicates` (mira-core) |
 | 30 | Identifiants exposés opaques | manquant |
 | 31 | Erreur : catégorie, code stable, réessayable | `invariant_31_error_codes_are_unique_and_prefixed_by_category` (mira-vocabulary) |
 | 32 | Événements numérotés, sans secret ni contenu | `invariant_32_events_are_numbered_and_persisted` (mira-core)<br>`invariant_32_subscription_resumes_after_seen_number_then_follows_live` (mira-core) |
@@ -43,12 +43,12 @@
 | S3 | Ajouter un compte « Autre » | manquant |
 | S4 | Première synchronisation | manquant |
 | S5 | Nouveau message en temps réel | manquant |
-| S6 | Lire un message hors ligne | manquant |
+| S6 | Lire un message hors ligne | `scenario_s6_read_offline_body_present_or_unavailable` (mira-core) |
 | S7 | Déplacer des messages hors ligne | manquant |
 | S8 | Message supprimé ailleurs | manquant |
 | S9 | Envoyer, avec annulation | manquant |
 | S10 | Jeton expiré en pleine opération | manquant |
-| S11 | Message Gmail à plusieurs libellés | manquant |
+| S11 | Message Gmail à plusieurs libellés | `scenario_s11_unified_view_lists_each_message_once` (mira-core) |
 | S12 | Remonter au-delà de 90 jours, chercher | manquant |
 | S13 | Le serveur renumérote une boîte | manquant |
 | S14 | Supprimer un compte | manquant |

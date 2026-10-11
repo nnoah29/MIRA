@@ -58,3 +58,11 @@ todo = "deny"
 unimplemented = "deny"
 dbg_macro = "deny"
 print_stdout = "warn"
+
+[profile.dev]
+debug = "line-tables-only"
+incremental = false
+
+[profile.test]
+debug = "line-tables-only"
+incremental = false

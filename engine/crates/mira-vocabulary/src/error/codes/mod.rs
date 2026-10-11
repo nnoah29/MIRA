@@ -39,6 +39,8 @@ pub const ALL: &[ErrorCode] = &[
     incompatible_state::BODY_UNAVAILABLE_OFFLINE,
     incompatible_state::ACTION_NOT_CANCELLABLE,
     incompatible_state::ACCOUNT_PAUSED,
+    incompatible_state::DRAFT_NOT_EDITABLE,
+    incompatible_state::ACTION_NOT_RETRYABLE,
     network::OFFLINE,
     network::TIMEOUT,
     network::UNREACHABLE,

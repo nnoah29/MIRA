@@ -23,6 +23,39 @@ impl Tx<'_> {
             .map_err(storage_error)
     }
 
+    /// L'apparition d'un message dans une boîte, si elle existe
+    pub fn get_appearance(
+        &self,
+        message: &MessageId,
+        mailbox: &MailboxId,
+    ) -> Result<Option<Appearance>, MiraError> {
+        let sql =
+            format!("SELECT {COLUMNS} FROM appearances WHERE message_id = ?1 AND mailbox_id = ?2");
+        self.sql()
+            .query_row(
+                &sql,
+                params![message.as_str(), mailbox.as_str()],
+                appearance_from_row,
+            )
+            .optional()
+            .map_err(storage_error)
+    }
+
+    /// Toutes les apparitions d'une boîte (supprimées ou non), par message
+    pub fn appearances_in_mailbox(
+        &self,
+        mailbox: &MailboxId,
+    ) -> Result<Vec<Appearance>, MiraError> {
+        let sql =
+            format!("SELECT {COLUMNS} FROM appearances WHERE mailbox_id = ?1 ORDER BY message_id");
+        let mut statement = self.sql().prepare(&sql).map_err(storage_error)?;
+        statement
+            .query_map([mailbox.as_str()], appearance_from_row)
+            .map_err(storage_error)?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(storage_error)
+    }
+
     /// L'apparition portant un UID donné dans une boîte, si elle existe
     pub fn appearance_by_uid(
         &self,

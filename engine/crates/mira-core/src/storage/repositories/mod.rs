@@ -18,8 +18,5 @@ pub mod search;
 pub mod server_ids;
 pub mod thread_links;
 pub mod threads;
-<<<<<<< HEAD
-pub mod views;
-=======
 pub mod token_meta;
->>>>>>> feat/E-01-engine-overnight
+pub mod views;

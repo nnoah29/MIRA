@@ -4,6 +4,7 @@ pub mod address;
 pub mod contract;
 pub mod domain;
 pub mod error;
+pub mod events;
 pub mod ids;
 pub mod time;
 
@@ -28,6 +29,10 @@ pub use error::category::ErrorCategory;
 pub use error::code::ErrorCode;
 pub use error::context::ErrorContext;
 pub use error::mira_error::MiraError;
+pub use events::category::EventCategory;
+pub use events::event::Event;
+pub use events::filter::EventFilter;
+pub use events::kind::{EventKind, LogLevel, SyncStep};
 pub use ids::Id;
 pub use ids::keys::{Cursor, EventSeq, IdempotencyKey, ProviderId};
 pub use ids::kinds::{

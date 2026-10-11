@@ -19,17 +19,17 @@
 | 15 | Aucun secret en base, journaux, événements, API (P9) | `invariant_15_no_oauth_token_in_responses_events_or_database` (mira-core)<br>`invariant_15_no_secret_in_database` (mira-core)<br>`invariant_15_no_secret_in_responses_events_or_database` (mira-core) |
 | 16 | Miroir jetable sans perte (8.1) | `invariant_16_discard_mirror_keeps_config_and_intentions` (mira-core) |
 | 17 | Action écrite avant d'être tentée | `invariant_17_action_persisted_before_attempt` (mira-core) |
-| 18 | Action rejouée : pas deux effets | `invariant_18_enqueue_is_idempotent` (mira-core) |
+| 18 | Action rejouée : pas deux effets | `invariant_18_enqueue_is_idempotent` (mira-core)<br>`invariant_18_resubmission_with_same_key_has_single_effect` (mira-core) |
 | 19 | Actions d'un compte rejouées dans l'ordre | `invariant_19_actions_replayed_in_order` (mira-core) |
 | 20 | Repère avancé après écriture des données | manquant |
 | 21 | Le serveur gagne ; actions rejouées (D-23) | manquant |
-| 22 | Erreur définitive : effet local annulé, utilisateur informé | manquant |
+| 22 | Erreur définitive : effet local annulé, utilisateur informé | `invariant_22_definitive_failure_reverts_local_effect` (mira-core) |
 | 23 | Doute d'identité : garder deux messages (P7) | manquant |
 | 24 | Une tâche de synchro par compte | manquant |
 | 25 | Connexions ≤ plafond du provider | manquant |
 | 26 | Jamais deux envois sans décision de l'utilisateur | manquant |
 | 27 | Aucune lecture ordinaire par le réseau (P5) | `invariant_27_reads_never_touch_network` (mira-core) |
-| 28 | Toute écriture rend la main sans réseau | manquant |
+| 28 | Toute écriture rend la main sans réseau | `invariant_28_submit_returns_without_network` (mira-core) |
 | 29 | Toute liste paginée par curseur | `invariant_29_list_is_cursor_paginated` (mira-core)<br>`invariant_29_unified_view_paginates_without_duplicates` (mira-core) |
 | 30 | Identifiants exposés opaques | manquant |
 | 31 | Erreur : catégorie, code stable, réessayable | `invariant_31_error_codes_are_unique_and_prefixed_by_category` (mira-vocabulary) |

@@ -2,6 +2,7 @@
 //! Chaque sous-domaine est un module (D-34) ; chaque bibliothèque externe reste dans son module (annexe H).
 
 pub mod api;
+pub mod auth;
 pub mod capabilities;
 pub mod events;
 pub mod html;
@@ -10,4 +11,5 @@ pub mod operations;
 pub mod ports;
 pub mod profile;
 pub mod registry;
+pub mod smtp;
 pub mod storage;

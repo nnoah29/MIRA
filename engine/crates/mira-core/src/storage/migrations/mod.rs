@@ -8,6 +8,7 @@ use mira_vocabulary::MiraError;
 const MIGRATIONS: &[&str] = &[
     include_str!("v001_initial.sql"),
     include_str!("v002_account_profile_and_default_identity.sql"),
+    include_str!("v003_account_token_meta.sql"),
 ];
 
 /// Applique, dans une transaction, les migrations pas encore appliquées

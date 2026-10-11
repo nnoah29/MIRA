@@ -23,3 +23,14 @@
 - **12:03** — Reprise des trois agents depuis leur historique.
 - **12:25** — Disque /home à 99 % : worktree J8a supprimé, `target/` nettoyé, profils allégés (AG-15) → 69 Go libres. J8a fusionné (comptes, identités, OAuth dans la façade ; S1, S2, S3, S14, invariants 11 et 15). CI vert : 518 tests.
 - **12:32** — J7b fusionné (file d'actions locale : soumission, effets locaux, annulation, relance, rebase ; brouillons et envoi planifié ; ~60 tests). CI vert : 606 tests. Lancement de J7c (rejeu serveur, envoi, reprise sur plantage).
+- **12:37** — **Arrêt demandé par l'utilisateur** (« stop »), reprise prévue la semaine prochaine. Agents J5b, J7c, J9a stoppés. Branche de travail propre, CI verte (606 tests), dernier commit avant ce journal : 47d3b4a.
+
+## Pour reprendre (semaine prochaine)
+
+1. Relire CLAUDE.md, PLAN.md, la fin de ce journal.
+2. Travail non fusionné, conservé dans des worktrees (à reprendre ou relancer) :
+   - .claude/worktrees/agent-a1884904a70cc440a feat/E-01-j5b-sync commits=6 non_commités=3
+   - .claude/worktrees/agent-a70d10c1eb5a98f25 feat/E-01-j7c-replay-send commits=0 non_commités=0
+   - .claude/worktrees/agent-ac3a8e43602d93a7d feat/E-01-j9a-cli commits=0 non_commités=32
+3. Ordre conseillé : J5b (synchronisation, spec docs/specs/J5b-synchronisation.md) → J7c (rejeu, envoi, reprise sur plantage) → J9a (CLI sur la façade, invariant 6) → J8 restant (lectures, actions, synchro, maintenance dans la façade, test de contrat JSON) → S1–S14 de bout en bout → revue indépendante (relecteur, qualite-securite) → J10.
+4. Disque : surveiller /home (profils allégés AG-15 ; supprimer les `target/` des worktrees terminés).

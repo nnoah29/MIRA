@@ -65,3 +65,26 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - `renumber` redémarre les UID à 1 et change UIDVALIDITY ; `deliver_dated` permet des dates internes contrôlées (fenêtre de 90 jours).
 - `X-GM-LABELS` : noms des boîtes contenant le message (`INBOX` → `\Inbox`, boîtes `\All` exclues).
 - Non supportés : BODYSTRUCTURE, sections numérotées, LSUB, UNSELECT, NAMESPACE, STARTTLS, X-GM-RAW.
+
+## AG-11 — Écarts acceptés de J2a
+- Migration `v002` : colonne `accounts.profile_id` (le schéma v1 l'avait oubliée) et index unique partiel « une seule identité par défaut par compte ».
+- `keyring` 4.2 : la feature par défaut `v1` fournit déjà SecretService (zbus), aucune dépendance système.
+- Clé d'idempotence réutilisée pour une **autre** commande → `invalid_input.idempotency_conflict` ; même commande → même action.
+- File d'actions : `server_targets_json` et `undo_json` pas encore remplis (`PendingAction` n'a pas ces champs) → à ajouter en J7.
+- Profil : nom vide, `.`, `..` ou contenant `/`, `\`, NUL refusé (traversée de répertoire).
+- Dépôt d'événements dans `storage/repositories/events/` ; `src/events/` reste pour le bus (J8).
+
+## AG-12 — Écarts acceptés de J3
+- CLI : `run(args, &mut CliIo) -> i32` (au lieu de `CliDeps`/`CliOutcome`) ; l'injection des dépendances du moteur viendra en J9.
+- Enveloppe JSON : clés dans l'ordre alphabétique de `serde_json` (`contract_version, data|error, ok`) — sans effet pour un lecteur JSON.
+- Stratégie `Qresync` dès que QRESYNC est annoncé (il implique CONDSTORE) ; `COMPRESS` = `COMPRESS=DEFLATE`.
+- `X-GM-LABELS` : les noms sont supposés déjà décodés (UTF-7 modifié) par le client IMAP.
+- Registre : pas d'élimination des doublons d'identifiant ; `find` renvoie le premier.
+
+## AG-13 — Écarts acceptés de J2b
+- Revalidation (10.5) : `mark_mailbox_for_revalidation` passe les UID en négatif pour éviter la collision `UNIQUE(mailbox_id, uid)` quand le serveur renumérote à partir de 1 ; les lectures rendent l'UID positif.
+- `purge_unrevalidated` rend les orphelins sans les supprimer ; l'appelant supprime (et désindexe).
+- `upsert_thread(account, root_key, subject, candidate_id)` : le dépôt ne génère pas d'identifiant.
+- Recherche : ET implicite mot par mot, tri par date (pas de pertinence) pour permettre la pagination par curseur.
+- `Attachment.cache` déduit de `cache_path`. **Reste à faire (J10)** : supprimer les fichiers de cache des pièces jointes lors de `discard_account_mirror` et de la suppression d'un compte.
+- Curseur : chaîne hexadécimale opaque (`mira1|<date>|<id>`), invalide → `invalid_input.cursor`.

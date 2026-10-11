@@ -3,7 +3,7 @@
 mod database;
 mod errors;
 mod introspection;
-mod json_columns;
+pub(crate) mod json_columns;
 mod migrations;
 mod pagination;
 pub mod repositories;

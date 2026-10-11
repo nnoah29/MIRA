@@ -4,6 +4,7 @@
 pub mod capabilities;
 pub mod events;
 pub mod mailboxes;
+pub mod operations;
 pub mod ports;
 pub mod profile;
 pub mod registry;

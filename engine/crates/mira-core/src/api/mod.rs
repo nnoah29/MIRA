@@ -10,7 +10,8 @@ mod startup;
 
 pub use config::EngineConfig;
 pub use contract::{
-    AccountStatus, ContractInfo, EngineRequest, EngineStatus, EventRequest, OperationRequest,
-    ProviderRequest, Request, Response,
+    AccountChanges, AccountDraft, AccountRequest, AccountStatus, AuthRequest, ContractInfo,
+    CredentialInput, EngineRequest, EngineStatus, EventRequest, IdentityRequest, NewIdentity,
+    OperationRequest, ProviderRequest, Request, Response, SecretInput,
 };
 pub use engine::Engine;

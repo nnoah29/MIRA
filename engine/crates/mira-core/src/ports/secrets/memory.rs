@@ -12,7 +12,7 @@ use super::value::SecretValue;
 /// Trousseau fictif ; `unavailable()` simule un trousseau inaccessible.
 #[derive(Debug, Default)]
 pub struct MemorySecretStore {
-    entries: Mutex<HashMap<String, SecretValue>>,
+    pub(super) entries: Mutex<HashMap<String, SecretValue>>,
     broken: bool,
 }
 
@@ -31,7 +31,7 @@ impl MemorySecretStore {
     }
 
     /// Ouvre l'accès aux secrets, ou échoue si le trousseau est indisponible
-    fn open(&self) -> Result<MutexGuard<'_, HashMap<String, SecretValue>>, MiraError> {
+    pub(super) fn open(&self) -> Result<MutexGuard<'_, HashMap<String, SecretValue>>, MiraError> {
         if self.broken {
             return Err(MiraError::new(
                 ErrorCategory::Secrets,

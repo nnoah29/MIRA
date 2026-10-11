@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Auto-test de tools/check-norms : les fixtures conformes passent, chaque fixture fautive échoue avec la bonne règle.
+set -uo pipefail
+cd "$(dirname "$0")"
+fail=0
+expect() {
+    local file="$1" rule="$2" out
+    out=$(./check-norms "fixtures/$file" 2>&1)
+    if [[ $? -eq 0 || "$out" != *"$rule"* ]]; then echo "ÉCHEC : $file devrait violer $rule"; echo "$out"; fail=1; fi
+}
+if ! out=$(./check-norms fixtures/ok); then echo "ÉCHEC : fixtures/ok devrait passer"; echo "$out"; fail=1; fi
+expect bad/trop_long.rs N1
+expect bad/sept_fonctions.rs N2
+expect bad/utils/mod.rs N3
+expect bad/commentaire.rs N4
+expect bad/commentaire.rs N5
+out=$(./check-norms fixtures/bad/commentaire.rs)
+[[ $(grep -c N5 <<<"$out") -eq 2 ]] || { echo "ÉCHEC : 2 violations N5 attendues"; echo "$out"; fail=1; }
+[[ $fail -eq 0 ]] && echo "test-check-norms : OK"
+exit $fail

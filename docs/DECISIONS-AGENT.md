@@ -88,3 +88,15 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - Recherche : ET implicite mot par mot, tri par date (pas de pertinence) pour permettre la pagination par curseur.
 - `Attachment.cache` déduit de `cache_path`. **Reste à faire (J10)** : supprimer les fichiers de cache des pièces jointes lors de `discard_account_mirror` et de la suppression d'un compte.
 - Curseur : chaîne hexadécimale opaque (`mira1|<date>|<id>`), invalide → `invalid_input.cursor`.
+
+## AG-14 — Façade : comptes, identités, authentification (rapport J8a)
+- Serveurs d'un compte : `NetworkPolicy` (par domaine, pour les bancs d'essai) > serveurs saisis > serveurs du provider ; `Account.servers` mémorisé seulement si saisi ou imposé.
+- Utilisateur IMAP = adresse complète ; la méthode d'authentification doit figurer dans celles du provider.
+- `AddAccount` sérialisé (verrou), idempotent par clé (migration v005 `account_idempotency`) : même clé + autre adresse → `invalid_input.idempotency_conflict`.
+- Test de connexion : IMAP seulement (SMTP non testé à l'ajout).
+- `ResumeAccount` → `Offline` jusqu'à la prochaine connexion réussie ; changements d'identité signalés par `AccountUpdated`.
+- `CancelOAuth` idempotent ; `CompleteOAuth` attend 300 s au plus, annulable.
+- **Reste à faire** : brancher la première synchronisation sur `AddAccount` (J8b) ; achever au démarrage une suppression de compte interrompue ; supprimer les caches de pièces jointes (J10).
+
+## AG-15 — Profils de build allégés
+- `/home` a atteint 99 % (répertoires `target/` de 16 à 30 Go par worktree). `[profile.dev]` et `[profile.test]` : `debug = "line-tables-only"`, `incremental = false`. `target/` principal : 30 Go → 5 Go.

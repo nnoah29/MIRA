@@ -12,11 +12,11 @@
 | 8 | Message : au moins une apparition | `invariant_8_message_without_appearance_is_purged` (mira-core) |
 | 9 | Apparition → boîte du même compte | `invariant_9_appearance_mailbox_same_account` (mira-core) |
 | 10 | Message → un compte ; compte → un profil | manquant |
-| 11 | Compte : au moins une identité | `invariant_11_set_default_identity_leaves_only_one` (mira-core) |
+| 11 | Compte : au moins une identité | `invariant_11_added_account_has_default_identity` (mira-core)<br>`invariant_11_set_default_identity_leaves_only_one` (mira-core) |
 | 12 | Drapeaux utilisateur au niveau du message (D-14) | `invariant_12_flags_live_on_message` (mira-core)<br>`invariant_12_mark_read_applies_to_message_once` (mira-core) |
 | 13 | Fil dérivé, recalculable (D-15) | `invariant_13_threads_recomputed_identically` (mira-core) |
 | 14 | Source brute conservée, analyse en cache (D-16) | `invariant_14_raw_source_roundtrip_compressed` (mira-core) |
-| 15 | Aucun secret en base, journaux, événements, API (P9) | `invariant_15_no_secret_in_database` (mira-core) |
+| 15 | Aucun secret en base, journaux, événements, API (P9) | `invariant_15_no_oauth_token_in_responses_events_or_database` (mira-core)<br>`invariant_15_no_secret_in_database` (mira-core)<br>`invariant_15_no_secret_in_responses_events_or_database` (mira-core) |
 | 16 | Miroir jetable sans perte (8.1) | `invariant_16_discard_mirror_keeps_config_and_intentions` (mira-core) |
 | 17 | Action écrite avant d'être tentée | `invariant_17_action_persisted_before_attempt` (mira-core) |
 | 18 | Action rejouée : pas deux effets | `invariant_18_enqueue_is_idempotent` (mira-core) |
@@ -38,9 +38,9 @@
 
 | Scénario | Description | Test(s) |
 |---|---|---|
-| S1 | Ajouter un compte Gmail par OAuth | manquant |
-| S2 | Ajouter un compte Yahoo (mot de passe d'application) | manquant |
-| S3 | Ajouter un compte « Autre » | manquant |
+| S1 | Ajouter un compte Gmail par OAuth | `scenario_s1_add_oauth_account` (mira-core) |
+| S2 | Ajouter un compte Yahoo (mot de passe d'application) | `scenario_s2_add_app_password_account` (mira-core) |
+| S3 | Ajouter un compte « Autre » | `scenario_s3_add_other_account_with_manual_servers` (mira-core) |
 | S4 | Première synchronisation | manquant |
 | S5 | Nouveau message en temps réel | manquant |
 | S6 | Lire un message hors ligne | `scenario_s6_read_offline_body_present_or_unavailable` (mira-core) |
@@ -51,4 +51,4 @@
 | S11 | Message Gmail à plusieurs libellés | `scenario_s11_unified_view_lists_each_message_once` (mira-core) |
 | S12 | Remonter au-delà de 90 jours, chercher | manquant |
 | S13 | Le serveur renumérote une boîte | manquant |
-| S14 | Supprimer un compte | manquant |
+| S14 | Supprimer un compte | `scenario_s14_delete_account_keeps_others_and_server` (mira-core) |

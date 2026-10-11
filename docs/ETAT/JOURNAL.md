@@ -21,3 +21,4 @@
 - **08:47** — Vague de reprise lancée : J5b (orchestrateur de synchro), J7b (actions locales + brouillons), J8a (comptes, identités, authentification de la façade, S1/S2/S3/S14).
 - **~09:00 → 11:40** — Troisième limite d'usage de l'API : les agents J5b, J7b, J8a se sont arrêtés (J5b : 2 commits, J8a : 1 commit, J7b : non commité).
 - **12:03** — Reprise des trois agents depuis leur historique.
+- **12:25** — Disque /home à 99 % : worktree J8a supprimé, `target/` nettoyé, profils allégés (AG-15) → 69 Go libres. J8a fusionné (comptes, identités, OAuth dans la façade ; S1, S2, S3, S14, invariants 11 et 15). CI vert : 518 tests.

@@ -1,10 +1,17 @@
 //! Support des tests de la façade : configuration avec faux trousseau, horloge et identifiants.
 #![allow(dead_code)]
 
+pub mod files;
+pub mod fixture;
+pub mod queries;
+pub mod requests;
+
 use std::path::Path;
 use std::sync::Arc;
 
+use mira_core::accounts::NetworkPolicy;
 use mira_core::api::{Engine, EngineConfig};
+use mira_core::auth::OAuthClientConfig;
 use mira_core::ports::{ManualClock, MemorySecretStore, SequentialIds};
 use mira_core::profile::ProfileEnvironment;
 use mira_core::registry::ProviderRegistry;
@@ -15,6 +22,11 @@ mod provider_fakes;
 
 /// Configuration d'un moteur de test dont les données vivent sous `home`
 pub fn config(home: &Path) -> EngineConfig {
+    config_with_secrets(home, Arc::new(MemorySecretStore::new()))
+}
+
+/// Configuration d'un moteur de test avec un trousseau que le test garde pour l'inspecter
+pub fn config_with_secrets(home: &Path, secrets: Arc<MemorySecretStore>) -> EngineConfig {
     EngineConfig {
         profile: ProfileId::from_raw("default"),
         environment: ProfileEnvironment {
@@ -23,9 +35,11 @@ pub fn config(home: &Path) -> EngineConfig {
             home: None,
         },
         registry: registry(),
-        secrets: Arc::new(MemorySecretStore::new()),
+        secrets,
         clock: Arc::new(ManualClock::new(Timestamp::from_millis(1_700_000_000_000))),
         ids: Arc::new(SequentialIds::new()),
+        oauth: OAuthClientConfig::default(),
+        network: NetworkPolicy::default(),
     }
 }
 

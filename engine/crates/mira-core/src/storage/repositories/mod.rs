@@ -1,5 +1,6 @@
 //! Dépôts : méthodes de `Tx` regroupées par entité (configuration, miroir, intentions, événements).
 
+pub mod account_idempotency;
 pub mod accounts;
 pub mod actions;
 pub mod allowances;

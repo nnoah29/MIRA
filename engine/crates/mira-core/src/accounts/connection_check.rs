@@ -1,0 +1,29 @@
+//! Test de connexion IMAP réel d'un compte : connexion, authentification, fermeture propre.
+
+use mira_vocabulary::{AuthMethodKind, MiraError, ServerSettings};
+
+use crate::auth::LoginSecret;
+use crate::imap::{ImapClient, ImapCredential, ImapLogin};
+
+/// Se connecte au serveur IMAP avec ces identifiants puis ferme la session
+pub async fn check_imap_login(
+    servers: &ServerSettings,
+    login: &ImapLogin,
+) -> Result<(), MiraError> {
+    let client = ImapClient::connect(&servers.imap, login).await?;
+    client.logout().await
+}
+
+/// Convertit le secret relu du coffre en identifiants IMAP (XOAUTH2 pour OAuth2)
+pub fn imap_login_of(secret: LoginSecret) -> ImapLogin {
+    let credential = match secret.method {
+        AuthMethodKind::OAuth2 => ImapCredential::XOAuth2(secret.secret),
+        AuthMethodKind::AppPassword | AuthMethodKind::Password => {
+            ImapCredential::Password(secret.secret)
+        }
+    };
+    ImapLogin {
+        user: secret.user,
+        credential,
+    }
+}

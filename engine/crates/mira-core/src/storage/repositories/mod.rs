@@ -18,3 +18,4 @@ pub mod search;
 pub mod server_ids;
 pub mod thread_links;
 pub mod threads;
+pub mod views;

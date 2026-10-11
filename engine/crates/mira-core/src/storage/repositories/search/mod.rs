@@ -2,3 +2,5 @@
 
 mod index;
 mod query;
+
+pub(crate) use query::escape_match_query;

@@ -8,7 +8,9 @@ Vérifie, à partir de `cargo metadata` et des sources :
   A4  mira-assembly ne dépend pas du CLI ; mira-cli ne dépend ni du cœur ni d'un provider directement ;
   A5  mira-testkit ne dépend d'aucun crate mira-* (boîte noire) ;
   A6  aucun nom de provider ni de fournisseur dans les sources de mira-core (invariant 1) ;
-  A7  aucun chargement dynamique (libloading, dlopen) dans le workspace (D-02).
+  A7  aucun chargement dynamique (libloading, dlopen) dans le workspace (D-02) ;
+  A8  chaque bibliothèque externe n'est utilisée que dans son module d'encapsulation du cœur (invariant 5, annexe H) ;
+  A9  aucune notion d'écran ou de widget dans le cœur (invariant 4).
 
 Usage : check-architecture <dossier-du-workspace>
 """
@@ -21,6 +23,19 @@ import sys
 VOCAB_ALLOWED = {"serde", "thiserror"}
 PROVIDER_NAMES = re.compile(r"gmail|googlemail|google|outlook|hotmail|office365|microsoft|yahoo|ymail|rocketmail|icloud", re.I)
 DYNAMIC_LOADING = {"libloading", "dlopen", "dlopen2", "libc-dlopen"}
+ENCAPSULATED = {
+    "rusqlite": ("storage",),
+    "zstd": ("storage",),
+    "mail_parser": ("mime",),
+    "async_imap": ("imap",),
+    "lettre": ("smtp",),
+    "mail_builder": ("smtp", "send"),
+    "reqwest": ("auth",),
+    "keyring": ("ports",),
+    "ammonia": ("html",),
+    "uuid": ("ports",),
+}
+SCREEN_WORDS = re.compile(r"\b(screen|widget|écran|fenêtre)\b", re.I)
 
 
 def load_metadata(workspace):
@@ -94,13 +109,37 @@ def check_core_sources(workspace):
     return errors
 
 
+def core_module_of(path, core_src):
+    rel = os.path.relpath(path, core_src)
+    return rel.split(os.sep)[0].removesuffix(".rs")
+
+
+def check_encapsulation(workspace):
+    errors = []
+    core_src = os.path.join(workspace, "crates", "mira-core", "src")
+    for root, dirs, files in os.walk(core_src):
+        for f in files:
+            if not f.endswith(".rs"):
+                continue
+            path = os.path.join(root, f)
+            module = core_module_of(path, core_src)
+            text = open(path, encoding="utf-8").read()
+            for crate, allowed in ENCAPSULATED.items():
+                if module not in allowed and re.search(r"\b" + crate + r"::", text):
+                    errors.append(f"A8 {path}: `{crate}` utilisé hors de son module ({', '.join(allowed)})")
+            for no, line in enumerate(text.splitlines(), 1):
+                if SCREEN_WORDS.search(line):
+                    errors.append(f"A9 {path}:{no}: notion d'écran dans le cœur")
+    return errors
+
+
 def main(argv):
     if len(argv) != 2:
         print(__doc__)
         return 2
     workspace = argv[1]
     meta = load_metadata(workspace)
-    errors = check_packages(meta["packages"]) + check_core_sources(workspace)
+    errors = check_packages(meta["packages"]) + check_core_sources(workspace) + check_encapsulation(workspace)
     for e in errors:
         print(e)
     print(f"check-architecture : {len(meta['packages'])} crates, {len(errors)} violation(s)")

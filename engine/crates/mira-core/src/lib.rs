@@ -3,6 +3,7 @@
 
 pub mod capabilities;
 pub mod events;
+pub mod html;
 pub mod mailboxes;
 pub mod operations;
 pub mod ports;

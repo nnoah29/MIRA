@@ -18,3 +18,4 @@
 - **08:22** — J5a fusionné (client IMAP de haut niveau, MIME tolérant). J6 fusionné (lectures, vues standard, recherche filtrée, fils, perf 20 000 messages) ; marqueurs de conflit commités par la branche J6 corrigés ; garde-fou ajouté. CI vert : 478 tests.
 - **08:25 (7 h 16)** — Documents de fin : README, ARCHITECTURE-IMPLEMENTEE, PROPOSITIONS (PR-02 à PR-06), PLAN, TESTS, RAPPORT-FINAL. Arrêt doux.
 - **08:44** — Nouvelle consigne de l'utilisateur : continuer tous les jalons jusqu'à la fin, rigoureusement, sans limite horaire (CLAUDE.md mis à jour). Restes intégrés : déclarations `labels`/`idle` du client IMAP (non compilées jusque-là) + tests IDLE. Worktrees nettoyés. Stash des handlers comptes → branche `feat/E-01-j8-accounts` (commit WIP).
+- **08:47** — Vague de reprise lancée : J5b (orchestrateur de synchro), J7b (actions locales + brouillons), J8a (comptes, identités, authentification de la façade, S1/S2/S3/S14).

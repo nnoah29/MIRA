@@ -1,1 +1,7 @@
-//! Provider generic : profil de données et particularités, sans entrée-sortie (D-05, D-07).
+//! Provider de repli : serveurs devinés d'après le domaine, aucune particularité (6.6, 6.7).
+
+pub mod descriptor;
+pub mod provider;
+pub mod servers;
+
+pub use provider::GenericProvider;

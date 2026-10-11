@@ -767,6 +767,7 @@ dependencies = [
  "mira-provider-gmail",
  "mira-provider-outlook",
  "mira-provider-yahoo",
+ "mira-vocabulary",
 ]
 
 [[package]]

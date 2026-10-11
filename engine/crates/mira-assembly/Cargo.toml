@@ -11,6 +11,7 @@ description = "Point d'assemblage de MIRA : registre, providers et moteur"
 workspace = true
 
 [dependencies]
+mira-vocabulary.workspace = true
 mira-core.workspace = true
 mira-provider-gmail.workspace = true
 mira-provider-outlook.workspace = true

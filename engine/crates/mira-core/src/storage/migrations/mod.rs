@@ -5,7 +5,10 @@ use rusqlite::Connection;
 use super::errors::storage_error;
 use mira_vocabulary::MiraError;
 
-const MIGRATIONS: &[&str] = &[include_str!("v001_initial.sql")];
+const MIGRATIONS: &[&str] = &[
+    include_str!("v001_initial.sql"),
+    include_str!("v002_account_profile_and_default_identity.sql"),
+];
 
 /// Applique, dans une transaction, les migrations pas encore appliquées
 pub(crate) fn apply_migrations(connection: &mut Connection) -> Result<(), MiraError> {

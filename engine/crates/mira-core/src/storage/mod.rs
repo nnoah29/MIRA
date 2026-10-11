@@ -3,7 +3,6 @@
 mod database;
 mod errors;
 mod introspection;
-#[allow(dead_code)]
 mod json_columns;
 mod migrations;
 pub mod repositories;

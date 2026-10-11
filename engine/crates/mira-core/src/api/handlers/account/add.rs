@@ -5,6 +5,7 @@ use mira_vocabulary::{
     Account, AccountId, EmailAddress, ErrorCategory, EventKind, IdempotencyKey, MiraError,
 };
 
+use super::credential_login::{StagedCredential, stage_credential};
 use super::draft_plan::plan_draft;
 use super::register::register_account;
 use crate::api::contract::{AccountDraft, CredentialInput, Response};
@@ -23,19 +24,16 @@ pub(crate) async fn handle_add_account(
         return Ok(Response::Account(existing));
     }
     let plan = plan_draft(engine, &draft, &credential)?;
-    let id = AccountId::from_raw(engine.config.ids.next_id());
-    match register_account(engine, &draft, &plan, &id, credential, &key).await {
-        Ok(account) => {
-            engine.events.emit(EventKind::AccountAdded {
-                account: id.clone(),
-            })?;
-            Ok(Response::Account(account))
-        }
-        Err(error) => {
-            discard_secrets(engine, &id);
-            Err(error)
-        }
+    let staged = stage_credential(engine, &plan, credential)?;
+    let outcome = register_account(engine, &draft, &plan, &staged, &key).await;
+    if let Some(flow) = &staged.flow {
+        engine.oauth_flows.remove(flow);
     }
+    let account = outcome.inspect_err(|_| discard_secrets(engine, &staged))?;
+    engine.events.emit(EventKind::AccountAdded {
+        account: account.id.clone(),
+    })?;
+    Ok(Response::Account(account))
 }
 
 /// Retrouve le compte déjà créé avec cette clé ; une autre adresse est un conflit
@@ -61,7 +59,8 @@ fn find_existing(
 }
 
 /// Supprime les secrets déjà rangés pour un compte qui n'a pas pu être ajouté
-fn discard_secrets(engine: &Engine, id: &AccountId) {
+fn discard_secrets(engine: &Engine, staged: &StagedCredential) {
+    let id: &AccountId = &staged.account;
     if let Err(error) = engine.vault().delete_all(&engine.config.profile, id) {
         tracing::warn!(code = %error.code, "secrets d'un compte refusé non supprimés");
     }

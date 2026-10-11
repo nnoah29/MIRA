@@ -8,7 +8,7 @@ use super::config::EngineConfig;
 use super::contract::{Request, Response};
 use super::router::route;
 use super::startup::{check_client_version, open_profile};
-use crate::auth::CredentialVault;
+use crate::auth::{CredentialVault, OAuthFlows};
 use crate::events::{EventBus, EventSink, EventSubscription};
 use crate::operations::OperationRegistry;
 use crate::profile::{ProfileLock, ProfilePaths};
@@ -22,6 +22,7 @@ pub struct Engine {
     pub(crate) database: Arc<Database>,
     pub(crate) events: EventBus,
     pub(crate) operations: OperationRegistry,
+    pub(crate) oauth_flows: OAuthFlows,
     pub(crate) account_lock: tokio::sync::Mutex<()>,
     _lock: ProfileLock,
 }
@@ -41,6 +42,7 @@ impl Engine {
             database,
             events,
             operations,
+            oauth_flows: OAuthFlows::new(),
             account_lock: tokio::sync::Mutex::new(()),
             _lock: lock,
         })

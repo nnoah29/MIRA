@@ -7,13 +7,14 @@ use crate::api::contract::Response;
 use crate::api::engine::Engine;
 use crate::events::EventSink;
 
-/// Marque le compte en suppression, efface ses secrets puis ses données, et émet `AccountDeleted`
+/// Marque le compte en suppression, abandonne ses flux OAuth, efface ses secrets puis ses données, et émet `AccountDeleted`
 pub(crate) fn handle_delete_account(
     engine: &Engine,
     id: &AccountId,
 ) -> Result<Response, MiraError> {
     let account = engine.database.read(|tx| require_account(tx, id))?;
     engine.database.write(|tx| tx.mark_account_deleting(id))?;
+    engine.oauth_flows.discard_account(id);
     engine.vault().delete_all(&account.profile, id)?;
     engine.database.write(|tx| tx.delete_account(id))?;
     engine.events.emit(EventKind::AccountDeleted {

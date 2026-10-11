@@ -3,6 +3,9 @@
 
 pub mod files;
 pub mod fixture;
+pub mod oauth;
+pub mod oauth_provider;
+pub mod oauth_requests;
 pub mod queries;
 pub mod requests;
 
@@ -50,5 +53,7 @@ pub fn open(home: &Path) -> Engine {
 
 /// Registre de faux providers (aucun nom de fournisseur réel dans le cœur)
 fn registry() -> ProviderRegistry {
-    provider_fakes::registries::standard_registry()
+    let mut registry = provider_fakes::registries::standard_registry();
+    registry.register(Arc::new(oauth_provider::FakeOAuthProvider));
+    registry
 }

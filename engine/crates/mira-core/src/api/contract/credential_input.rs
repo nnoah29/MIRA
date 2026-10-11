@@ -11,6 +11,10 @@ use super::secret_input::SecretInput;
 pub enum CredentialInput {
     Password(SecretInput),
     AppPassword(SecretInput),
+    #[serde(rename = "oauth_flow")]
+    OAuthFlow {
+        flow: String,
+    },
 }
 
 impl CredentialInput {
@@ -19,6 +23,7 @@ impl CredentialInput {
         match self {
             Self::Password(_) => AuthMethodKind::Password,
             Self::AppPassword(_) => AuthMethodKind::AppPassword,
+            Self::OAuthFlow { .. } => AuthMethodKind::OAuth2,
         }
     }
 }

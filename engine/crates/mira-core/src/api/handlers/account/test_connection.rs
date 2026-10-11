@@ -2,7 +2,7 @@
 
 use mira_vocabulary::MiraError;
 
-use super::credential_login::{password_login, secret_value_of};
+use super::credential_login::test_credential;
 use super::draft_plan::plan_draft;
 use crate::accounts::check_imap_login;
 use crate::api::contract::{AccountDraft, CredentialInput, Response};
@@ -15,7 +15,7 @@ pub(crate) async fn handle_test_connection(
     credential: CredentialInput,
 ) -> Result<Response, MiraError> {
     let plan = plan_draft(engine, &draft, &credential)?;
-    let login = password_login(&plan.address, secret_value_of(credential));
+    let login = test_credential(engine, &plan, credential)?;
     check_imap_login(&plan.servers.connect, &login).await?;
     Ok(Response::Done)
 }

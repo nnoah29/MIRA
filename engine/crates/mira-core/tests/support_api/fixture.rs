@@ -2,10 +2,11 @@
 
 use std::sync::Arc;
 
-use mira_core::api::Engine;
+use mira_core::api::{Engine, EngineConfig};
 use mira_core::ports::{MemorySecretStore, SecretStore};
 use mira_testkit::Credentials;
 use mira_testkit::imap::{CapabilitySet, FakeImapServer, FakeMailStore};
+use mira_testkit::oauth::FakeOAuthServer;
 use mira_vocabulary::{
     AccountId, AuthMethodKind, CONTRACT_VERSION, ProfileId, SecretKind, SecretRef, Security,
     ServerEndpoint, ServerSettings,
@@ -27,6 +28,7 @@ pub struct Fixture {
     pub secrets: Arc<MemorySecretStore>,
     pub imap: FakeImapServer,
     pub store: FakeMailStore,
+    pub oauth: FakeOAuthServer,
     pub credentials: Credentials,
 }
 
@@ -64,6 +66,17 @@ pub fn local_servers(imap_port: u16) -> ServerSettings {
     }
 }
 
+/// Redirige les domaines de test vers le faux serveur IMAP
+fn redirect_domains(config: &mut EngineConfig, imap_port: u16) {
+    for domain in ["folders.test", "labels.test", "oauth.test"] {
+        let servers = local_servers(imap_port);
+        config
+            .network
+            .server_overrides
+            .insert(domain.to_string(), servers);
+    }
+}
+
 /// Démarre le faux serveur, déclare ses utilisateurs et ouvre un moteur qui le vise
 pub async fn start() -> Fixture {
     let store = FakeMailStore::new();
@@ -73,16 +86,12 @@ pub async fn start() -> Fixture {
     let imap = FakeImapServer::start(store.clone(), credentials.clone(), CapabilitySet::full())
         .await
         .unwrap();
+    let oauth = FakeOAuthServer::start(credentials.clone()).await.unwrap();
     let home = tempfile::tempdir().unwrap();
     let secrets = Arc::new(MemorySecretStore::new());
     let mut config = config_with_secrets(home.path(), Arc::clone(&secrets));
-    for domain in ["folders.test", "labels.test"] {
-        let servers = local_servers(imap.port());
-        config
-            .network
-            .server_overrides
-            .insert(domain.to_string(), servers);
-    }
+    redirect_domains(&mut config, imap.port());
+    super::oauth::point_oauth_at(&mut config, &oauth);
     let engine = Engine::open(config, CONTRACT_VERSION).unwrap();
     Fixture {
         home,
@@ -90,6 +99,7 @@ pub async fn start() -> Fixture {
         secrets,
         imap,
         store,
+        oauth,
         credentials,
     }
 }

@@ -1,31 +1,26 @@
-//! Enregistrement d'un compte validé : secret, test de connexion, puis compte et identité en une transaction.
+//! Enregistrement d'un compte validé : test de connexion, puis compte et identité en une transaction.
 
-use mira_vocabulary::{Account, AccountId, IdempotencyKey, IdentityId, MiraError};
+use mira_vocabulary::{Account, IdempotencyKey, IdentityId, MiraError};
 
-use super::credential_login::{password_login, secret_value_of};
+use super::credential_login::StagedCredential;
 use super::draft_plan::DraftPlan;
 use crate::accounts::{NewAccountParts, build_account, build_default_identity, check_imap_login};
-use crate::api::contract::{AccountDraft, CredentialInput};
+use crate::api::contract::AccountDraft;
 use crate::api::engine::Engine;
 
-/// Range le secret, teste la connexion, puis enregistre le compte et son identité par défaut
+/// Teste la connexion avec les identifiants rangés, puis enregistre le compte et son identité par défaut
 pub(super) async fn register_account(
     engine: &Engine,
     draft: &AccountDraft,
     plan: &DraftPlan,
-    id: &AccountId,
-    credential: CredentialInput,
+    staged: &StagedCredential,
     key: &IdempotencyKey,
 ) -> Result<Account, MiraError> {
-    let secret = secret_value_of(credential);
-    let profile = &engine.config.profile;
-    engine.vault().store_password(profile, id, &secret)?;
-    let login = password_login(&plan.address, secret);
-    check_imap_login(&plan.servers.connect, &login).await?;
+    check_imap_login(&plan.servers.connect, &staged.login).await?;
     let parts = NewAccountParts {
-        id: id.clone(),
+        id: staged.account.clone(),
         identity_id: IdentityId::from_raw(engine.config.ids.next_id()),
-        profile: profile.clone(),
+        profile: engine.config.profile.clone(),
         address: plan.address.clone(),
         display_name: draft.display_name.clone(),
         provider: plan.provider.descriptor().id,

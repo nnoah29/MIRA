@@ -1,5 +1,6 @@
 //! Flux OAuth2 « code d'autorisation + PKCE » avec redirection en boucle locale (15.2).
 
+mod authorize;
 mod callback;
 mod complete;
 mod pending;
@@ -8,6 +9,7 @@ mod phase;
 mod redirect;
 mod start;
 
+pub use authorize::authorize_until_cancelled;
 pub use callback::AuthorizationCode;
 pub use complete::complete_flow;
 pub use pending::PendingFlow;

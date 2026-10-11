@@ -36,6 +36,13 @@ pub struct AccountPreparation {
     pub servers: ServerSettings,
 }
 
+/// Début d'un flux OAuth : identifiant du flux et adresse à ouvrir dans le navigateur.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OAuthStart {
+    pub flow: String,
+    pub authorize_url: String,
+}
+
 /// Toute réponse du moteur.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "snake_case")]
@@ -50,6 +57,8 @@ pub enum Response {
     Account(Account),
     Identities(Vec<Identity>),
     Identity(Identity),
+    #[serde(rename = "oauth_started")]
+    OAuthStarted(OAuthStart),
     Operation(OperationInfo),
     Events(Vec<Event>),
 }

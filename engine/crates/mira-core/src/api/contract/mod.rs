@@ -13,5 +13,7 @@ pub use auth_requests::AuthRequest;
 pub use credential_input::CredentialInput;
 pub use identity_requests::{IdentityRequest, NewIdentity};
 pub use request::{EngineRequest, EventRequest, OperationRequest, ProviderRequest, Request};
-pub use response::{AccountPreparation, AccountStatus, ContractInfo, EngineStatus, Response};
+pub use response::{
+    AccountPreparation, AccountStatus, ContractInfo, EngineStatus, OAuthStart, Response,
+};
 pub use secret_input::SecretInput;

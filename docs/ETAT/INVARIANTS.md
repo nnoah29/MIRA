@@ -33,7 +33,7 @@
 | 29 | Toute liste paginée par curseur | `invariant_29_list_is_cursor_paginated` (mira-core) |
 | 30 | Identifiants exposés opaques | manquant |
 | 31 | Erreur : catégorie, code stable, réessayable | `invariant_31_error_codes_are_unique_and_prefixed_by_category` (mira-vocabulary) |
-| 32 | Événements numérotés, sans secret ni contenu | manquant |
+| 32 | Événements numérotés, sans secret ni contenu | `invariant_32_events_are_numbered_and_persisted` (mira-core)<br>`invariant_32_subscription_resumes_after_seen_number_then_follows_live` (mira-core) |
 | 33 | Version du contrat vérifiée à l'ouverture | `invariant_33_contract_version_compatibility` (mira-vocabulary) |
 
 | Scénario | Description | Test(s) |

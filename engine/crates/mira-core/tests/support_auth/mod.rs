@@ -4,6 +4,7 @@
 pub mod browser;
 pub mod canned;
 pub mod flow;
+pub mod vault;
 
 use std::time::Duration;
 

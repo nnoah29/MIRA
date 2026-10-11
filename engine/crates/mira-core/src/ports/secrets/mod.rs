@@ -2,6 +2,7 @@
 
 mod keyring_store;
 mod memory;
+mod memory_inspect;
 mod store;
 mod value;
 

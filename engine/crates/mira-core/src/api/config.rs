@@ -4,6 +4,8 @@ use std::sync::Arc;
 
 use mira_vocabulary::ProfileId;
 
+use crate::accounts::NetworkPolicy;
+use crate::auth::OAuthClientConfig;
 use crate::ports::{Clock, IdGenerator, SecretStore};
 use crate::profile::ProfileEnvironment;
 use crate::registry::ProviderRegistry;
@@ -17,4 +19,6 @@ pub struct EngineConfig {
     pub secrets: Arc<dyn SecretStore>,
     pub clock: Arc<dyn Clock>,
     pub ids: Arc<dyn IdGenerator>,
+    pub oauth: OAuthClientConfig,
+    pub network: NetworkPolicy,
 }

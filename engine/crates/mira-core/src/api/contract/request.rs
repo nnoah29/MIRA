@@ -3,12 +3,19 @@
 use mira_vocabulary::{EventFilter, OperationId};
 use serde::{Deserialize, Serialize};
 
+use super::account_requests::AccountRequest;
+use super::auth_requests::AuthRequest;
+use super::identity_requests::IdentityRequest;
+
 /// Toute requête qu'un client peut adresser au moteur.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "domain", content = "request", rename_all = "snake_case")]
 pub enum Request {
     Engine(EngineRequest),
     Provider(ProviderRequest),
+    Account(AccountRequest),
+    Identity(IdentityRequest),
+    Auth(AuthRequest),
     Operation(OperationRequest),
     Event(EventRequest),
 }

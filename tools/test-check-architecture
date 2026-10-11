@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Auto-test de tools/check-architecture : le workspace réel passe, une copie sabotée échoue.
+set -uo pipefail
+root="$(cd "$(dirname "$0")/.." && pwd)"
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+fail=0
+"$root/tools/check-architecture" "$root/engine" >/dev/null || { echo "ÉCHEC : le workspace réel devrait passer"; fail=1; }
+sabotage() {
+    rm -rf "$tmp/engine" && mkdir -p "$tmp/engine"
+    (cd "$root/engine" && tar --exclude=./target -cf - .) | (cd "$tmp/engine" && tar -xf -)
+}
+expect() {
+    local rule="$1" out
+    out=$("$root/tools/check-architecture" "$tmp/engine" 2>&1)
+    if [[ $? -eq 0 || "$out" != *"$rule"* ]]; then echo "ÉCHEC : la copie sabotée devrait violer $rule"; echo "$out"; fail=1; fi
+}
+sabotage; echo 'mira-core.workspace = true' >> "$tmp/engine/crates/mira-provider-yahoo/Cargo.toml"; expect A2
+sabotage; echo 'mira-provider-gmail.workspace = true' >> "$tmp/engine/crates/mira-core/Cargo.toml"; expect A3
+sabotage; echo 'mira-core.workspace = true' >> "$tmp/engine/crates/mira-cli/Cargo.toml"; expect A4
+sabotage; echo 'mira-core.workspace = true' >> "$tmp/engine/crates/mira-vocabulary/Cargo.toml"; expect A1
+sabotage; echo '//! Cas Gmail' >> "$tmp/engine/crates/mira-core/src/lib.rs"; expect A6
+[[ $fail -eq 0 ]] && echo "test-check-architecture : OK"
+exit $fail

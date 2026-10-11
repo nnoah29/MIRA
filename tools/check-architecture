@@ -21,7 +21,7 @@ import subprocess
 import sys
 
 VOCAB_ALLOWED = {"serde", "thiserror"}
-PROVIDER_NAMES = re.compile(r"gmail|googlemail|google|outlook|hotmail|office365|microsoft|yahoo|ymail|rocketmail|icloud", re.I)
+PROVIDER_NAMES = re.compile(r"gmail|googlemail|google|outlook|hotmail|office365|microsoft|yahoo|(?<![a-z])ymail|rocketmail|icloud", re.I)
 DYNAMIC_LOADING = {"libloading", "dlopen", "dlopen2", "libc-dlopen"}
 ENCAPSULATED = {
     "rusqlite": ("storage",),

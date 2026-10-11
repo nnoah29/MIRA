@@ -52,3 +52,8 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - `EventKind::category()` et `account()` en `#[rustfmt::skip]` pour tenir en 30 lignes (match exhaustif de 44 variantes).
 - `EventFilter` : un filtre par compte exclut les événements sans compte ; `after` strict.
 - **Temporaire** : `storage::json_columns` porte `#[allow(dead_code)]` jusqu'à son premier usage par les dépôts J2 (à retirer à la fusion de J2).
+
+## AG-09 — Comportements des faux SMTP et OAuth (rapport J4 partie B)
+- SMTP : `MAIL FROM` avant `AUTH` → `530` (comme un serveur de soumission réel) ; `fail_next` est une file FIFO ; une panne en fin de DATA n'enregistre pas le message ; `drop_after_data_once` enregistre puis coupe sans répondre.
+- OAuth : `approve`/`deny` refusent toute requête invalide et tout `redirect_uri` qui n'est pas en boucle locale ; code à usage unique consommé même si le vérificateur est faux ; le rafraîchissement ne renouvelle pas le jeton de rafraîchissement ; jetons générés par compteur, jamais journalisés.
+- Modules `oauth::pkce` et `oauth::form` publics (fonctions pures testées).

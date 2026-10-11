@@ -26,16 +26,16 @@ Les jalons suivent le §5 du brief et le chapitre 17 de la référence (phases 1
 - [x] Fichiers d'état initialisés : HORLOGE, JOURNAL, PLAN, BLOCAGES, TESTS, INVARIANTS ; `docs/DECISIONS-AGENT.md`, `PROPOSITIONS-REFERENCE.md`, `SOURCES.md`.
 - **Acceptation** : `./ci.sh` vert ; un fichier de test volontairement non conforme fait échouer `check-norms` ; une dépendance interdite ajoutée à un provider fait échouer `check-architecture`.
 
-## J1 — Vocabulaire et domaine — EN COURS
+## J1 — Vocabulaire et domaine — FAIT
 
-- [ ] Identifiants opaques typés (profil, compte, identité, boîte, message, pièce jointe, fil, brouillon, action, opération, événement), UUID v7 sous forme de chaîne (invariant 30).
-- [ ] Entités D-19 et états (compte, message, action, brouillon) ; rôles de boîte ; drapeaux au niveau du message (D-14).
-- [ ] Erreur du contrat : catégorie, code stable, message, réessayable, action suggérée, contexte (invariant 31, §12.6).
-- [ ] Événements numérotés, catégories du §12.5, sans secret ni contenu (invariant 32) ; version du contrat (§12.9).
-- [ ] Interface provider (§6.3) : gestion d'une adresse, serveurs, méthodes d'authentification, rôle d'un dossier, limites, exceptions, traductions (identifiant stable, libellés, indice de fil, copie automatique dans Envoyés).
+- [x] Identifiants opaques typés (profil, compte, identité, boîte, message, pièce jointe, fil, brouillon, action, opération, événement), UUID v7 sous forme de chaîne (invariant 30).
+- [x] Entités D-19 et états (compte, message, action, brouillon) ; rôles de boîte ; drapeaux au niveau du message (D-14).
+- [x] Erreur du contrat : catégorie, code stable, message, réessayable, action suggérée, contexte (invariant 31, §12.6).
+- [x] Événements numérotés, catégories du §12.5, sans secret ni contenu (invariant 32) ; version du contrat (§12.9).
+- [x] Interface provider (§6.3) : gestion d'une adresse, serveurs, méthodes d'authentification, rôle d'un dossier, limites, exceptions, traductions (identifiant stable, libellés, indice de fil, copie automatique dans Envoyés).
 - **Acceptation** : tests unitaires de sérialisation JSON stable, codes d'erreur uniques, ordre des événements ; `check-architecture` vert.
 
-## J2 — Stockage — À FAIRE
+## J2 — Stockage — EN COURS
 
 - [ ] Une base SQLite par profil, migrations versionnées ; schéma en trois familles (D-18) ; table de correspondance des identifiants serveur (D-13).
 - [ ] Source brute compressée (zstd) et cache d'analyse reconstruisible (D-16, invariant 14) ; FTS5 sur objet, expéditeurs, destinataires, texte.
@@ -43,7 +43,7 @@ Les jalons suivent le §5 du brief et le chapitre 17 de la référence (phases 1
 - [ ] Horloge et générateur d'identifiants injectables (annexe H).
 - **Acceptation** : invariants 7–12, 14, 15 (aucun secret en base), 16 (jeter le miroir conserve configuration et intentions), 29 (pagination par curseur) testés ; second verrou refusé.
 
-## J3 — Providers et registre — À FAIRE
+## J3 — Providers et registre — EN COURS
 
 - [ ] 4 crates providers purs, tests par tables (§6.11) : reconnaissance d'adresses (pièges : majuscules, sous-domaines, adresses invalides), serveurs, rôles de dossiers, traductions, limites.
 - [ ] Registre dans le cœur : enregistrement, recherche par identifiant, détection avec repli sur generic (§6.6) ; provider introuvable → compte en erreur, données conservées (§7.8).

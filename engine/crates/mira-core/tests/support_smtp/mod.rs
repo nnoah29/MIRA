@@ -1,6 +1,8 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic, dead_code)]
 //! Fabriques partagées par les tests SMTP : message à composer et lecture du résultat.
 
+pub mod server;
+
 use std::time::Duration;
 
 use mira_core::smtp::compose::{BuiltMessage, ComposeInput};

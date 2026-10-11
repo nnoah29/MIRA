@@ -43,12 +43,12 @@ Les jalons suivent le §5 du brief et le chapitre 17 de la référence (phases 1
 - [ ] Horloge et générateur d'identifiants injectables (annexe H).
 - **Acceptation** : invariants 7–12, 14, 15 (aucun secret en base), 16 (jeter le miroir conserve configuration et intentions), 29 (pagination par curseur) testés ; second verrou refusé.
 
-## J3 — Providers et registre — EN COURS
+## J3 — Providers et registre — FAIT (jalon/J3)
 
-- [ ] 4 crates providers purs, tests par tables (§6.11) : reconnaissance d'adresses (pièges : majuscules, sous-domaines, adresses invalides), serveurs, rôles de dossiers, traductions, limites.
-- [ ] Registre dans le cœur : enregistrement, recherche par identifiant, détection avec repli sur generic (§6.6) ; provider introuvable → compte en erreur, données conservées (§7.8).
-- [ ] Capacités effectives = annonce du serveur moins les exceptions du provider (D-08).
-- [ ] Assemblage : une ligne par provider.
+- [x] 4 crates providers purs, tests par tables (§6.11) : reconnaissance d'adresses (pièges : majuscules, sous-domaines, adresses invalides), serveurs, rôles de dossiers, traductions, limites.
+- [x] Registre dans le cœur : enregistrement, recherche par identifiant, détection avec repli sur generic (§6.6) ; provider introuvable → compte en erreur, données conservées (§7.8).
+- [x] Capacités effectives = annonce du serveur moins les exceptions du provider (D-08).
+- [x] Assemblage : une ligne par provider.
 - **Acceptation** : `mira provider detect <adresse>` correct ; invariants 1–3 testés ; le cœur est testé avec un faux provider défini dans ses tests.
 
 ## J4 — Testkit protocoles — FAIT

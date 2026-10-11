@@ -4,67 +4,67 @@ use super::Id;
 
 /// Marqueur des identifiants de profil.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct ProfileKind;
+pub struct ProfileMarker;
 
 /// Marqueur des identifiants de compte.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct AccountKind;
+pub struct AccountMarker;
 
 /// Marqueur des identifiants d'identité d'envoi.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct IdentityKind;
+pub struct IdentityMarker;
 
 /// Marqueur des identifiants de boîte.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct MailboxKind;
+pub struct MailboxMarker;
 
 /// Marqueur des identifiants de message.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct MessageKind;
+pub struct MessageMarker;
 
 /// Marqueur des identifiants de pièce jointe.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct AttachmentKind;
+pub struct AttachmentMarker;
 
 /// Marqueur des identifiants de fil.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct ThreadKind;
+pub struct ThreadMarker;
 
 /// Marqueur des identifiants de brouillon.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct DraftKind;
+pub struct DraftMarker;
 
 /// Marqueur des identifiants d'action en file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct ActionKind;
+pub struct ActionMarker;
 
 /// Marqueur des identifiants d'opération longue.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct OperationKind;
+pub struct OperationMarker;
 
 /// Marqueur des identifiants de vue.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct ViewKind;
+pub struct ViewMarker;
 
 /// Identifiant de profil.
-pub type ProfileId = Id<ProfileKind>;
+pub type ProfileId = Id<ProfileMarker>;
 /// Identifiant de compte.
-pub type AccountId = Id<AccountKind>;
+pub type AccountId = Id<AccountMarker>;
 /// Identifiant d'identité d'envoi.
-pub type IdentityId = Id<IdentityKind>;
+pub type IdentityId = Id<IdentityMarker>;
 /// Identifiant de boîte.
-pub type MailboxId = Id<MailboxKind>;
+pub type MailboxId = Id<MailboxMarker>;
 /// Identifiant de message.
-pub type MessageId = Id<MessageKind>;
+pub type MessageId = Id<MessageMarker>;
 /// Identifiant de pièce jointe.
-pub type AttachmentId = Id<AttachmentKind>;
+pub type AttachmentId = Id<AttachmentMarker>;
 /// Identifiant de fil.
-pub type ThreadId = Id<ThreadKind>;
+pub type ThreadId = Id<ThreadMarker>;
 /// Identifiant de brouillon.
-pub type DraftId = Id<DraftKind>;
+pub type DraftId = Id<DraftMarker>;
 /// Identifiant d'action en file.
-pub type ActionId = Id<ActionKind>;
+pub type ActionId = Id<ActionMarker>;
 /// Identifiant d'opération longue.
-pub type OperationId = Id<OperationKind>;
+pub type OperationId = Id<OperationMarker>;
 /// Identifiant de vue.
-pub type ViewId = Id<ViewKind>;
+pub type ViewId = Id<ViewMarker>;

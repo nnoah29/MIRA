@@ -2,25 +2,25 @@
 
 | # | Invariant | Test(s) |
 |---|---|---|
-| 1 | Le cœur ne nomme aucun provider (D-06) | manquant |
-| 2 | Un provider ne dépend que du vocabulaire (D-33) | manquant |
-| 3 | Provider sans I/O ni état (D-07) | manquant |
-| 4 | Aucune notion d'écran (P1) | manquant |
-| 5 | Bibliothèque externe via son module d'encapsulation (D-34) | manquant |
+| 1 | Le cœur ne nomme aucun provider (D-06) | garde-fou `tools/check-architecture` A3 + A6 (auto-test `tools/test-check-architecture`) |
+| 2 | Un provider ne dépend que du vocabulaire (D-33) | garde-fou `tools/check-architecture` A2 (auto-test) |
+| 3 | Provider sans I/O ni état (D-07) | garde-fou `tools/check-architecture` A2 (aucune dépendance d'I/O possible) + providers en structures unitaires |
+| 4 | Aucune notion d'écran (P1) | garde-fou `tools/check-architecture` A9 |
+| 5 | Bibliothèque externe via son module d'encapsulation (D-34) | garde-fou `tools/check-architecture` A8 (auto-test) |
 | 6 | Tout ce que fait l'interface, le CLI le fait (P1) | manquant |
-| 7 | Identifiant interne unique et stable (D-13) | manquant |
-| 8 | Message : au moins une apparition | manquant |
-| 9 | Apparition → boîte du même compte | manquant |
+| 7 | Identifiant interne unique et stable (D-13) | `invariant_7_internal_id_survives_uid_change` (mira-core) |
+| 8 | Message : au moins une apparition | `invariant_8_message_without_appearance_is_purged` (mira-core) |
+| 9 | Apparition → boîte du même compte | `invariant_9_appearance_mailbox_same_account` (mira-core) |
 | 10 | Message → un compte ; compte → un profil | manquant |
-| 11 | Compte : au moins une identité | manquant |
-| 12 | Drapeaux utilisateur au niveau du message (D-14) | manquant |
+| 11 | Compte : au moins une identité | `invariant_11_set_default_identity_leaves_only_one` (mira-core) |
+| 12 | Drapeaux utilisateur au niveau du message (D-14) | `invariant_12_flags_live_on_message` (mira-core) |
 | 13 | Fil dérivé, recalculable (D-15) | manquant |
-| 14 | Source brute conservée, analyse en cache (D-16) | manquant |
-| 15 | Aucun secret en base, journaux, événements, API (P9) | manquant |
-| 16 | Miroir jetable sans perte (8.1) | manquant |
-| 17 | Action écrite avant d'être tentée | manquant |
-| 18 | Action rejouée : pas deux effets | manquant |
-| 19 | Actions d'un compte rejouées dans l'ordre | manquant |
+| 14 | Source brute conservée, analyse en cache (D-16) | `invariant_14_raw_source_roundtrip_compressed` (mira-core) |
+| 15 | Aucun secret en base, journaux, événements, API (P9) | `invariant_15_no_secret_in_database` (mira-core) |
+| 16 | Miroir jetable sans perte (8.1) | `invariant_16_discard_mirror_keeps_config_and_intentions` (mira-core) |
+| 17 | Action écrite avant d'être tentée | `invariant_17_action_persisted_before_attempt` (mira-core) |
+| 18 | Action rejouée : pas deux effets | `invariant_18_enqueue_is_idempotent` (mira-core) |
+| 19 | Actions d'un compte rejouées dans l'ordre | `invariant_19_actions_replayed_in_order` (mira-core) |
 | 20 | Repère avancé après écriture des données | manquant |
 | 21 | Le serveur gagne ; actions rejouées (D-23) | manquant |
 | 22 | Erreur définitive : effet local annulé, utilisateur informé | manquant |
@@ -30,11 +30,11 @@
 | 26 | Jamais deux envois sans décision de l'utilisateur | manquant |
 | 27 | Aucune lecture ordinaire par le réseau (P5) | manquant |
 | 28 | Toute écriture rend la main sans réseau | manquant |
-| 29 | Toute liste paginée par curseur | manquant |
+| 29 | Toute liste paginée par curseur | `invariant_29_list_is_cursor_paginated` (mira-core) |
 | 30 | Identifiants exposés opaques | manquant |
-| 31 | Erreur : catégorie, code stable, réessayable | manquant |
+| 31 | Erreur : catégorie, code stable, réessayable | `invariant_31_error_codes_are_unique_and_prefixed_by_category` (mira-vocabulary) |
 | 32 | Événements numérotés, sans secret ni contenu | manquant |
-| 33 | Version du contrat vérifiée à l'ouverture | manquant |
+| 33 | Version du contrat vérifiée à l'ouverture | `invariant_33_contract_version_compatibility` (mira-vocabulary) |
 
 | Scénario | Description | Test(s) |
 |---|---|---|

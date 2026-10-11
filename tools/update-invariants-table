@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+"""Met à jour docs/ETAT/INVARIANTS.md : associe à chaque invariant et scénario les tests nommés `invariant_<n>_…` ou `scenario_s<n>_…`."""
+import os
+import re
+import sys
+
+root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+found = {}
+for base, dirs, files in os.walk(os.path.join(root, "engine", "crates")):
+    dirs[:] = [d for d in dirs if d != "target"]
+    for name in files:
+        if not name.endswith(".rs"):
+            continue
+        path = os.path.join(base, name)
+        rel = os.path.relpath(path, os.path.join(root, "engine", "crates"))
+        for match in re.finditer(r"fn ((invariant_(\d+)|scenario_s(\d+))_\w*)", open(path, encoding="utf-8").read()):
+            key = ("I" + match.group(3)) if match.group(3) else ("S" + match.group(4))
+            found.setdefault(key, []).append(f"`{match.group(1)}` ({rel.split('/')[0]})")
+GUARDS = {
+    "I1": "garde-fou `tools/check-architecture` A3 + A6 (auto-test `tools/test-check-architecture`)",
+    "I2": "garde-fou `tools/check-architecture` A2 (auto-test)",
+    "I3": "garde-fou `tools/check-architecture` A2 (aucune dépendance d'I/O possible) + providers en structures unitaires",
+    "I4": "garde-fou `tools/check-architecture` A9",
+    "I5": "garde-fou `tools/check-architecture` A8 (auto-test)",
+}
+for key, text in GUARDS.items():
+    found.setdefault(key, []).append(text)
+table = os.path.join(root, "docs", "ETAT", "INVARIANTS.md")
+lines = open(table, encoding="utf-8").read().splitlines()
+out = []
+for line in lines:
+    m = re.match(r"\| (S?)(\d+) \| (.*?) \| .* \|$", line)
+    if m:
+        key = ("S" if m.group(1) else "I") + m.group(2)
+        tests = found.get(key)
+        cell = "<br>".join(sorted(set(tests))) if tests else "manquant"
+        line = f"| {m.group(1)}{m.group(2)} | {m.group(3)} | {cell} |"
+    out.append(line)
+open(table, "w", encoding="utf-8").write("\n".join(out) + "\n")
+missing = sum(1 for l in out if l.endswith("| manquant |"))
+print(f"update-invariants-table : {len(found)} invariants/scénarios couverts, {missing} manquants")
+sys.exit(0)

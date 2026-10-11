@@ -27,3 +27,10 @@ pub async fn connected(env: &Env) -> ImapClient {
         .await
         .unwrap()
 }
+
+/// Client authentifié avec INBOX sélectionnée
+pub async fn selected(env: &Env) -> ImapClient {
+    let mut client = connected(env).await;
+    client.select("INBOX", None).await.unwrap();
+    client
+}

@@ -16,4 +16,5 @@ pub mod parsed_cache;
 pub mod raw_sources;
 pub mod search;
 pub mod server_ids;
+pub mod thread_links;
 pub mod threads;

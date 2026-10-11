@@ -73,3 +73,10 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - File d'actions : `server_targets_json` et `undo_json` pas encore remplis (`PendingAction` n'a pas ces champs) → à ajouter en J7.
 - Profil : nom vide, `.`, `..` ou contenant `/`, `\`, NUL refusé (traversée de répertoire).
 - Dépôt d'événements dans `storage/repositories/events/` ; `src/events/` reste pour le bus (J8).
+
+## AG-12 — Écarts acceptés de J3
+- CLI : `run(args, &mut CliIo) -> i32` (au lieu de `CliDeps`/`CliOutcome`) ; l'injection des dépendances du moteur viendra en J9.
+- Enveloppe JSON : clés dans l'ordre alphabétique de `serde_json` (`contract_version, data|error, ok`) — sans effet pour un lecteur JSON.
+- Stratégie `Qresync` dès que QRESYNC est annoncé (il implique CONDSTORE) ; `COMPRESS` = `COMPRESS=DEFLATE`.
+- `X-GM-LABELS` : les noms sont supposés déjà décodés (UTF-7 modifié) par le client IMAP.
+- Registre : pas d'élimination des doublons d'identifiant ; `find` renvoie le premier.

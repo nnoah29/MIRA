@@ -21,7 +21,7 @@ pub use model::{
     LocalIntent, LocalStep, QueueContext, SEND_UNDO_DELAY_MILLIS, SubmitRequest, UNDO_DELAY_MILLIS,
     UndoRecord,
 };
-
+pub(crate) use queue::{Queued, queue_action};
 pub use rebase::reapply_pending_local_effects;
 pub use retry::retry;
 pub use revert::revert_local_effect;

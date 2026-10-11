@@ -15,6 +15,11 @@ impl SecretInput {
         Self(value.into())
     }
 
+    /// Dit si la valeur saisie est vide
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     /// Convertit en valeur secrète du moteur, destinée au trousseau
     pub fn into_secret_value(self) -> SecretValue {
         SecretValue::new(self.0)

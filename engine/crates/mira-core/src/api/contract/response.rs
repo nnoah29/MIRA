@@ -1,6 +1,8 @@
 //! Réponses du contrat : une variante par forme de données rendue.
 
-use mira_vocabulary::{Account, ContractVersion, Event, Identity, ProfileId, ProviderDescriptor, ServerSettings};
+use mira_vocabulary::{
+    Account, ContractVersion, Event, Identity, ProfileId, ProviderDescriptor, ServerSettings,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::operations::OperationInfo;

@@ -1,11 +1,17 @@
 //! Forme sérialisable du contrat : requêtes par domaine et réponses.
 
 mod account_requests;
+mod auth_requests;
+mod credential_input;
+mod identity_requests;
 mod request;
 mod response;
 mod secret_input;
 
-pub use account_requests::{AccountChanges, AccountRequest, AuthRequest, IdentityRequest};
+pub use account_requests::{AccountChanges, AccountDraft, AccountRequest};
+pub use auth_requests::AuthRequest;
+pub use credential_input::CredentialInput;
+pub use identity_requests::{IdentityRequest, NewIdentity};
 pub use request::{EngineRequest, EventRequest, OperationRequest, ProviderRequest, Request};
 pub use response::{AccountPreparation, AccountStatus, ContractInfo, EngineStatus, Response};
 pub use secret_input::SecretInput;

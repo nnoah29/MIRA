@@ -57,3 +57,19 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - SMTP : `MAIL FROM` avant `AUTH` → `530` (comme un serveur de soumission réel) ; `fail_next` est une file FIFO ; une panne en fin de DATA n'enregistre pas le message ; `drop_after_data_once` enregistre puis coupe sans répondre.
 - OAuth : `approve`/`deny` refusent toute requête invalide et tout `redirect_uri` qui n'est pas en boucle locale ; code à usage unique consommé même si le vérificateur est faux ; le rafraîchissement ne renouvelle pas le jeton de rafraîchissement ; jetons générés par compteur, jamais journalisés.
 - Modules `oauth::pkce` et `oauth::form` publics (fonctions pures testées).
+
+## AG-10 — Comportements du faux IMAP (rapport J4 partie A)
+- Un seul commit pour tout le serveur (niveaux interdépendants).
+- `connection_count()` = total des connexions acceptées ; `active_connections()` = connexions ouvertes (à utiliser pour l'invariant 25).
+- QRESYNC exige `ENABLE QRESYNC` avant SELECT (sinon `BAD`), comme un serveur réel ; MODSEQ n'apparaît dans les FETCH qu'une fois CONDSTORE activé.
+- `renumber` redémarre les UID à 1 et change UIDVALIDITY ; `deliver_dated` permet des dates internes contrôlées (fenêtre de 90 jours).
+- `X-GM-LABELS` : noms des boîtes contenant le message (`INBOX` → `\Inbox`, boîtes `\All` exclues).
+- Non supportés : BODYSTRUCTURE, sections numérotées, LSUB, UNSELECT, NAMESPACE, STARTTLS, X-GM-RAW.
+
+## AG-11 — Écarts acceptés de J2a
+- Migration `v002` : colonne `accounts.profile_id` (le schéma v1 l'avait oubliée) et index unique partiel « une seule identité par défaut par compte ».
+- `keyring` 4.2 : la feature par défaut `v1` fournit déjà SecretService (zbus), aucune dépendance système.
+- Clé d'idempotence réutilisée pour une **autre** commande → `invalid_input.idempotency_conflict` ; même commande → même action.
+- File d'actions : `server_targets_json` et `undo_json` pas encore remplis (`PendingAction` n'a pas ces champs) → à ajouter en J7.
+- Profil : nom vide, `.`, `..` ou contenant `/`, `\`, NUL refusé (traversée de répertoire).
+- Dépôt d'événements dans `storage/repositories/events/` ; `src/events/` reste pour le bus (J8).

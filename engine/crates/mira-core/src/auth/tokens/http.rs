@@ -29,18 +29,28 @@ pub(super) async fn post_form(
         .await
         .map_err(|error| map_http_error(&error))?;
     let status = response.status().as_u16();
-    let body = response
-        .bytes()
+    let body = read_bounded_body(response).await?;
+    Ok((status, body))
+}
+
+/// Lit le corps par morceaux et s'arrête dès que `MAX_BODY` est dépassé
+async fn read_bounded_body(mut response: reqwest::Response) -> Result<Vec<u8>, MiraError> {
+    let mut body = Vec::new();
+    while let Some(chunk) = response
+        .chunk()
         .await
-        .map_err(|error| map_http_error(&error))?;
-    if body.len() > MAX_BODY {
-        return Err(MiraError::new(
-            ErrorCategory::Server,
-            server::PROTOCOL,
-            "réponse de jetons trop volumineuse",
-        ));
+        .map_err(|error| map_http_error(&error))?
+    {
+        if body.len() + chunk.len() > MAX_BODY {
+            return Err(MiraError::new(
+                ErrorCategory::Server,
+                server::PROTOCOL,
+                "réponse de jetons trop volumineuse",
+            ));
+        }
+        body.extend_from_slice(&chunk);
     }
-    Ok((status, body.to_vec()))
+    Ok(body)
 }
 
 /// Client sans redirection ; le proxy système est ignoré pour la boucle locale

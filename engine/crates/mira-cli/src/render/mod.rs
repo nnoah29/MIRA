@@ -27,5 +27,6 @@ pub fn human_text(response: &Response) -> String {
         Response::OAuthStarted(start) => flows::oauth_start_text(start),
         Response::Operation(info) => flows::operation_text(info),
         Response::Events(list) => events::events_table(list),
+        Response::Write(written) => serde_json::to_string_pretty(written).unwrap_or_default(),
     }
 }

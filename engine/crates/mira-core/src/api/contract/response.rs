@@ -5,6 +5,7 @@ use mira_vocabulary::{
 };
 use serde::{Deserialize, Serialize};
 
+use super::write::WriteResponse;
 use crate::operations::OperationInfo;
 
 /// Version du contrat et capacités du moteur (12.4, Moteur).
@@ -61,4 +62,5 @@ pub enum Response {
     OAuthStarted(OAuthStart),
     Operation(OperationInfo),
     Events(Vec<Event>),
+    Write(WriteResponse),
 }

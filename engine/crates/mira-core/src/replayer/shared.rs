@@ -10,6 +10,7 @@ use crate::actions::QueueContext;
 use crate::api::EngineConfig;
 use crate::events::EventBus;
 use crate::storage::Database;
+use crate::sync::ConnectionBudgets;
 
 /// Ce que partagent le superviseur et les tâches de rejeu d'un moteur.
 #[derive(Debug)]
@@ -17,17 +18,24 @@ pub(crate) struct ReplayShared {
     pub(crate) config: EngineConfig,
     pub(crate) database: Arc<Database>,
     pub(crate) events: EventBus,
+    pub(crate) budgets: ConnectionBudgets,
     wake: Notify,
     stopping: AtomicBool,
 }
 
 impl ReplayShared {
     /// Prépare l'état partagé d'un moteur qui vient de s'ouvrir
-    pub(crate) fn new(config: EngineConfig, database: Arc<Database>, events: EventBus) -> Self {
+    pub(crate) fn new(
+        config: EngineConfig,
+        database: Arc<Database>,
+        events: EventBus,
+        budgets: ConnectionBudgets,
+    ) -> Self {
         Self {
             config,
             database,
             events,
+            budgets,
             wake: Notify::new(),
             stopping: AtomicBool::new(false),
         }

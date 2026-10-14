@@ -16,6 +16,8 @@ pub(crate) async fn handle_test_connection(
 ) -> Result<Response, MiraError> {
     let plan = plan_draft(engine, &draft, &credential)?;
     let login = test_credential(engine, &plan, credential)?;
-    check_imap_login(&plan.servers.connect, &login).await?;
+    let key = format!("candidate:{}", plan.address.as_str());
+    let budget = engine.budget_for(&key, plan.provider.as_ref());
+    check_imap_login(&plan.servers.connect, &login, &budget).await?;
     Ok(Response::Done)
 }

@@ -11,7 +11,7 @@ use super::credentials::ProfileCredentials;
 use crate::api::EngineConfig;
 use crate::events::{EventBus, EventSink};
 use crate::storage::Database;
-use crate::sync::{BackgroundSync, CredentialProvider, SyncSupervisor};
+use crate::sync::{BackgroundSync, ConnectionBudgets, CredentialProvider, SyncSupervisor};
 
 /// Ce que le service possède quand la synchronisation en arrière-plan est active.
 #[derive(Debug)]
@@ -35,6 +35,7 @@ impl SyncService {
         config: &EngineConfig,
         database: &Arc<Database>,
         events: &EventBus,
+        budgets: &ConnectionBudgets,
     ) -> Self {
         let BackgroundSync::On(settings) = config.network.background_sync else {
             return Self { active: None };
@@ -45,7 +46,7 @@ impl SyncService {
         let credentials = ProfileCredentials::new(config.clone(), Arc::clone(database));
         let service = Self {
             active: Some(ActiveSync {
-                supervisor: SyncSupervisor::new(settings),
+                supervisor: SyncSupervisor::with_budgets(settings, budgets.clone()),
                 credentials: Arc::new(credentials),
                 config: config.clone(),
                 database: Arc::clone(database),

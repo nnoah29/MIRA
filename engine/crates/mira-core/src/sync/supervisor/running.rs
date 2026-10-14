@@ -32,14 +32,14 @@ pub struct AccountTable {
 }
 
 impl RunningAccount {
-    /// Lance la tâche du compte avec son budget de connexions propre.
+    /// Lance la tâche du compte avec le budget de connexions du compte.
     pub fn launch(
         ctx: SyncContext,
         credentials: Arc<dyn CredentialProvider>,
         config: SupervisorConfig,
+        budget: ConnectionBudget,
         shutdown: watch::Receiver<bool>,
     ) -> Self {
-        let budget = ConnectionBudget::new(ctx.provider.descriptor().limits.max_connections);
         let requests = Arc::new(SyncRequests::default());
         let report = ReportHandle::default();
         let state = ctx.account.state.clone();

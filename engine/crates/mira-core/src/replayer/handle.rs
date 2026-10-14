@@ -10,6 +10,7 @@ use super::supervisor::supervise;
 use crate::api::EngineConfig;
 use crate::events::EventBus;
 use crate::storage::Database;
+use crate::sync::ConnectionBudgets;
 
 /// Le rejeu d'un moteur : le superviseur n'existe que si un runtime tokio est actif à l'ouverture.
 #[derive(Debug)]
@@ -20,8 +21,13 @@ pub(crate) struct ReplayerHandle {
 
 impl ReplayerHandle {
     /// Lance le superviseur dans le runtime courant, s'il y en a un
-    pub(crate) fn start(config: EngineConfig, database: Arc<Database>, events: EventBus) -> Self {
-        let shared = Arc::new(ReplayShared::new(config, database, events));
+    pub(crate) fn start(
+        config: EngineConfig,
+        database: Arc<Database>,
+        events: EventBus,
+        budgets: ConnectionBudgets,
+    ) -> Self {
+        let shared = Arc::new(ReplayShared::new(config, database, events, budgets));
         let supervisor = Handle::try_current()
             .ok()
             .map(|runtime| runtime.spawn(supervise(Arc::clone(&shared))));

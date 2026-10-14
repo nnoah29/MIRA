@@ -14,7 +14,7 @@ pub fn parse_addresses(text: &str) -> Result<Vec<AddressEntry>, String> {
 
 /// Une adresse, avec son nom d'affichage s'il y en a un ; `None` si la forme est invalide.
 fn parse_segment(segment: &str) -> Option<AddressEntry> {
-    let (name, address) = match segment.find('<') {
+    let (name, address) = match last_angle(segment) {
         None => (None, segment),
         Some(open) => {
             let inner = segment.get(open + 1..)?.strip_suffix('>')?;
@@ -32,11 +32,30 @@ fn parse_segment(segment: &str) -> Option<AddressEntry> {
     })
 }
 
+/// Position du dernier `<` hors guillemets : celui qui ouvre l'adresse, un `<` de nom entre guillemets n'en est pas un.
+fn last_angle(segment: &str) -> Option<usize> {
+    let mut quoted = false;
+    let mut escaped = false;
+    let mut found = None;
+    for (index, c) in segment.char_indices() {
+        if escaped {
+            escaped = false;
+        } else if quoted && c == '\\' {
+            escaped = true;
+        } else if c == '"' {
+            quoted = !quoted;
+        } else if !quoted && c == '<' {
+            found = Some(index);
+        }
+    }
+    found
+}
+
 /// Nom d'affichage : texte nu, ou texte entre guillemets avec `\"` et `\\` déséchappés ; `None` si mal formé.
 fn read_name(raw: &str) -> Option<String> {
     let raw = raw.trim();
     let Some(inner) = raw.strip_prefix('"') else {
-        return (!raw.contains('"')).then(|| raw.to_string());
+        return (!raw.contains(['"', '<', '>'])).then(|| raw.to_string());
     };
     let inner = inner.strip_suffix('"')?;
     let mut name = String::new();

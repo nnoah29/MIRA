@@ -28,6 +28,7 @@ pub fn intent_for(state: &AppState, key: KeyEvent) -> Option<Intent> {
     }
     match context_of(state) {
         KeyContext::SearchInput => search::intent(key),
+        KeyContext::Creating => compose::creating_intent(key),
         KeyContext::Compose => compose::intent(key),
         KeyContext::ConfirmClose => popup::close_draft_intent(key),
         KeyContext::Confirm => popup::confirm_intent(key),

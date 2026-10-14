@@ -1,5 +1,6 @@
 //! Changement de panneau et sortie de l'application.
 
+use super::compose::quit::defer_quit;
 use super::message_load::load_selected_mailbox;
 use super::reader_open::{open_selected_message, retry_body_download};
 use crate::commands::Command;
@@ -40,6 +41,9 @@ pub fn prev_pane(state: &mut AppState) {
 
 /// Demande la sortie de l'application.
 pub fn quit(state: &mut AppState) -> Vec<Command> {
+    if defer_quit(state) {
+        return Vec::new();
+    }
     state.should_quit = true;
     vec![Command::Quit]
 }

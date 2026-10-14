@@ -1,5 +1,6 @@
 //! Fermeture de l'éditeur : confirmation si des modifications ne sont pas enregistrées, suppression d'un brouillon intact.
 
+use super::quit::{mark_then_quit, take_then_quit, with_quit};
 use super::save::save;
 use crate::commands::{Command, Tag};
 use crate::state::{AppState, ComposeSlot, Popup};
@@ -33,7 +34,9 @@ pub fn close_now(state: &mut AppState) -> Vec<Command> {
 /// Abandonne les modifications non enregistrées et ferme.
 pub fn discard(state: &mut AppState) -> Vec<Command> {
     state.popup = Popup::Closed;
-    close_now(state)
+    let quit = take_then_quit(state);
+    let commands = close_now(state);
+    with_quit(state, quit, commands)
 }
 
 /// Enregistre puis ferme dès que le moteur a confirmé ; l'éditeur reste ouvert si rien ne peut partir.
@@ -58,7 +61,9 @@ pub fn continue_close(state: &mut AppState) -> Vec<Command> {
         return Vec::new();
     }
     if state.compose.open().is_some_and(|c| !c.has_unsaved()) {
-        return close_now(state);
+        let quit = take_then_quit(state);
+        let commands = close_now(state);
+        return with_quit(state, quit, commands);
     }
     let commands = save(state);
     mark_close_after_save(state, !commands.is_empty());
@@ -69,5 +74,8 @@ pub fn continue_close(state: &mut AppState) -> Vec<Command> {
 fn mark_close_after_save(state: &mut AppState, close: bool) {
     if let Some(compose) = state.compose.open_mut() {
         compose.set_close_after_save(close);
+    }
+    if !close {
+        mark_then_quit(state, false);
     }
 }

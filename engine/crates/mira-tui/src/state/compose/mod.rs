@@ -10,6 +10,7 @@ pub mod buffer_view;
 pub mod char_offset;
 pub mod field;
 pub mod open;
+pub mod quit;
 pub mod save_apply;
 pub mod save_plan;
 pub mod slot;

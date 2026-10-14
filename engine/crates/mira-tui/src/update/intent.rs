@@ -1,7 +1,7 @@
 //! Intentions de l'utilisateur, indépendantes des touches qui les produisent.
 
 use super::compose::ComposeIntent;
-use super::compose::route::{route_editing, route_idle};
+use super::compose::route::{route_creating, route_editing, route_idle};
 use super::intent_actions::on_message_intent;
 use super::search_intent::SearchIntent;
 use super::{
@@ -60,6 +60,9 @@ pub fn on_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
 
 /// Route l'intention vers la fenêtre, l'éditeur de brouillon ou la saisie de recherche ouverte, qui la reçoit avant tout.
 fn route_modal(state: &mut AppState, intent: Intent) -> Option<Vec<Command>> {
+    if state.compose.is_creating() {
+        return Some(route_creating(state, intent));
+    }
     if state.popup.is_open() {
         return Some(popup_intent::route(state, intent));
     }

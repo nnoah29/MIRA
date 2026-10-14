@@ -1,5 +1,6 @@
 //! Routage des intentions de rédaction, hors édition (démarrage) puis pendant l'édition.
 
+use super::created::cancel_creation;
 use super::intent::ComposeIntent;
 use super::{close, edit, fields, save, start};
 use crate::commands::Command;
@@ -31,6 +32,19 @@ pub fn route_editing(state: &mut AppState, intent: Intent) -> Vec<Command> {
         Intent::Quit => panes::quit(state),
         Intent::MoveDown | Intent::MoveUp | Intent::Top | Intent::Bottom | Intent::Open | Intent::Back | Intent::NextPane
         | Intent::PrevPane | Intent::NextAccount | Intent::PrevAccount | Intent::Archive | Intent::Trash
+        | Intent::DeletePermanently | Intent::ToggleFlag | Intent::ToggleRead | Intent::OpenMovePicker | Intent::Undo
+        | Intent::Confirm | Intent::Cancel | Intent::Search(_) | Intent::StartSync | Intent::Help => Vec::new(),
+    }
+}
+
+/// Pendant la création, l'écran est modal : seuls Échap (annuler) et la sortie agissent, le reste est ignoré.
+#[rustfmt::skip]
+pub fn route_creating(state: &mut AppState, intent: Intent) -> Vec<Command> {
+    match intent {
+        Intent::Compose(ComposeIntent::Close) => cancel_creation(state),
+        Intent::Quit => panes::quit(state),
+        Intent::Compose(_) | Intent::MoveDown | Intent::MoveUp | Intent::Top | Intent::Bottom | Intent::Open | Intent::Back
+        | Intent::NextPane | Intent::PrevPane | Intent::NextAccount | Intent::PrevAccount | Intent::Archive | Intent::Trash
         | Intent::DeletePermanently | Intent::ToggleFlag | Intent::ToggleRead | Intent::OpenMovePicker | Intent::Undo
         | Intent::Confirm | Intent::Cancel | Intent::Search(_) | Intent::StartSync | Intent::Help => Vec::new(),
     }

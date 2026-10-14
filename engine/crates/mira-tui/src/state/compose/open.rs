@@ -55,6 +55,7 @@ impl ComposeState {
             saving: None,
             saved_once: false,
             close_after_save: false,
+            then_quit: false,
             had_html: draft.body_html.is_some(),
         }
     }

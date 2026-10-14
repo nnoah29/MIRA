@@ -24,5 +24,6 @@ pub struct ComposeState {
     pub(super) saving: Option<Vec<(Field, String)>>,
     pub(super) saved_once: bool,
     pub(super) close_after_save: bool,
+    pub(super) then_quit: bool,
     pub(super) had_html: bool,
 }

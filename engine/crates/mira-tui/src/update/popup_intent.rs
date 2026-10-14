@@ -3,6 +3,7 @@
 use mira_assembly::mira_vocabulary::ActionKind;
 
 use super::action_command::send_removing;
+use super::compose::quit::mark_then_quit;
 use super::compose::{close::save_and_close, popup as compose_popup};
 use super::intent::Intent;
 use super::move_picker::confirm_move;
@@ -41,6 +42,7 @@ pub fn route(state: &mut AppState, intent: Intent) -> Vec<Command> {
 /// Ferme la fenêtre sans rien envoyer.
 fn cancel(state: &mut AppState) -> Vec<Command> {
     state.popup = Popup::Closed;
+    mark_then_quit(state, false);
     Vec::new()
 }
 

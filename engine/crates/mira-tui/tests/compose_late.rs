@@ -104,13 +104,14 @@ fn other_intents_do_nothing_while_editing() {
     assert_eq!(state, before);
 }
 
-/// Une saisie de recherche ouverte pendant la création est fermée quand l'éditeur s'ouvre.
+/// Pendant la création, `/` et les autres touches sont ignorés : aucune saisie ni fenêtre ne s'ouvre.
 #[test]
-fn opening_the_editor_closes_a_search_input_and_popups() {
+fn nothing_opens_while_the_draft_is_being_created() {
     let mut state = state_with_mailboxes();
     compose(&mut state, ComposeIntent::Reply);
-    press(&mut state, Intent::Search(SearchIntent::Open));
-    assert!(state.search.is_editing());
+    assert!(press(&mut state, Intent::Search(SearchIntent::Open)).is_empty());
+    assert!(press(&mut state, Intent::Help).is_empty());
+    assert!(!state.search.is_editing());
     update(
         &mut state,
         created_reply("tui-1-draft-1", draft("d1", &[], "x", "")),

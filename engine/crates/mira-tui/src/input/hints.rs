@@ -79,6 +79,8 @@ const SEARCH_INPUT: &[Hint] = &[
     hint("Retour arrière", "effacer"),
 ];
 
+const CREATING: &[Hint] = &[hint("Échap", "annuler")];
+
 const COMPOSE: &[Hint] = &[
     hint("Ctrl+s", "enregistrer"),
     hint("Tab/Maj+Tab", "champ suivant/précédent"),
@@ -117,6 +119,7 @@ pub fn hints_for(context: KeyContext) -> &'static [Hint] {
         KeyContext::SearchResults => SEARCH_RESULTS,
         KeyContext::Reader => READER,
         KeyContext::SearchInput => SEARCH_INPUT,
+        KeyContext::Creating => CREATING,
         KeyContext::Compose => COMPOSE,
         KeyContext::ConfirmClose => CONFIRM_CLOSE,
         KeyContext::Confirm => CONFIRM,
@@ -133,6 +136,7 @@ pub fn context_name(context: KeyContext) -> &'static str {
         KeyContext::SearchResults => "résultats de recherche",
         KeyContext::Reader => "lecture",
         KeyContext::SearchInput => "saisie de recherche",
+        KeyContext::Creating => "création du brouillon",
         KeyContext::Compose => "rédaction",
         KeyContext::ConfirmClose => "fermeture du brouillon",
         KeyContext::Confirm => "confirmation",

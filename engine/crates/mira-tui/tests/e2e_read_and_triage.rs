@@ -21,6 +21,7 @@ fn hooks(frames: UnboundedSender<Buffer>) -> LoopHooks {
     LoopHooks {
         frames: Some(frames),
         stop: None,
+        ..LoopHooks::default()
     }
 }
 

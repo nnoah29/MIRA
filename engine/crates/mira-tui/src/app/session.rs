@@ -35,6 +35,7 @@ pub async fn run_app(config: EngineConfig) -> Result<(), TuiError> {
     let hooks = LoopHooks {
         frames: None,
         stop: Some(stop),
+        journal_probe: None,
     };
     let outcome = run_session_parts(engine, guard, &mut terminal, keys, hooks, &mut stderr()).await;
     signals.abort();

@@ -1,5 +1,6 @@
 //! Application plein écran : boucle, pont asynchrone, clavier, restauration du terminal et erreurs.
 
+pub mod burst;
 pub mod engine_session;
 pub mod error;
 pub mod event_cursor;

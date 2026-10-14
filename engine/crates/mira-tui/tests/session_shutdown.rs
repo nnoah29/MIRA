@@ -36,8 +36,8 @@ async fn injected_stop_signal_exits_cleanly_and_closes_engine() {
     let (stop, stop_rx) = mpsc::unbounded_channel();
     stop.send(()).unwrap();
     let hooks = LoopHooks {
-        frames: None,
         stop: Some(stop_rx),
+        ..LoopHooks::default()
     };
     let mut notice = NoticeWriter {
         log: log.clone(),

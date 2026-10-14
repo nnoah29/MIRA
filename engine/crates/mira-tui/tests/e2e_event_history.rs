@@ -60,6 +60,7 @@ async fn old_events_are_not_replayed_at_startup() {
     let hooks = LoopHooks {
         frames: Some(frame_tx),
         stop: None,
+        ..LoopHooks::default()
     };
     let session = run_loop_with(&mut terminal, world.engine(), key_rx, hooks);
     let (outcome, ()) = tokio::join!(session, script(keys, frames));

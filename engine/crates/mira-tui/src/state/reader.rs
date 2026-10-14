@@ -39,6 +39,20 @@ impl ReaderState {
         self.message.as_ref()
     }
 
+    /// Fixe l'état « lu » de la copie ouverte si c'est ce message.
+    pub fn set_seen(&mut self, id: &MessageId, seen: bool) {
+        if let Some(message) = self.message.as_mut().filter(|m| &m.id == id) {
+            message.flags.seen = seen;
+        }
+    }
+
+    /// Fixe l'étoile de la copie ouverte si c'est ce message.
+    pub fn set_flagged(&mut self, id: &MessageId, flagged: bool) {
+        if let Some(message) = self.message.as_mut().filter(|m| &m.id == id) {
+            message.flags.flagged = flagged;
+        }
+    }
+
     /// Vrai si ce message est celui qui est ouvert.
     pub fn shows(&self, id: &MessageId) -> bool {
         self.message.as_ref().is_some_and(|m| &m.id == id)

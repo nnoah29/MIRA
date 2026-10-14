@@ -11,7 +11,9 @@ use ratatui::buffer::Buffer;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::task::JoinHandle;
 
+use super::burst::{BURST_LIMIT, Drained, drain_bounded};
 use super::error::TuiError;
+use super::event_cursor::{JournalProbe, latest_event_seq};
 use super::runtime::{Runtime, Wake};
 use super::screen::{Screen, terminal_error};
 use super::session_nonce::session_nonce;
@@ -22,11 +24,12 @@ use crate::update::{Msg, update};
 
 const TICK: Duration = Duration::from_millis(200);
 
-/// Options de la boucle : copie de chaque image dessinée (tests) et source de demandes d'arrêt (signaux).
+/// Options de la boucle : copie des images (tests), demandes d'arrêt (signaux), couture du balayage du journal (tests).
 #[derive(Debug, Default)]
 pub struct LoopHooks {
     pub frames: Option<UnboundedSender<Buffer>>,
     pub stop: Option<UnboundedReceiver<()>>,
+    pub journal_probe: Option<JournalProbe>,
 }
 
 /// Même boucle avec des options injectées (images copiées, demandes d'arrêt).
@@ -48,26 +51,31 @@ pub async fn run_loop_detached<B: Backend>(
     keys: UnboundedReceiver<KeyEvent>,
     hooks: LoopHooks,
 ) -> (Result<(), TuiError>, JoinHandle<()>) {
-    let screen = Screen {
-        terminal,
-        frames: hooks.frames,
-    };
-    run_session(screen, engine, keys, hooks.stop).await
+    let LoopHooks {
+        frames,
+        stop,
+        journal_probe,
+    } = hooks;
+    let screen = Screen { terminal, frames };
+    run_session(screen, engine, keys, stop, journal_probe).await
 }
 
-/// Crée l'état avec un nonce neuf, lance démarrage et flux d'événements, tourne, puis lance l'arrêt du pont.
+/// Relève le dernier événement journalisé, PUIS lance flux d'événements et lectures de démarrage, tourne, et lance l'arrêt du pont.
 async fn run_session<B: Backend>(
     mut screen: Screen<'_, B>,
     engine: Arc<Engine>,
     keys: UnboundedReceiver<KeyEvent>,
     stop: Option<UnboundedReceiver<()>>,
+    probe: Option<JournalProbe>,
 ) -> (Result<(), TuiError>, JoinHandle<()>) {
     let size = match screen.terminal.size().map_err(terminal_error) {
         Ok(size) => size,
         Err(error) => return (Err(error), tokio::spawn(async {})),
     };
     let mut state = AppState::new(size.width, size.height, session_nonce());
-    let mut runtime = Runtime::start(engine);
+    let _ = screen.draw(&state);
+    let after = latest_event_seq(&engine, probe.as_ref()).await;
+    let mut runtime = Runtime::start(engine, after);
     let mut startup = state.boot_commands();
     startup.extend(refresh_status(&mut state));
     runtime.run(startup);
@@ -108,12 +116,14 @@ fn apply(state: &mut AppState, runtime: &mut Runtime, msg: Msg) -> bool {
     quit || state.should_quit
 }
 
-/// Applique tous les messages déjà arrivés avant de redessiner : un dessin par rafale ; vrai si l'application doit s'arrêter.
+/// Applique au plus `BURST_LIMIT` messages déjà arrivés avant de redessiner ; vrai si l'application doit s'arrêter.
 fn apply_pending(state: &mut AppState, runtime: &mut Runtime) -> bool {
-    while let Some(msg) = runtime.pending_msg() {
-        if apply(state, runtime, msg) {
-            return true;
-        }
-    }
-    false
+    let mut context = (state, runtime);
+    let drained = drain_bounded(
+        &mut context,
+        |(_, runtime)| runtime.pending_msg(),
+        |(state, runtime), msg| apply(state, runtime, msg),
+        BURST_LIMIT,
+    );
+    drained == Drained::Quit
 }

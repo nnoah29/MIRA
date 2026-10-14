@@ -1,6 +1,7 @@
 //! Navigation pure : panneaux, sélection bornée, sortie et redimensionnement.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
+mod message_fixtures;
 mod navigation_fixtures;
 
 use mira_tui::commands::Command;

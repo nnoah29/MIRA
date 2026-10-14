@@ -1,6 +1,6 @@
 //! Intentions de l'utilisateur, indépendantes des touches qui les produisent.
 
-use super::{account_switch, navigation, panes};
+use super::{account_switch, navigation, pagination, panes};
 use crate::commands::Command;
 use crate::state::AppState;
 
@@ -23,10 +23,10 @@ pub enum Intent {
 /// Route une intention vers son gestionnaire.
 pub fn on_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
     match intent {
-        Intent::MoveDown => navigation::move_down(state),
-        Intent::MoveUp => navigation::move_up(state),
-        Intent::Top => navigation::top(state),
-        Intent::Bottom => navigation::bottom(state),
+        Intent::MoveDown => return scroll(state, navigation::move_down),
+        Intent::MoveUp => return scroll(state, navigation::move_up),
+        Intent::Top => return scroll(state, navigation::top),
+        Intent::Bottom => return scroll(state, navigation::bottom),
         Intent::Open => panes::open(state),
         Intent::Back => panes::back(state),
         Intent::NextPane => panes::next_pane(state),
@@ -36,4 +36,10 @@ pub fn on_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
         Intent::Quit => return panes::quit(state),
     }
     Vec::new()
+}
+
+/// Déplace la sélection puis demande la page suivante si la fin de liste approche.
+fn scroll(state: &mut AppState, step: fn(&mut AppState)) -> Vec<Command> {
+    step(state);
+    pagination::next_page(state)
 }

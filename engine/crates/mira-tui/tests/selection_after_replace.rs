@@ -1,13 +1,15 @@
 //! La sélection reste dans les bornes quand la liste est remplacée.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
+mod message_fixtures;
 mod navigation_fixtures;
 mod sidebar_fixtures;
 
+use message_fixtures::numbered;
 use mira_assembly::mira_vocabulary::MailboxRole;
 use mira_tui::state::AppState;
 use mira_tui::update::Intent;
-use navigation_fixtures::{numbered, press, state_with_messages};
+use navigation_fixtures::{press, state_with_messages};
 use sidebar_fixtures::{account, mailbox};
 
 /// Liste vide dès le départ : tout déplacement laisse la sélection absente.

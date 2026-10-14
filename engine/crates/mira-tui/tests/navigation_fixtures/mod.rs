@@ -1,6 +1,7 @@
 //! Fabriques d'état partagées par les tests de navigation.
 #![allow(dead_code)]
 
+use crate::message_fixtures::numbered;
 use mira_tui::commands::Command;
 use mira_tui::state::{AppState, Pane};
 use mira_tui::update::{Intent, Msg, update};
@@ -16,9 +17,4 @@ pub fn state_with_messages(count: usize) -> AppState {
     state.messages.replace_items(numbered(count));
     state.focus = Pane::List;
     state
-}
-
-/// Fabrique `count` éléments de liste numérotés.
-pub fn numbered(count: usize) -> Vec<String> {
-    (0..count).map(|n| format!("m{n}")).collect()
 }

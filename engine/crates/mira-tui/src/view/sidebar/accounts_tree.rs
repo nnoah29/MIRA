@@ -7,6 +7,7 @@ use ratatui::widgets::ListItem;
 use super::role_label::label;
 use crate::state::AppState;
 use crate::theme;
+use crate::view::safe_text::display_safe;
 
 /// Ligne d'une boîte : libellé suivi du nombre de non lus s'il y en a.
 fn mailbox_line(mailbox: &Mailbox) -> Line<'static> {
@@ -25,7 +26,7 @@ pub fn rows(state: &AppState) -> Vec<ListItem<'static>> {
     let current = state.accounts.selection.selected;
     let mut rows = Vec::new();
     for (index, account) in state.accounts.items().iter().enumerate() {
-        rows.push(ListItem::new(account.address.as_str().to_string()));
+        rows.push(ListItem::new(display_safe(account.address.as_str())));
         if Some(index) == current {
             let lines = state.mailboxes.items().iter().map(mailbox_line);
             rows.extend(lines.map(ListItem::new));

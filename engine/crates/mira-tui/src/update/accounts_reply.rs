@@ -6,6 +6,7 @@ use mira_assembly::mira_vocabulary::{Account, MiraError};
 use super::account_switch::{reload_if_changed, selected_id};
 use crate::commands::Command;
 use crate::state::AppState;
+use crate::view::safe_text::display_safe;
 
 /// Range les comptes reçus et demande les boîtes du compte sélectionné.
 pub fn on_accounts(state: &mut AppState, result: Result<Response, MiraError>) -> Vec<Command> {
@@ -23,9 +24,9 @@ fn store_accounts(state: &mut AppState, accounts: Vec<Account>) -> Vec<Command> 
     reload_if_changed(state, previous)
 }
 
-/// Montre l'erreur du moteur dans la barre d'état.
-fn report(state: &mut AppState, error: MiraError) -> Vec<Command> {
-    state.status.message = Some(error.to_string());
+/// Montre l'erreur du moteur, neutralisée, dans la barre d'état.
+pub fn report(state: &mut AppState, error: MiraError) -> Vec<Command> {
+    state.status.message = Some(display_safe(&error.to_string()));
     Vec::new()
 }
 

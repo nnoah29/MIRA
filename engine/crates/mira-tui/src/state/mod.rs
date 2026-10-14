@@ -11,9 +11,14 @@ pub mod messages;
 pub mod messages_edit;
 pub mod messages_load;
 pub mod messages_paging;
+pub mod messages_refresh;
 pub mod move_picker;
 pub mod popup;
 pub mod reader;
+pub mod refresh;
+pub mod search;
+pub mod search_edit;
+pub mod search_restore;
 pub mod selection;
 pub mod status;
 
@@ -25,6 +30,8 @@ pub use messages::MessagesState;
 pub use move_picker::MovePicker;
 pub use popup::Popup;
 pub use reader::{ReaderContent, ReaderState};
+pub use refresh::RefreshState;
+pub use search::SearchState;
 pub use selection::Selection;
 pub use status::StatusState;
 
@@ -42,6 +49,8 @@ pub struct AppState {
     pub status: StatusState,
     pub popup: Popup,
     pub actions: ActionsState,
+    pub search: SearchState,
+    pub refresh: RefreshState,
     pub key_prefix: String,
     pub key_counter: u64,
 }
@@ -61,6 +70,8 @@ impl AppState {
             status: StatusState::default(),
             popup: Popup::Closed,
             actions: ActionsState::default(),
+            search: SearchState::default(),
+            refresh: RefreshState::default(),
             key_prefix: format!("tui-{nonce}"),
             key_counter: 0,
         }

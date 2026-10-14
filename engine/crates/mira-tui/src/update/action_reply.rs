@@ -16,10 +16,12 @@ pub fn on_user_action(
 ) -> Vec<Command> {
     let current = state.actions.awaits(&key);
     match result {
-        Ok(Response::Write(WriteResponse::Action(action))) if current => {
-            state.actions.confirm(action);
+        Ok(Response::Write(WriteResponse::Action(action))) => {
+            state.status.message = None;
+            if current {
+                state.actions.confirm(action);
+            }
         }
-        Ok(Response::Write(WriteResponse::Action(_))) => {}
         Ok(_) => return unexpected(state),
         Err(error) => return fail_action(state, current, error),
     }

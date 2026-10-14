@@ -2,6 +2,7 @@
 
 pub mod row;
 pub mod short_date;
+pub mod title;
 
 use ratatui::Frame;
 use ratatui::layout::Rect;
@@ -14,7 +15,7 @@ use crate::theme;
 pub fn render_message_list(frame: &mut Frame, area: Rect, state: &AppState) {
     let focused = state.focus == Pane::List;
     let block = Block::bordered()
-        .title("Messages")
+        .title(title::list_title(state))
         .border_style(theme::border(focused));
     if state.messages.is_empty() {
         frame.render_widget(Paragraph::new("aucun message").block(block), area);

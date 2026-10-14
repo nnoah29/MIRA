@@ -5,10 +5,13 @@ use mira_assembly::mira_vocabulary::{Event, MiraError};
 
 use super::accounts_reply::on_accounts;
 use super::action_reply::{on_undo, on_user_action};
+use super::engine_event::on_event;
 use super::intent::{Intent, on_intent};
 use super::mailboxes_reply::on_mailboxes;
 use super::messages_reply::on_messages;
 use super::reader_reply::{on_action, on_attachments, on_body, on_thread};
+use super::search_reply::on_search;
+use super::status_reply::{on_start_sync, on_status, on_sync_status};
 use crate::commands::{Command, Tag};
 use crate::state::AppState;
 
@@ -59,10 +62,9 @@ fn on_reply(state: &mut AppState, reply: Reply) -> Vec<Command> {
         Tag::Action => on_action(state, reply.result),
         Tag::UserAction(key) => on_user_action(state, key, reply.result),
         Tag::Undo(action) => on_undo(state, action, reply.result),
+        Tag::Search(query) => on_search(state, query, reply.result),
+        Tag::StartSync => on_start_sync(state, reply.result),
+        Tag::SyncStatus => on_sync_status(state, reply.result),
+        Tag::Status => on_status(state, reply.result),
     }
-}
-
-/// Traite un événement du moteur.
-fn on_event(_state: &mut AppState, _event: Event) -> Vec<Command> {
-    Vec::new()
 }

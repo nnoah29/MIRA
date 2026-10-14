@@ -15,6 +15,7 @@ pub fn on_mailboxes(
     account: AccountId,
     result: Result<Response, MiraError>,
 ) -> Vec<Command> {
+    state.refresh.mailboxes = false;
     match result {
         Ok(Response::Mailboxes(mailboxes)) => store_mailboxes(state, &account, mailboxes),
         Ok(_) => unexpected(state),
@@ -39,7 +40,7 @@ fn store_mailboxes(
 
 /// Charge la boîte sélectionnée tant qu'aucune vue de messages n'est voulue.
 fn load_first_if_none_wanted(state: &mut AppState) -> Vec<Command> {
-    if state.messages.view().is_some() {
+    if state.messages.view().is_some() || state.search.is_active() {
         return Vec::new();
     }
     load_selected_mailbox(state)

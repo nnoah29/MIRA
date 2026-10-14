@@ -1,21 +1,38 @@
-//! Barre d'état : dernier message ou rappel des touches.
+//! Barre d'état : indicateurs, puis dernier message, dernière erreur de synchro ou rappel des touches.
 
 use ratatui::Frame;
 use ratatui::layout::Rect;
-use ratatui::text::Span;
+use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 
+use super::search_bar::render_search_bar;
+use super::status_text::indicators;
 use crate::state::AppState;
 use crate::theme;
 use crate::view::safe_text::display_safe;
 
-const HINT: &str = "Tab panneau · j/k déplacer · Entrée ouvrir · Échap retour · q quitter";
+const HINT: &str =
+    "Tab panneau · / recherche · Ctrl+r synchro · j/k déplacer · Entrée ouvrir · q quitter";
 
-/// Affiche le message de statut, ou l'aide courte en son absence.
+/// Affiche la saisie de recherche si elle est ouverte, sinon indicateurs et message.
 pub fn render_status(frame: &mut Frame, area: Rect, state: &AppState) {
-    let span = match &state.status.message {
-        Some(message) => Span::styled(display_safe(message), theme::status()),
-        None => Span::styled(HINT, theme::dim()),
-    };
-    frame.render_widget(Paragraph::new(span), area);
+    if state.search.is_editing() {
+        render_search_bar(frame, area, state);
+        return;
+    }
+    let mut spans = Vec::new();
+    for indicator in indicators(state) {
+        spans.push(Span::styled(format!("{indicator} · "), theme::unread()));
+    }
+    spans.push(message_span(state));
+    frame.render_widget(Paragraph::new(Line::from(spans)), area);
+}
+
+/// Message de statut, à défaut dernière erreur de synchro, à défaut l'aide courte.
+fn message_span(state: &AppState) -> Span<'static> {
+    match (&state.status.message, &state.status.sync_error) {
+        (Some(message), _) => Span::styled(display_safe(message), theme::status()),
+        (None, Some(error)) => Span::styled(display_safe(error), theme::status()),
+        (None, None) => Span::styled(HINT, theme::dim()),
+    }
 }

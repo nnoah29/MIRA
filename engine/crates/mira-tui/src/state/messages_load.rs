@@ -9,12 +9,14 @@ impl MessagesState {
     pub fn begin_load(&mut self, view: ViewRef) {
         self.reset();
         self.view = Some(view);
+        self.loading = true;
     }
 
     /// Vide la liste et oublie la vue voulue.
     pub fn reset(&mut self) {
         self.replace_items(Vec::new());
         self.view = None;
+        self.loading = false;
     }
 
     /// Vrai si la page après ce curseur est bien celle qui est attendue pour cette vue.

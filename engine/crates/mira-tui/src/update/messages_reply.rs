@@ -14,6 +14,9 @@ pub fn on_messages(
     after: Option<Cursor>,
     result: Result<Response, MiraError>,
 ) -> Vec<Command> {
+    if after.is_none() && state.messages.view() == Some(&view) {
+        state.messages.finish_load();
+    }
     match result {
         Ok(Response::Messages(page)) => store_page(state, view, after, page),
         Ok(_) => return unexpected(state),

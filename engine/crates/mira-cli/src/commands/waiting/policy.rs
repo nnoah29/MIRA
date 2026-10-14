@@ -2,7 +2,7 @@
 
 use super::WaitPolicy;
 use crate::arguments::Commands;
-use crate::commands::{action, draft, mailbox, message, queue, search};
+use crate::commands::{action, draft, mailbox, message, queue, search, sync};
 
 /// Ce que le CLI attend avant de rendre la main pour cette commande.
 pub fn policy_of(command: &Commands) -> WaitPolicy {
@@ -13,6 +13,7 @@ pub fn policy_of(command: &Commands) -> WaitPolicy {
         Commands::Action(command) => action::wait_policy(command),
         Commands::Draft(command) => draft::wait_policy(command),
         Commands::Queue(command) => queue::wait_policy(command),
+        Commands::Sync(command) => sync::wait_policy(command),
         Commands::Engine(_)
         | Commands::Provider(_)
         | Commands::Account(_)

@@ -1,7 +1,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 //! Option `-v` : comptage des niveaux de bavardage.
 
-use mira_cli::logging::verbosity_from_args;
+use mira_cli::logging::{default_directives, verbosity_from_args};
 
 /// Convertit des littéraux en arguments.
 fn args(list: &[&str]) -> Vec<String> {
@@ -30,4 +30,13 @@ fn ignores_other_arguments() {
 #[test]
 fn long_option_counts_as_one() {
     assert_eq!(verbosity_from_args(&args(&["mira", "--verbose"])), 1);
+}
+
+/// Sans `-v`, l'avertissement de première synchro non lancée est tu ; `-v` rend tout visible
+#[test]
+fn default_directives_silence_only_the_unlaunched_first_sync_warning() {
+    assert!(default_directives(0).starts_with("warn,"));
+    assert!(default_directives(0).contains("account::add=error"));
+    assert_eq!(default_directives(1), "info");
+    assert_eq!(default_directives(2), "debug");
 }

@@ -16,6 +16,7 @@ use crate::commands::operation::OperationCommand;
 use crate::commands::provider::ProviderCommand;
 use crate::commands::queue::QueueCommand;
 use crate::commands::search::SearchCommand;
+use crate::commands::sync::SyncCommand;
 use crate::commands::thread::ThreadCommand;
 
 /// Client en ligne de commande de MIRA.
@@ -84,6 +85,9 @@ pub enum Commands {
     /// File d'actions locale.
     #[command(subcommand)]
     Queue(QueueCommand),
+    /// Synchronisation : lancer, état, pause, remonter la plage, resynchroniser.
+    #[command(subcommand)]
+    Sync(SyncCommand),
     /// Lecture des événements du moteur.
     Events(EventsArgs),
 }

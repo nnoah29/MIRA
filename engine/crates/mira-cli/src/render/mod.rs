@@ -20,6 +20,7 @@ pub mod providers;
 pub mod queue;
 pub mod reading;
 pub mod search;
+pub mod sync_status;
 pub mod table;
 pub mod threads;
 pub mod write_responses;
@@ -51,6 +52,6 @@ pub fn human_text(response: &Response) -> String {
             maintenance::maintenance_text(response)
         }
         Response::Write(write) => write_responses::write_text(write),
-        Response::Sync(_) => generic::pretty_json(response),
+        Response::Sync(sync) => sync_status::sync_text(sync),
     }
 }

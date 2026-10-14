@@ -2,11 +2,14 @@
 
 pub mod examples;
 pub mod examples_read;
+pub mod examples_sync;
 pub mod examples_write;
 pub mod lines_read_write;
+pub mod lines_sync;
 pub mod names_accounts;
 pub mod names_read;
 pub mod names_simple;
+pub mod names_sync;
 pub mod names_write;
 
 use std::io::Cursor;
@@ -23,6 +26,7 @@ use mira_cli::commands::request_builder::build_request;
 use names_accounts::{account_name, auth_name, identity_name};
 use names_read::{mailbox_name, maintenance_name, message_name, search_name, thread_name};
 use names_simple::{engine_name, event_name, operation_name, provider_name};
+use names_sync::sync_name;
 use names_write::{action_name, compose_name, queue_name};
 
 /// Nom `domaine.opération` d'une requête, par `match` exhaustif sur tous les domaines.
@@ -40,7 +44,7 @@ pub fn variant_name(request: &Request) -> &'static str {
         Request::Thread(inner) => thread_name(inner),
         Request::Search(inner) => search_name(inner),
         Request::Maintenance(inner) => maintenance_name(inner),
-        Request::Sync(_) => "sync.cli_pending",
+        Request::Sync(inner) => sync_name(inner),
         Request::Action(inner) => action_name(inner),
         Request::Compose(inner) => compose_name(inner),
         Request::Queue(inner) => queue_name(inner),

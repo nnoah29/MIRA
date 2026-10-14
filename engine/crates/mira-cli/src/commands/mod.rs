@@ -3,6 +3,7 @@
 pub mod account;
 pub mod action;
 pub mod auth;
+pub mod background_policy;
 pub mod draft;
 pub mod engine;
 pub mod events;
@@ -21,6 +22,8 @@ pub mod provider;
 pub mod queue;
 pub mod request_builder;
 pub mod search;
+pub mod steps;
+pub mod sync;
 pub mod targets;
 pub mod thread;
 pub mod view_args;

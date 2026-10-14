@@ -34,7 +34,7 @@ fn by_stable(
     }
 }
 
-/// Recoupement de dernier recours : un seul candidat qui attend une revalidation, sinon rien.
+/// Recoupement de dernier recours : un seul candidat qui attend une revalidation ou qui est orphelin, sinon rien.
 fn by_fingerprint(
     tx: &Tx<'_>,
     account: &AccountId,
@@ -45,25 +45,49 @@ fn by_fingerprint(
     };
     let date = incoming.parsed.date;
     let candidates = tx.find_by_fingerprint(account, header, date, incoming.fetched.size)?;
-    let mut waiting = awaiting_revalidation(tx, candidates, &incoming.mailbox)?;
-    match (waiting.pop(), waiting.is_empty()) {
-        (Some(only), true) => Ok(Some(only)),
-        _ => Ok(None),
-    }
+    let kinds = classify(tx, &candidates, &incoming.mailbox)?;
+    Ok(single_match(&candidates, &kinds))
 }
 
-/// Garde les candidats dont l'apparition dans cette boîte attend une revalidation.
-fn awaiting_revalidation(
+/// Ce qu'un candidat du recoupement est pour la boîte qui reçoit le message.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Candidate {
+    AwaitingRevalidation,
+    Orphan,
+    Live,
+}
+
+/// Classe chaque candidat : à revalider dans cette boîte, orphelin de la passe (aucune apparition), ou vivant ailleurs.
+fn classify(
     tx: &Tx<'_>,
-    candidates: Vec<MessageId>,
+    candidates: &[MessageId],
     mailbox: &MailboxId,
-) -> Result<Vec<MessageId>, MiraError> {
-    let mut waiting = Vec::new();
+) -> Result<Vec<Candidate>, MiraError> {
+    let mut kinds = Vec::new();
     for candidate in candidates {
-        let appearance = tx.get_appearance(&candidate, mailbox)?;
-        if appearance.is_some_and(|found| found.needs_revalidation) {
-            waiting.push(candidate);
-        }
+        let waiting = tx.get_appearance(candidate, mailbox)?;
+        kinds.push(if waiting.is_some_and(|found| found.needs_revalidation) {
+            Candidate::AwaitingRevalidation
+        } else if tx.appearances_of_message(candidate)?.is_empty() {
+            Candidate::Orphan
+        } else {
+            Candidate::Live
+        });
     }
-    Ok(waiting)
+    Ok(kinds)
+}
+
+/// Le candidat à reconnaître : unique parmi ceux qui attendent ou sont orphelins ; un orphelin n'est repris qu'en l'absence de jumeau vivant.
+fn single_match(candidates: &[MessageId], kinds: &[Candidate]) -> Option<MessageId> {
+    let eligible: Vec<usize> = (0..kinds.len())
+        .filter(|index| kinds[*index] != Candidate::Live)
+        .collect();
+    let [only] = eligible.as_slice() else {
+        return None;
+    };
+    let twin_alive = kinds.contains(&Candidate::Live);
+    if kinds[*only] == Candidate::Orphan && twin_alive {
+        return None;
+    }
+    candidates.get(*only).cloned()
 }

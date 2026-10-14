@@ -2,7 +2,7 @@
 
 use mira_vocabulary::{MailboxId, MiraError};
 
-use super::account::{run_pass, run_steps, sync_one};
+use super::account::{MailboxOutcome, run_pass, run_steps, sync_one};
 use crate::sync::requests::TakenRequests;
 use crate::sync::resync::force_resync;
 use crate::sync::session::SyncSession;
@@ -11,7 +11,7 @@ use crate::sync::session::SyncSession;
 async fn sync_listed(session: &mut SyncSession, mailbox: &MailboxId) -> Result<(), MiraError> {
     let found = session.ctx.db.read(|tx| tx.get_mailbox(mailbox))?;
     match found {
-        Some(known) => sync_one(session, &known).await,
+        Some(known) => sync_one(session, &known).await.map(|_: MailboxOutcome| ()),
         None => Ok(()),
     }
 }

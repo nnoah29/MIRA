@@ -41,4 +41,10 @@ impl ImapClient {
     pub async fn search_text(&mut self, query: &str) -> Result<Vec<u32>, MiraError> {
         self.search_uids(&format!("TEXT {}", quote(query)?)).await
     }
+
+    /// UID des messages dont l'en-tête Message-ID contient l'identifiant donné (recherche du serveur).
+    pub async fn uids_with_message_id(&mut self, message_id: &str) -> Result<Vec<u32>, MiraError> {
+        self.search_uids(&format!("HEADER Message-ID {}", quote(message_id)?))
+            .await
+    }
 }

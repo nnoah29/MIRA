@@ -33,4 +33,10 @@ impl ImapClient {
         }
         Ok(found)
     }
+
+    /// Garde, parmi les UID demandés, ceux que la boîte sélectionnée contient encore.
+    pub async fn existing_uids(&mut self, uids: &[u32]) -> Result<Vec<u32>, MiraError> {
+        let found = self.fetch_flags(uids, None).await?;
+        Ok(found.into_iter().map(|flags| flags.uid).collect())
+    }
 }

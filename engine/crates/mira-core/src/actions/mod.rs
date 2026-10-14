@@ -1,5 +1,5 @@
 //! File d'actions locale : soumission idempotente, effet local optimiste, annulation, relance, rebase (D-23).
-//! Le rejeu vers le serveur n'en fait pas partie : il lit les cibles serveur et l'état de la file.
+//! Le rejeu vers le serveur (`replay`) lit les cibles serveur et l'état de la file.
 
 mod cancel;
 mod effect;
@@ -9,6 +9,7 @@ mod plan;
 mod queue;
 mod rebase;
 mod record;
+pub(crate) mod replay;
 mod resolve;
 mod retry;
 mod revert;
@@ -23,6 +24,10 @@ pub use model::{
 };
 pub(crate) use queue::{Queued, queue_action};
 pub use rebase::reapply_pending_local_effects;
+pub use replay::{
+    BoxFuture, RecoveryReport, ReplayContext, ReplayCredentials, ReplayReport, ReplayStop,
+    recover_interrupted_actions, replay_actions,
+};
 pub use retry::retry;
 pub use revert::revert_local_effect;
 pub use submit::submit;

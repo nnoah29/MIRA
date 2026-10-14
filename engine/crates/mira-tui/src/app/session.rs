@@ -1,35 +1,67 @@
-//! Session complète : moteur ouvert, terminal pris, boucle, puis terminal rendu et moteur fermé.
+//! Session complète : moteur ouvert, terminal pris, boucle, terminal rendu, avis de fermeture, moteur fermé (AG-39).
 
-use std::io::stdout;
+use std::io::{Stdout, Write, stderr, stdout};
 use std::sync::Arc;
 
 use mira_assembly::api::{Engine, EngineConfig};
 use ratatui::Terminal;
-use ratatui::backend::CrosstermBackend;
-use tokio::sync::mpsc;
+use ratatui::backend::{Backend, CrosstermBackend};
+use tokio::sync::mpsc::{self, UnboundedReceiver};
 
 use super::engine_session::{close_engine, open_engine};
 use super::error::TuiError;
 use super::input_thread;
-use super::run_loop::run_loop;
+use super::run_loop::{LoopHooks, run_loop_with};
+use super::stop_signals::spawn_stop_signals;
 use super::terminal_guard::TerminalGuard;
+use crossterm::event::KeyEvent;
 
-/// Ouvre le moteur, fait tourner l'interface, puis ferme le moteur même si l'interface a échoué.
+const CLOSING_NOTICE: &str = "Fermeture de MIRA…";
+
+/// Ouvre le moteur, prend le terminal, écoute clavier et signaux, puis termine la session ; le moteur est toujours fermé.
 pub async fn run_app(config: EngineConfig) -> Result<(), TuiError> {
     let engine = open_engine(config)?;
-    let outcome = run_in_terminal(Arc::clone(&engine)).await;
-    let closed = close_engine(engine).await;
-    outcome.and(closed)
-}
-
-/// Prend le terminal, lance le fil du clavier et la boucle ; le garde rend le terminal en sortant.
-async fn run_in_terminal(engine: Arc<Engine>) -> Result<(), TuiError> {
-    let _guard = TerminalGuard::enter()?;
-    let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+    let (guard, mut terminal) = match enter_terminal() {
+        Ok(parts) => parts,
+        Err(error) => {
+            let _ = close_engine(engine).await;
+            return Err(error);
+        }
+    };
     let (sender, keys) = mpsc::unbounded_channel();
     let reader = input_thread::spawn(sender);
-    let outcome = run_loop(&mut terminal, engine, keys).await;
-    let _ = terminal.show_cursor();
+    let (stop_sender, stop) = mpsc::unbounded_channel();
+    let signals = spawn_stop_signals(stop_sender);
+    let hooks = LoopHooks {
+        frames: None,
+        stop: Some(stop),
+    };
+    let outcome = run_session_parts(engine, guard, &mut terminal, keys, hooks, &mut stderr()).await;
+    signals.abort();
     let _ = tokio::task::spawn_blocking(move || reader.join()).await;
     outcome
+}
+
+/// Active mode brut et écran alternatif, puis ouvre le terminal ratatui sur la sortie standard.
+fn enter_terminal() -> Result<(TerminalGuard, Terminal<CrosstermBackend<Stdout>>), TuiError> {
+    let guard = TerminalGuard::enter()?;
+    let terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+    Ok((guard, terminal))
+}
+
+/// Fait tourner la boucle, rend le terminal, écrit l'avis de fermeture sur `notice`, puis ferme le moteur.
+pub async fn run_session_parts<B: Backend>(
+    engine: Arc<Engine>,
+    guard: TerminalGuard,
+    terminal: &mut Terminal<B>,
+    keys: UnboundedReceiver<KeyEvent>,
+    hooks: LoopHooks,
+    notice: &mut dyn Write,
+) -> Result<(), TuiError> {
+    let outcome = run_loop_with(terminal, Arc::clone(&engine), keys, hooks).await;
+    let _ = terminal.show_cursor();
+    drop(guard);
+    let _ = notice.write_all(format!("{CLOSING_NOTICE}\n").as_bytes());
+    let closed = close_engine(engine).await;
+    outcome.and(closed)
 }

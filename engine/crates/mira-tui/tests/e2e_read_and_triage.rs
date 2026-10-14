@@ -7,7 +7,7 @@ mod support;
 use crossterm::event::KeyCode;
 use e2e_support::{press, queued_actions, type_text, wait_for};
 use mira_assembly::mira_vocabulary::{ActionKind, MailboxRole, MessageId};
-use mira_tui::app::run_loop::run_loop_with_frames;
+use mira_tui::app::run_loop::{LoopHooks, run_loop_with};
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use ratatui::buffer::Buffer;
@@ -15,6 +15,14 @@ use support::world::TestWorld;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
 const SUBJECTS: [&str; 3] = ["Facture", "Rendez-vous", "Vacances"];
+
+/// Options de boucle des tests : copie des images, pas de signal d'arrêt.
+fn hooks(frames: UnboundedSender<Buffer>) -> LoopHooks {
+    LoopHooks {
+        frames: Some(frames),
+        stop: None,
+    }
+}
 
 /// Monde de test avec une boîte de réception de trois messages et une boîte d'archives vide.
 async fn seeded_world() -> TestWorld {
@@ -60,7 +68,7 @@ async fn e2e_read_and_triage() {
     let mut terminal = Terminal::new(TestBackend::new(90, 24)).unwrap();
     let (keys, key_rx) = mpsc::unbounded_channel();
     let (frame_tx, frames) = mpsc::unbounded_channel();
-    let session = run_loop_with_frames(&mut terminal, world.engine(), key_rx, frame_tx);
+    let session = run_loop_with(&mut terminal, world.engine(), key_rx, hooks(frame_tx));
     let (outcome, ()) = tokio::join!(session, triage_script(keys, frames));
     outcome.unwrap();
     let actions = queued_actions(&world, world.account().unwrap()).await;
@@ -103,7 +111,7 @@ async fn e2e_search_then_escape_restores_mailbox() {
     let mut terminal = Terminal::new(TestBackend::new(140, 30)).unwrap();
     let (keys, key_rx) = mpsc::unbounded_channel();
     let (frame_tx, frames) = mpsc::unbounded_channel();
-    let session = run_loop_with_frames(&mut terminal, world.engine(), key_rx, frame_tx);
+    let session = run_loop_with(&mut terminal, world.engine(), key_rx, hooks(frame_tx));
     let (outcome, ()) = tokio::join!(session, search_script(keys, frames));
     outcome.unwrap();
     world.close().await.unwrap();

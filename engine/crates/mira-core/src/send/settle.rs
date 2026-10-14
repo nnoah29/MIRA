@@ -3,6 +3,7 @@
 use mira_vocabulary::error::codes::server;
 use mira_vocabulary::{ActionState, EventKind, MailboxRole, MiraError, PendingAction};
 
+use super::draft_copy::purge_draft_copy;
 use super::execute::draft_of;
 use super::message_id::stored_message_id;
 use super::role_mailbox::role_mailbox_name;
@@ -16,7 +17,7 @@ pub(crate) async fn settle_interrupted_send(
     action: &PendingAction,
 ) -> Result<StepOutcome, MiraError> {
     let found = find_in_sent(ctx, client, action).await.unwrap_or(false);
-    conclude(ctx, action, found)
+    conclude_with_cleanup(ctx, client, action, found).await
 }
 
 /// Règle l'envoi laissé « en cours » par un arrêt brutal ; si Envoyés est illisible, l'envoi reste « en cours »
@@ -26,6 +27,22 @@ pub(crate) async fn recover_interrupted_send(
     action: &PendingAction,
 ) -> Result<StepOutcome, MiraError> {
     let found = find_in_sent(ctx, client, action).await?;
+    conclude_with_cleanup(ctx, client, action, found).await
+}
+
+/// Écrit le verdict ; un envoi retrouvé fait aussi purger la copie serveur du brouillon, sans jamais échouer pour cela
+async fn conclude_with_cleanup(
+    ctx: &ReplayContext<'_>,
+    client: &mut ImapClient,
+    action: &PendingAction,
+    found: bool,
+) -> Result<StepOutcome, MiraError> {
+    if found {
+        let purged = purge_draft_copy(ctx, client, draft_of(action)?).await;
+        if let Err(error) = purged {
+            tracing::warn!(code = %error.code, "copie serveur du brouillon non purgée");
+        }
+    }
     conclude(ctx, action, found)
 }
 

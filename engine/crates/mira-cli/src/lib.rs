@@ -4,6 +4,7 @@
 pub mod argument_context;
 pub mod argument_error;
 pub mod arguments;
+pub mod civil_date;
 pub mod cli_io;
 pub mod commands;
 pub mod deps;

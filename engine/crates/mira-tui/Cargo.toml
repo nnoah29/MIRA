@@ -27,5 +27,5 @@ mira-assembly.workspace = true
 crossterm.workspace = true
 ratatui.workspace = true
 thiserror.workspace = true
-tokio.workspace = true
+tokio = { workspace = true, features = ["signal"] }
 tracing-subscriber.workspace = true

@@ -54,6 +54,11 @@ impl TestWorld {
         self.account.clone()
     }
 
+    /// Rend la seule poignée du moteur (fermeture à la charge de l'appelant) et ce qui doit vivre autant que lui.
+    pub fn split(self) -> (Arc<Engine>, (TempDir, Option<FakeImapServer>)) {
+        (self.engine, (self.home, self.imap))
+    }
+
     /// Ferme le moteur ; échoue tant qu'une poignée obtenue par `engine()` est encore vivante.
     pub async fn close(self) -> Result<(), TuiError> {
         close_engine(self.engine).await

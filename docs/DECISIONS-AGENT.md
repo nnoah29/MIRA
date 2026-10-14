@@ -118,3 +118,10 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - **Contexte** : session dans un conteneur éphémère ; des worktrees non poussés ont été perdus (AG-17).
 - **Choix** : sur instruction explicite de l'utilisateur (2026-10-14), la règle absolue 4 est levée pour `git push` : on pousse la branche de travail et les branches d'agents vers `origin`, jamais vers `dev`/`main`.
 - **Retour arrière** : revenir à « pas de push » si l'utilisateur le redemande.
+
+## AG-19 — CLI sur la façade (rapport J9a)
+- `mira_cli::run(args, io, deps)` est async ; `CliDeps` porte profil, registre, trousseau, horloge, ids, config OAuth, réseau, stdin.
+- `provider list|detect` reste local (registre injecté, sans ouvrir de profil) ; les autres commandes passent par `Engine::open/execute/shutdown`.
+- Secrets uniquement via `--password-stdin` (1re ligne, 4 Ko). Clé d'idempotence de `account add` : `--key`, sinon `cli-<id>`.
+- OAuth en deux processus (`oauth-start` puis `oauth-complete`) impossible : table des flux en mémoire du moteur ; à traiter avec une commande combinée (J9).
+- Ajouter une variante de `Request` : module `commands/<domaine>/`, bras dans `request_builder.rs` et `render/mod.rs`, exemples du test invariant 6.

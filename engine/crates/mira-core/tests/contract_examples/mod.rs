@@ -2,9 +2,14 @@
 #![allow(dead_code)]
 
 pub mod account_domain;
+pub mod actions;
+pub mod compose;
+pub mod compose_drafts;
+pub mod compose_sending;
 pub mod mailbox_domain;
 pub mod maintenance_domain;
 pub mod message_domain;
+pub mod queue;
 pub mod response_names;
 pub mod response_samples;
 pub mod responses_legacy;
@@ -12,8 +17,14 @@ pub mod responses_read;
 pub mod search_domain;
 pub mod small_domains;
 pub mod snapshot;
+pub mod write_domain;
+
+pub use write_domain::{numbered, write_requests, write_responses};
 
 use mira_core::api::{Request, Response};
+
+/// Un exemple nommé (`domaine.opération`, suivi d'un rang si l'opération a plusieurs exemples).
+pub type Named<T> = (String, T);
 
 /// Nom `domaine.opération` d'une requête, par `match` exhaustif sur tous les domaines
 pub fn request_name(request: &Request) -> &'static str {
@@ -30,6 +41,7 @@ pub fn request_name(request: &Request) -> &'static str {
         Request::Thread(inner) => search_domain::thread_name(inner),
         Request::Search(inner) => search_domain::search_name(inner),
         Request::Maintenance(inner) => maintenance_domain::maintenance_name(inner),
+        Request::Action(_) | Request::Compose(_) | Request::Queue(_) => "write",
     }
 }
 

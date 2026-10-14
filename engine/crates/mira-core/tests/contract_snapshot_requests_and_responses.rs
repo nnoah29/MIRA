@@ -11,7 +11,9 @@ mod support_mirror;
 
 use contract_examples::response_names::{TYPES, group_of};
 use contract_examples::snapshot::{current_snapshot, parsed_requests, snapshot_path};
-use contract_examples::{all_responses, expected_request_names, request_name};
+use contract_examples::{
+    all_responses, expected_request_names, request_name, write_requests, write_responses,
+};
 use mira_core::api::{Request, Response};
 use serde_json::Value;
 
@@ -84,4 +86,33 @@ fn request_examples_round_trip() {
         let back: Request = serde_json::from_str(&text).unwrap();
         assert_eq!(back, request);
     }
+}
+
+/// Chaque exemple d'écriture survit à un aller-retour JSON sans perte
+#[test]
+fn write_examples_round_trip_through_json() {
+    for (name, request) in write_requests() {
+        let text = serde_json::to_string(&request).unwrap();
+        let back: Request = serde_json::from_str(&text).unwrap();
+        assert_eq!(back, request, "requête {name}");
+    }
+    for (name, response) in write_responses() {
+        let text = serde_json::to_string(&response).unwrap();
+        let back: Response = serde_json::from_str(&text).unwrap();
+        assert_eq!(back, response, "réponse {name}");
+    }
+}
+
+/// Chaque opération d'écriture a au moins un exemple, nommé d'après son étiquette JSON `op`
+#[test]
+fn every_write_operation_has_a_request_example() {
+    let mut distinct = std::collections::BTreeSet::new();
+    for (name, request) in write_requests() {
+        let value = serde_json::to_value(&request).unwrap();
+        let tag = value["request"]["op"].as_str().unwrap().to_string();
+        let domain = value["domain"].as_str().unwrap().to_string();
+        assert!(name.starts_with(&format!("{domain}.{tag}")), "{name}");
+        distinct.insert(format!("{domain}.{tag}"));
+    }
+    assert_eq!(distinct.len(), 6 + 11 + 3);
 }

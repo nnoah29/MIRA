@@ -16,7 +16,7 @@
 | 12 | Drapeaux utilisateur au niveau du message (D-14) | `invariant_12_flags_live_on_message` (mira-core)<br>`invariant_12_mark_read_applies_to_message_once` (mira-core) |
 | 13 | Fil dérivé, recalculable (D-15) | `invariant_13_threads_recomputed_identically` (mira-core) |
 | 14 | Source brute conservée, analyse en cache (D-16) | `invariant_14_raw_source_roundtrip_compressed` (mira-core) |
-| 15 | Aucun secret en base, journaux, événements, API (P9) | `invariant_15_no_oauth_token_in_responses_events_or_database` (mira-core)<br>`invariant_15_no_secret_in_database` (mira-core)<br>`invariant_15_no_secret_in_responses_events_or_database` (mira-core) |
+| 15 | Aucun secret en base, journaux, événements, API (P9) | `invariant_15_no_oauth_token_in_responses_events_or_database` (mira-core)<br>`invariant_15_no_secret_in_database` (mira-core)<br>`invariant_15_no_secret_in_events_errors_or_responses` (mira-core)<br>`invariant_15_no_secret_in_responses_events_or_database` (mira-core) |
 | 16 | Miroir jetable sans perte (8.1) | `invariant_16_discard_mirror_keeps_config_and_intentions` (mira-core) |
 | 17 | Action écrite avant d'être tentée | `invariant_17_action_persisted_before_attempt` (mira-core)<br>`invariant_17_action_written_before_attempt` (mira-core) |
 | 18 | Action rejouée : pas deux effets | `invariant_18_enqueue_is_idempotent` (mira-core)<br>`invariant_18_replay_after_crash_has_single_effect` (mira-core)<br>`invariant_18_resubmission_with_same_key_has_single_effect` (mira-core) |
@@ -27,11 +27,11 @@
 | 23 | Doute d'identité : garder deux messages (P7) | `invariant_23_ambiguous_fingerprint_keeps_two_messages` (mira-core) |
 | 24 | Une tâche de synchro par compte | `invariant_24_single_sync_task_per_account` (mira-core) |
 | 25 | Connexions ≤ plafond du provider | `invariant_25_connections_within_provider_limit` (mira-core) |
-| 26 | Jamais deux envois sans décision de l'utilisateur | `invariant_26_interrupted_send_becomes_uncertain_never_resent` (mira-core) |
-| 27 | Aucune lecture ordinaire par le réseau (P5) | `invariant_27_reads_never_touch_network` (mira-core) |
-| 28 | Toute écriture rend la main sans réseau | `invariant_28_submit_returns_without_network` (mira-core)<br>`invariant_28_write_returns_without_network` (mira-core) |
-| 29 | Toute liste paginée par curseur | `invariant_29_list_is_cursor_paginated` (mira-core)<br>`invariant_29_unified_view_paginates_without_duplicates` (mira-core) |
-| 30 | Identifiants exposés opaques | manquant |
+| 26 | Jamais deux envois sans décision de l'utilisateur | `invariant_26_interrupted_send_becomes_uncertain_never_resent` (mira-core)<br>`invariant_26_restart_makes_interrupted_send_uncertain_never_resent` (mira-core) |
+| 27 | Aucune lecture ordinaire par le réseau (P5) | `invariant_27_list_and_read_work_offline` (mira-core)<br>`invariant_27_reads_never_touch_network` (mira-core) |
+| 28 | Toute écriture rend la main sans réseau | `invariant_28_actions_return_while_offline` (mira-core)<br>`invariant_28_submit_returns_without_network` (mira-core)<br>`invariant_28_write_returns_without_network` (mira-core) |
+| 29 | Toute liste paginée par curseur | `invariant_29_list_is_cursor_paginated` (mira-core)<br>`invariant_29_lists_are_paginated_through_the_facade` (mira-core)<br>`invariant_29_unified_view_paginates_without_duplicates` (mira-core) |
+| 30 | Identifiants exposés opaques | `invariant_30_ids_are_opaque_strings` (mira-core) |
 | 31 | Erreur : catégorie, code stable, réessayable | `invariant_31_error_codes_are_unique_and_prefixed_by_category` (mira-vocabulary) |
 | 32 | Événements numérotés, sans secret ni contenu | `invariant_32_events_are_numbered_and_persisted` (mira-core)<br>`invariant_32_subscription_resumes_after_seen_number_then_follows_live` (mira-core) |
 | 33 | Version du contrat vérifiée à l'ouverture | `invariant_33_contract_version_compatibility` (mira-vocabulary)<br>`invariant_33_incompatible_client_version_is_refused` (mira-core) |
@@ -43,7 +43,7 @@
 | S3 | Ajouter un compte « Autre » | `scenario_s3_add_other_account_with_manual_servers` (mira-core) |
 | S4 | Première synchronisation | `scenario_s4_first_sync_downloads_inbox_first_with_progress` (mira-core) |
 | S5 | Nouveau message en temps réel | `scenario_s5_idle_new_message_emits_event` (mira-core) |
-| S6 | Lire un message hors ligne | `scenario_s6_read_offline_body_present_or_unavailable` (mira-core) |
+| S6 | Lire un message hors ligne | `scenario_s6_read_body_offline_through_the_facade` (mira-core)<br>`scenario_s6_read_offline_body_present_or_unavailable` (mira-core) |
 | S7 | Déplacer des messages hors ligne | `scenario_s7_move_offline_then_replay_in_order` (mira-core)<br>`scenario_s7_move_without_move_extension_copies_then_expunges` (mira-core) |
 | S8 | Message supprimé ailleurs | `scenario_s8_action_on_deleted_message_fails_and_reverts` (mira-core) |
 | S9 | Envoyer, avec annulation | `scenario_s9_send_with_undo_then_send` (mira-core) |

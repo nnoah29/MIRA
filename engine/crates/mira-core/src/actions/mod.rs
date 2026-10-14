@@ -1,6 +1,7 @@
 //! File d'actions locale : soumission idempotente, effet local optimiste, annulation, relance, rebase (D-23).
 //! Le rejeu vers le serveur (`replay`) lit les cibles serveur et l'état de la file.
 
+mod batch;
 mod cancel;
 mod effect;
 pub(crate) mod errors;
@@ -17,6 +18,7 @@ mod steps;
 mod submit;
 mod targets;
 
+pub use batch::{BatchItem, submit_batch};
 pub use cancel::cancel;
 pub use model::{
     LocalIntent, LocalStep, QueueContext, SEND_UNDO_DELAY_MILLIS, SubmitRequest, UNDO_DELAY_MILLIS,

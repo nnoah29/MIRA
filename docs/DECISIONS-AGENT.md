@@ -144,3 +144,16 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - IDLE seulement s'il reste un permis de réserve (limite ≥ 3), sinon relevé périodique + Diagnostic `sync.realtime`.
 - Erreur serveur sur une boîte : Diagnostic Warn, les autres continuent. Pas de trait `LocalIntentReplayer` : appel direct de `reapply_pending_local_effects`.
 - Limites : annulation de `extend_window` testée seulement avant le premier lot.
+
+## AG-22 — Façade lecture et maintenance (rapport J8b)
+- Pas de migration v006 (table `remote_content_allowances` déjà en v001). Téléchargement dans `fetching/` (pas `reading/fetch/`, qui interdit le réseau). `maintenance/` pour purge, diagnostic, export.
+- `FetchMessageBody`, `SaveAttachment`, `SearchServer` rendent `Response::Operation` tout de suite (tâche `tokio::spawn`) ; résultat de recherche serveur par `SearchRequest::GetServerSearchResult { operation }` (16 derniers en mémoire, 200 hits max) — **le CLI doit exposer cette variante (invariant 6)**.
+- `GetSafeHtml` : assainit avec `allow_remote` si autorisation par message ou expéditeur ; `ExportProfile` : comptes, identités, autorisations, brouillons, actions (`format_version: 1`), sans secret ni miroir ; `ExportDiagnostic` sans adresse.
+- Limite : `ImapAccess` utilise le jeton rangé sans rafraîchissement automatique.
+
+## AG-23 — Façade écriture et rejeu de fond (rapport J8c)
+- Trois domaines `Action`, `Compose`, `Queue` et une enveloppe `Response::Write` (boîtes en écriture dans `Action`). `ApplyAction` rend une action par compte ; lot atomique (`actions::submit_batch`), sélection par requête plafonnée à 10 000.
+- `UndoAction`/`CancelAction`/`CancelSend` appellent `cancel` (état `Pending` seulement).
+- `replayer/` : une tâche de fond par compte (récupération puis `replay_actions`), sonde 250 ms, réveil au submit/retry/résolution ; `ReplayCredentials` de production sur le trousseau ; état Connected/Offline/AuthRequired. `Engine::shutdown` arrête par `abort`, la reprise se fait au démarrage suivant.
+- Fusion J8b+J8c : tests de contrat réconciliés ; exemples d'écriture nommés (`write_requests`, `write_responses`, `numbered`) ajoutés à l'instantané ; le CLI rend les nouvelles réponses en JSON en attendant J9b.
+- **Reste** : première synchro sur `AddAccount`, domaine Synchro de la façade, commandes CLI des variantes de lecture/écriture.

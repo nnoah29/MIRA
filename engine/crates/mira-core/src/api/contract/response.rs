@@ -7,6 +7,7 @@ use mira_vocabulary::{
 use serde::{Deserialize, Serialize};
 
 use super::read_responses::{ExportReport, IntegrityReport, RawSourceView, ThreadView};
+use super::write::WriteResponse;
 use crate::fetching::ServerSearchResult;
 use crate::html::SafeHtml;
 use crate::operations::OperationInfo;
@@ -80,4 +81,5 @@ pub enum Response {
     OAuthStarted(OAuthStart),
     Operation(OperationInfo),
     Events(Vec<Event>),
+    Write(WriteResponse),
 }

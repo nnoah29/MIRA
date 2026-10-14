@@ -5,16 +5,18 @@ mod config;
 pub mod contract;
 mod engine;
 mod handlers;
+mod queue_access;
 mod router;
 mod services;
 mod startup;
 
 pub use config::EngineConfig;
 pub use contract::{
-    AccountChanges, AccountDraft, AccountRequest, AccountStatus, AttachmentTarget, AuthRequest,
-    ContractInfo, CredentialInput, EngineRequest, EngineStatus, EventRequest, IdentityRequest,
-    MailboxRequest, MaintenanceRequest, MessageRequest, NewIdentity, OperationRequest,
-    ProviderRequest, RemoteContentTarget, Request, Response, SearchRequest, SecretInput,
-    ThreadRequest,
+    AccountChanges, AccountDraft, AccountRequest, AccountStatus, ActionRequest, AttachmentTarget,
+    AuthRequest, ComposeRequest, ContractInfo, CredentialInput, DraftChanges, DraftMode,
+    EngineRequest, EngineStatus, EventRequest, IdentityRequest, MailboxRequest, MaintenanceRequest,
+    MessageRequest, NewIdentity, OperationRequest, OutboxEntry, ProviderRequest, QueueRequest,
+    RemoteContentTarget, Request, Response, SearchRequest, SecretInput, TargetSelection,
+    ThreadRequest, WriteResponse,
 };
 pub use engine::Engine;

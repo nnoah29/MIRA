@@ -16,7 +16,7 @@ use crate::support_sync::within;
 use crate::support_sync::world::{open_session, start_world};
 use ops::ServerOp;
 
-/// Rejoue les changements sur un faux serveur Gmail ou à dossiers ; après chaque synchronisation, le miroir est vérifié
+/// Rejoue les changements sur un faux serveur à libellés ou à dossiers ; après chaque synchronisation, le miroir est vérifié
 pub fn run_server_sequence(operations: &[ServerOp], stable_ids: bool) {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()

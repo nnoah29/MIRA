@@ -1,8 +1,11 @@
 //! Commande DATA : lecture du message jusqu'à `.` seul et dé-bourrage (RFC 5321 4.1.1.4, 4.5.2).
 
 use std::io;
+use std::time::Duration;
 
 use crate::smtp::session::{Flow, Session};
+
+const STALL_DURATION: Duration = Duration::from_secs(60);
 
 /// Accepte le message, l'enregistre puis répond selon les pannes armées
 pub(crate) async fn handle(session: &mut Session) -> io::Result<Flow> {
@@ -15,12 +18,17 @@ pub(crate) async fn handle(session: &mut Session) -> io::Result<Flow> {
     if let Some(failure) = session.take_failure() {
         return session.answer(&failure).await;
     }
-    let (id, drop_now) = session.shared.with(|state| {
+    let (id, drop_now, stall_now) = session.shared.with(|state| {
         (
             state.record(mail),
             std::mem::take(&mut state.drop_after_data),
+            std::mem::take(&mut state.stall_after_data),
         )
     });
+    if stall_now {
+        tokio::time::sleep(STALL_DURATION).await;
+        return Ok(Flow::Close);
+    }
     if drop_now {
         return Ok(Flow::Close);
     }

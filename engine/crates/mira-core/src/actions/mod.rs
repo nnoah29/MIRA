@@ -28,7 +28,7 @@ pub(crate) use queue::{Queued, queue_action};
 pub use rebase::reapply_pending_local_effects;
 pub use replay::{
     BoxFuture, RecoveryReport, ReplayContext, ReplayCredentials, ReplayReport, ReplayStop,
-    recover_interrupted_actions, replay_actions,
+    recover_interrupted_actions, replay_actions, send_outcome_is_unknown,
 };
 pub use retry::retry;
 pub use revert::revert_local_effect;

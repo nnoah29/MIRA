@@ -19,6 +19,7 @@ pub(super) fn context_for(
         clock: config.clock.clone(),
         ids: config.ids.clone(),
         events: active.events.clone(),
+        network: config.network.clone(),
     })
 }
 

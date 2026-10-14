@@ -8,6 +8,12 @@ pub mod oauth_provider;
 pub mod oauth_requests;
 pub mod queries;
 pub mod requests;
+pub mod sync_calls;
+pub mod sync_control;
+pub mod sync_events;
+pub mod sync_reads;
+pub mod synced;
+pub mod syncing;
 
 use std::path::Path;
 use std::sync::Arc;

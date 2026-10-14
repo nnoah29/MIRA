@@ -17,6 +17,7 @@ pub mod responses_read;
 pub mod search_domain;
 pub mod small_domains;
 pub mod snapshot;
+pub mod sync_domain;
 pub mod write_domain;
 
 pub use write_domain::{numbered, write_requests, write_responses};
@@ -42,6 +43,7 @@ pub fn request_name(request: &Request) -> &'static str {
         Request::Search(inner) => search_domain::search_name(inner),
         Request::Maintenance(inner) => maintenance_domain::maintenance_name(inner),
         Request::Action(_) | Request::Compose(_) | Request::Queue(_) => "write",
+        Request::Sync(_) => "sync",
     }
 }
 

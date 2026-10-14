@@ -3,7 +3,8 @@
 use std::sync::Arc;
 
 use mira_core::api::{Engine, EngineConfig};
-use mira_core::ports::{MemorySecretStore, SecretStore};
+use mira_core::ports::{MemorySecretStore, SecretStore, SystemClock};
+use mira_core::sync::BackgroundSync;
 use mira_testkit::Credentials;
 use mira_testkit::imap::{CapabilitySet, FakeImapServer, FakeMailStore};
 use mira_testkit::oauth::FakeOAuthServer;
@@ -25,6 +26,7 @@ pub const LABELS_PASSWORD: &str = "app-SECRET-789";
 pub struct Fixture {
     pub home: TempDir,
     pub engine: Engine,
+    pub config: EngineConfig,
     pub secrets: Arc<MemorySecretStore>,
     pub imap: FakeImapServer,
     pub store: FakeMailStore,
@@ -77,8 +79,13 @@ fn redirect_domains(config: &mut EngineConfig, imap_port: u16) {
     }
 }
 
-/// Démarre le faux serveur, déclare ses utilisateurs et ouvre un moteur qui le vise
+/// Démarre le faux serveur et un moteur sans synchronisation en arrière-plan
 pub async fn start() -> Fixture {
+    start_with(BackgroundSync::Off).await
+}
+
+/// Démarre le faux serveur, déclare ses utilisateurs et ouvre un moteur qui le vise ; l'horloge est réelle si la synchro est active
+pub async fn start_with(sync: BackgroundSync) -> Fixture {
     let store = FakeMailStore::new();
     let credentials = Credentials::default();
     credentials.add_password(FOLDERS_USER, FOLDERS_PASSWORD);
@@ -91,11 +98,16 @@ pub async fn start() -> Fixture {
     let secrets = Arc::new(MemorySecretStore::new());
     let mut config = config_with_secrets(home.path(), Arc::clone(&secrets));
     redirect_domains(&mut config, imap.port());
+    if matches!(sync, BackgroundSync::On(_)) {
+        config.clock = Arc::new(SystemClock);
+    }
+    config.network.background_sync = sync;
     super::oauth::point_oauth_at(&mut config, &oauth);
-    let engine = Engine::open(config, CONTRACT_VERSION).unwrap();
+    let engine = Engine::open(config.clone(), CONTRACT_VERSION).unwrap();
     Fixture {
         home,
         engine,
+        config,
         secrets,
         imap,
         store,

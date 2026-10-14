@@ -33,7 +33,15 @@ pub(crate) async fn handle_add_account(
     engine.events.emit(EventKind::AccountAdded {
         account: account.id.clone(),
     })?;
+    launch_first_sync(engine, &account);
     Ok(Response::Account(account))
+}
+
+/// Lance la première synchronisation du compte (S4) ; un échec de lancement n'annule pas l'ajout
+fn launch_first_sync(engine: &Engine, account: &Account) {
+    if let Err(error) = engine.sync.start_account(account) {
+        tracing::warn!(code = %error.code, "première synchronisation non lancée");
+    }
 }
 
 /// Retrouve le compte déjà créé avec cette clé ; une autre adresse est un conflit

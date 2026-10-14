@@ -31,8 +31,9 @@ pub(crate) fn decode_entities(text: &str) -> String {
         out.push_str(&rest[..start]);
         let tail = &rest[start + 1..];
         let decoded = tail
-            .find(';')
-            .filter(|end| *end <= 8)
+            .bytes()
+            .take(9)
+            .position(|byte| byte == b';')
             .and_then(|end| entity_char(&tail[..end]).map(|ch| (ch, end)));
         match decoded {
             Some((ch, end)) => {

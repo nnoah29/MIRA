@@ -5,9 +5,10 @@ mod support_sync;
 
 use mira_core::sync::sync_account;
 use mira_testkit::imap::CapabilitySet;
+use support_sync::actions::queue_move;
 use support_sync::events::resynchronized;
 use support_sync::mail::mail;
-use support_sync::mirror::{ids_by_subject, mirror_rows, stored_messages};
+use support_sync::mirror::{ids_by_subject, mailbox_named, mirror_rows, stored_messages};
 use support_sync::provider::SyncTestProvider;
 use support_sync::scenarios::move_to_archive;
 use support_sync::within;
@@ -126,6 +127,39 @@ async fn unambiguous_fingerprint_is_recognized_after_renumbering() {
         world.store.renumber("alice", "INBOX");
         sync_account(&mut session).await.unwrap();
         assert_eq!(ids_by_subject(&world.db)["Unique"], before);
+    })
+    .await;
+}
+
+/// Une apparition provisoire (déplacement hors ligne) survit à la resynchronisation de la boîte cible
+#[tokio::test]
+async fn pending_move_survives_a_resynchronization_of_the_target() {
+    within(async {
+        let world = start_world(CapabilitySet::full(), SyncTestProvider::folders()).await;
+        world
+            .store
+            .create_mailbox("alice", "Archive", Some("\\Archive"));
+        world
+            .store
+            .deliver("alice", "INBOX", &mail("À déplacer", "m@x"), &[]);
+        let mut session = open_session(&world).await;
+        sync_account(&mut session).await.unwrap();
+        let target = ids_by_subject(&world.db)["À déplacer"].clone();
+        let archive = mailbox_named(&world.db, "Archive");
+        queue_move(&world, &target, &archive.id);
+        world.store.renumber("alice", "Archive");
+        sync_account(&mut session).await.unwrap();
+        let places = world
+            .db
+            .read(|tx| tx.appearances_of_message(&target))
+            .unwrap();
+        assert!(
+            places
+                .iter()
+                .any(|a| a.mailbox == archive.id && a.needs_revalidation)
+        );
+        assert_eq!(resynchronized(&world.recording), 1);
+        assert_eq!(stored_messages(&world.db), 1);
     })
     .await;
 }

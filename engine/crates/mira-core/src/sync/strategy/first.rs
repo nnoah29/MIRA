@@ -1,5 +1,7 @@
 //! Première synchronisation d'une boîte : les en-têtes de la plage, du plus récent au plus ancien.
 
+use std::collections::HashSet;
+
 use mira_vocabulary::{Mailbox, MiraError};
 
 use super::flag_changes::remove_vanished;
@@ -27,6 +29,7 @@ fn drop_unlisted(
     mailbox: &Mailbox,
     listed: &[u32],
 ) -> Result<(), MiraError> {
+    let listed: HashSet<u32> = listed.iter().copied().collect();
     session.ctx.db.write(|tx| {
         let local = tx.uids_in_mailbox(&mailbox.id)?;
         let gone: Vec<u32> = local

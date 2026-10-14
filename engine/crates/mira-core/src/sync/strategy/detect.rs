@@ -1,5 +1,7 @@
 //! Détection des changements d'une boîte selon la stratégie : QRESYNC, CONDSTORE, comparaison complète.
 
+use std::collections::HashSet;
+
 use mira_vocabulary::{Mailbox, MiraError, SyncMarker};
 
 use super::changes::Changes;
@@ -37,7 +39,8 @@ async fn list_differences(
     marker: SyncMarker,
 ) -> Result<(Vec<u32>, Vec<u32>), MiraError> {
     let server = session.conn.client.all_uids().await?;
-    let vanished = local.iter().filter(|uid| !server.contains(uid)).copied();
+    let listed: HashSet<u32> = server.iter().copied().collect();
+    let vanished = local.iter().filter(|uid| !listed.contains(uid)).copied();
     let fresh = server.iter().filter(|uid| **uid >= marker.uid_next);
     Ok((vanished.collect(), fresh.copied().collect()))
 }

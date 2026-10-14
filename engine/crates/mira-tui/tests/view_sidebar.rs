@@ -12,7 +12,7 @@ use sidebar_fixtures::{account, mailbox, rendered_text};
 fn no_accounts_shows_welcome_with_add_hint() {
     let text = rendered_text(&AppState::new(100, 30));
     assert!(text.contains("ajouter un compte"));
-    assert!(text.contains("n"));
+    assert!(text.contains("Appuyez sur n pour ajouter un compte"));
     assert!(text.contains("Aucun compte"));
 }
 

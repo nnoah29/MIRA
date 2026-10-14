@@ -10,6 +10,7 @@ mod query;
 mod search;
 
 pub use attachments::list_attachments;
+pub(crate) use body::body_unavailable;
 pub use body::{BodyView, get_body, get_raw_source};
 pub use counters::{mailboxes_with_counters, refresh_account_counters};
 pub use list::list_messages;

@@ -32,6 +32,23 @@ impl Tx<'_> {
         Ok(())
     }
 
+    /// Oublie tous les chemins de cache et les rend, pour que l'appelant supprime les fichiers
+    pub fn clear_attachment_cache_paths(&self) -> Result<Vec<String>, MiraError> {
+        let mut statement = self
+            .sql()
+            .prepare("SELECT cache_path FROM attachments WHERE cache_path IS NOT NULL")
+            .map_err(storage_error)?;
+        let paths = statement
+            .query_map([], |row| row.get::<_, String>(0))
+            .map_err(storage_error)?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(storage_error)?;
+        self.sql()
+            .execute("UPDATE attachments SET cache_path = NULL", [])
+            .map_err(storage_error)?;
+        Ok(paths)
+    }
+
     /// Enregistre (ou efface) le chemin du contenu téléchargé d'une pièce jointe
     pub fn set_attachment_cache_path(
         &self,

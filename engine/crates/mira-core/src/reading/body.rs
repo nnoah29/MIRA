@@ -40,7 +40,7 @@ pub fn get_raw_source(db: &Database, id: &MessageId) -> Result<Vec<u8>, MiraErro
 }
 
 /// Erreur « corps absent hors ligne » : le téléchargement est une commande réseau explicite
-fn body_unavailable(id: &MessageId) -> MiraError {
+pub(crate) fn body_unavailable(id: &MessageId) -> MiraError {
     MiraError::new(
         ErrorCategory::IncompatibleState,
         incompatible_state::BODY_UNAVAILABLE_OFFLINE,

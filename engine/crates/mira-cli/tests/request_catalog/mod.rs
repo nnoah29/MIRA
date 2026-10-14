@@ -26,6 +26,11 @@ pub fn variant_name(request: &Request) -> &'static str {
         Request::Auth(inner) => auth_name(inner),
         Request::Operation(inner) => operation_name(inner),
         Request::Event(inner) => event_name(inner),
+        Request::Mailbox(_)
+        | Request::Message(_)
+        | Request::Thread(_)
+        | Request::Search(_)
+        | Request::Maintenance(_) => "read.cli_pending",
     }
 }
 

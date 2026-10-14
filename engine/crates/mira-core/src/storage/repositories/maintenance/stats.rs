@@ -1,12 +1,13 @@
 //! Statistiques de volume du miroir local.
 
 use mira_vocabulary::MiraError;
+use serde::{Deserialize, Serialize};
 
 use crate::storage::Tx;
 use crate::storage::errors::storage_error;
 
 /// Volumes du miroir : nombres de lignes et octets de sources brutes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StorageStats {
     pub mailboxes: u64,
     pub messages: u64,

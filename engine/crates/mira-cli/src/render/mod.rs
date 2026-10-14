@@ -4,6 +4,7 @@ pub mod accounts;
 pub mod engine_info;
 pub mod events;
 pub mod flows;
+pub mod generic;
 pub mod identities;
 pub mod label;
 pub mod providers;
@@ -27,5 +28,18 @@ pub fn human_text(response: &Response) -> String {
         Response::OAuthStarted(start) => flows::oauth_start_text(start),
         Response::Operation(info) => flows::operation_text(info),
         Response::Events(list) => events::events_table(list),
+        Response::Mailboxes(_)
+        | Response::Messages(_)
+        | Response::Message(_)
+        | Response::MessageBody(_)
+        | Response::RawSource(_)
+        | Response::Attachments(_)
+        | Response::SafeHtml(_)
+        | Response::Threads(_)
+        | Response::Thread(_)
+        | Response::ServerSearch(_)
+        | Response::StorageStats(_)
+        | Response::Integrity(_)
+        | Response::Exported(_) => generic::pretty_json(response),
     }
 }

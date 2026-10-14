@@ -29,6 +29,18 @@ impl Tx<'_> {
             .map_err(storage_error)
     }
 
+    /// Position de la partie MIME d'une pièce jointe dans son message
+    pub fn attachment_part_index(&self, id: &AttachmentId) -> Result<Option<u32>, MiraError> {
+        self.sql()
+            .query_row(
+                "SELECT part_index FROM attachments WHERE id = ?1",
+                [id.as_str()],
+                |row| row.get::<_, u32>(0),
+            )
+            .optional()
+            .map_err(storage_error)
+    }
+
     /// Chemin du contenu téléchargé d'une pièce jointe, s'il existe
     pub fn attachment_cache_path(&self, id: &AttachmentId) -> Result<Option<String>, MiraError> {
         let path = self

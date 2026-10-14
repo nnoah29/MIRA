@@ -18,13 +18,34 @@ pub async fn exchange_code(
     redirect_uri: &str,
     clock: &dyn Clock,
 ) -> Result<TokenSet, MiraError> {
-    let pairs = [
+    exchange_code_with_secret(
+        token_url,
+        (client_id, None),
+        code,
+        verifier,
+        redirect_uri,
+        clock,
+    )
+    .await
+}
+
+/// Même échange pour un client qui présente aussi un secret d'application
+pub async fn exchange_code_with_secret(
+    token_url: &str,
+    client: (&str, Option<&SecretValue>),
+    code: &AuthorizationCode,
+    verifier: &SecretValue,
+    redirect_uri: &str,
+    clock: &dyn Clock,
+) -> Result<TokenSet, MiraError> {
+    let mut pairs = vec![
         ("grant_type", "authorization_code"),
         ("code", code.expose()),
-        ("client_id", client_id),
+        ("client_id", client.0),
         ("redirect_uri", redirect_uri),
         ("code_verifier", verifier.expose()),
     ];
+    push_secret(&mut pairs, client.1);
     request_tokens(token_url, &pairs, clock).await
 }
 
@@ -35,12 +56,30 @@ pub async fn refresh_tokens(
     refresh_token: &SecretValue,
     clock: &dyn Clock,
 ) -> Result<TokenSet, MiraError> {
-    let pairs = [
+    refresh_tokens_with_secret(token_url, (client_id, None), refresh_token, clock).await
+}
+
+/// Même rafraîchissement pour un client qui présente aussi un secret d'application
+pub async fn refresh_tokens_with_secret(
+    token_url: &str,
+    client: (&str, Option<&SecretValue>),
+    refresh_token: &SecretValue,
+    clock: &dyn Clock,
+) -> Result<TokenSet, MiraError> {
+    let mut pairs = vec![
         ("grant_type", "refresh_token"),
         ("refresh_token", refresh_token.expose()),
-        ("client_id", client_id),
+        ("client_id", client.0),
     ];
+    push_secret(&mut pairs, client.1);
     request_tokens(token_url, &pairs, clock).await
+}
+
+/// Ajoute `client_secret` au formulaire quand le client en a un
+fn push_secret<'a>(pairs: &mut Vec<(&'a str, &'a str)>, secret: Option<&'a SecretValue>) {
+    if let Some(secret) = secret {
+        pairs.push(("client_secret", secret.expose()));
+    }
 }
 
 /// Envoie la demande et convertit la réponse en jetons ou en erreur du contrat

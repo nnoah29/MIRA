@@ -2,19 +2,26 @@
 
 use std::collections::BTreeMap;
 
+use crate::ports::SecretValue;
 use mira_vocabulary::error::codes::invalid_input;
 use mira_vocabulary::{
     AuthMethod, ErrorCategory, MiraError, OAuthSettings, ProviderDescriptor, ProviderId,
 };
 
-/// Identifiant d'application par provider ; les adresses imposées servent aux tests.
+/// Identifiant et secret éventuel d'application par provider ; les adresses imposées servent aux tests.
 #[derive(Debug, Clone, Default)]
 pub struct OAuthClientConfig {
     pub client_ids: BTreeMap<ProviderId, String>,
+    pub client_secrets: BTreeMap<ProviderId, SecretValue>,
     pub endpoint_overrides: BTreeMap<ProviderId, OAuthSettings>,
 }
 
 impl OAuthClientConfig {
+    /// Secret d'application du provider, quand le service en exige un à l'échange des jetons
+    pub fn client_secret(&self, descriptor: &ProviderDescriptor) -> Option<SecretValue> {
+        self.client_secrets.get(&descriptor.id).cloned()
+    }
+
     /// Donne les adresses OAuth et l'identifiant d'application à utiliser pour ce provider
     pub fn resolve(
         &self,

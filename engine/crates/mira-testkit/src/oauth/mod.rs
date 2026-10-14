@@ -2,6 +2,7 @@
 
 mod authorize;
 mod browser;
+mod client_secret;
 mod context;
 mod control;
 mod error;

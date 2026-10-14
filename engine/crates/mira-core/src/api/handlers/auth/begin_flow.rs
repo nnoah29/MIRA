@@ -20,7 +20,8 @@ pub(super) async fn begin_flow(
     require_auth_method(descriptor, AuthMethodKind::OAuth2)?;
     let (settings, client_id) = engine.config.oauth.resolve(descriptor)?;
     let mut rng = StdRng::from_os_rng();
-    let pending = start_flow(&settings, &client_id, address.as_str(), &mut rng).await?;
+    let mut pending = start_flow(&settings, &client_id, address.as_str(), &mut rng).await?;
+    pending.set_client_secret(engine.config.oauth.client_secret(descriptor));
     let authorize_url = pending.authorize_url().to_string();
     let flow = engine.config.ids.next_id();
     let target = FlowTarget {

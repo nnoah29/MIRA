@@ -33,6 +33,7 @@ pub async fn start_flow(
         state,
         verifier,
         client_id: client_id.to_string(),
+        client_secret: None,
         token_url: settings.token_url.clone(),
         listener: Some(listener),
         phase: FlowPhase::AwaitingRedirect,

@@ -12,6 +12,7 @@ pub struct PendingFlow {
     pub(super) state: String,
     pub(super) verifier: SecretValue,
     pub(super) client_id: String,
+    pub(super) client_secret: Option<SecretValue>,
     pub(super) token_url: String,
     pub(super) listener: Option<TcpListener>,
     pub(super) phase: FlowPhase,

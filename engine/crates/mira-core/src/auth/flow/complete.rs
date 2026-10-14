@@ -6,7 +6,7 @@ use super::callback::AuthorizationCode;
 use super::pending::PendingFlow;
 use super::phase::FlowPhase;
 use super::redirect::wrong_phase;
-use crate::auth::tokens::{TokenSet, exchange_code};
+use crate::auth::tokens::{TokenSet, exchange_code_with_secret};
 use crate::ports::Clock;
 
 /// Échange le code reçu ; le flux passe à `TokensObtained` ou `Failed`
@@ -18,9 +18,9 @@ pub async fn complete_flow(
     if flow.phase != FlowPhase::CodeReceived {
         return Err(wrong_phase());
     }
-    let result = exchange_code(
+    let result = exchange_code_with_secret(
         &flow.token_url,
-        &flow.client_id,
+        (&flow.client_id, flow.client_secret.as_ref()),
         code,
         &flow.verifier,
         &flow.redirect_uri,

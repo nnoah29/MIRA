@@ -2,6 +2,9 @@
 
 use std::path::Path;
 
+use mira_assembly::mira_vocabulary::{AccountId, ProfileId, SecretKind, SecretRef};
+use mira_assembly::ports::SecretStore;
+
 use super::sa_world::SaWorld;
 
 /// Dit si un fichier quelconque sous ce dossier contient ces octets.
@@ -22,6 +25,17 @@ pub fn tree_contains(dir: &Path, needle: &str) -> bool {
 }
 
 impl SaWorld {
+    /// Secret rangé au trousseau pour ce profil, ce compte et ce type, s'il y en a un.
+    pub fn stored_secret(&self, profile: &str, account: &str, kind: SecretKind) -> Option<String> {
+        let key = SecretRef {
+            profile: ProfileId::from_raw(profile),
+            account: AccountId::from_raw(account),
+            kind,
+        };
+        let found = self.bench.secrets.get(&key).unwrap();
+        found.map(|secret| secret.expose().to_string())
+    }
+
     /// Exige qu'aucun de ces secrets n'apparaisse dans une sortie du CLI ni dans un fichier du profil.
     pub fn assert_no_secret_anywhere(&self, secrets: &[&str]) {
         let log = self.transcript.lock().unwrap();

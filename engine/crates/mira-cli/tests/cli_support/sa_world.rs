@@ -22,7 +22,7 @@ pub struct SaWorld {
 }
 
 /// Port local sur lequel personne n'écoute : toute connexion y est refusée.
-fn closed_port() -> u16 {
+pub fn closed_port() -> u16 {
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     listener.local_addr().unwrap().port()
 }
@@ -76,9 +76,11 @@ impl SaWorld {
             imap: plain_endpoint(self.imap_port),
             smtp: plain_endpoint(self.bench.smtp.port()),
         };
-        deps.network
-            .server_overrides
-            .insert(self.domain.clone(), servers);
+        if !self.domain.is_empty() {
+            deps.network
+                .server_overrides
+                .insert(self.domain.clone(), servers);
+        }
         deps
     }
 

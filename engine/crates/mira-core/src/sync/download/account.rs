@@ -9,11 +9,18 @@ use super::prefetch::prefetch_bodies;
 use crate::sync::session::SyncSession;
 use crate::sync::strategy::sync_mailbox;
 
+/// Issue de la synchronisation d'une boîte : faite, ou ignorée sur refus du serveur.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum MailboxOutcome {
+    Synced,
+    Skipped,
+}
+
 /// Synchronise une boîte en la signalant au rapport du compte pendant le travail.
 pub(super) async fn sync_one(
     session: &mut SyncSession,
     mailbox: &Mailbox,
-) -> Result<(), MiraError> {
+) -> Result<MailboxOutcome, MiraError> {
     session.report.mailbox_started(&mailbox.id);
     let outcome = sync_and_prefetch(session, mailbox).await;
     session.report.mailbox_ended(&mailbox.id);
@@ -21,26 +28,35 @@ pub(super) async fn sync_one(
 }
 
 /// Synchronise une boîte puis, pour la réception, précharge les corps ; un refus du serveur n'arrête pas les autres boîtes.
-async fn sync_and_prefetch(session: &mut SyncSession, mailbox: &Mailbox) -> Result<(), MiraError> {
+async fn sync_and_prefetch(
+    session: &mut SyncSession,
+    mailbox: &Mailbox,
+) -> Result<MailboxOutcome, MiraError> {
     match sync_mailbox(session, mailbox).await {
         Err(error) if error.category == ErrorCategory::Server => {
             let text = format!("boîte {} ignorée : {}", mailbox.name, error.code);
             session.ctx.diagnose(LogLevel::Warn, "sync.mailbox", &text);
-            return Ok(());
+            return Ok(MailboxOutcome::Skipped);
         }
         other => other?,
     }
-    match mailbox.role {
-        MailboxRole::Inbox => prefetch_bodies(session, mailbox).await,
-        _ => Ok(()),
+    if mailbox.role == MailboxRole::Inbox {
+        prefetch_bodies(session, mailbox).await?;
     }
+    Ok(MailboxOutcome::Synced)
 }
 
 /// Les étapes de la descente, sans les événements de début et de fin.
 pub(super) async fn run_steps(session: &mut SyncSession) -> Result<(), MiraError> {
     let mailboxes = sync_order(sync_mailbox_list(session).await?);
+    let mut complete = true;
     for mailbox in &mailboxes {
-        sync_one(session, mailbox).await?;
+        complete &= sync_one(session, mailbox).await? == MailboxOutcome::Synced;
+    }
+    if !complete {
+        let text = "boîte ignorée : les orphelins sont gardés jusqu'à une passe complète";
+        session.ctx.diagnose(LogLevel::Info, "sync.orphans", text);
+        return Ok(());
     }
     delete_orphans(&session.ctx)
 }
@@ -67,6 +83,7 @@ pub async fn run_pass(
             code: error.code.clone(),
         },
     });
+    session.ctx.apply_event_retention();
     outcome
 }
 

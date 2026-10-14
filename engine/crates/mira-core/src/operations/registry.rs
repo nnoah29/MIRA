@@ -1,6 +1,6 @@
 //! Registre des opérations longues d'un moteur.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 
@@ -8,6 +8,7 @@ use mira_vocabulary::error::codes::not_found;
 use mira_vocabulary::{ErrorCategory, MiraError, OperationId};
 
 use super::handle::OperationHandle;
+use super::retention::{CreationOrder, remember_and_trim};
 use super::status::{OperationInfo, OperationStatus, OperationTable, lock_table};
 use crate::events::EventSink;
 use crate::ports::IdGenerator;
@@ -19,6 +20,7 @@ pub struct OperationRegistry {
     events: Arc<dyn EventSink>,
     table: OperationTable,
     cancellations: Arc<Mutex<HashMap<OperationId, Arc<AtomicBool>>>>,
+    order: CreationOrder,
 }
 
 impl OperationRegistry {
@@ -30,6 +32,7 @@ impl OperationRegistry {
             events,
             table,
             cancellations: Arc::new(Mutex::new(HashMap::new())),
+            order: Arc::new(Mutex::new(VecDeque::new())),
         }
     }
 
@@ -47,6 +50,7 @@ impl OperationRegistry {
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .insert(id.clone(), Arc::clone(&cancel));
+        remember_and_trim(&self.table, &self.cancellations, &self.order, id.clone());
         OperationHandle::new(
             id,
             cancel,

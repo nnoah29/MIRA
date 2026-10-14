@@ -4,12 +4,15 @@ use mira_vocabulary::{AuthMethodKind, MiraError, ServerSettings};
 
 use crate::auth::LoginSecret;
 use crate::imap::{ImapClient, ImapCredential, ImapLogin};
+use crate::sync::ConnectionBudget;
 
-/// Se connecte au serveur IMAP avec ces identifiants puis ferme la session
+/// Se connecte au serveur IMAP avec ces identifiants, dans le budget du compte, puis ferme la session
 pub async fn check_imap_login(
     servers: &ServerSettings,
     login: &ImapLogin,
+    budget: &ConnectionBudget,
 ) -> Result<(), MiraError> {
+    let _permit = budget.acquire_explicit().await?;
     let client = ImapClient::connect(&servers.imap, login).await?;
     client.logout().await
 }

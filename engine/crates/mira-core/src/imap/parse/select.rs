@@ -40,7 +40,8 @@ fn apply_line(selected: &mut SelectedMailbox, line: &[u8]) {
     if let Some(data) = parse_fetch(line) {
         selected.changed.extend(fetched_flags(&data));
     } else if let Some(gone) = parse_vanished(line) {
-        selected.vanished.extend(gone);
+        selected.vanished.extend(gone.uids);
+        selected.vanished_incomplete |= gone.incomplete;
     } else if let Some((_, code, _)) = untagged_status(line) {
         if let Some(code) = code {
             apply_code(selected, &code);

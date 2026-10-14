@@ -5,6 +5,7 @@ mod atomic_write;
 mod attachment;
 mod body;
 mod download;
+mod expected;
 mod ingest;
 mod locate;
 mod results;

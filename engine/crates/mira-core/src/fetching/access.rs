@@ -6,6 +6,7 @@ use crate::accounts::{NetworkPolicy, imap_login_of, resolve_servers};
 use crate::auth::CredentialVault;
 use crate::imap::ImapClient;
 use crate::registry::{ProviderRegistry, resolve_account_provider};
+use crate::sync::{ConnectionBudgets, LeasedClient};
 
 /// Ce qu'il faut pour ouvrir une session IMAP au nom d'un compte du profil.
 #[derive(Debug, Clone)]
@@ -14,6 +15,7 @@ pub struct ImapAccess {
     vault: CredentialVault,
     network: NetworkPolicy,
     registry: ProviderRegistry,
+    budgets: ConnectionBudgets,
 }
 
 impl ImapAccess {
@@ -23,18 +25,23 @@ impl ImapAccess {
         vault: CredentialVault,
         network: NetworkPolicy,
         registry: ProviderRegistry,
+        budgets: ConnectionBudgets,
     ) -> Self {
         Self {
             profile,
             vault,
             network,
             registry,
+            budgets,
         }
     }
 
-    /// Ouvre une session IMAP authentifiée pour le compte
-    pub async fn connect(&self, account: &Account) -> Result<ImapClient, MiraError> {
+    /// Ouvre une session IMAP authentifiée pour le compte, dans le budget de connexions du compte
+    pub async fn connect(&self, account: &Account) -> Result<LeasedClient, MiraError> {
         let provider = resolve_account_provider(&self.registry, &account.provider)?;
+        let limit = provider.descriptor().limits.max_connections;
+        let budget = self.budgets.budget_for(account.id.as_str(), limit);
+        let permit = budget.acquire_explicit().await?;
         let servers = resolve_servers(
             &self.network,
             provider.as_ref(),
@@ -47,6 +54,7 @@ impl ImapAccess {
             account.auth,
             account.address.as_str(),
         )?;
-        ImapClient::connect(&servers.connect.imap, &imap_login_of(secret)).await
+        let client = ImapClient::connect(&servers.connect.imap, &imap_login_of(secret)).await?;
+        Ok(LeasedClient::new(client, permit))
     }
 }

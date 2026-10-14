@@ -2,6 +2,7 @@
 
 use std::sync::Arc;
 
+use mira_core::accounts::NetworkPolicy;
 use mira_core::events::{EventSink, RecordingSink};
 use mira_core::ports::{SequentialIds, SystemClock};
 use mira_core::storage::Database;
@@ -83,6 +84,7 @@ pub fn build_world(
         clock: Arc::new(SystemClock),
         ids: Arc::new(SequentialIds::new()),
         events,
+        network: NetworkPolicy::default(),
     };
     SyncWorld {
         server,

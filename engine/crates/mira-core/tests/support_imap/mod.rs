@@ -2,6 +2,7 @@
 #![allow(dead_code)]
 
 pub mod env;
+pub mod hostile;
 pub mod logins;
 pub mod mail;
 pub mod scripted;

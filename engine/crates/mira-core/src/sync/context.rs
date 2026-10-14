@@ -4,13 +4,14 @@ use std::sync::Arc;
 
 use mira_vocabulary::{Account, AccountId, EventKind, LogLevel, Provider, Timestamp};
 
+use crate::accounts::NetworkPolicy;
 use crate::events::EventSink;
 use crate::ports::{Clock, IdGenerator};
 use crate::storage::Database;
 
 const MILLIS_PER_DAY: i64 = 86_400_000;
 
-/// Dépendances d'une synchronisation : base, provider, compte, horloge, identifiants, événements.
+/// Dépendances d'une synchronisation : base, provider, compte, horloge, identifiants, événements, politique réseau.
 #[derive(Debug, Clone)]
 pub struct SyncContext {
     pub db: Arc<Database>,
@@ -19,6 +20,7 @@ pub struct SyncContext {
     pub clock: Arc<dyn Clock>,
     pub ids: Arc<dyn IdGenerator>,
     pub events: Arc<dyn EventSink>,
+    pub network: NetworkPolicy,
 }
 
 impl SyncContext {
@@ -44,6 +46,14 @@ impl SyncContext {
         self.clock
             .now()
             .plus_millis(-i64::from(days).saturating_mul(MILLIS_PER_DAY))
+    }
+
+    /// Applique la rétention des événements ; un échec est journalisé sans interrompre la synchronisation.
+    pub fn apply_event_retention(&self) {
+        let now = self.clock.now();
+        if let Err(error) = self.db.write(|tx| tx.apply_event_retention(now)) {
+            tracing::warn!(code = %error.code, "rétention des événements non appliquée");
+        }
     }
 
     /// Journalise une décision de synchronisation et l'émet comme événement de diagnostic.

@@ -20,7 +20,8 @@ pub use realtime::BackoffPolicy;
 pub use report::{ReportHandle, SyncReport};
 pub use requests::{RequestScope, SyncRequests, TakenRequests, Ticket};
 pub use session::{
-    BoxFuture, Connection, ConnectionBudget, CredentialProvider, SyncSession, open_connection,
+    BoxFuture, Connection, ConnectionBudget, ConnectionBudgets, CredentialProvider, LeasedClient,
+    SyncSession, open_connection,
 };
 pub use supervisor::{SupervisorConfig, SyncSupervisor};
 pub use window::{ExtendOutcome, extend_window, start_extend_window};

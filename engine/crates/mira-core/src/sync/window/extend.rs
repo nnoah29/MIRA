@@ -2,7 +2,8 @@
 
 use std::collections::HashSet;
 
-use mira_vocabulary::{EventKind, Mailbox, MailboxId, MiraError};
+use mira_vocabulary::error::codes::incompatible_state;
+use mira_vocabulary::{ErrorCategory, EventKind, Mailbox, MailboxId, MiraError};
 
 use crate::operations::OperationHandle;
 use crate::storage::repositories::mailboxes::mailbox_not_found;
@@ -15,6 +16,19 @@ use crate::sync::strategy::{Announce, HEADER_BATCH, ingest_batch, newest_first};
 pub enum ExtendOutcome {
     Finished,
     Cancelled,
+}
+
+/// Refuse l'extension si le serveur a renuméroté la boîte depuis le dernier relevé : les UID ne sont plus comparables.
+fn require_same_validity(mailbox: &Mailbox, validity: u32) -> Result<(), MiraError> {
+    let known = mailbox.marker.map(|marker| marker.uid_validity);
+    if known.is_none_or(|expected| expected == validity) {
+        return Ok(());
+    }
+    Err(MiraError::new(
+        ErrorCategory::IncompatibleState,
+        incompatible_state::MAILBOX_CHANGED,
+        "la boîte a été renumérotée par le serveur : resynchronisez-la avant de remonter plus loin",
+    ))
 }
 
 /// UID du serveur plus récents que la nouvelle limite et encore inconnus du miroir.
@@ -100,6 +114,7 @@ pub async fn extend_window(
     let current = account.map_or(session.ctx.account.sync.window_days, |a| a.sync.window_days);
     let days = current.saturating_add(extra_days);
     let selected = session.conn.client.select(&mailbox.name, None).await?;
+    require_same_validity(&mailbox, selected.uid_validity)?;
     let uids = missing_uids(session, &mailbox, days).await?;
     let validity = selected.uid_validity;
     let outcome = download_missing(session, handle, &mailbox, validity, &uids).await?;

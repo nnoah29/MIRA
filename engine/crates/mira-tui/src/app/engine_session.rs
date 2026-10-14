@@ -16,9 +16,11 @@ pub fn open_engine(config: EngineConfig) -> Result<Arc<Engine>, TuiError> {
     Ok(Arc::new(engine))
 }
 
-/// Ferme le moteur en laissant cinq secondes aux synchronisations ; sans propriétaire unique, le lâche simplement.
-pub async fn close_engine(engine: Arc<Engine>) {
-    if let Ok(owned) = Arc::try_unwrap(engine) {
-        let _ = owned.shutdown_within(SHUTDOWN_DEADLINE).await;
+/// Ferme le moteur en laissant cinq secondes aux synchronisations ; échoue s'il est encore partagé ou si le délai est dépassé.
+pub async fn close_engine(engine: Arc<Engine>) -> Result<(), TuiError> {
+    let owned = Arc::try_unwrap(engine).map_err(|_| TuiError::EngineStillShared)?;
+    match owned.shutdown_within(SHUTDOWN_DEADLINE).await? {
+        true => Ok(()),
+        false => Err(TuiError::ShutdownTimedOut),
     }
 }

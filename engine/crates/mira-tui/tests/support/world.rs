@@ -6,7 +6,7 @@ use mira_assembly::accounts::NetworkPolicy;
 use mira_assembly::api::{Engine, EngineConfig};
 use mira_assembly::mira_vocabulary::AccountId;
 use mira_testkit::imap::FakeImapServer;
-use mira_tui::app::{close_engine, open_engine};
+use mira_tui::app::{TuiError, close_engine, open_engine};
 use tempfile::TempDir;
 
 use super::config::test_config;
@@ -54,8 +54,8 @@ impl TestWorld {
         self.account.clone()
     }
 
-    /// Ferme le moteur proprement ; les poignées obtenues par `engine()` doivent être lâchées avant.
-    pub async fn close(self) {
-        close_engine(self.engine).await;
+    /// Ferme le moteur ; échoue tant qu'une poignée obtenue par `engine()` est encore vivante.
+    pub async fn close(self) -> Result<(), TuiError> {
+        close_engine(self.engine).await
     }
 }

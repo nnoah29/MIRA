@@ -23,5 +23,5 @@ async fn seeded_mailbox_is_visible_through_the_engine() {
     let listed = matches!(&response, Response::Mailboxes(m) if m.len() == 1 && m[0].total == 2);
     assert!(listed);
     drop(engine);
-    world.close().await;
+    world.close().await.unwrap();
 }

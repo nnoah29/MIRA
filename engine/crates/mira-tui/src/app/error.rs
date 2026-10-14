@@ -7,6 +7,10 @@ use mira_assembly::mira_vocabulary::MiraError;
 pub enum TuiError {
     #[error("moteur : {0}")]
     Engine(MiraError),
+    #[error("moteur encore partagé : fermeture impossible")]
+    EngineStillShared,
+    #[error("moteur : arrêt des synchronisations hors délai")]
+    ShutdownTimedOut,
     #[error("terminal : {0}")]
     Terminal(std::io::Error),
 }

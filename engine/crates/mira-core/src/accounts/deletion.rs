@@ -42,6 +42,7 @@ pub fn erase_account(
     remove_cached_attachments(database, &account.id, cache_directory)?;
     vault.delete_all(&account.profile, &account.id)?;
     database.write(|tx| tx.delete_account(&account.id))?;
+    database.erase_traces()?;
     events.emit(EventKind::AccountDeleted {
         account: account.id.clone(),
     })?;

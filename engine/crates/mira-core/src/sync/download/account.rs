@@ -9,8 +9,19 @@ use super::prefetch::prefetch_bodies;
 use crate::sync::session::SyncSession;
 use crate::sync::strategy::sync_mailbox;
 
+/// Synchronise une boîte en la signalant au rapport du compte pendant le travail.
+pub(super) async fn sync_one(
+    session: &mut SyncSession,
+    mailbox: &Mailbox,
+) -> Result<(), MiraError> {
+    session.report.mailbox_started(&mailbox.id);
+    let outcome = sync_and_prefetch(session, mailbox).await;
+    session.report.mailbox_ended(&mailbox.id);
+    outcome
+}
+
 /// Synchronise une boîte puis, pour la réception, précharge les corps ; un refus du serveur n'arrête pas les autres boîtes.
-async fn sync_one(session: &mut SyncSession, mailbox: &Mailbox) -> Result<(), MiraError> {
+async fn sync_and_prefetch(session: &mut SyncSession, mailbox: &Mailbox) -> Result<(), MiraError> {
     match sync_mailbox(session, mailbox).await {
         Err(error) if error.category == ErrorCategory::Server => {
             let text = format!("boîte {} ignorée : {}", mailbox.name, error.code);
@@ -26,7 +37,7 @@ async fn sync_one(session: &mut SyncSession, mailbox: &Mailbox) -> Result<(), Mi
 }
 
 /// Les étapes de la descente, sans les événements de début et de fin.
-async fn run_steps(session: &mut SyncSession) -> Result<(), MiraError> {
+pub(super) async fn run_steps(session: &mut SyncSession) -> Result<(), MiraError> {
     let mailboxes = sync_order(sync_mailbox_list(session).await?);
     for mailbox in &mailboxes {
         sync_one(session, mailbox).await?;
@@ -41,11 +52,13 @@ pub async fn run_pass(
 ) -> Result<(), MiraError> {
     session.begin_pass();
     let (account, operation) = (session.ctx.account.id.clone(), session.operation.clone());
+    session.report.pass_started();
     session.ctx.emit(EventKind::SyncStarted {
         account: account.clone(),
         operation: operation.clone(),
     });
     let outcome = work(session).await;
+    session.report.pass_ended(session.ctx.clock.now(), &outcome);
     session.ctx.emit(match &outcome {
         Ok(()) => EventKind::SyncFinished { account, operation },
         Err(error) => EventKind::SyncFailed {

@@ -3,6 +3,7 @@
 mod account_task;
 mod config;
 mod connected;
+mod control;
 mod exit;
 mod idle_start;
 mod running;

@@ -1,6 +1,7 @@
 //! Flux OAuth en cours dans le moteur : enregistrement, prise en charge, annulation.
 
 mod entry;
+mod errors;
 mod lifecycle;
 mod table;
 

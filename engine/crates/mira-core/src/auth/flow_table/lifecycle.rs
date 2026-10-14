@@ -5,8 +5,11 @@ use std::sync::Arc;
 use mira_vocabulary::{AccountId, MiraError};
 use tokio::sync::Notify;
 
-use super::entry::FlowSummary;
-use super::table::{OAuthFlows, unknown_flow};
+use std::collections::BTreeMap;
+
+use super::entry::{FlowEntry, FlowSummary};
+use super::errors::unknown_flow;
+use super::table::OAuthFlows;
 use crate::auth::PendingFlow;
 
 impl OAuthFlows {
@@ -16,6 +19,7 @@ impl OAuthFlows {
         flow: &str,
     ) -> Result<(PendingFlow, Arc<Notify>, FlowSummary), MiraError> {
         let mut entries = self.entries();
+        self.purge_expired(&mut entries);
         let entry = entries.get_mut(flow).ok_or_else(unknown_flow)?;
         let pending = entry.pending.take().ok_or_else(unknown_flow)?;
         Ok((pending, Arc::clone(&entry.cancel), entry.summary()))
@@ -48,6 +52,27 @@ impl OAuthFlows {
                 entry.cancel.notify_one();
             }
             !same
+        });
+    }
+
+    /// Décrit un flux qui a déjà obtenu ses jetons, ou échoue s'il est inconnu ou inachevé
+    pub fn completed_summary(&self, flow: &str) -> Result<FlowSummary, MiraError> {
+        let summary = self.entries().get(flow).map(FlowEntry::summary);
+        match summary {
+            Some(summary) if summary.completed => Ok(summary),
+            _ => Err(unknown_flow()),
+        }
+    }
+
+    /// Oublie les flux en attente depuis plus que la durée de vie et libère leur écouteur
+    pub(super) fn purge_expired(&self, entries: &mut BTreeMap<String, FlowEntry>) {
+        entries.retain(|_, entry| {
+            let expired =
+                entry.pending.is_some() && !entry.completed && entry.created.elapsed() >= self.ttl;
+            if expired {
+                entry.cancel.notify_one();
+            }
+            !expired
         });
     }
 }

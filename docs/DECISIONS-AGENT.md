@@ -157,3 +157,10 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - `replayer/` : une tâche de fond par compte (récupération puis `replay_actions`), sonde 250 ms, réveil au submit/retry/résolution ; `ReplayCredentials` de production sur le trousseau ; état Connected/Offline/AuthRequired. `Engine::shutdown` arrête par `abort`, la reprise se fait au démarrage suivant.
 - Fusion J8b+J8c : tests de contrat réconciliés ; exemples d'écriture nommés (`write_requests`, `write_responses`, `numbered`) ajoutés à l'instantané ; le CLI rend les nouvelles réponses en JSON en attendant J9b.
 - **Reste** : première synchro sur `AddAccount`, domaine Synchro de la façade, commandes CLI des variantes de lecture/écriture.
+
+## AG-24 — CLI lecture/écriture (rapport J9b)
+- Un CLI vit le temps d'une commande : les opérations longues (`message fetch`, `save-attachment`, `search server`) sont toujours attendues (`--timeout`, 120 s) ; les actions de file seulement avec `--wait` (60 s) sur `action apply`, `mailbox create|rename|delete|empty`, `draft send|resolve-send`, `queue retry`. Action Failed → code 16 ; Uncertain ou délai → 13 (l'action reste en file).
+- `search server-result` exposé pour le contrat mais ne retrouve rien d'un autre processus (code 11).
+- Instants : ms Unix, `AAAA-MM-JJ` ou `AAAA-MM-JJTHH:MM[:SS][Z]`, UTC. Destinataires `adresse` ou `Nom <adresse>` ; valeur vide efface ; `--body-file`.
+- `mailbox set-synced` : boîtes en arguments positionnels, boîte inconnue → code 10.
+- Dépendance `base64` ajoutée à mira-cli.

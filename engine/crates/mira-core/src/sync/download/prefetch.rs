@@ -6,6 +6,7 @@ use mira_vocabulary::{
 
 use super::body::store_body;
 use super::progress::{count, report_progress};
+use crate::mime::parse_message;
 use crate::sync::context::SyncContext;
 use crate::sync::session::SyncSession;
 
@@ -43,7 +44,11 @@ async fn fetch_one(
         return Ok(());
     };
     let ctx = session.ctx.clone();
-    if ctx.db.write(|tx| store_body(tx, &ctx, message, &raw))? {
+    let parsed = parse_message(&raw);
+    if ctx
+        .db
+        .write(|tx| store_body(tx, &ctx, message, &raw, &parsed))?
+    {
         ctx.emit(EventKind::BodyAvailable {
             account: ctx.account.id.clone(),
             message: message.clone(),

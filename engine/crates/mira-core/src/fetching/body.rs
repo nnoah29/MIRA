@@ -7,6 +7,7 @@ use super::download::download_source;
 use super::ingest::ingest_source;
 use super::locate::{SourceLocation, locate_message};
 use super::task::FetchTask;
+use crate::mime::parse_message;
 
 /// Télécharge la source du message et la range ; ne fait rien si la tâche est annulée avant le rangement
 async fn download_and_store(task: &FetchTask, location: &SourceLocation) -> Result<(), MiraError> {
@@ -15,8 +16,9 @@ async fn download_and_store(task: &FetchTask, location: &SourceLocation) -> Resu
     if task.handle.is_cancelled() {
         return Ok(());
     }
+    let parsed = parse_message(&raw);
     task.database
-        .write(|tx| ingest_source(tx, task.ids.as_ref(), &location.message, &raw))?;
+        .write(|tx| ingest_source(tx, task.ids.as_ref(), &location.message, &raw, &parsed))?;
     task.events.emit(EventKind::BodyAvailable {
         account: location.account.id.clone(),
         message: location.message.id.clone(),

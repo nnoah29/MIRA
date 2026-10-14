@@ -33,4 +33,6 @@ pub struct MailboxTarget {
 pub struct ServerTargets {
     pub messages: Vec<MessageTarget>,
     pub mailboxes: Vec<MailboxTarget>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sent_message_id: Option<String>,
 }

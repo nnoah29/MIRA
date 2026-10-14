@@ -1,12 +1,17 @@
 //! Exécution du CLI en processus, avec dépendances injectées (faux trousseau) et capture des flux.
 
 pub mod bench_tools;
+pub mod fake_oauth_provider;
 pub mod full_bench;
 pub mod json_views;
+pub mod mirror_reads;
+pub mod oauth_bench;
 pub mod raw_mail;
 pub mod seed;
 pub mod seed_fixtures;
 pub mod server;
+pub mod shared_buffer;
+pub mod sync_bench;
 
 use std::io::Cursor;
 use std::path::Path;

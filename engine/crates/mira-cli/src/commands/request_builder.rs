@@ -5,7 +5,7 @@ use mira_assembly::mira_vocabulary::MiraError;
 
 use super::{
     account, action, auth, draft, engine, events, identity, mailbox, maintenance, message,
-    operation, provider, queue, search, thread,
+    operation, provider, queue, search, sync, thread,
 };
 use crate::argument_context::ArgumentContext;
 use crate::arguments::Commands;
@@ -30,6 +30,7 @@ pub fn build_request(
         Commands::Action(command) => action::build_request(command, context),
         Commands::Draft(command) => draft::build_request(command, context),
         Commands::Queue(command) => Ok(queue::build_request(command)),
+        Commands::Sync(command) => Ok(sync::build_request(command)),
         Commands::Events(args) => Ok(events::build_request(args)),
     }
 }

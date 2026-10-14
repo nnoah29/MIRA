@@ -9,6 +9,6 @@ pub use engine_config::production_config;
 pub use mira_core::registry::{ProviderRegistry, resolve_account_provider};
 pub use mira_core::{
     accounts, api, auth, capabilities, fetching, html, mailboxes, operations, ports, profile,
-    reading, registry, storage,
+    reading, registry, storage, sync,
 };
 pub use mira_vocabulary;

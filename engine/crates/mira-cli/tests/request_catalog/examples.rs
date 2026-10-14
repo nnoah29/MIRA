@@ -59,6 +59,7 @@ pub fn all_examples() -> Vec<Request> {
     texts.extend(super::examples_read::search_examples());
     texts.extend(super::examples_read::maintenance_examples());
     texts.extend(super::examples_read::message_examples());
+    texts.extend(super::examples_sync::sync_examples());
     texts.extend(super::examples_write::action_and_queue_examples());
     texts.extend(super::examples_write::draft_examples());
     texts.extend(super::examples_write::send_examples());

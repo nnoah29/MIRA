@@ -24,14 +24,19 @@ pub fn verbosity_from_args(args: &[String]) -> u8 {
     u8::try_from(total).unwrap_or(u8::MAX)
 }
 
-/// Installe l'abonné `tracing` sur stderr ; sans effet s'il est déjà installé.
-pub fn init_logging(verbosity: u8) {
-    let level = match verbosity {
-        0 => "warn",
+/// Directives de filtrage par défaut ; sans `-v`, l'avertissement de première synchro non lancée est tu.
+pub fn default_directives(verbosity: u8) -> &'static str {
+    match verbosity {
+        0 => "warn,mira_core::api::handlers::account::add=error",
         1 => "info",
         _ => "debug",
-    };
-    let filter = EnvFilter::try_from_env("MIRA_LOG").unwrap_or_else(|_| EnvFilter::new(level));
+    }
+}
+
+/// Installe l'abonné `tracing` sur stderr ; sans effet s'il est déjà installé.
+pub fn init_logging(verbosity: u8) {
+    let defaults = default_directives(verbosity);
+    let filter = EnvFilter::try_from_env("MIRA_LOG").unwrap_or_else(|_| EnvFilter::new(defaults));
     let _ = tracing_subscriber::fmt()
         .with_env_filter(filter)
         .with_writer(std::io::stderr)

@@ -1,0 +1,26 @@
+//! Cadres provisoires des colonnes liste et lecture, avant leurs vraies vues.
+
+use ratatui::Frame;
+use ratatui::layout::Rect;
+use ratatui::widgets::Block;
+
+use crate::state::{AppState, Pane};
+use crate::theme;
+
+/// Cadre vide de la liste de messages.
+pub fn render_list_placeholder(frame: &mut Frame, area: Rect, state: &AppState) {
+    let focused = state.focus == Pane::List;
+    let block = Block::bordered()
+        .title("Messages")
+        .border_style(theme::border(focused));
+    frame.render_widget(block, area);
+}
+
+/// Cadre vide du lecteur.
+pub fn render_reader_placeholder(frame: &mut Frame, area: Rect, state: &AppState) {
+    let focused = state.focus == Pane::Reader;
+    let block = Block::bordered()
+        .title("Lecture")
+        .border_style(theme::border(focused));
+    frame.render_widget(block, area);
+}

@@ -2,10 +2,13 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 mod navigation_fixtures;
+mod sidebar_fixtures;
 
+use mira_assembly::mira_vocabulary::MailboxRole;
 use mira_tui::state::AppState;
 use mira_tui::update::Intent;
 use navigation_fixtures::{numbered, press, state_with_messages};
+use sidebar_fixtures::{account, mailbox};
 
 /// Liste vide dès le départ : tout déplacement laisse la sélection absente.
 #[test]
@@ -46,8 +49,12 @@ fn shortened_list_clamps_selection() {
 #[test]
 fn filled_list_selects_first() {
     let mut state = AppState::new(80, 24);
-    state.mailboxes.replace_items(numbered(3));
+    state.mailboxes.replace_items(vec![
+        mailbox("a", "one", MailboxRole::Other, 0),
+        mailbox("a", "two", MailboxRole::Other, 0),
+        mailbox("a", "three", MailboxRole::Other, 0),
+    ]);
     assert_eq!(state.mailboxes.selection.selected, Some(0));
-    state.accounts.replace_items(numbered(1));
+    state.accounts.replace_items(vec![account("a")]);
     assert_eq!(state.accounts.selection.selected, Some(0));
 }

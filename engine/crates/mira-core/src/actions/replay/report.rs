@@ -22,6 +22,7 @@ pub(crate) enum StepOutcome {
     Succeeded,
     Failed,
     Uncertain,
+    Skipped,
     Stop(ReplayStop),
 }
 
@@ -32,6 +33,7 @@ impl ReplayReport {
             StepOutcome::Succeeded => self.succeeded += 1,
             StepOutcome::Failed => self.failed += 1,
             StepOutcome::Uncertain => self.uncertain += 1,
+            StepOutcome::Skipped => {}
             StepOutcome::Stop(reason) => {
                 self.stopped = Some(reason);
                 return true;

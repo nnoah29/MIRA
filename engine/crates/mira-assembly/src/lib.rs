@@ -7,5 +7,7 @@ pub mod engine_config;
 pub use composition::build_registry;
 pub use engine_config::production_config;
 pub use mira_core::registry::{ProviderRegistry, resolve_account_provider};
-pub use mira_core::{accounts, api, auth, capabilities, mailboxes, ports, profile, registry};
+pub use mira_core::{
+    accounts, api, auth, capabilities, mailboxes, operations, ports, profile, registry,
+};
 pub use mira_vocabulary;

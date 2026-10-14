@@ -4,7 +4,8 @@ use mira_assembly::api::{Response, WriteResponse};
 use mira_assembly::mira_vocabulary::{ActionId, IdempotencyKey, MiraError};
 
 use super::accounts_reply::{report, unexpected};
-use super::message_load::load_view;
+use super::message_load::fetch_view;
+use super::search::search_command;
 use crate::commands::Command;
 use crate::state::AppState;
 
@@ -28,15 +29,17 @@ pub fn on_user_action(
     Vec::new()
 }
 
-/// Montre l'erreur ; si c'est la dernière action, recharge la vue pour défaire le changement optimiste.
+/// Montre l'erreur ; si c'est la dernière action, relance la recherche ou recharge la vue (saisie ouverte gardée).
 fn fail_action(state: &mut AppState, current: bool, error: MiraError) -> Vec<Command> {
     let mut commands = report(state, error);
     if !current {
         return commands;
     }
     state.actions.forget_awaited();
-    if let Some(view) = state.messages.view().cloned() {
-        commands.extend(load_view(state, view));
+    if let Some(query) = state.search.query() {
+        commands.push(search_command(query.to_string()));
+    } else if let Some(view) = state.messages.view().cloned() {
+        commands.extend(fetch_view(state, view));
     }
     commands
 }

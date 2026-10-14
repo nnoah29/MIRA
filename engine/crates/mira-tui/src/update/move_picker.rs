@@ -10,15 +10,17 @@ use crate::state::{AppState, MovePicker, Popup};
 fn current_mailbox(state: &AppState) -> Option<&MailboxId> {
     match state.messages.view()? {
         ViewRef::Mailbox { mailbox } => Some(mailbox),
-        _ => None,
+        ViewRef::Standard { .. } => None,
     }
 }
 
-/// Autres boîtes du compte du message.
+/// Boîtes du compte du message, hors celle affichée et celles où il se trouve déjà.
 fn other_mailboxes(state: &AppState, message: &MessageSummary) -> Vec<Mailbox> {
     let current = current_mailbox(state);
     let same_account = |mailbox: &&Mailbox| mailbox.account == message.account;
-    let elsewhere = |mailbox: &&Mailbox| Some(&mailbox.id) != current;
+    let elsewhere = |mailbox: &&Mailbox| {
+        Some(&mailbox.id) != current && !message.mailboxes.contains(&mailbox.id)
+    };
     let items = state.mailboxes.items().iter();
     items
         .filter(same_account)

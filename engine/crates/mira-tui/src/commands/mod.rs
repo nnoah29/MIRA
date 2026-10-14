@@ -10,7 +10,6 @@ pub mod idempotency;
 /// Étiquette qui relie une réponse du moteur à l'intention qui l'a demandée.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Tag {
-    Startup,
     Accounts,
     Mailboxes(AccountId),
     Messages {

@@ -11,7 +11,7 @@ use tokio::sync::mpsc::{self, UnboundedReceiver};
 use super::engine_session::{close_engine, open_engine};
 use super::error::TuiError;
 use super::input_thread;
-use super::run_loop::{LoopHooks, run_loop_with};
+use super::run_loop::{LoopHooks, run_loop_detached};
 use super::stop_signals::spawn_stop_signals;
 use super::terminal_guard::TerminalGuard;
 use crossterm::event::KeyEvent;
@@ -49,7 +49,7 @@ fn enter_terminal() -> Result<(TerminalGuard, Terminal<CrosstermBackend<Stdout>>
     Ok((guard, terminal))
 }
 
-/// Fait tourner la boucle, rend le terminal, écrit l'avis de fermeture sur `notice`, puis ferme le moteur.
+/// Fait tourner la boucle, rend le terminal, écrit l'avis sur `notice`, attend les requêtes en vol puis ferme le moteur.
 pub async fn run_session_parts<B: Backend>(
     engine: Arc<Engine>,
     guard: TerminalGuard,
@@ -58,10 +58,11 @@ pub async fn run_session_parts<B: Backend>(
     hooks: LoopHooks,
     notice: &mut dyn Write,
 ) -> Result<(), TuiError> {
-    let outcome = run_loop_with(terminal, Arc::clone(&engine), keys, hooks).await;
+    let (outcome, stopping) = run_loop_detached(terminal, Arc::clone(&engine), keys, hooks).await;
     let _ = terminal.show_cursor();
     drop(guard);
     let _ = notice.write_all(format!("{CLOSING_NOTICE}\n").as_bytes());
+    let _ = stopping.await;
     let closed = close_engine(engine).await;
     outcome.and(closed)
 }

@@ -82,11 +82,13 @@ impl Runtime {
         self.receiver.try_recv().ok()
     }
 
-    /// Arrête le flux puis les requêtes, et rend ainsi le moteur.
-    pub(crate) async fn stop(self) {
-        self.feed.abort();
-        let _ = self.feed.await;
-        self.requests.stop().await;
+    /// Arrête le flux puis les requêtes dans une tâche à part ; la poignée finit quand plus rien ne tient le moteur.
+    pub(crate) fn stop_detached(self) -> JoinHandle<()> {
+        tokio::spawn(async move {
+            self.feed.abort();
+            let _ = self.feed.await;
+            self.requests.stop().await;
+        })
     }
 }
 

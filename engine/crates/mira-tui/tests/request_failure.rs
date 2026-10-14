@@ -66,3 +66,19 @@ async fn successful_request_replies_once() {
     assert!(receiver.try_recv().is_err());
     assert!(tasks.settle_next().await.is_none());
 }
+
+/// L'arrêt détaché rend la main tout de suite ; la tâche bloquée est interrompue après le délai accordé.
+#[tokio::test]
+async fn detached_stop_returns_at_once_and_finishes_after_deadline() {
+    let (sender, _receiver) = mpsc::unbounded_channel();
+    let mut tasks = RequestTasks::new(sender);
+    tasks.spawn(Tag::Status, async {
+        tokio::time::sleep(std::time::Duration::from_secs(3_600)).await;
+        Ok(Response::Done)
+    });
+    let started = tokio::time::Instant::now();
+    let stopping = tasks.stop_detached();
+    assert!(started.elapsed() < std::time::Duration::from_millis(100));
+    stopping.await.unwrap();
+    assert!(started.elapsed() < std::time::Duration::from_secs(10));
+}

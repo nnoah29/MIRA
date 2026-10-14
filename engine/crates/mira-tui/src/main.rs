@@ -6,6 +6,7 @@ use mira_assembly::mira_vocabulary::ProfileId;
 use mira_assembly::production_config;
 use mira_tui::app::panic_hook::install_panic_hook;
 use mira_tui::app::session::run_app;
+use mira_tui::view::safe_text::display_safe;
 use tracing_subscriber::EnvFilter;
 
 /// Installe la journalisation sur stderr, désactivée sauf si `MIRA_LOG` la demande.
@@ -35,8 +36,8 @@ fn main() -> ExitCode {
     }
 }
 
-/// Affiche l'erreur (déjà expurgée de tout secret par le moteur) et rend le code d'échec.
+/// Affiche l'erreur neutralisée (déjà expurgée de tout secret par le moteur) et rend le code d'échec.
 fn report(error: &dyn std::fmt::Display) -> ExitCode {
-    eprintln!("mira-tui : {error}");
+    eprintln!("mira-tui : {}", display_safe(&error.to_string()));
     ExitCode::FAILURE
 }

@@ -12,6 +12,7 @@ pub mod sb_events;
 pub mod sb_leaks;
 pub mod sb_mail;
 pub mod sb_oauth;
+pub mod sb_parts;
 pub mod sb_replay;
 pub mod sb_run;
 pub mod sb_server;

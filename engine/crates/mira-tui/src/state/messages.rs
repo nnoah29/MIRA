@@ -35,10 +35,12 @@ impl MessagesState {
         if self.view.as_ref() != Some(&view) {
             self.selection.selected = None;
         }
+        let anchor = self.selected_id();
         self.view = Some(view);
         self.loading = false;
         self.replace_items(page.items);
         self.next_cursor = page.next_cursor;
+        self.reanchor(anchor);
     }
 
     /// Ajoute la page suivante et mémorise le curseur de la page d'après.

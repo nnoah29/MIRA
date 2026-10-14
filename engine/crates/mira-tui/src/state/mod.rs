@@ -21,6 +21,7 @@ pub mod search_edit;
 pub mod search_restore;
 pub mod selection;
 pub mod status;
+pub mod view_change;
 
 pub use accounts::AccountsState;
 pub use actions::ActionsState;

@@ -20,17 +20,22 @@ pub fn submit_search(state: &mut AppState) -> Vec<Command> {
     let Some(query) = state.search.submit() else {
         return Vec::new();
     };
-    state.messages.reset();
+    state.clear_view();
     state.focus = Pane::List;
+    vec![search_command(query)]
+}
+
+/// Commande de recherche locale de cette requête, première page.
+pub fn search_command(query: String) -> Command {
     let request = SearchRequest::Search {
         query: query.clone(),
         filters: SearchFilters::default(),
         page: PageRequest::default(),
     };
-    vec![Command::Execute {
+    Command::Execute {
         tag: Tag::Search(query),
         request: Request::Search(request),
-    }]
+    }
 }
 
 /// Quitte la recherche et recharge la vue d'avant, ou la boîte sélectionnée à défaut.

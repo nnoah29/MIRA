@@ -7,10 +7,15 @@ use mira_assembly::reading::ListQuery;
 use crate::commands::{Command, Tag};
 use crate::state::AppState;
 
-/// Vide la liste, mémorise la vue voulue et demande sa première page.
+/// Choix explicite d'une vue par l'utilisateur : abandonne la recherche puis charge la vue.
 pub fn load_view(state: &mut AppState, view: ViewRef) -> Vec<Command> {
     state.search.cancel();
-    state.messages.begin_load(view.clone());
+    fetch_view(state, view)
+}
+
+/// Recharge une vue sans toucher à la recherche (réponse ou événement) : vide liste et lecteur, demande la 1re page.
+pub fn fetch_view(state: &mut AppState, view: ViewRef) -> Vec<Command> {
+    state.begin_view_load(view.clone());
     vec![Command::Execute {
         tag: Tag::Messages {
             view: view.clone(),

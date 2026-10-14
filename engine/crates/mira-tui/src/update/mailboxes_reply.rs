@@ -38,9 +38,9 @@ fn store_mailboxes(
     Vec::new()
 }
 
-/// Charge la boîte sélectionnée tant qu'aucune vue de messages n'est voulue.
+/// Charge la boîte sélectionnée tant qu'aucune vue n'est voulue et qu'aucune recherche n'est tapée ou affichée.
 fn load_first_if_none_wanted(state: &mut AppState) -> Vec<Command> {
-    if state.messages.view().is_some() || state.search.is_active() {
+    if state.messages.view().is_some() || state.search.is_active() || state.search.is_editing() {
         return Vec::new();
     }
     load_selected_mailbox(state)

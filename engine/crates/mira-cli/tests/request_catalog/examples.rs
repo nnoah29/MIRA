@@ -55,6 +55,13 @@ fn account_examples() -> Vec<String> {
 pub fn all_examples() -> Vec<Request> {
     let mut texts: Vec<String> = SIMPLE.iter().map(ToString::to_string).collect();
     texts.extend(account_examples());
+    texts.extend(super::examples_read::mailbox_and_thread_examples());
+    texts.extend(super::examples_read::search_examples());
+    texts.extend(super::examples_read::maintenance_examples());
+    texts.extend(super::examples_read::message_examples());
+    texts.extend(super::examples_write::action_and_queue_examples());
+    texts.extend(super::examples_write::draft_examples());
+    texts.extend(super::examples_write::send_examples());
     texts
         .iter()
         .map(|text| serde_json::from_str(text).unwrap())

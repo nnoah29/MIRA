@@ -1,14 +1,28 @@
 //! Rendu humain d'une réponse du contrat ; la version JSON est la réponse elle-même.
 
 pub mod accounts;
+pub mod addresses;
+pub mod attachments;
+pub mod drafts;
 pub mod engine_info;
 pub mod events;
 pub mod flows;
 pub mod generic;
 pub mod identities;
+pub mod instant;
 pub mod label;
+pub mod mailboxes;
+pub mod maintenance;
+pub mod message_detail;
+pub mod messages;
+pub mod pagination;
 pub mod providers;
+pub mod queue;
+pub mod reading;
+pub mod search;
 pub mod table;
+pub mod threads;
+pub mod write_responses;
 
 use mira_assembly::api::Response;
 
@@ -32,7 +46,10 @@ pub fn human_text(response: &Response) -> String {
         Response::Mailboxes(_) | Response::Messages(_) | Response::Message(_)
         | Response::MessageBody(_) | Response::RawSource(_) | Response::Attachments(_)
         | Response::SafeHtml(_) | Response::Threads(_) | Response::Thread(_)
-        | Response::ServerSearch(_) | Response::StorageStats(_) | Response::Integrity(_)
-        | Response::Exported(_) | Response::Write(_) => generic::pretty_json(response),
+        | Response::ServerSearch(_) => reading::reading_text(response),
+        Response::StorageStats(_) | Response::Integrity(_) | Response::Exported(_) => {
+            maintenance::maintenance_text(response)
+        }
+        Response::Write(write) => write_responses::write_text(write),
     }
 }

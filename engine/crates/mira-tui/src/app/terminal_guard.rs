@@ -1,54 +1,50 @@
 //! Garde du terminal : mode brut et écran alternatif, restaurés par `Drop` même en cas d'erreur.
 
-use std::io::stdout;
+use std::io::{Write, stdout};
 
 use crossterm::execute;
-use crossterm::terminal::{
-    EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
-};
+use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
 
 use super::error::TuiError;
-use super::terminal_probe::TerminalProbe;
+use super::raw_mode::{RawMode, SystemRawMode};
 
 /// Possède le terminal tant qu'il vit ; sa destruction rend le terminal à l'état normal.
-#[derive(Debug)]
 pub struct TerminalGuard {
-    probe: Option<TerminalProbe>,
+    out: Box<dyn Write + Send>,
+    raw: Box<dyn RawMode>,
+}
+
+impl std::fmt::Debug for TerminalGuard {
+    /// Affiche le type sans exposer les flux.
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("TerminalGuard")
+    }
 }
 
 impl TerminalGuard {
-    /// Active le mode brut et l'écran alternatif.
+    /// Active le mode brut et l'écran alternatif du vrai terminal.
     pub fn enter() -> Result<Self, TuiError> {
-        enable_raw_mode()?;
-        if let Err(error) = execute!(stdout(), EnterAlternateScreen) {
-            let _ = disable_raw_mode();
-            return Err(error.into());
-        }
-        Ok(Self { probe: None })
+        Self::with_parts(Box::new(stdout()), Box::new(SystemRawMode))
     }
 
-    /// Garde factice pour les tests : n'active rien, enregistre l'entrée et la restauration.
-    pub fn for_tests() -> (Self, TerminalProbe) {
-        let probe = TerminalProbe::default();
-        probe.record_enter();
-        (
-            Self {
-                probe: Some(probe.clone()),
-            },
-            probe,
-        )
+    /// Active le mode brut puis l'écran alternatif sur les flux donnés ; défait le mode brut si l'écran échoue.
+    pub fn with_parts(
+        mut out: Box<dyn Write + Send>,
+        mut raw: Box<dyn RawMode>,
+    ) -> Result<Self, TuiError> {
+        raw.enable()?;
+        if let Err(error) = execute!(out, EnterAlternateScreen) {
+            let _ = raw.disable();
+            return Err(error.into());
+        }
+        Ok(Self { out, raw })
     }
 }
 
 impl Drop for TerminalGuard {
-    /// Restaure le terminal ; les échecs sont ignorés car on ne peut plus les signaler.
+    /// Quitte l'écran alternatif puis désactive le mode brut ; les échecs sont ignorés faute de recours.
     fn drop(&mut self) {
-        match &self.probe {
-            Some(probe) => probe.record_restore(),
-            None => {
-                let _ = execute!(stdout(), LeaveAlternateScreen);
-                let _ = disable_raw_mode();
-            }
-        }
+        let _ = execute!(self.out, LeaveAlternateScreen);
+        let _ = self.raw.disable();
     }
 }

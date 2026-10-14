@@ -284,7 +284,17 @@ Exemple de sélection par requête : `mira action apply archive --mailbox <boite
 
 `mira account add-oauth --address alice@gmail.com` déroule un seul processus : démarrage du flux, affichage de l'URL d'autorisation sur **stderr**, attente de la redirection sur une boucle locale (`127.0.0.1`, PKCE), échange du code contre les jetons (rangés au trousseau), puis ajout du compte. Après le délai (`--timeout`, 300 s), le flux est annulé et la commande sort en 13. Les jetons sont rafraîchis silencieusement ; en cas d'échec le compte passe en « authentification requise ». Pour un compte à mot de passe d'application, on le remplace avec `auth app-password`.
 
-> Limite : le binaire de production ne contient **aucun identifiant d'application OAuth** (`OAuthClientConfig::default()` dans `mira-assembly`). Tant qu'un identifiant n'est pas fourni par la configuration, `account add-oauth` s'arrête en code 10 (« identifiant d'application OAuth absent de la configuration »). Les comptes à mot de passe ou mot de passe d'application ne sont pas concernés.
+> **Identifiants d'application OAuth** : le binaire n'en contient aucun. Ils se déclarent dans un fichier TOML, `$MIRA_CONFIG` ou à défaut `$XDG_CONFIG_HOME/mira/config.toml` (`~/.config/mira/config.toml`) :
+>
+> ```toml
+> [oauth.gmail]
+> client_id = "xxxx.apps.googleusercontent.com"
+>
+> [oauth.outlook]
+> client_id = "xxxx-xxxx-xxxx"
+> ```
+>
+> Fichier absent ou provider non déclaré : `account add-oauth` s'arrête en code 10 (« identifiant d'application OAuth absent de la configuration »). Fichier illisible : avertissement sur stderr, puis même comportement. Les comptes à mot de passe ou mot de passe d'application ne sont pas concernés.
 
 ### Session d'exemple
 
@@ -332,7 +342,7 @@ Si le réseau tombe pendant l'étape 4, les actions restent en file ; `mira queu
 
 - Aucun test contre un vrai serveur ni un vrai trousseau (règle de la session de développement) ; le comportement face aux particularités réelles des fournisseurs reste à valider.
 - Pas de veille permanente : pas d'IDLE tenu par le CLI, pas de commande `watch` ; la mise à jour passe par `mira sync start`.
-- OAuth2 : pas d'identifiant d'application dans le binaire (voir plus haut) ; `auth oauth-start` puis `auth oauth-complete` dans deux processus différents est impossible (la table des flux est en mémoire du moteur) : utiliser `account add-oauth`. Pour la même raison `auth reauthenticate` (qui ouvre un flux) ne peut pas être terminée par un second processus.
+- OAuth2 : identifiant d'application à déclarer dans `config.toml` (voir plus haut) ; `auth oauth-start` puis `auth oauth-complete` dans deux processus différents est impossible (la table des flux est en mémoire du moteur) : utiliser `account add-oauth`. Pour la même raison `auth reauthenticate` (qui ouvre un flux) ne peut pas être terminée par un second processus.
 - `search server-result` ne retrouve que le résultat d'une recherche faite dans le même processus.
 - `--wait` sur un compte qui demande une réauthentification sort aussitôt en code 15 (action suggérée `reauthenticate`) ; l'action reste en file.
 - Les noms de boîtes IMAP en UTF-7 modifié (`&AOk-`) ne sont pas décodés ; `html::sanitize_html` est quadratique en profondeur d'imbrication (un message hostile très profond peut ralentir `safe-html`). Ces deux points sont consignés dans `docs/DECISIONS-AGENT.md` (AG-34), qui donne l'état exact.

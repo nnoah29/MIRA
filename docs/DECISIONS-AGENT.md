@@ -113,3 +113,8 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - **Choix** : réimplémenter J5b, J7c, J9a depuis les specs (`docs/specs/`) sur la branche de travail, par sous-agents en worktree.
 - **Raison** : seule option disponible ; les specs sont complètes.
 - **Retour arrière** : si les worktrees d'origine réapparaissent, comparer et fusionner l'avance.
+
+## AG-18 — Push autorisé en session cloud
+- **Contexte** : session dans un conteneur éphémère ; des worktrees non poussés ont été perdus (AG-17).
+- **Choix** : sur instruction explicite de l'utilisateur (2026-10-14), la règle absolue 4 est levée pour `git push` : on pousse la branche de travail et les branches d'agents vers `origin`, jamais vers `dev`/`main`.
+- **Retour arrière** : revenir à « pas de push » si l'utilisateur le redemande.

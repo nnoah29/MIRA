@@ -24,4 +24,5 @@ pub mod send;
 pub mod smtp;
 pub mod storage;
 pub mod sync;
+mod sync_service;
 pub mod threads;

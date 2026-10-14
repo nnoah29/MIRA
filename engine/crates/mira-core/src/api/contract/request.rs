@@ -10,6 +10,7 @@ use super::mailbox_requests::MailboxRequest;
 use super::maintenance_requests::MaintenanceRequest;
 use super::message_requests::MessageRequest;
 use super::search_requests::SearchRequest;
+use super::sync_requests::SyncRequest;
 use super::thread_requests::ThreadRequest;
 use super::write::{ActionRequest, ComposeRequest, QueueRequest};
 
@@ -32,6 +33,7 @@ pub enum Request {
     Action(ActionRequest),
     Compose(ComposeRequest),
     Queue(QueueRequest),
+    Sync(SyncRequest),
 }
 
 /// Requêtes sur le moteur lui-même.

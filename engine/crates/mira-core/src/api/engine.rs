@@ -1,13 +1,14 @@
 //! Le moteur ouvert sur un profil : point d'entrée unique des clients (CLI, Flutter, agent).
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use mira_vocabulary::{ContractVersion, EventFilter, EventKind, MiraError};
 
 use super::config::EngineConfig;
 use super::contract::{Request, Response};
 use super::router::route;
-use super::startup::{check_client_version, open_profile};
+use super::startup::{check_client_version, open_profile, resume_interrupted_deletions};
 use crate::auth::{CredentialVault, OAuthFlows};
 use crate::events::{EventBus, EventSink, EventSubscription};
 use crate::fetching::ServerSearchResults;
@@ -15,6 +16,7 @@ use crate::operations::OperationRegistry;
 use crate::profile::{ProfileLock, ProfilePaths};
 use crate::replayer::ReplayerHandle;
 use crate::storage::Database;
+use crate::sync_service::SyncService;
 
 /// Moteur ouvert : un profil, sa base, son verrou, son bus d'événements.
 #[derive(Debug)]
@@ -28,6 +30,7 @@ pub struct Engine {
     pub(crate) server_searches: ServerSearchResults,
     pub(crate) account_lock: tokio::sync::Mutex<()>,
     pub(crate) replayers: ReplayerHandle,
+    pub(crate) sync: SyncService,
     _lock: ProfileLock,
 }
 
@@ -40,8 +43,10 @@ impl Engine {
         let sink: Arc<dyn EventSink> = Arc::new(events.clone());
         let operations = OperationRegistry::new(Arc::clone(&config.ids), sink);
         events.emit(EventKind::EngineStarted)?;
+        resume_interrupted_deletions(&config, &database, &events);
         let replayers =
             ReplayerHandle::start(config.clone(), Arc::clone(&database), events.clone());
+        let sync = SyncService::start(&config, &database, &events);
         Ok(Self {
             config,
             paths,
@@ -52,6 +57,7 @@ impl Engine {
             server_searches: ServerSearchResults::default(),
             account_lock: tokio::sync::Mutex::new(()),
             replayers,
+            sync,
             _lock: lock,
         })
     }
@@ -71,10 +77,18 @@ impl Engine {
         self.events.subscribe(filter)
     }
 
-    /// Ferme proprement le moteur ; le verrou du profil est libéré
+    /// Ferme le moteur sans attendre : les tâches de fond sont interrompues, le verrou du profil est libéré
     pub fn shutdown(self) -> Result<(), MiraError> {
+        self.sync.abort_all();
         self.replayers.stop();
         self.events.emit(EventKind::EngineStopping)?;
         Ok(())
+    }
+
+    /// Ferme proprement le moteur : les synchronisations en cours ont `deadline` pour finir, puis sont interrompues ; rend `false` si le délai a été dépassé
+    pub async fn shutdown_within(self, deadline: Duration) -> Result<bool, MiraError> {
+        let on_time = self.sync.shutdown(deadline).await;
+        self.shutdown()?;
+        Ok(on_time)
     }
 }

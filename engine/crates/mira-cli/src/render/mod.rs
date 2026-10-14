@@ -33,6 +33,6 @@ pub fn human_text(response: &Response) -> String {
         | Response::MessageBody(_) | Response::RawSource(_) | Response::Attachments(_)
         | Response::SafeHtml(_) | Response::Threads(_) | Response::Thread(_)
         | Response::ServerSearch(_) | Response::StorageStats(_) | Response::Integrity(_)
-        | Response::Exported(_) | Response::Write(_) => generic::pretty_json(response),
+        | Response::Exported(_) | Response::Write(_) | Response::Sync(_) => generic::pretty_json(response),
     }
 }

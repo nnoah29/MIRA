@@ -12,11 +12,12 @@ mod startup;
 
 pub use config::EngineConfig;
 pub use contract::{
-    AccountChanges, AccountDraft, AccountRequest, AccountStatus, ActionRequest, AttachmentTarget,
-    AuthRequest, ComposeRequest, ContractInfo, CredentialInput, DraftChanges, DraftMode,
-    EngineRequest, EngineStatus, EventRequest, IdentityRequest, MailboxRequest, MaintenanceRequest,
-    MessageRequest, NewIdentity, OperationRequest, OutboxEntry, ProviderRequest, QueueRequest,
-    RemoteContentTarget, Request, Response, SearchRequest, SecretInput, TargetSelection,
-    ThreadRequest, WriteResponse,
+    AccountChanges, AccountDraft, AccountRequest, AccountStatus, AccountSyncStatus, ActionRequest,
+    AttachmentTarget, AuthRequest, ComposeRequest, ContractInfo, CredentialInput, DraftChanges,
+    DraftMode, EngineRequest, EngineStatus, EventRequest, IdentityRequest, MailboxRequest,
+    MaintenanceRequest, MessageRequest, NewIdentity, OperationRequest, OutboxEntry,
+    ProviderRequest, QueueRequest, RemoteContentTarget, Request, Response, SearchRequest,
+    SecretInput, SyncRequest, SyncResponse, SyncScope, TargetSelection, ThreadRequest,
+    WriteResponse,
 };
 pub use engine::Engine;

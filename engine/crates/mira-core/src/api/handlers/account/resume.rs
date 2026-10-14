@@ -6,7 +6,7 @@ use crate::accounts::{change_account_state, require_active_account};
 use crate::api::contract::Response;
 use crate::api::engine::Engine;
 
-/// Reprend un compte en pause ; un compte qui n'est pas en pause est rendu tel quel
+/// Reprend un compte en pause et relance sa synchronisation ; un compte qui n'est pas en pause est rendu tel quel
 pub(crate) fn handle_resume_account(
     engine: &Engine,
     id: &AccountId,
@@ -21,5 +21,8 @@ pub(crate) fn handle_resume_account(
         account,
         AccountState::Offline,
     )?;
+    if let Err(error) = engine.sync.start_account(&resumed) {
+        tracing::warn!(code = %error.code, "synchronisation non relancée à la reprise");
+    }
     Ok(Response::Account(resumed))
 }

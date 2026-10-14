@@ -32,7 +32,8 @@ pub fn variant_name(request: &Request) -> &'static str {
         | Request::Message(_)
         | Request::Thread(_)
         | Request::Search(_)
-        | Request::Maintenance(_) => "read.cli_pending",
+        | Request::Maintenance(_)
+        | Request::Sync(_) => "read.cli_pending",
         Request::Action(inner) => action_name(inner),
         Request::Compose(inner) => compose_name(inner),
         Request::Queue(inner) => queue_name(inner),

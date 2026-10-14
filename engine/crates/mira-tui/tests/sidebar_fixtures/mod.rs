@@ -1,11 +1,14 @@
 //! Fabriques de comptes, de boîtes et de rendus partagées par les tests de la barre latérale.
 #![allow(dead_code)]
 
+use mira_assembly::api::{MailboxRequest, Request, Response};
 use mira_assembly::mira_vocabulary::{
     Account, AccountId, AccountState, AuthMethodKind, EmailAddress, Mailbox, MailboxId,
     MailboxRole, ProfileId, ProviderId, SyncSettings, Timestamp,
 };
+use mira_tui::commands::{Command, Tag};
 use mira_tui::state::AppState;
+use mira_tui::update::{Msg, Reply, update};
 use mira_tui::view::render;
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
@@ -55,4 +58,35 @@ pub fn rendered_text(state: &AppState) -> String {
         .map(|row| row.concat())
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+/// État avec les comptes a1 et a2, a1 sélectionné et sa boîte chargée.
+pub fn loaded_state() -> AppState {
+    let mut state = AppState::new(100, 30);
+    state
+        .accounts
+        .replace_items(vec![account("a1"), account("a2")]);
+    state
+        .mailboxes
+        .replace_items(vec![mailbox("a1", "INBOX", MailboxRole::Inbox, 2)]);
+    state
+}
+
+/// Applique une réponse de liste de comptes.
+pub fn refresh(state: &mut AppState, ids: &[&str]) -> Vec<Command> {
+    let accounts = ids.iter().map(|id| account(id)).collect();
+    let reply = Reply {
+        tag: Tag::Accounts,
+        result: Ok(Response::Accounts(accounts)),
+    };
+    update(state, Msg::Reply(reply))
+}
+
+/// Commande attendue pour charger les boîtes d'un compte.
+pub fn load_for(id: &str) -> Command {
+    let account = AccountId::from_raw(id);
+    Command::Execute {
+        tag: Tag::Mailboxes(account.clone()),
+        request: Request::Mailbox(MailboxRequest::ListMailboxes { account }),
+    }
 }

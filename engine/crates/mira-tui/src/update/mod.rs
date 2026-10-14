@@ -1,5 +1,6 @@
 //! Transition pure `(état, message) -> commandes` ; aucune I/O.
 
+pub mod account_switch;
 pub mod accounts_reply;
 pub mod intent;
 pub mod mailboxes_reply;

@@ -1,7 +1,7 @@
 //! Profil : emplacements des données et verrou exclusif (D-10, D-27).
 
 mod environment;
-mod errors;
+pub(crate) mod errors;
 mod lock;
 mod paths;
 

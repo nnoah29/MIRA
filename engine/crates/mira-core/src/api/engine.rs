@@ -10,8 +10,10 @@ use super::router::route;
 use super::startup::{check_client_version, open_profile};
 use crate::auth::{CredentialVault, OAuthFlows};
 use crate::events::{EventBus, EventSink, EventSubscription};
+use crate::fetching::ServerSearchResults;
 use crate::operations::OperationRegistry;
 use crate::profile::{ProfileLock, ProfilePaths};
+
 use crate::storage::Database;
 
 /// Moteur ouvert : un profil, sa base, son verrou, son bus d'événements.
@@ -23,6 +25,7 @@ pub struct Engine {
     pub(crate) events: EventBus,
     pub(crate) operations: OperationRegistry,
     pub(crate) oauth_flows: OAuthFlows,
+    pub(crate) server_searches: ServerSearchResults,
     pub(crate) account_lock: tokio::sync::Mutex<()>,
     _lock: ProfileLock,
 }
@@ -43,6 +46,7 @@ impl Engine {
             events,
             operations,
             oauth_flows: OAuthFlows::new(),
+            server_searches: ServerSearchResults::default(),
             account_lock: tokio::sync::Mutex::new(()),
             _lock: lock,
         })

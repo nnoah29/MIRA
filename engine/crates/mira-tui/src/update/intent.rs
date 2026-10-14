@@ -1,7 +1,10 @@
 //! Intentions de l'utilisateur, indépendantes des touches qui les produisent.
 
 use super::intent_actions::on_message_intent;
-use super::{account_switch, navigation, pagination, panes, popup_intent};
+use super::search_intent::SearchIntent;
+use super::{
+    account_switch, navigation, pagination, panes, popup_intent, search_intent, sync_status,
+};
 use crate::commands::Command;
 use crate::state::AppState;
 
@@ -28,12 +31,14 @@ pub enum Intent {
     Undo,
     Confirm,
     Cancel,
+    Search(SearchIntent),
+    StartSync,
 }
 
 /// Route une intention vers son gestionnaire ; une fenêtre ouverte la reçoit en premier.
 pub fn on_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
-    if state.popup.is_open() {
-        return popup_intent::route(state, intent);
+    if let Some(commands) = route_modal(state, intent) {
+        return commands;
     }
     match intent {
         Intent::MoveDown
@@ -56,7 +61,20 @@ pub fn on_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
         | Intent::Undo
         | Intent::Confirm
         | Intent::Cancel => on_message_intent(state, intent),
+        Intent::Search(search) => search_intent::route_idle(state, search),
+        Intent::StartSync => sync_status::start_sync(state),
     }
+}
+
+/// Route l'intention vers la fenêtre ou la saisie de recherche ouverte, qui la reçoit avant tout.
+fn route_modal(state: &mut AppState, intent: Intent) -> Option<Vec<Command>> {
+    if state.popup.is_open() {
+        return Some(popup_intent::route(state, intent));
+    }
+    if state.search.is_editing() {
+        return Some(search_intent::route_editing(state, intent));
+    }
+    None
 }
 
 /// Intentions de navigation entre panneaux, comptes et messages.
@@ -81,7 +99,9 @@ fn on_navigation_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
         | Intent::OpenMovePicker
         | Intent::Undo
         | Intent::Confirm
-        | Intent::Cancel => {}
+        | Intent::Cancel
+        | Intent::Search(_)
+        | Intent::StartSync => {}
     }
     Vec::new()
 }

@@ -29,7 +29,9 @@ pub fn route(state: &mut AppState, intent: Intent) -> Vec<Command> {
         | Intent::ToggleFlag
         | Intent::ToggleRead
         | Intent::OpenMovePicker
-        | Intent::Undo => Vec::new(),
+        | Intent::Undo
+        | Intent::Search(_)
+        | Intent::StartSync => Vec::new(),
     }
 }
 

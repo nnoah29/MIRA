@@ -2,6 +2,7 @@
 
 pub mod engine_session;
 pub mod error;
+pub mod event_feed;
 pub mod raw_mode;
 pub mod terminal_guard;
 

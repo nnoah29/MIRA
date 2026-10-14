@@ -11,6 +11,7 @@ pub struct MessagesState {
     pub(super) view: Option<ViewRef>,
     pub(super) next_cursor: Option<Cursor>,
     pub(super) requested: Option<Cursor>,
+    pub(super) loading: bool,
     pub selection: Selection,
 }
 
@@ -35,6 +36,7 @@ impl MessagesState {
             self.selection.selected = None;
         }
         self.view = Some(view);
+        self.loading = false;
         self.replace_items(page.items);
         self.next_cursor = page.next_cursor;
     }

@@ -23,6 +23,10 @@ pub enum Tag {
     Action,
     UserAction(IdempotencyKey),
     Undo(ActionId),
+    Search(String),
+    StartSync,
+    SyncStatus,
+    Status,
 }
 
 /// Effet de bord que la boucle doit réaliser après une transition.

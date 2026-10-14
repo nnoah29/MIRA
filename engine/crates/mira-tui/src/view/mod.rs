@@ -6,8 +6,10 @@ pub mod message_list;
 pub mod popups;
 pub mod reader;
 pub mod safe_text;
+pub mod search_bar;
 pub mod sidebar;
 pub mod status_bar;
+pub mod status_text;
 pub mod welcome;
 
 use ratatui::Frame;

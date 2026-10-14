@@ -9,6 +9,7 @@ use crate::state::AppState;
 
 /// Vide la liste, mémorise la vue voulue et demande sa première page.
 pub fn load_view(state: &mut AppState, view: ViewRef) -> Vec<Command> {
+    state.search.cancel();
     state.messages.begin_load(view.clone());
     vec![Command::Execute {
         tag: Tag::Messages {

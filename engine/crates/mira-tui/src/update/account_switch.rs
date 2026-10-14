@@ -7,7 +7,7 @@ use crate::commands::{Command, Tag};
 use crate::state::{AppState, Selection};
 
 /// Commande de lecture des boîtes d'un compte.
-fn list_mailboxes(account: &Account) -> Command {
+pub fn list_mailboxes(account: &Account) -> Command {
     Command::Execute {
         tag: Tag::Mailboxes(account.id.clone()),
         request: Request::Mailbox(MailboxRequest::ListMailboxes {
@@ -26,6 +26,7 @@ pub fn reload_if_changed(state: &mut AppState, previous: Option<AccountId>) -> V
     if selected_id(state) == previous {
         return Vec::new();
     }
+    state.search.cancel();
     state.mailboxes.replace_items(Vec::new());
     state.messages.reset();
     match state.accounts.selected() {

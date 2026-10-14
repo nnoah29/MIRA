@@ -27,6 +27,8 @@ pub fn on_message_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
         | Intent::PrevAccount
         | Intent::Quit
         | Intent::Confirm
-        | Intent::Cancel => Vec::new(),
+        | Intent::Cancel
+        | Intent::Search(_)
+        | Intent::StartSync => Vec::new(),
     }
 }

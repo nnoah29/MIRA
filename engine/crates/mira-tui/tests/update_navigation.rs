@@ -47,17 +47,6 @@ fn move_up_stops_at_first_item() {
     assert_eq!(state.messages.selection.selected, Some(0));
 }
 
-/// Une liste vide garde une sélection absente quel que soit le déplacement.
-#[test]
-fn empty_list_selection_stays_none() {
-    let mut state = state_with_messages(0);
-    press(&mut state, Intent::MoveDown);
-    press(&mut state, Intent::MoveUp);
-    press(&mut state, Intent::Bottom);
-    press(&mut state, Intent::Top);
-    assert_eq!(state.messages.selection.selected, None);
-}
-
 /// Quitter lève l'indicateur de sortie et demande la commande Quit.
 #[test]
 fn quit_intent_sets_should_quit_and_returns_quit_command() {

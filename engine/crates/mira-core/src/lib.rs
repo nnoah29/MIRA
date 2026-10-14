@@ -5,6 +5,7 @@ pub mod accounts;
 pub mod actions;
 pub mod api;
 pub mod auth;
+mod body_storage;
 pub mod capabilities;
 pub mod drafts;
 pub mod events;

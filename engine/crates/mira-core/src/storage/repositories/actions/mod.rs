@@ -1,5 +1,6 @@
 //! Dépôt « actions » : file d'actions idempotente et ordonnée (voir docs/specs/J2-stockage.md).
 
+mod by_command;
 mod enqueue;
 mod payload;
 mod read;

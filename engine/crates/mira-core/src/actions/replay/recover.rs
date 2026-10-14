@@ -52,9 +52,10 @@ async fn recover_one(
     if matches!(action.kind, ActionKind::Send { .. }) {
         return match recover_interrupted_send(ctx, client, action).await? {
             StepOutcome::Succeeded => Ok(Recovered::Confirmed),
-            StepOutcome::Uncertain | StepOutcome::Failed | StepOutcome::Stop(_) => {
-                Ok(Recovered::Uncertain)
-            }
+            StepOutcome::Uncertain
+            | StepOutcome::Failed
+            | StepOutcome::Skipped
+            | StepOutcome::Stop(_) => Ok(Recovered::Uncertain),
         };
     }
     ctx.queue

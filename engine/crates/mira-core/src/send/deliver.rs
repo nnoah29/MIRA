@@ -1,5 +1,6 @@
 //! Remise du message au serveur SMTP, avec un rafraîchissement silencieux du jeton si le serveur le refuse (7.7).
 
+use mira_vocabulary::error::codes::network;
 use mira_vocabulary::{ErrorCategory, MiraError};
 
 use crate::actions::ReplayContext;
@@ -15,11 +16,23 @@ pub(crate) async fn deliver(
     let outgoing = built.clone().into_outgoing();
     match attempt(ctx, &outgoing).await {
         Err(error) if error.category == ErrorCategory::Authentication => {
-            ctx.credentials.renew_now(ctx.account).await?;
+            ctx.credentials
+                .renew_now(ctx.account)
+                .await
+                .map_err(renewal_failure)?;
             attempt(ctx, &outgoing).await
         }
         other => other,
     }
+}
+
+/// Un échec de rafraîchissement n'a rien envoyé : une coupure du service de jetons n'est pas une issue incertaine
+fn renewal_failure(error: MiraError) -> MiraError {
+    if error.code != network::CONNECTION_LOST.0 {
+        return error;
+    }
+    let message = "service d'autorisation injoignable, jeton non rafraîchi";
+    MiraError::new(ErrorCategory::Network, network::UNREACHABLE, message).retryable(true)
 }
 
 /// Une tentative SMTP avec les identifiants actuels du compte

@@ -6,16 +6,19 @@ use super::context::ReplayContext;
 use super::report::StepOutcome;
 use crate::send::prepare_send_attempt;
 
-/// Écrit l'état « en cours » dans la base ; pour un envoi, fixe aussi le `Message-ID` et fige le brouillon
+/// Passe l'action « en attente » à « en cours » ; rend faux si elle a été annulée entre-temps
 pub(super) fn begin_attempt(
     ctx: &ReplayContext<'_>,
     action: &PendingAction,
-) -> Result<(), MiraError> {
+) -> Result<bool, MiraError> {
     ctx.queue.db.write(|tx| {
+        if !tx.begin_action_attempt(&action.id)? {
+            return Ok(false);
+        }
         if let ActionKind::Send { draft } = &action.kind {
             prepare_send_attempt(tx, ctx.queue.ids, &action.id, draft)?;
         }
-        tx.set_action_state(&action.id, ActionState::InProgress)
+        Ok(true)
     })
 }
 

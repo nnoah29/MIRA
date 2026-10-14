@@ -1,18 +1,18 @@
 //! Choix d'une boîte de destination pour des messages.
 
-use mira_assembly::mira_vocabulary::{Mailbox, MessageId};
+use mira_assembly::mira_vocabulary::{Mailbox, MessageSummary};
 
 /// Choix d'une boîte de destination pour des messages.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MovePicker {
-    pub messages: Vec<MessageId>,
+    pub messages: Vec<MessageSummary>,
     targets: Vec<Mailbox>,
     selected: usize,
 }
 
 impl MovePicker {
     /// Sélecteur sur ces boîtes, la première choisie.
-    pub fn new(messages: Vec<MessageId>, targets: Vec<Mailbox>) -> MovePicker {
+    pub fn new(messages: Vec<MessageSummary>, targets: Vec<Mailbox>) -> MovePicker {
         MovePicker {
             messages,
             targets,

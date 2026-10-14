@@ -2,7 +2,7 @@
 
 use mira_assembly::mira_vocabulary::{ActionKind, Mailbox, MailboxId, MessageSummary, ViewRef};
 
-use super::action_command::{selected_message, send_removing};
+use super::action_command::{send_removing, target_message};
 use crate::commands::Command;
 use crate::state::{AppState, MovePicker, Popup};
 
@@ -29,14 +29,14 @@ fn other_mailboxes(state: &AppState, message: &MessageSummary) -> Vec<Mailbox> {
 
 /// Ouvre le sélecteur sur les autres boîtes du compte, ou le dit s'il n'y en a pas.
 pub fn open_move_picker(state: &mut AppState) -> Vec<Command> {
-    let Some(message) = selected_message(state) else {
+    let Some(message) = target_message(state) else {
         return Vec::new();
     };
     let targets = other_mailboxes(state, &message);
     if targets.is_empty() {
         state.status.message = Some("Aucune autre boîte vers laquelle déplacer".to_string());
     } else {
-        state.popup = Popup::MovePicker(MovePicker::new(vec![message.id], targets));
+        state.popup = Popup::MovePicker(MovePicker::new(vec![message], targets));
     }
     Vec::new()
 }
@@ -48,7 +48,8 @@ pub fn confirm_move(state: &mut AppState, picker: &MovePicker) -> Vec<Command> {
             let kind = ActionKind::Move {
                 to: target.id.clone(),
             };
-            send_removing(state, kind, picker.messages.clone())
+            let ids = picker.messages.iter().map(|m| m.id.clone()).collect();
+            send_removing(state, kind, ids)
         }
         None => Vec::new(),
     }

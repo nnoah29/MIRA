@@ -1,8 +1,8 @@
-//! Actions sur le message sélectionné : archiver, supprimer, marquer.
+//! Actions sur le message visé (ouvert dans le lecteur, sinon sélectionné) : archiver, supprimer, marquer.
 
 use mira_assembly::mira_vocabulary::ActionKind;
 
-use super::action_command::{apply_command, selected_message, send_removing};
+use super::action_command::{apply_command, send_removing, target_message};
 use crate::commands::Command;
 use crate::state::{AppState, Popup};
 
@@ -18,9 +18,9 @@ pub fn trash(state: &mut AppState) -> Vec<Command> {
 
 /// Demande confirmation avant de supprimer définitivement le message sélectionné.
 pub fn delete_permanently(state: &mut AppState) -> Vec<Command> {
-    if let Some(message) = selected_message(state) {
+    if let Some(message) = target_message(state) {
         state.popup = Popup::ConfirmDelete {
-            messages: vec![message.id],
+            messages: vec![message],
         };
     }
     Vec::new()
@@ -28,7 +28,7 @@ pub fn delete_permanently(state: &mut AppState) -> Vec<Command> {
 
 /// Envoie cette action sur le message sélectionné et le retire de la liste.
 fn send_selected(state: &mut AppState, kind: ActionKind) -> Vec<Command> {
-    match selected_message(state) {
+    match target_message(state) {
         Some(message) => send_removing(state, kind, vec![message.id]),
         None => Vec::new(),
     }
@@ -36,7 +36,7 @@ fn send_selected(state: &mut AppState, kind: ActionKind) -> Vec<Command> {
 
 /// Inverse l'étoile du message sélectionné.
 pub fn toggle_flag(state: &mut AppState) -> Vec<Command> {
-    let Some(message) = selected_message(state) else {
+    let Some(message) = target_message(state) else {
         return Vec::new();
     };
     let flagged = !message.flags.flagged;
@@ -47,7 +47,7 @@ pub fn toggle_flag(state: &mut AppState) -> Vec<Command> {
 
 /// Inverse l'état lu du message sélectionné.
 pub fn toggle_read(state: &mut AppState) -> Vec<Command> {
-    let Some(message) = selected_message(state) else {
+    let Some(message) = target_message(state) else {
         return Vec::new();
     };
     let read = !message.flags.seen;

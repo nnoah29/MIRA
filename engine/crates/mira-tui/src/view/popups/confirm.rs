@@ -4,12 +4,17 @@ use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::widgets::{Block, Paragraph, Wrap};
 
+use mira_assembly::mira_vocabulary::MessageSummary;
+
+use super::target_label::target_label;
 use crate::theme;
 
-/// Demande de confirmation pour ce nombre de messages.
-pub fn render_confirm(frame: &mut Frame, area: Rect, count: usize) {
+/// Demande de confirmation qui nomme les messages visés.
+pub fn render_confirm(frame: &mut Frame, area: Rect, messages: &[MessageSummary]) {
     let text = format!(
-        "Supprimer définitivement {count} message(s) ?\nEntrée : confirmer · Échap : annuler"
+        "Supprimer définitivement {} message(s) ?\n{}\nEntrée : confirmer · Échap : annuler",
+        messages.len(),
+        target_label(messages)
     );
     let block = Block::bordered()
         .title("Confirmation")

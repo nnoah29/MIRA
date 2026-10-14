@@ -4,6 +4,7 @@ use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::widgets::{Block, List, ListItem, ListState};
 
+use super::target_label::target_label;
 use crate::state::MovePicker;
 use crate::theme;
 use crate::view::safe_text::display_safe;
@@ -17,6 +18,7 @@ pub fn render_move_target(frame: &mut Frame, area: Rect, picker: &MovePicker) {
         .collect();
     let block = Block::bordered()
         .title("Déplacer vers")
+        .title_bottom(target_label(&picker.messages))
         .border_style(theme::border(true));
     let list = List::new(items)
         .block(block)

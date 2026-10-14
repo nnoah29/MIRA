@@ -1,6 +1,6 @@
 //! Fenêtre modale affichée au-dessus de l'écran principal.
 
-use mira_assembly::mira_vocabulary::MessageId;
+use mira_assembly::mira_vocabulary::MessageSummary;
 
 use super::move_picker::MovePicker;
 
@@ -10,7 +10,7 @@ pub enum Popup {
     #[default]
     Closed,
     ConfirmDelete {
-        messages: Vec<MessageId>,
+        messages: Vec<MessageSummary>,
     },
     MovePicker(MovePicker),
     Help,

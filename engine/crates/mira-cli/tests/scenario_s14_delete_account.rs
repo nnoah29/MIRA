@@ -99,3 +99,16 @@ async fn scenario_s14_deletion_is_final_and_the_kept_account_keeps_syncing_via_c
     assert_outputs_clean(&[&deleted, &again, &events], SB_PASSWORD);
     assert!(!world.profile_contains(SB_PASSWORD));
 }
+
+/// Aucun octet du profil (base, journal, verrou) ne garde le sujet ni l'adresse du compte supprimé
+#[tokio::test]
+async fn scenario_s14_no_trace_of_the_deleted_account_remains_in_profile_files_via_cli() {
+    let (world, doomed, _kept) = two_accounts().await;
+    assert!(world.profile_contains("Zeta-condamne"));
+    assert!(world.profile_contains(DOOMED));
+    let deleted = world.run(&["account", "delete", &doomed.account]).await;
+    assert_eq!(deleted.code, 0, "{}", deleted.stderr);
+    assert!(!world.profile_contains("Zeta-condamne"), "sujet gardé");
+    assert!(!world.profile_contains("Zeta-deux"), "second sujet gardé");
+    assert!(!world.profile_contains(DOOMED), "adresse gardée");
+}

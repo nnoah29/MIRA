@@ -39,6 +39,23 @@ impl Tx<'_> {
         require_change(changed, id)
     }
 
+    /// Enregistre l'aperçu et la présence de pièces jointes découverts à la lecture du corps
+    pub fn set_message_body_summary(
+        &self,
+        id: &MessageId,
+        preview: &str,
+        has_attachments: bool,
+    ) -> Result<(), MiraError> {
+        let changed = self
+            .sql()
+            .execute(
+                "UPDATE messages SET preview = ?2, has_attachments = ?3 WHERE id = ?1",
+                params![id.as_str(), preview, has_attachments],
+            )
+            .map_err(storage_error)?;
+        require_change(changed, id)
+    }
+
     /// Rattache le message à un fil, ou le détache
     pub fn set_thread(&self, id: &MessageId, thread: Option<&ThreadId>) -> Result<(), MiraError> {
         let changed = self

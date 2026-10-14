@@ -32,6 +32,12 @@ impl ImapClient {
             .await
     }
 
+    /// UID des messages dont l'UID est supérieur ou égal à `first`.
+    pub async fn uids_from(&mut self, first: u32) -> Result<Vec<u32>, MiraError> {
+        let found = self.search_uids(&format!("UID {first}:*")).await?;
+        Ok(found.into_iter().filter(|uid| *uid >= first).collect())
+    }
+
     /// UID de tous les messages de la boîte sélectionnée.
     pub async fn all_uids(&mut self) -> Result<Vec<u32>, MiraError> {
         self.search_uids("ALL").await

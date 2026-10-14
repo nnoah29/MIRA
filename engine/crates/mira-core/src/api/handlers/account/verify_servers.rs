@@ -29,5 +29,6 @@ pub(super) async fn verify_new_servers(
     let secret = engine
         .vault()
         .load_login(&account.profile, id, account.auth, user)?;
-    check_imap_login(&servers.connect, &imap_login_of(secret)).await
+    let budget = engine.budget_for(id.as_str(), provider.as_ref());
+    check_imap_login(&servers.connect, &imap_login_of(secret), &budget).await
 }

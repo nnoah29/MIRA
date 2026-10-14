@@ -44,5 +44,6 @@ pub fn group_of(response: &Response) -> &'static str {
         | Response::SafeHtml(_) | Response::Threads(_) | Response::Thread(_)
         | Response::ServerSearch(_) | Response::StorageStats(_) | Response::Integrity(_)
         | Response::Exported(_) => "responses_read",
+        Response::Write(_) => "actions",
     }
 }

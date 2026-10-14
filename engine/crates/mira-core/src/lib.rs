@@ -19,6 +19,7 @@ pub mod ports;
 pub mod profile;
 pub mod reading;
 pub mod registry;
+mod replayer;
 pub mod send;
 pub mod smtp;
 pub mod storage;

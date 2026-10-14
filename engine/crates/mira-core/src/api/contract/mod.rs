@@ -13,6 +13,7 @@ mod response;
 mod search_requests;
 mod secret_input;
 mod thread_requests;
+mod write;
 
 pub use account_requests::{AccountChanges, AccountDraft, AccountRequest};
 pub use auth_requests::AuthRequest;
@@ -29,3 +30,7 @@ pub use response::{
 pub use search_requests::SearchRequest;
 pub use secret_input::SecretInput;
 pub use thread_requests::ThreadRequest;
+pub use write::{
+    ActionRequest, ComposeRequest, DraftChanges, DraftMode, OutboxEntry, QueueRequest,
+    TargetSelection, WriteResponse,
+};

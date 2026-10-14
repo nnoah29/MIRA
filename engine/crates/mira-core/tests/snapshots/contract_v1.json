@@ -84,6 +84,96 @@
         "op": "update_account"
       }
     },
+    "action.apply_action": {
+      "domain": "action",
+      "request": {
+        "idempotency_key": "key-1",
+        "kind": {
+          "read": true,
+          "type": "mark_read"
+        },
+        "op": "apply_action",
+        "targets": {
+          "messages": [
+            "message-1"
+          ],
+          "type": "messages"
+        }
+      }
+    },
+    "action.apply_action.2": {
+      "domain": "action",
+      "request": {
+        "idempotency_key": "key-1",
+        "kind": {
+          "type": "archive"
+        },
+        "op": "apply_action",
+        "targets": {
+          "query": {
+            "filters": {
+              "flagged_only": false,
+              "from_contains": null,
+              "has_attachments": false,
+              "since": null,
+              "unread_only": false,
+              "until": null
+            },
+            "page": {
+              "cursor": null,
+              "limit": 50
+            },
+            "view": {
+              "type": "standard",
+              "view": "unread"
+            }
+          },
+          "type": "query"
+        }
+      }
+    },
+    "action.create_mailbox": {
+      "domain": "action",
+      "request": {
+        "account": "account-1",
+        "idempotency_key": "key-1",
+        "name": "Factures",
+        "op": "create_mailbox",
+        "parent": null
+      }
+    },
+    "action.delete_mailbox": {
+      "domain": "action",
+      "request": {
+        "idempotency_key": "key-1",
+        "mailbox": "mailbox-1",
+        "op": "delete_mailbox"
+      }
+    },
+    "action.empty_mailbox": {
+      "domain": "action",
+      "request": {
+        "idempotency_key": "key-1",
+        "mailbox": "mailbox-1",
+        "op": "empty_mailbox"
+      }
+    },
+    "action.rename_mailbox": {
+      "domain": "action",
+      "request": {
+        "idempotency_key": "key-1",
+        "mailbox": "mailbox-1",
+        "name": "Archives 2026",
+        "op": "rename_mailbox"
+      }
+    },
+    "action.undo_action": {
+      "domain": "action",
+      "request": {
+        "action": "action-1",
+        "op": "undo_action"
+      }
+    },
     "auth.cancel_oauth": {
       "domain": "auth",
       "request": {
@@ -119,6 +209,137 @@
         "account": "a",
         "op": "store_app_password",
         "password": "x"
+      }
+    },
+    "compose.attach_file": {
+      "domain": "compose",
+      "request": {
+        "draft": "draft-1",
+        "op": "attach_file",
+        "path": "/tmp/note.txt"
+      }
+    },
+    "compose.cancel_send": {
+      "domain": "compose",
+      "request": {
+        "action": "action-1",
+        "op": "cancel_send"
+      }
+    },
+    "compose.create_draft": {
+      "domain": "compose",
+      "request": {
+        "account": "account-1",
+        "identity": "identity-1",
+        "mode": {
+          "type": "new"
+        },
+        "op": "create_draft"
+      }
+    },
+    "compose.create_draft.2": {
+      "domain": "compose",
+      "request": {
+        "account": "account-1",
+        "identity": "identity-1",
+        "mode": {
+          "message": "message-1",
+          "type": "reply"
+        },
+        "op": "create_draft"
+      }
+    },
+    "compose.create_draft.3": {
+      "domain": "compose",
+      "request": {
+        "account": "account-1",
+        "identity": "identity-1",
+        "mode": {
+          "message": "message-1",
+          "type": "reply_all"
+        },
+        "op": "create_draft"
+      }
+    },
+    "compose.create_draft.4": {
+      "domain": "compose",
+      "request": {
+        "account": "account-1",
+        "identity": "identity-1",
+        "mode": {
+          "message": "message-1",
+          "type": "forward"
+        },
+        "op": "create_draft"
+      }
+    },
+    "compose.delete_draft": {
+      "domain": "compose",
+      "request": {
+        "draft": "draft-1",
+        "op": "delete_draft"
+      }
+    },
+    "compose.get_draft": {
+      "domain": "compose",
+      "request": {
+        "draft": "draft-1",
+        "op": "get_draft"
+      }
+    },
+    "compose.list_drafts": {
+      "domain": "compose",
+      "request": {
+        "account": "account-1",
+        "op": "list_drafts"
+      }
+    },
+    "compose.list_outbox": {
+      "domain": "compose",
+      "request": {
+        "account": "account-1",
+        "op": "list_outbox"
+      }
+    },
+    "compose.remove_attachment": {
+      "domain": "compose",
+      "request": {
+        "draft": "draft-1",
+        "op": "remove_attachment",
+        "position": 0
+      }
+    },
+    "compose.resolve_uncertain_send": {
+      "domain": "compose",
+      "request": {
+        "action": "action-1",
+        "op": "resolve_uncertain_send",
+        "resend": false
+      }
+    },
+    "compose.send_draft": {
+      "domain": "compose",
+      "request": {
+        "at": 1700000010000,
+        "draft": "draft-1",
+        "idempotency_key": "key-1",
+        "op": "send_draft"
+      }
+    },
+    "compose.update_draft": {
+      "domain": "compose",
+      "request": {
+        "changes": {
+          "bcc": null,
+          "body_html": null,
+          "body_text": null,
+          "cc": null,
+          "identity": null,
+          "subject": "Nouveau sujet",
+          "to": null
+        },
+        "draft": "draft-1",
+        "op": "update_draft"
       }
     },
     "engine.get_contract_info": {
@@ -342,6 +563,31 @@
       "domain": "provider",
       "request": {
         "op": "list_providers"
+      }
+    },
+    "queue.cancel_action": {
+      "domain": "queue",
+      "request": {
+        "action": "action-1",
+        "op": "cancel_action"
+      }
+    },
+    "queue.list_actions": {
+      "domain": "queue",
+      "request": {
+        "account": "account-1",
+        "op": "list_actions",
+        "states": [
+          "pending",
+          "failed"
+        ]
+      }
+    },
+    "queue.retry_action": {
+      "domain": "queue",
+      "request": {
+        "action": "action-1",
+        "op": "retry_action"
       }
     },
     "search.get_server_search_result": {
@@ -942,6 +1188,136 @@
         "next_cursor": null
       },
       "type": "threads"
+    },
+    "write.action": {
+      "data": {
+        "data": "action-1",
+        "type": "action"
+      },
+      "type": "write"
+    },
+    "write.actions": {
+      "data": {
+        "data": [
+          "action-1",
+          "action-2"
+        ],
+        "type": "actions"
+      },
+      "type": "write"
+    },
+    "write.draft": {
+      "data": {
+        "data": {
+          "account": "account-1",
+          "attachments": [
+            {
+              "filename": "note.txt",
+              "mime_type": "text/plain",
+              "size": 12
+            }
+          ],
+          "bcc": [],
+          "body_html": null,
+          "body_text": "Corps",
+          "cc": [],
+          "id": "draft-1",
+          "identity": "identity-1",
+          "in_reply_to": "message-1",
+          "state": {
+            "at": 1700000010000,
+            "type": "scheduled"
+          },
+          "subject": "Bonjour",
+          "to": [
+            {
+              "address": "bob@example.org",
+              "name": "Bob"
+            }
+          ],
+          "updated_at": 1700000000000
+        },
+        "type": "draft"
+      },
+      "type": "write"
+    },
+    "write.drafts": {
+      "data": {
+        "data": [
+          {
+            "account": "account-1",
+            "attachments": [
+              {
+                "filename": "note.txt",
+                "mime_type": "text/plain",
+                "size": 12
+              }
+            ],
+            "bcc": [],
+            "body_html": null,
+            "body_text": "Corps",
+            "cc": [],
+            "id": "draft-1",
+            "identity": "identity-1",
+            "in_reply_to": "message-1",
+            "state": {
+              "at": 1700000010000,
+              "type": "scheduled"
+            },
+            "subject": "Bonjour",
+            "to": [
+              {
+                "address": "bob@example.org",
+                "name": "Bob"
+              }
+            ],
+            "updated_at": 1700000000000
+          }
+        ],
+        "type": "drafts"
+      },
+      "type": "write"
+    },
+    "write.outbox": {
+      "data": {
+        "data": [
+          {
+            "action": "action-1",
+            "draft": "draft-1",
+            "last_error": null,
+            "scheduled_for": 1700000010000,
+            "state": "uncertain",
+            "subject": "Bonjour"
+          }
+        ],
+        "type": "outbox"
+      },
+      "type": "write"
+    },
+    "write.queued_actions": {
+      "data": {
+        "data": [
+          {
+            "account": "account-1",
+            "attempts": 0,
+            "created_at": 1700000000000,
+            "id": "action-1",
+            "idempotency_key": "key-1",
+            "kind": {
+              "read": true,
+              "type": "mark_read"
+            },
+            "last_error": null,
+            "not_before": 1700000005000,
+            "state": "pending",
+            "targets": [
+              "message-1"
+            ]
+          }
+        ],
+        "type": "queued_actions"
+      },
+      "type": "write"
     }
   }
 }

@@ -13,6 +13,7 @@ pub mod table;
 use mira_assembly::api::Response;
 
 /// Texte lisible d'une réponse, un `match` exhaustif sur toutes ses formes.
+#[rustfmt::skip]
 pub fn human_text(response: &Response) -> String {
     match response {
         Response::Done => "ok".to_string(),
@@ -28,18 +29,10 @@ pub fn human_text(response: &Response) -> String {
         Response::OAuthStarted(start) => flows::oauth_start_text(start),
         Response::Operation(info) => flows::operation_text(info),
         Response::Events(list) => events::events_table(list),
-        Response::Mailboxes(_)
-        | Response::Messages(_)
-        | Response::Message(_)
-        | Response::MessageBody(_)
-        | Response::RawSource(_)
-        | Response::Attachments(_)
-        | Response::SafeHtml(_)
-        | Response::Threads(_)
-        | Response::Thread(_)
-        | Response::ServerSearch(_)
-        | Response::StorageStats(_)
-        | Response::Integrity(_)
-        | Response::Exported(_) => generic::pretty_json(response),
+        Response::Mailboxes(_) | Response::Messages(_) | Response::Message(_)
+        | Response::MessageBody(_) | Response::RawSource(_) | Response::Attachments(_)
+        | Response::SafeHtml(_) | Response::Threads(_) | Response::Thread(_)
+        | Response::ServerSearch(_) | Response::StorageStats(_) | Response::Integrity(_)
+        | Response::Exported(_) | Response::Write(_) => generic::pretty_json(response),
     }
 }

@@ -11,6 +11,7 @@ use super::maintenance_requests::MaintenanceRequest;
 use super::message_requests::MessageRequest;
 use super::search_requests::SearchRequest;
 use super::thread_requests::ThreadRequest;
+use super::write::{ActionRequest, ComposeRequest, QueueRequest};
 
 /// Toute requête qu'un client peut adresser au moteur.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -28,6 +29,9 @@ pub enum Request {
     Auth(AuthRequest),
     Operation(OperationRequest),
     Event(EventRequest),
+    Action(ActionRequest),
+    Compose(ComposeRequest),
+    Queue(QueueRequest),
 }
 
 /// Requêtes sur le moteur lui-même.

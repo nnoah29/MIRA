@@ -1,5 +1,7 @@
 //! Lecture d'un fichier local donné par le client comme pièce jointe.
 
+use std::fs::File;
+use std::io::Read;
 use std::path::Path;
 
 use mira_vocabulary::error::codes::local_storage;
@@ -21,27 +23,41 @@ pub(super) struct LocalFile {
 
 /// Lit le fichier si c'est un fichier ordinaire de 25 Mo au plus (sinon `invalid_input.parameter`)
 pub(super) fn read_local_file(path: &Path) -> Result<LocalFile, MiraError> {
-    let metadata = std::fs::metadata(path).map_err(|_| unreadable())?;
-    if !metadata.is_file() {
+    let announced = std::fs::metadata(path).map_err(|_| unreadable())?;
+    if !announced.is_file() {
         return Err(invalid_parameter("la pièce jointe n'est pas un fichier"));
-    }
-    if metadata.len() > MAX_ATTACHMENT_BYTES {
-        return Err(too_large());
     }
     let filename = path
         .file_name()
         .and_then(|name| name.to_str())
         .ok_or_else(|| invalid_parameter("nom de fichier inexploitable"))?
         .to_string();
-    let data = std::fs::read(path).map_err(|_| unreadable())?;
-    if u64::try_from(data.len()).unwrap_or(u64::MAX) > MAX_ATTACHMENT_BYTES {
-        return Err(too_large());
-    }
+    let file = File::open(path).map_err(|_| unreadable())?;
+    let data = read_bounded(file)?;
     Ok(LocalFile {
         mime_type: mime_type_for(&filename).to_string(),
         filename,
         data,
     })
+}
+
+/// Lit le fichier ouvert (une seule ouverture), en s'arrêtant un octet après la limite
+fn read_bounded(file: File) -> Result<Vec<u8>, MiraError> {
+    let opened = file.metadata().map_err(|_| unreadable())?;
+    if !opened.is_file() {
+        return Err(invalid_parameter("la pièce jointe n'est pas un fichier"));
+    }
+    if opened.len() > MAX_ATTACHMENT_BYTES {
+        return Err(too_large());
+    }
+    let mut data = Vec::new();
+    file.take(MAX_ATTACHMENT_BYTES + 1)
+        .read_to_end(&mut data)
+        .map_err(|_| unreadable())?;
+    if u64::try_from(data.len()).unwrap_or(u64::MAX) > MAX_ATTACHMENT_BYTES {
+        return Err(too_large());
+    }
+    Ok(data)
 }
 
 /// Erreur « fichier illisible » (le chemin n'est pas repris dans le message)

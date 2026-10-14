@@ -23,6 +23,21 @@ impl Tx<'_> {
         Ok(())
     }
 
+    /// Passe l'action de « en attente » à « en cours » ; rend faux si elle n'est plus en attente (annulée entre-temps)
+    pub fn begin_action_attempt(&self, id: &ActionId) -> Result<bool, MiraError> {
+        let changed = self
+            .sql()
+            .execute(
+                "UPDATE actions SET state = 'in_progress' WHERE id = ?1 AND state = 'pending'",
+                params![id.as_str()],
+            )
+            .map_err(storage_error)?;
+        if changed == 0 && self.get_action(id)?.is_none() {
+            return Err(action_not_found(id));
+        }
+        Ok(changed == 1)
+    }
+
     /// Note un échec : une tentative de plus, dernière erreur et prochaine date d'essai
     pub fn record_action_failure(
         &self,

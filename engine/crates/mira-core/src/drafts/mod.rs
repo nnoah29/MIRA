@@ -5,7 +5,7 @@ mod compose;
 mod create;
 mod delete;
 mod edit;
-mod identity;
+pub(crate) mod identity;
 mod scheduling;
 pub(crate) mod state;
 mod threading;

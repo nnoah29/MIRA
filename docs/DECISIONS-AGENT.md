@@ -173,3 +173,11 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - Secret absent pendant la synchro → `authentication.rejected` (AuthRequired).
 - Limite héritée : un message arrivé entre la fin de la première passe et l'établissement d'IDLE n'est vu qu'au relevé suivant (correctif possible : passe de la réception juste après le démarrage d'IDLE).
 - **À faire (J9c)** : CLI `sync`, politique `BackgroundSync` par commande (Off hors synchro, On pour `sync start --wait`).
+
+## AG-26 — CLI Synchro, politique de synchro de fond, OAuth en un processus (rapport J9c)
+- `execute_request` fixe `background_sync` par commande : `On` seulement pour `sync start|extend-window|resync` et `account add|add-oauth --sync-wait` ; `Off` ailleurs. Arrêt par `shutdown_within(5 s)` quand la synchro tournait.
+- `sync start --wait` accepté sans effet (le CLI attend toujours : un processus qui rend la main tue la synchro).
+- `Engine::open` avec synchro `On` lance une passe pour chaque compte connu : `sync start --mailbox X` synchronise aussi les autres boîtes (comportement du cœur).
+- `mira account add-oauth` : StartOAuth, URL sur stderr, CompleteOAuth borné (`--timeout` 300 s, code 13 et CancelOAuth au délai), puis AddAccount.
+- Le `warn!` « première synchro non lancée » d'`AddAccount` est masqué par une directive par défaut du CLI : à supprimer côté moteur quand la synchro est `Off`.
+- **Reste** : API moteur pour attendre la première synchro lancée par `AddAccount`.

@@ -1,5 +1,11 @@
 //! Exécution du CLI en processus, avec dépendances injectées (faux trousseau) et capture des flux.
 
+pub mod bench_tools;
+pub mod full_bench;
+pub mod json_views;
+pub mod raw_mail;
+pub mod seed;
+pub mod seed_fixtures;
 pub mod server;
 
 use std::io::Cursor;

@@ -3,12 +3,20 @@
 use clap::{ArgAction, Parser, Subcommand};
 
 use crate::commands::account::AccountCommand;
+use crate::commands::action::ActionCommand;
 use crate::commands::auth::AuthCommand;
+use crate::commands::draft::DraftCommand;
 use crate::commands::engine::EngineCommand;
 use crate::commands::events::EventsArgs;
 use crate::commands::identity::IdentityCommand;
+use crate::commands::mailbox::MailboxCommand;
+use crate::commands::maintenance::MaintenanceCommand;
+use crate::commands::message::MessageCommand;
 use crate::commands::operation::OperationCommand;
 use crate::commands::provider::ProviderCommand;
+use crate::commands::queue::QueueCommand;
+use crate::commands::search::SearchCommand;
+use crate::commands::thread::ThreadCommand;
 
 /// Client en ligne de commande de MIRA.
 #[derive(Debug, Parser)]
@@ -52,6 +60,30 @@ pub enum Commands {
     /// Opérations longues.
     #[command(subcommand)]
     Operation(OperationCommand),
+    /// Boîtes d'un compte.
+    #[command(subcommand)]
+    Mailbox(MailboxCommand),
+    /// Lecture des messages, de leur corps et de leurs pièces jointes.
+    #[command(subcommand)]
+    Message(MessageCommand),
+    /// Fils de conversation.
+    #[command(subcommand)]
+    Thread(ThreadCommand),
+    /// Recherche locale et sur le serveur.
+    #[command(subcommand)]
+    Search(SearchCommand),
+    /// Maintenance du profil : volumes, caches, index, exports.
+    #[command(subcommand)]
+    Maintenance(MaintenanceCommand),
+    /// Actions sur les messages (marquer, déplacer, archiver, supprimer).
+    #[command(subcommand)]
+    Action(ActionCommand),
+    /// Rédaction et envoi de messages.
+    #[command(subcommand)]
+    Draft(DraftCommand),
+    /// File d'actions locale.
+    #[command(subcommand)]
+    Queue(QueueCommand),
     /// Lecture des événements du moteur.
     Events(EventsArgs),
 }

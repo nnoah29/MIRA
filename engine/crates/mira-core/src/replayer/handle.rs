@@ -1,0 +1,50 @@
+//! Poignée du rejeu en tâche de fond : démarrage, réveil, arrêt.
+
+use std::sync::Arc;
+
+use tokio::runtime::Handle;
+use tokio::task::JoinHandle;
+
+use super::shared::ReplayShared;
+use super::supervisor::supervise;
+use crate::api::EngineConfig;
+use crate::events::EventBus;
+use crate::storage::Database;
+
+/// Le rejeu d'un moteur : le superviseur n'existe que si un runtime tokio est actif à l'ouverture.
+#[derive(Debug)]
+pub(crate) struct ReplayerHandle {
+    shared: Arc<ReplayShared>,
+    supervisor: Option<JoinHandle<()>>,
+}
+
+impl ReplayerHandle {
+    /// Lance le superviseur dans le runtime courant, s'il y en a un
+    pub(crate) fn start(config: EngineConfig, database: Arc<Database>, events: EventBus) -> Self {
+        let shared = Arc::new(ReplayShared::new(config, database, events));
+        let supervisor = Handle::try_current()
+            .ok()
+            .map(|runtime| runtime.spawn(supervise(Arc::clone(&shared))));
+        Self { shared, supervisor }
+    }
+
+    /// Signale que du travail est peut-être prêt (soumission, relance, reprise)
+    pub(crate) fn wake(&self) {
+        self.shared.wake_all();
+    }
+
+    /// Arrête le superviseur et, avec lui, toutes les tâches de compte
+    pub(crate) fn stop(&self) {
+        self.shared.request_stop();
+        if let Some(supervisor) = &self.supervisor {
+            supervisor.abort();
+        }
+    }
+}
+
+impl Drop for ReplayerHandle {
+    /// Un moteur détruit n'a plus de tâche de fond
+    fn drop(&mut self) {
+        self.stop();
+    }
+}

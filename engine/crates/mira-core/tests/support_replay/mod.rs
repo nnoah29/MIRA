@@ -2,6 +2,7 @@
 //! Banc de test du rejeu : monde local, faux serveurs IMAP et SMTP, identifiants simulés, session connectée.
 
 pub mod credentials;
+pub mod credentials_lost;
 pub mod credentials_port;
 pub mod events_view;
 pub mod fixture;

@@ -43,7 +43,7 @@ fn map_io_failure(error: &SmtpError) -> MiraError {
     )
 }
 
-/// Erreur détectée par le client avant ou pendant le dialogue : TLS, extension ou authentification
+/// Erreur détectée par le client : TLS, extension, défi d'authentification refusé, sinon protocole
 fn map_client_error(description: &str, xoauth: bool) -> MiraError {
     if description.contains("STARTTLS") || description.contains("not encrypted") {
         return map_tls_failure();
@@ -57,5 +57,9 @@ fn map_client_error(description: &str, xoauth: bool) -> MiraError {
             false,
         );
     }
-    map_auth_failure(xoauth)
+    if description.contains("challenge") {
+        return map_auth_failure(xoauth);
+    }
+    let message = "dialogue SMTP inattendu";
+    fail(ErrorCategory::Server, server::PROTOCOL, message, false)
 }

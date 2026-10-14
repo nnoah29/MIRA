@@ -10,4 +10,4 @@ mod transport;
 
 pub use login::{SmtpCredential, SmtpLogin};
 pub use outgoing::OutgoingMessage;
-pub use send::send_message;
+pub use send::{send_message, send_within};

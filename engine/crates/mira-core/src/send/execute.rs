@@ -4,6 +4,7 @@ use mira_vocabulary::error::codes::internal;
 use mira_vocabulary::{ActionKind, DraftId, ErrorCategory, EventKind, MiraError, PendingAction};
 
 use super::deliver::deliver;
+use super::draft_copy::purge_draft_copy;
 use super::message_id::stored_message_id;
 use super::prepare::compose_draft;
 use super::sent_copy::store_sent_copy;
@@ -53,6 +54,7 @@ async fn after_departure(
     note_failure(ctx.queue.events.emit(departed).map(|_| ()));
     note_failure(store_sent_copy(ctx, client, action, built).await);
     if let Ok(draft) = draft_of(action) {
+        note_failure(purge_draft_copy(ctx, client, draft).await);
         note_failure(ctx.queue.db.write(|tx| tx.delete_draft(draft)));
     }
 }

@@ -19,8 +19,10 @@ pub(crate) async fn save_draft_copy(
     let Some(mailbox) = role_mailbox_name(ctx, MailboxRole::Drafts)? else {
         return Err(role_mailbox_missing("Drafts"));
     };
-    let message_id = format!("<draft-{draft}@mira.local>");
-    match compose_draft(&ctx.queue, draft, &message_id) {
+    if ctx.queue.db.read(|tx| tx.get_draft(draft))?.is_none() {
+        return purge_draft_copy(ctx, client, draft).await;
+    }
+    match compose_draft(&ctx.queue, draft, &draft_message_id(draft)) {
         Ok(built) => replace_copy(ctx, client, &mailbox, &built).await,
         Err(error) if error.code == invalid_input::MISSING_PARAMETER.0 => Ok(()),
         Err(error) => Err(error),
@@ -40,4 +42,26 @@ async fn replace_copy(
     client.append(mailbox, &flags, &built.raw).await?;
     let capabilities = effective(client, ctx.quirks);
     purge_selected(client, &capabilities, &previous).await
+}
+
+/// `Message-ID` de la copie serveur du brouillon, stable d'un enregistrement à l'autre
+fn draft_message_id(draft: &DraftId) -> String {
+    format!("<draft-{draft}@mira.local>")
+}
+
+/// Supprime la copie serveur du brouillon ; sans effet si le compte n'a pas de boîte Brouillons
+pub(crate) async fn purge_draft_copy(
+    ctx: &ReplayContext<'_>,
+    client: &mut ImapClient,
+    draft: &DraftId,
+) -> Result<(), MiraError> {
+    let Some(mailbox) = role_mailbox_name(ctx, MailboxRole::Drafts)? else {
+        return Ok(());
+    };
+    client.select(&mailbox, None).await?;
+    let copies = client
+        .uids_with_message_id(&draft_message_id(draft))
+        .await?;
+    let capabilities = effective(client, ctx.quirks);
+    purge_selected(client, &capabilities, &copies).await
 }

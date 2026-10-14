@@ -47,7 +47,9 @@ async fn replay_one(
     client: &mut ImapClient,
     action: &PendingAction,
 ) -> Result<StepOutcome, MiraError> {
-    begin_attempt(ctx, action)?;
+    if !begin_attempt(ctx, action)? {
+        return Ok(StepOutcome::Skipped);
+    }
     match execute_action(ctx, client, action).await {
         Ok(()) => complete_attempt(ctx, action),
         Err(error) => settle_failure(ctx, client, action, &error).await,

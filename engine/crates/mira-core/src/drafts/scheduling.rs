@@ -49,6 +49,15 @@ fn queue_send(
     key: IdempotencyKey,
     when: Timestamp,
 ) -> Result<Queued, MiraError> {
+    let command = ActionKind::Send {
+        draft: draft.clone(),
+    };
+    if let Some(action) = tx.find_action_by_key_and_kind(&key, &command)? {
+        return Ok(Queued {
+            action,
+            is_new: false,
+        });
+    }
     let found = tx.get_draft(draft)?.ok_or_else(|| draft_not_found(draft))?;
     let request = send_request(&found, key);
     let known = tx

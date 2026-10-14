@@ -20,4 +20,5 @@ pub mod registry;
 pub mod send;
 pub mod smtp;
 pub mod storage;
+pub mod sync;
 pub mod threads;

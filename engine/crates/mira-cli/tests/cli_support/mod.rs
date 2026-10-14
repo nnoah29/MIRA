@@ -7,6 +7,7 @@ pub mod json_views;
 pub mod mirror_reads;
 pub mod oauth_bench;
 pub mod raw_mail;
+pub mod sb_aged;
 pub mod sb_events;
 pub mod sb_leaks;
 pub mod sb_mail;

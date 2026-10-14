@@ -34,6 +34,17 @@ impl SbWorld {
         views.iter().map(|view| view.uid).collect()
     }
 
+    /// Compteurs (total, non lus) de la boîte de ce nom, tels que `mailbox list` les rend.
+    pub async fn counters_of(&self, account: &str, name: &str) -> (u64, u64) {
+        let data = self.run_ok(&["mailbox", "list", account]).await;
+        let boxes = data["data"].as_array().unwrap();
+        let found = boxes.iter().find(|item| item["name"] == name).unwrap();
+        (
+            found["total"].as_u64().unwrap(),
+            found["unread"].as_u64().unwrap(),
+        )
+    }
+
     /// Identifiant interne du message de ce sujet dans une boîte du miroir.
     pub async fn message_id_of(&self, mailbox: &str, subject: &str) -> String {
         let messages = self.messages_of(mailbox).await;

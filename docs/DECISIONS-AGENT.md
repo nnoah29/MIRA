@@ -221,3 +221,10 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - S6 : un message au corps préchargé a sa source complète en base : `message attachments` indique `not_downloaded` mais `save-attachment` réussit hors ligne depuis la source locale (« cache local d'abord », `fetching/attachment.rs`). Comportement conservé : le but de « indisponible hors ligne » vise les messages en en-tête seul.
 - S4 : les corps de la réception sont préchargés juste après ses en-têtes, avant les en-têtes des autres boîtes ; le §10.2 ne fixe pas cet ordre (« préchargement des plus récents »), conservé.
 - Coupure réseau des tests simulée en visant un port fermé (`go_offline`/`go_online`).
+
+## AG-32 — Scénarios S8–S14 via le CLI : écarts constatés
+- Horloge manuelle partagée entre commandes (avancée par `pump_clock` pendant `--wait`) ; pour S12 l'horloge est réglée sur l'heure réelle (le faux serveur date en temps réel).
+- `sync extend-window --days` s'ajoute à la plage courante (30 → 120 jours).
+- Limites via le CLI : le moteur est exclusif par profil, donc ni `operation cancel` pendant un `extend-window`, ni suppression de compte pendant une synchro, ne sont testables en processus ; `auth reauthenticate` + `oauth-complete` dans deux processus impossible (AG-19) ; testés au plus près.
+- `action apply --wait` sur un compte `auth_required` attend jusqu'au `--timeout` (code 13) au lieu d'un code 15 immédiat : amélioration prévue.
+- Effacement S14 : les tables sont vidées mais des fragments FTS5 et le WAL gardent des sujets/adresses tant que les pages libres ne sont pas écrasées : prévu `PRAGMA secure_delete` + checkpoint à la suppression d'un compte.

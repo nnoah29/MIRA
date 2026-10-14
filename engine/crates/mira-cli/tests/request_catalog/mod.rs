@@ -40,6 +40,7 @@ pub fn variant_name(request: &Request) -> &'static str {
         Request::Thread(inner) => thread_name(inner),
         Request::Search(inner) => search_name(inner),
         Request::Maintenance(inner) => maintenance_name(inner),
+        Request::Sync(_) => "sync.cli_pending",
         Request::Action(inner) => action_name(inner),
         Request::Compose(inner) => compose_name(inner),
         Request::Queue(inner) => queue_name(inner),

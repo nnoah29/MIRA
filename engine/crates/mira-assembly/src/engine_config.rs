@@ -7,11 +7,12 @@ use mira_core::api::EngineConfig;
 use mira_core::auth::OAuthClientConfig;
 use mira_core::ports::{KeyringSecretStore, SystemClock, UuidV7Ids};
 use mira_core::profile::ProfileEnvironment;
+use mira_core::sync::{BackgroundSync, SupervisorConfig};
 use mira_vocabulary::ProfileId;
 
 use crate::composition::build_registry;
 
-/// Construit la configuration de production d'un profil ; politiques réseau et OAuth vides
+/// Construit la configuration de production d'un profil ; synchronisation en arrière-plan active, redirections réseau et OAuth vides
 pub fn production_config(profile: ProfileId) -> EngineConfig {
     EngineConfig {
         profile,
@@ -21,6 +22,9 @@ pub fn production_config(profile: ProfileId) -> EngineConfig {
         clock: Arc::new(SystemClock),
         ids: Arc::new(UuidV7Ids),
         oauth: OAuthClientConfig::default(),
-        network: NetworkPolicy::default(),
+        network: NetworkPolicy {
+            background_sync: BackgroundSync::On(SupervisorConfig::default()),
+            ..NetworkPolicy::default()
+        },
     }
 }

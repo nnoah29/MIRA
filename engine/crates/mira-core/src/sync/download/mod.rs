@@ -9,7 +9,9 @@ mod order;
 mod orphans;
 mod prefetch;
 mod progress;
+mod requested;
 
 pub use account::sync_account;
 pub use inbox::sync_inbox;
 pub use progress::{count, report_progress};
+pub use requested::sync_requested;

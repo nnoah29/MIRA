@@ -164,3 +164,12 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - Instants : ms Unix, `AAAA-MM-JJ` ou `AAAA-MM-JJTHH:MM[:SS][Z]`, UTC. Destinataires `adresse` ou `Nom <adresse>` ; valeur vide efface ; `--body-file`.
 - `mailbox set-synced` : boîtes en arguments positionnels, boîte inconnue → code 10.
 - Dépendance `base64` ajoutée à mira-cli.
+
+## AG-25 — Façade Synchro et cycle de vie (rapport J8d)
+- `BackgroundSync { Off, On(SupervisorConfig) }` dans `NetworkPolicy` : Off par défaut (tests), On dans `production_config`. Sans runtime tokio, synchro désactivée ; `StartSync`/`ExtendWindow`/`ResyncMailbox` → `incompatible_state.sync_disabled`.
+- `Engine::shutdown` synchrone (abort) ; `Engine::shutdown_within(deadline)` async pour l'arrêt propre ; `Drop` interrompt les tâches.
+- `PauseSync` = pause du compte ; `StartSync` sur compte en pause → `incompatible_state.account_paused`. `AddAccount` lance la première synchro ; une suppression de compte interrompue est achevée à l'ouverture (`accounts/deletion.rs`).
+- Une demande de synchro (Account / Mailbox / Resync) est servie par la tâche du compte par une passe démarrant après elle (inv. 24).
+- Secret absent pendant la synchro → `authentication.rejected` (AuthRequired).
+- Limite héritée : un message arrivé entre la fin de la première passe et l'établissement d'IDLE n'est vu qu'au relevé suivant (correctif possible : passe de la réception juste après le démarrage d'IDLE).
+- **À faire (J9c)** : CLI `sync`, politique `BackgroundSync` par commande (Off hors synchro, On pour `sync start --wait`).

@@ -4,10 +4,12 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use mira_vocabulary::AccountState;
-use tokio::sync::{Notify, watch};
+use tokio::sync::watch;
 
 use super::config::SupervisorConfig;
 use crate::sync::context::SyncContext;
+use crate::sync::report::ReportHandle;
+use crate::sync::requests::SyncRequests;
 use crate::sync::session::{ConnectionBudget, CredentialProvider};
 
 /// Contexte d'exécution de la tâche de synchronisation d'un compte.
@@ -16,7 +18,8 @@ pub struct AccountRuntime {
     pub ctx: SyncContext,
     pub credentials: Arc<dyn CredentialProvider>,
     pub budget: ConnectionBudget,
-    pub requests: Arc<Notify>,
+    pub requests: Arc<SyncRequests>,
+    pub report: ReportHandle,
     pub shutdown: watch::Receiver<bool>,
     pub config: SupervisorConfig,
     pub state: AccountState,

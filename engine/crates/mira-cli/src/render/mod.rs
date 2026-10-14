@@ -51,5 +51,6 @@ pub fn human_text(response: &Response) -> String {
             maintenance::maintenance_text(response)
         }
         Response::Write(write) => write_responses::write_text(write),
+        Response::Sync(_) => generic::pretty_json(response),
     }
 }

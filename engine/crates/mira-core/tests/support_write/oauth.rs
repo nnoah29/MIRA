@@ -67,10 +67,11 @@ fn open_api(servers: Servers, clock: &Arc<ManualClock>) -> (ApiFixture, PathBuf)
     let secrets = Arc::new(MemorySecretStore::new());
     let config = oauth_config(home.path(), &secrets, clock, (&imap, &oauth));
     let paths = ProfilePaths::resolve(&config.profile, &config.environment).unwrap();
-    let engine = Engine::open(config, CONTRACT_VERSION).unwrap();
+    let engine = Engine::open(config.clone(), CONTRACT_VERSION).unwrap();
     let api = ApiFixture {
         home,
         engine,
+        config,
         secrets,
         imap,
         store,

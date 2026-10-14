@@ -1,6 +1,7 @@
 //! Cycle de vie des comptes et des identités : recherche, choix du provider, serveurs, construction.
 
 mod connection_check;
+mod deletion;
 mod lookup;
 mod network_policy;
 mod new_account;
@@ -10,6 +11,7 @@ mod signature;
 mod state_change;
 
 pub use connection_check::{check_imap_login, imap_login_of};
+pub use deletion::{erase_account, finish_interrupted_deletions};
 pub use lookup::{require_account, require_active_account, require_identity};
 pub use network_policy::NetworkPolicy;
 pub use new_account::{NewAccountParts, build_account, build_default_identity};

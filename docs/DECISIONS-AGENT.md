@@ -181,3 +181,11 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - `mira account add-oauth` : StartOAuth, URL sur stderr, CompleteOAuth borné (`--timeout` 300 s, code 13 et CancelOAuth au délai), puis AddAccount.
 - Le `warn!` « première synchro non lancée » d'`AddAccount` est masqué par une directive par défaut du CLI : à supprimer côté moteur quand la synchro est `Off`.
 - **Reste** : API moteur pour attendre la première synchro lancée par `AddAccount`.
+
+## AG-27 — Corrections du lot A (envoi, MIME, brouillons)
+- HTML→texte plafonné à 2 Mo, recherche de balise fermante sans allocation ; `decode_entities` sans second défaut quadratique ; `parse_message` hors `db.write` ; module `body_storage/` partagé par la synchro et le téléchargement à la demande.
+- `begin_action_attempt` conditionnel à `state='pending'` (annulation vs rejeu).
+- Délai global SMTP de 120 s (`send_within`) : dépassement après connexion = `network.connection_lost` (incertain, jamais renvoyé) ; seul le dépassement de connexion TCP reste `network.timeout`.
+- Retrait de la copie serveur du brouillon via une action `SaveDraft` de retrait (clé `remove-draft-copy-<id>`) ; la `SaveDraft` d'un brouillon supprimé purge la copie au lieu d'échouer.
+- Erreurs SMTP « client » : défaut `server.protocol` (seul « challenge » reste authentification) ; échec du service de jetons → `network.unreachable` (passager).
+- **Non traité** : purge de la copie du brouillon dans `recover_interrupted_send` ; fournisseur d'identifiants unique pour `ImapAccess` (rafraîchissement) ; audit #4 (toute erreur de transport après la connexion pour un `Send`, dont `ETIMEDOUT` après DATA, doit être incertaine) — à vérifier dans un lot D.

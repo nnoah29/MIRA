@@ -1,35 +1,13 @@
 //! Suppression d'un compte (S14, 7.9) : secrets, caches de pièces jointes, données locales, événement ; reprise après interruption.
 
-use std::fs;
-use std::io::ErrorKind;
 use std::path::Path;
 
-use mira_vocabulary::{Account, AccountId, EventKind, MiraError};
+use mira_vocabulary::{Account, EventKind, MiraError};
 
 use crate::auth::CredentialVault;
 use crate::events::EventSink;
+use crate::maintenance::remove_account_cache_files;
 use crate::storage::Database;
-
-/// Supprime les fichiers de cache des pièces jointes du compte, ceux du dossier de cache seulement
-fn remove_cached_attachments(
-    database: &Database,
-    id: &AccountId,
-    cache_directory: &Path,
-) -> Result<(), MiraError> {
-    let paths = database.read(|tx| tx.attachment_cache_paths_of_account(id))?;
-    for path in paths {
-        let file = Path::new(&path);
-        if !file.starts_with(cache_directory) {
-            continue;
-        }
-        if let Err(error) = fs::remove_file(file)
-            && error.kind() != ErrorKind::NotFound
-        {
-            tracing::warn!(kind = ?error.kind(), "fichier de cache non supprimé");
-        }
-    }
-    Ok(())
-}
 
 /// Efface les caches, les secrets puis les données du compte, et émet `AccountDeleted` ; le serveur n'est jamais contacté
 pub fn erase_account(
@@ -39,7 +17,7 @@ pub fn erase_account(
     account: &Account,
     cache_directory: &Path,
 ) -> Result<(), MiraError> {
-    remove_cached_attachments(database, &account.id, cache_directory)?;
+    remove_account_cache_files(database, &account.id, cache_directory)?;
     vault.delete_all(&account.profile, &account.id)?;
     database.write(|tx| tx.delete_account(&account.id))?;
     events.emit(EventKind::AccountDeleted {

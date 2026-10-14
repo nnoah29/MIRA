@@ -4,6 +4,7 @@ use mira_assembly::api::Response;
 use mira_assembly::mira_vocabulary::{AccountId, Mailbox, MiraError};
 
 use super::accounts_reply::{report, unexpected};
+use super::message_load::load_selected_mailbox;
 use crate::commands::Command;
 use crate::state::AppState;
 use crate::state::mailbox_order::sort_mailboxes;
@@ -31,6 +32,15 @@ fn store_mailboxes(
     if current == Some(account) {
         sort_mailboxes(&mut mailboxes);
         state.mailboxes.replace_items(mailboxes);
+        return load_first_if_none_wanted(state);
     }
     Vec::new()
+}
+
+/// Charge la boîte sélectionnée tant qu'aucune vue de messages n'est voulue.
+fn load_first_if_none_wanted(state: &mut AppState) -> Vec<Command> {
+    if state.messages.view().is_some() {
+        return Vec::new();
+    }
+    load_selected_mailbox(state)
 }

@@ -18,6 +18,13 @@ impl MailboxesState {
         self.selection.clamp_to(self.items.len());
     }
 
+    /// Boîte actuellement sélectionnée.
+    pub fn selected(&self) -> Option<&Mailbox> {
+        self.selection
+            .selected
+            .and_then(|index| self.items.get(index))
+    }
+
     /// Éléments affichés.
     pub fn items(&self) -> &[Mailbox] {
         &self.items

@@ -25,9 +25,12 @@ pub fn next_page(state: &mut AppState) -> Vec<Command> {
     };
     let mut query = ListQuery::of(view.clone());
     query.page.cursor = Some(cursor.clone());
-    state.messages.mark_requested(cursor);
+    state.messages.mark_requested(cursor.clone());
     vec![Command::Execute {
-        tag: Tag::Messages { view, append: true },
+        tag: Tag::Messages {
+            view,
+            after: Some(cursor),
+        },
         request: Request::Message(MessageRequest::ListMessages(query)),
     }]
 }

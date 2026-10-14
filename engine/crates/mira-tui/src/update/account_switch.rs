@@ -27,6 +27,7 @@ pub fn reload_if_changed(state: &mut AppState, previous: Option<AccountId>) -> V
         return Vec::new();
     }
     state.mailboxes.replace_items(Vec::new());
+    state.messages.reset();
     match state.accounts.selected() {
         Some(account) => vec![list_mailboxes(account)],
         None => Vec::new(),

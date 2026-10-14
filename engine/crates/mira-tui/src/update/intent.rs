@@ -27,7 +27,7 @@ pub fn on_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
         Intent::MoveUp => return scroll(state, navigation::move_up),
         Intent::Top => return scroll(state, navigation::top),
         Intent::Bottom => return scroll(state, navigation::bottom),
-        Intent::Open => panes::open(state),
+        Intent::Open => return panes::open(state),
         Intent::Back => panes::back(state),
         Intent::NextPane => panes::next_pane(state),
         Intent::PrevPane => panes::prev_pane(state),

@@ -14,6 +14,17 @@ impl SbWorld {
         found.unwrap().uid
     }
 
+    /// Photographie des boîtes de l'utilisateur sur le serveur : (boîte, UID, drapeaux, octets bruts).
+    pub fn server_snapshot(&self, user: &str) -> Vec<(String, u32, Vec<String>, Vec<u8>)> {
+        let mut snapshot = Vec::new();
+        for mailbox in ["INBOX", "Sent", "Archive", "Trash"] {
+            for view in self.store.messages(user, mailbox) {
+                snapshot.push((mailbox.to_string(), view.uid, view.flags, view.raw));
+            }
+        }
+        snapshot
+    }
+
     /// Dit si le serveur porte ce drapeau (nom IMAP, par exemple `\Flagged`) sur le message de ce sujet.
     pub fn server_has_flag(&self, user: &str, mailbox: &str, subject: &str, flag: &str) -> bool {
         let uid = self.server_uid_of(user, mailbox, subject);

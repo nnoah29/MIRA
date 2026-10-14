@@ -17,7 +17,7 @@ Workspace Cargo `engine/` (toolchain `1.99.0` épinglée, édition 2024, resolve
 | `mira-cli` | Binaire `mira` : 72 commandes, sortie humaine ou `--json` versionné | `mira-assembly` seulement (A4) | 191 |
 | `mira-testkit` | Faux serveurs IMAP / SMTP / OAuth2 sur `127.0.0.1` ; boîte noire | aucun crate `mira-*` (A5) | 105 |
 
-Sens des dépendances : `mira-cli` → `mira-assembly` → `mira-core` et providers → `mira-vocabulary`. Le cœur ne nomme aucun provider ; seul `C/../mira-assembly/src/composition.rs` les connaît tous (une ligne par provider, repli `generic` en premier).
+Sens des dépendances : `mira-cli` → `mira-assembly` → `mira-core` et providers → `mira-vocabulary`. Le cœur ne nomme aucun provider ; seul `mira-assembly/src/composition.rs` les connaît tous (une ligne par provider, repli `generic` en premier).
 
 Données d'un profil (`C/profile/paths.rs`) : `$MIRA_HOME/profiles/<profil>/`, sinon `$XDG_DATA_HOME/mira/profiles/<profil>/`, sinon `~/.local/share/mira/profiles/<profil>/`, droits `0700`. Contenu : `mira.sqlite3` (WAL), `engine.lock` (verrou exclusif D-27), `attachments/` (cache des pièces jointes), `tmp/`. Un nom de profil vide, `.`, `..` ou contenant `/`, `\`, NUL est refusé.
 
@@ -31,7 +31,7 @@ Données d'un profil (`C/profile/paths.rs`) : `$MIRA_HOME/profiles/<profil>/`, s
 | `auth/` | OAuth2 code + PKCE avec écouteur en boucle locale, jetons, rafraîchissement sérialisé par compte, coffre d'identifiants | `reqwest`, `sha2`, `base64`, `rand` | `flow/`, `flow_table/` (flux en cours, TTL 300 s), `tokens/`, `renewal.rs`, `vault/`, `client_config.rs` (`OAuthClientConfig`), `loopback.rs` |
 | `body_storage/` | Rangement unique d'un corps analysé dans le miroir, partagé par la synchro et le téléchargement à la demande | — | `store.rs`, `attachments.rs` |
 | `capabilities/` | Capacités annoncées par le serveur moins exceptions du provider ; choix des stratégies | — | `parse.rs`, `effective.rs`, `strategy.rs`, `server_capability.rs` |
-| `drafts/` | Brouillons (neuf, réponse, transfert), édition, pièces jointes (≤ 25 Mo), envoi planifié et annulation | `mail-builder` (via `smtp`/`send`) | `create/`, `compose/`, `attachments/`, `scheduling.rs`, `threading.rs`, `identity.rs` |
+| `drafts/` | Brouillons (neuf, réponse, transfert), édition, pièces jointes (≤ 25 Mo), envoi planifié et annulation | — | `create/`, `compose/`, `attachments/`, `scheduling.rs`, `threading.rs`, `identity.rs` |
 | `events/` | Bus d'événements numérotés : écrits en base puis diffusés ; abonnement reprenable | `tokio` (`broadcast`) | `bus.rs`, `recording.rs`, `subscription.rs`, `sink.rs` |
 | `fetching/` | Seul lien réseau de la lecture : corps, pièces jointes, recherche serveur, à la demande, en tâche longue | — | `access.rs` (`ImapAccess`), `body.rs`, `attachment.rs`, `atomic_write.rs`, `server_search.rs`, `locate.rs`, `ingest.rs` |
 | `html/` | Assainissement HTML, ressources distantes bloquées et listées (liste blanche) | `ammonia` | `sanitize.rs`, `remote.rs` |
@@ -84,7 +84,7 @@ Les modules `body_storage`, `replayer` et `sync_service` sont privés (`mod`, pa
 | D-25 | Écritures optimistes, file d'actions | `C/actions/` (soumission, effet local, inverse), `C/actions/replay/` (rejeu), `C/replayer/` (tâche de fond par compte), `C/drafts/` + `C/send/` ; table `actions` (`storage/repositories/actions/`) | `invariant_17_*`, `18_*`, `19_*`, `22_*`, `28_*`, `actions_replay_*.rs` |
 | D-26 | Contrat d'API | `C/api/` : `Engine::open/execute/subscribe/shutdown/shutdown_within`, 16 domaines, 71 variantes, un handler par opération | `contract_snapshot_*.rs`, `snapshots/contract_v1.json` |
 | D-27 | Verrou de profil | `C/profile/lock.rs` (`File::try_lock`, `incompatible_state.profile_locked`), pris par `Engine::open` | `profile_lock.rs`, `api_engine.rs` |
-| D-28 | Découpage v1 | décision de départ 3 : toute la colonne « v1 » du §12.4, soit les 71 opérations ci-dessus | `invariant_6_*` (CLI = façade) |
+| D-28 | Découpage v1 | décision de départ 3 : colonne « v1 » du §12.4 ; la façade expose 71 variantes de `Request` (J8) | `invariant_6_*` (CLI = façade) |
 | D-29 | Export du profil | `C/maintenance/profile_export.rs` (JSON `format_version: 1` : comptes, identités, autorisations, brouillons, actions ; sans secret ni miroir) ; handler `C/api/handlers/maintenance/profile_export.rs` ; CLI `mira maintenance export-profile` ; fichier `0600` créé en exclusif | `maintenance_export_file.rs`, `api_read_maintenance.rs`. Import : reporté (décision de départ 4) |
 | D-30 | Façade bibliothèque + CLI | `Engine` async (`mira_core::api`) ; processus séparé reporté | — |
 | D-31 | Pile du brief | `tokio`, `mail-parser`, `rusqlite` (bundled, FTS5), `keyring` 4, `lettre`, `reqwest` (rustls), `ammonia`, `zstd` ; `sqlite-vec` reporté ; `flutter_rust_bridge` hors périmètre | `engine/Cargo.toml` |
@@ -159,11 +159,11 @@ Points d'implémentation à connaître :
 5. Côté synchro, la valeur du serveur gagne puis `reapply_pending_local_effects` rejoue l'intention locale en attente (D-23).
 
 ### 6.4 Envoi, plantage et issue inconnue (S9, invariants 18, 26)
-1. `mira draft send` → `schedule_send` (`C/drafts/scheduling.rs`) crée l'action `Send` (délai d'annulation 10 s ; `cancel-send` tant qu'elle est `Pending`).
-2. Au rejeu, `begin_attempt` passe l'action à `InProgress` **et** fixe le `Message-ID` dans `ServerTargets.sent_message_id` (`prepare_send_attempt`) avant tout SMTP ; `C/send/execute.rs` compose le MIME avec ce `Message-ID` et appelle `deliver` (`lettre`, délai global 120 s).
+1. `mira draft send` → `schedule_send` (`C/drafts/scheduling.rs`) crée l'action `Send` (délai d'annulation `SEND_UNDO_DELAY_MILLIS` = 10 s, `C/actions/model.rs` ; `cancel-send` tant qu'elle est `Pending`).
+2. Au rejeu, `begin_attempt` passe l'action à `InProgress` **et** mémorise le `Message-ID` dans `ServerTargets.sent_message_id` (`prepare_send_attempt`, `C/send/message_id.rs`) dans la même transaction, avant tout SMTP ; `C/send/execute.rs` compose le MIME avec ce `Message-ID` et appelle `deliver` (`lettre`, délai global 120 s).
 3. Après acceptation par le serveur, plus aucune erreur ne remonte : événement `SendDeparted`, copie dans Envoyés (selon `server_saves_sent_copy`), purge de la copie serveur du brouillon, suppression du brouillon — chaque échec est journalisé (`tracing::warn`) sans jamais provoquer de renvoi.
 4. Erreur pendant l'envoi : `send_outcome_is_unknown` (`C/actions/replay/classify.rs`) = catégorie `Network` autre que `network.unreachable` → `settle_interrupted_send` cherche le `Message-ID` dans Envoyés : trouvé → `Succeeded` ; sinon `Uncertain` + `SendUncertain`. Seul `network.unreachable` (connexion TCP impossible, rien n'est parti) est passager.
-5. Plantage du processus : à l'ouverture, `recover_interrupted_actions` règle chaque action restée `InProgress` : envoi → même vérification dans Envoyés (Envoyés illisible : reste `InProgress`) ; autre action → remise en file. Jamais de renvoi automatique.
+5. Plantage du processus : au premier tour de la tâche de rejeu du compte après l'ouverture, `recover_interrupted_actions` règle chaque action restée `InProgress` : envoi → même vérification dans Envoyés (Envoyés illisible : reste `InProgress`) ; autre action → remise en file. Jamais de renvoi automatique.
 6. `mira draft resolve-send` → `resolve_uncertain_send` (`C/send/resolve.rs`) : renvoyer (nouvelle tentative, **nouveau** `Message-ID`) ou abandonner (le brouillon revient en édition).
 
 ### 6.5 Suppression d'un compte et effacement des traces (S14)
@@ -204,7 +204,7 @@ Limite des garde-fous : A8 liste encore `async_imap` alors que la dépendance a 
 
 ## 11. Limites connues et divergences
 
-Écarts à la référence et précisions : `docs/PROPOSITIONS-REFERENCE.md` (PR-01 à PR-15). Limites, avec leur décision :
+Écarts à la référence et précisions : `docs/PROPOSITIONS-REFERENCE.md` (PR-01 à PR-17). Limites, avec leur décision :
 
 **Non fait (reste de J10)**
 - `html::sanitize_html` est quadratique en profondeur d'imbrication (1 000 niveaux : 68 ms ; 10 000 : 5,3 s ; 100 000 : plus de 10 min). Aucune borne de taille ni de profondeur dans `C/html/`. Un mail hostile bloque la lecture (AG-34).
@@ -214,7 +214,7 @@ Limite des garde-fous : A8 liste encore `async_imap` alors que la dépendance a 
 **Comportements limités**
 - Synchro (AG-21, AG-25, AG-28) : orphelins supprimés seulement en fin de passe complète ; boîte de destination traitée avant la source (désarchivage vers la réception) : crée encore un nouveau message ; deux copies identiques à ±60 s tenues pour la même lors d'un déplacement ; un message arrivé entre la fin de la première passe et l'établissement d'IDLE n'est vu qu'au relevé suivant ; `extend_window` s'exécute encore en parallèle de la tâche du compte et son annulation n'est testée qu'avant le premier lot ; le repli VANISHED (> 1 M d'UID) n'a pas de test d'intégration.
 - CLI de courte durée (AG-19, AG-24, AG-26, AG-31, AG-32) : aucune écoute IDLE au-delà d'une commande ; `search server-result` ne retrouve rien d'un autre processus ; `operation cancel` pendant `extend-window` et suppression de compte pendant une synchro non testables en processus (moteur exclusif par profil) ; `auth reauthenticate` suivi de `oauth-complete` dans deux processus impossible (table des flux en mémoire) ; `action apply --wait` sur un compte `auth_required` sort en 15 depuis AG-33.
-- Envoi (AG-27, AG-30) : la purge de la copie serveur du brouillon n'est pas faite dans tous les chemins de reprise ; `map_io_failure` distingue « injoignable » de « session perdue » par le libellé d'erreur de `lettre` (`"Connection error"`), donc fragile à une montée de version ; une erreur de catégorie `Tls` en cours d'envoi est classée passagère (pas incertaine).
+- Envoi (AG-30) : `map_io_failure` distingue « injoignable » de « session perdue » par le libellé d'erreur de `lettre` (`"Connection error"`), donc fragile à une montée de version ; une erreur de catégorie `Tls` en cours d'envoi est classée passagère (pas incertaine).
 - Identifiants (AG-27, AG-14, AG-22) : `ImapAccess` utilise le jeton rangé sans rafraîchissement automatique (fournisseur d'identifiants non unifié) ; le test de connexion à l'ajout est IMAP seulement (pas SMTP) ; `UpdateAccount` avec d'autres serveurs teste avec le secret rangé (défense complète = changement de contrat).
 - Frontière (AG-29) : `X-GM-EXT-1` (`C/imap/operations/labels.rs`) et `\Inbox` (`C/actions/replay/execute/labels.rs`) sont codés en dur dans le cœur au lieu de venir des particularités du provider ; `zeroize` non appliqué (secrets non effacés de la mémoire) ; mutex `std` de la base tenu sur des threads tokio hors trousseau, `GetSafeHtml` et `CheckIntegrity`.
 - Miroir : `discard_mirror_and_cache` (`C/maintenance/account_cache.rs`) supprime les fichiers de cache puis la base **sans** appeler `erase_traces()`, contrairement à `erase_account` ; `Database::discard_mirror_of` (qui l'appelle) n'a pas d'appelant en production ; aucune requête de la façade n'expose « jeter le miroir » (seul l'invariant 16 le teste). Les traces d'une base créée avant AG-33 ne sont pas purgées rétroactivement.

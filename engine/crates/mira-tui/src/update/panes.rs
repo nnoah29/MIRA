@@ -1,6 +1,7 @@
 //! Changement de panneau et sortie de l'application.
 
 use super::message_load::load_selected_mailbox;
+use super::reader_open::{open_selected_message, retry_body_download};
 use crate::commands::Command;
 use crate::state::{AppState, Pane};
 
@@ -11,10 +12,11 @@ pub fn open(state: &mut AppState) -> Vec<Command> {
             state.focus = Pane::List;
             load_selected_mailbox(state)
         }
-        Pane::List | Pane::Reader => {
+        Pane::List => {
             state.focus = Pane::Reader;
-            Vec::new()
+            open_selected_message(state)
         }
+        Pane::Reader => retry_body_download(state),
     }
 }
 

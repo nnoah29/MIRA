@@ -18,7 +18,7 @@ pub use focus::Pane;
 pub use mailboxes::MailboxesState;
 pub use messages::MessagesState;
 pub use popup::Popup;
-pub use reader::ReaderState;
+pub use reader::{ReaderContent, ReaderState};
 pub use selection::Selection;
 pub use status::StatusState;
 
@@ -35,6 +35,8 @@ pub struct AppState {
     pub reader: ReaderState,
     pub status: StatusState,
     pub popup: Popup,
+    pub key_prefix: String,
+    pub key_counter: u64,
 }
 
 impl AppState {
@@ -51,6 +53,8 @@ impl AppState {
             reader: ReaderState::default(),
             status: StatusState::default(),
             popup: Popup::Closed,
+            key_prefix: "tui".to_string(),
+            key_counter: 0,
         }
     }
 }

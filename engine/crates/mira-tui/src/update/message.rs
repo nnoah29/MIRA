@@ -7,6 +7,7 @@ use super::accounts_reply::on_accounts;
 use super::intent::{Intent, on_intent};
 use super::mailboxes_reply::on_mailboxes;
 use super::messages_reply::on_messages;
+use super::reader_reply::{on_action, on_attachments, on_body, on_thread};
 use crate::commands::{Command, Tag};
 use crate::state::AppState;
 
@@ -51,6 +52,10 @@ fn on_reply(state: &mut AppState, reply: Reply) -> Vec<Command> {
         Tag::Accounts => on_accounts(state, reply.result),
         Tag::Mailboxes(account) => on_mailboxes(state, account, reply.result),
         Tag::Messages { view, after } => on_messages(state, view, after, reply.result),
+        Tag::Body(id) => on_body(state, id, reply.result),
+        Tag::Attachments(id) => on_attachments(state, id, reply.result),
+        Tag::Thread(thread) => on_thread(state, thread, reply.result),
+        Tag::Action => on_action(state, reply.result),
     }
 }
 

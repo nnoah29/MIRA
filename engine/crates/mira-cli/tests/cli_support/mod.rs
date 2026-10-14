@@ -25,6 +25,22 @@ use mira_assembly::ports::{ManualClock, MemorySecretStore, SequentialIds};
 use mira_assembly::profile::ProfileEnvironment;
 use mira_cli::{CliDeps, CliIo, run};
 
+pub mod sa_events;
+pub mod sa_flows;
+pub mod sa_flows_sync;
+pub mod sa_leak;
+pub mod sa_mail;
+pub mod sa_s1_gmail;
+pub mod sa_s1_login;
+pub mod sa_s2_yahoo;
+pub mod sa_s3_manual;
+pub mod sa_s4_first_sync;
+pub mod sa_s5_arrival;
+pub mod sa_s6_reading;
+pub mod sa_s7_moves;
+pub mod sa_world;
+pub mod sa_world_runs;
+
 /// Résultat d'une exécution : code de sortie, stdout et stderr.
 #[derive(Debug)]
 pub struct CliResult {

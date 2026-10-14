@@ -34,3 +34,8 @@
    - .claude/worktrees/agent-ac3a8e43602d93a7d feat/E-01-j9a-cli commits=0 non_commités=32
 3. Ordre conseillé : J5b (synchronisation, spec docs/specs/J5b-synchronisation.md) → J7c (rejeu, envoi, reprise sur plantage) → J9a (CLI sur la façade, invariant 6) → J8 restant (lectures, actions, synchro, maintenance dans la façade, test de contrat JSON) → S1–S14 de bout en bout → revue indépendante (relecteur, qualite-securite) → J10.
 4. Disque : surveiller /home (profils allégés AG-15 ; supprimer les `target/` des worktrees terminés).
+
+## Reprise (2026-10-14)
+
+- **07:48 UTC** — Reprise dans un conteneur distant neuf (`/home/user/MIRA`, clone de `origin/feat/E-01-engine-overnight`, dernier commit 363f184). Disque 31 Go libres. Toolchain 1.99.0 installée par rustup.
+- **Constat** : les trois worktrees de la machine locale (J5b 6 commits, J9a 32 fichiers, J7c vide) ne sont **pas** dans ce clone (jamais poussés) ; seules la branche de travail et ses 606 tests existent. J5b, J9a et J7c sont donc **à refaire depuis les specs**, dans l'ordre du §6 de PASSATION.md. Consigné en AG-17.

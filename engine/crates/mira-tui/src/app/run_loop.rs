@@ -98,7 +98,7 @@ async fn drive<B: Backend>(
             Wake::Settled | Wake::Tick => None,
             Wake::Stop | Wake::KeysClosed => return Ok(()),
         };
-        if msg.is_some_and(|msg| apply(state, runtime, msg)) {
+        if msg.is_some_and(|msg| apply(state, runtime, msg)) || apply_pending(state, runtime) {
             return Ok(());
         }
     }
@@ -109,4 +109,14 @@ fn apply(state: &mut AppState, runtime: &mut Runtime, msg: Msg) -> bool {
     let commands = update(state, msg);
     let quit = runtime.run(commands);
     quit || state.should_quit
+}
+
+/// Applique tous les messages déjà arrivés avant de redessiner : un dessin par rafale ; vrai si l'application doit s'arrêter.
+fn apply_pending(state: &mut AppState, runtime: &mut Runtime) -> bool {
+    while let Some(msg) = runtime.pending_msg() {
+        if apply(state, runtime, msg) {
+            return true;
+        }
+    }
+    false
 }

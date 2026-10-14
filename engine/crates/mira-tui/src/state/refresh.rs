@@ -6,4 +6,5 @@ pub struct RefreshState {
     pub mailboxes: bool,
     pub status: bool,
     pub sync: bool,
+    pub accounts: bool,
 }

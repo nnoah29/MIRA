@@ -42,7 +42,8 @@ fn reload(state: &mut AppState, reaction: Reaction) -> Vec<Command> {
     if reaction.mailboxes {
         commands.extend(refresh_mailboxes(state));
     }
-    if reaction.accounts {
+    if reaction.accounts && !state.refresh.accounts {
+        state.refresh.accounts = true;
         commands.push(Command::Execute {
             tag: Tag::Accounts,
             request: Request::Account(AccountRequest::ListAccounts),

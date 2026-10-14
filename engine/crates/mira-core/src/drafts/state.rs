@@ -1,6 +1,6 @@
 //! Changements d'état d'un brouillon, dans la transaction de l'appelant.
 
-use mira_vocabulary::{DraftId, DraftState, MiraError};
+use mira_vocabulary::{DraftId, DraftState, MiraError, Timestamp};
 
 use crate::actions::errors::not_found::draft_not_found;
 use crate::storage::Tx;
@@ -14,6 +14,18 @@ pub(crate) fn set_draft_state(
     let mut draft = tx.get_draft(id)?.ok_or_else(|| draft_not_found(id))?;
     draft.state = state;
     tx.update_draft(&draft)
+}
+
+/// Replanifie le brouillon à `at` s'il existe encore ; un brouillon disparu est ignoré
+pub(crate) fn schedule_if_present(
+    tx: &Tx<'_>,
+    id: &DraftId,
+    at: Timestamp,
+) -> Result<(), MiraError> {
+    match tx.get_draft(id)? {
+        Some(_) => set_draft_state(tx, id, DraftState::Scheduled { at }),
+        None => Ok(()),
+    }
 }
 
 /// Remet le brouillon en édition s'il existe encore ; un brouillon disparu est ignoré

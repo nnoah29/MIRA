@@ -1,4 +1,4 @@
-//! Corps du message ouvert : texte neutralisé, jamais de HTML interprété.
+//! Corps du message ouvert : texte déjà neutralisé à la réception, seule la partie visible est repliée.
 
 use ratatui::Frame;
 use ratatui::layout::Rect;
@@ -15,7 +15,7 @@ fn content_text(content: &ReaderContent) -> String {
     match content {
         ReaderContent::Empty => String::new(),
         ReaderContent::Loading => "Chargement…".to_string(),
-        ReaderContent::Body(body) => display_safe_multiline(&body.text),
+        ReaderContent::Body(body) => body.text.clone(),
         ReaderContent::OfflineMissing => OFFLINE_HINT.to_string(),
         ReaderContent::Failed(message) => {
             format!(
@@ -36,9 +36,22 @@ pub fn render_body(frame: &mut Frame, area: Rect, state: &AppState) {
         | ReaderContent::Failed(_) => theme::dim(),
     };
     let text = content_text(&state.reader.content);
-    let paragraph = Paragraph::new(text)
+    let shown = visible_text(
+        &text,
+        usize::from(state.reader.scroll),
+        usize::from(area.height),
+    );
+    let paragraph = Paragraph::new(shown)
         .style(style)
-        .wrap(Wrap { trim: false })
-        .scroll((state.reader.scroll, 0));
+        .wrap(Wrap { trim: false });
     frame.render_widget(paragraph, area);
+}
+
+/// Lignes du texte à partir de la ligne `scroll`, au plus `height` (chacune occupe au moins une rangée).
+pub fn visible_text(text: &str, scroll: usize, height: usize) -> String {
+    text.lines()
+        .skip(scroll)
+        .take(height)
+        .collect::<Vec<_>>()
+        .join("\n")
 }

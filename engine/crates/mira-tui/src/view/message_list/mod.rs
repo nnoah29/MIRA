@@ -1,8 +1,9 @@
-//! Colonne du milieu : messages de la boîte sélectionnée, ou « aucun message ».
+//! Colonne du milieu : messages visibles de la boîte sélectionnée, ou « aucun message ».
 
 pub mod row;
 pub mod short_date;
 pub mod title;
+pub mod window;
 
 use ratatui::Frame;
 use ratatui::layout::Rect;
@@ -21,13 +22,8 @@ pub fn render_message_list(frame: &mut Frame, area: Rect, state: &AppState) {
         frame.render_widget(Paragraph::new("aucun message").block(block), area);
         return;
     }
-    let width = usize::from(area.width.saturating_sub(2));
-    let rows = state
-        .messages
-        .items()
-        .iter()
-        .map(|m| row::message_item(m, width));
-    let mut list_state = ListState::default().with_selected(state.messages.selection.selected);
+    let (rows, selected) = window::list_rows(state, area.width, area.height);
+    let mut list_state = ListState::default().with_selected(selected);
     let list = List::new(rows).block(block).highlight_style(if focused {
         theme::selected()
     } else {

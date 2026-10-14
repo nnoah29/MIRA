@@ -15,8 +15,8 @@ use crate::sync::session::{ConnectionBudget, CredentialProvider};
 #[derive(Debug)]
 pub struct SyncSupervisor {
     config: SupervisorConfig,
-    shutdown: watch::Sender<bool>,
-    accounts: AccountTable,
+    pub(super) shutdown: watch::Sender<bool>,
+    pub(super) accounts: AccountTable,
 }
 
 impl SyncSupervisor {
@@ -45,17 +45,6 @@ impl SyncSupervisor {
         let running = RunningAccount::launch(ctx, credentials, self.config, shutdown);
         table.insert(id, running);
         true
-    }
-
-    /// Demande une synchronisation ; plusieurs demandes pendant une synchro n'en font qu'une.
-    pub fn request_sync(&self, account: &AccountId) -> bool {
-        match self.accounts.lock().get(account) {
-            Some(run) => {
-                run.requests.notify_one();
-                true
-            }
-            None => false,
-        }
     }
 
     /// Budget de connexions du compte, pour les tâches longues qui ouvrent leur propre connexion.

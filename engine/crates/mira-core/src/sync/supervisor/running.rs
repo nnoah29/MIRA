@@ -5,19 +5,22 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
 
 use mira_vocabulary::AccountId;
-use tokio::sync::{Notify, watch};
+use tokio::sync::watch;
 use tokio::task::JoinHandle;
 
 use super::account_task::run_account;
 use super::config::SupervisorConfig;
 use super::runtime::AccountRuntime;
 use crate::sync::context::SyncContext;
+use crate::sync::report::ReportHandle;
+use crate::sync::requests::SyncRequests;
 use crate::sync::session::{ConnectionBudget, CredentialProvider};
 
 /// Tâche en cours d'un compte : ses demandes de synchronisation, son budget et son exécution.
 #[derive(Debug)]
 pub struct RunningAccount {
-    pub requests: Arc<Notify>,
+    pub requests: Arc<SyncRequests>,
+    pub report: ReportHandle,
     pub budget: ConnectionBudget,
     pub task: JoinHandle<()>,
 }
@@ -37,13 +40,15 @@ impl RunningAccount {
         shutdown: watch::Receiver<bool>,
     ) -> Self {
         let budget = ConnectionBudget::new(ctx.provider.descriptor().limits.max_connections);
-        let requests = Arc::new(Notify::new());
+        let requests = Arc::new(SyncRequests::default());
+        let report = ReportHandle::default();
         let state = ctx.account.state.clone();
         let runtime = AccountRuntime {
             ctx,
             credentials,
             budget: budget.clone(),
             requests: Arc::clone(&requests),
+            report: report.clone(),
             shutdown,
             config,
             state,
@@ -51,6 +56,7 @@ impl RunningAccount {
         let task = tokio::spawn(run_account(runtime));
         Self {
             requests,
+            report,
             budget,
             task,
         }

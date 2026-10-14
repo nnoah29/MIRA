@@ -5,6 +5,9 @@ use mira_assembly::mira_vocabulary::{Event, MiraError};
 
 use super::accounts_reply::on_accounts;
 use super::action_reply::{on_undo, on_user_action};
+use super::compose::created::on_draft_created;
+use super::compose::deleted::on_draft_deleted;
+use super::compose::saved::on_draft_saved;
 use super::engine_event::on_event;
 use super::intent::{Intent, on_intent};
 use super::mailboxes_reply::on_mailboxes;
@@ -65,5 +68,8 @@ fn on_reply(state: &mut AppState, reply: Reply) -> Vec<Command> {
         Tag::StartSync => on_start_sync(state, reply.result),
         Tag::SyncStatus => on_sync_status(state, reply.result),
         Tag::Status => on_status(state, reply.result),
+        Tag::DraftCreated(token) => on_draft_created(state, token, reply.result),
+        Tag::DraftSaved(draft) => on_draft_saved(state, draft, reply.result),
+        Tag::DraftDeleted(draft) => on_draft_deleted(state, draft, reply.result),
     }
 }

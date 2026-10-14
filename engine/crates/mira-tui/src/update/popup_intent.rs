@@ -3,6 +3,7 @@
 use mira_assembly::mira_vocabulary::ActionKind;
 
 use super::action_command::send_removing;
+use super::compose::{close::save_and_close, popup as compose_popup};
 use super::intent::Intent;
 use super::move_picker::confirm_move;
 use super::panes;
@@ -17,6 +18,7 @@ pub fn route(state: &mut AppState, intent: Intent) -> Vec<Command> {
         Intent::MoveDown => step_picker(state, MovePicker::down),
         Intent::MoveUp => step_picker(state, MovePicker::up),
         Intent::Quit => panes::quit(state),
+        Intent::Compose(compose) => compose_popup::route(state, compose),
         Intent::Top
         | Intent::Bottom
         | Intent::NextPane
@@ -58,6 +60,7 @@ fn confirm(state: &mut AppState) -> Vec<Command> {
             send_removing(state, ActionKind::DeletePermanently, ids)
         }
         Popup::MovePicker(picker) => confirm_move(state, &picker),
+        Popup::ConfirmCloseDraft => save_and_close(state),
         Popup::Help | Popup::Closed => Vec::new(),
     }
 }

@@ -5,6 +5,7 @@ pub mod accounts_reply;
 pub mod action_command;
 pub mod action_reply;
 pub mod actions;
+pub mod compose;
 pub mod engine_event;
 pub mod event_reaction;
 pub mod help;
@@ -30,6 +31,7 @@ pub mod status_reply;
 pub mod sync_status;
 pub mod undo;
 
+pub use compose::{ComposeIntent, EditKey};
 pub use intent::Intent;
 pub use message::{Msg, Reply, update};
 pub use search_intent::SearchIntent;

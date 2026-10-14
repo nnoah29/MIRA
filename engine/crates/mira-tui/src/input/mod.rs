@@ -1,5 +1,6 @@
 //! Touches du clavier → intentions, selon le contexte courant (spec §4.3) ; aucune I/O.
 
+pub mod compose;
 pub mod context;
 pub mod global;
 pub mod hints;
@@ -27,6 +28,8 @@ pub fn intent_for(state: &AppState, key: KeyEvent) -> Option<Intent> {
     }
     match context_of(state) {
         KeyContext::SearchInput => search::intent(key),
+        KeyContext::Compose => compose::intent(key),
+        KeyContext::ConfirmClose => popup::close_draft_intent(key),
         KeyContext::Confirm => popup::confirm_intent(key),
         KeyContext::MovePicker => popup::picker_intent(key),
         KeyContext::Help => popup::help_intent(key),

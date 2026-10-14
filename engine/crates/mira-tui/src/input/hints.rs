@@ -29,6 +29,10 @@ const LIST: &[Hint] = &[
     hint("s", "étoile"),
     hint("u", "lu/non lu"),
     hint("m", "déplacer"),
+    hint("r", "répondre"),
+    hint("a", "répondre à tous"),
+    hint("f", "transférer"),
+    hint("c", "nouveau message"),
     hint("z", "défaire"),
     hint("j/k", "message suivant/précédent"),
     hint("g/G", "début/fin"),
@@ -44,6 +48,10 @@ const SEARCH_RESULTS: &[Hint] = &[
     hint("s", "étoile"),
     hint("u", "lu/non lu"),
     hint("m", "déplacer"),
+    hint("r", "répondre"),
+    hint("a", "répondre à tous"),
+    hint("f", "transférer"),
+    hint("c", "nouveau message"),
     hint("z", "défaire"),
     hint("j/k", "résultat suivant/précédent"),
 ];
@@ -58,6 +66,10 @@ const READER: &[Hint] = &[
     hint("s", "étoile"),
     hint("u", "lu/non lu"),
     hint("m", "déplacer"),
+    hint("r", "répondre"),
+    hint("a", "répondre à tous"),
+    hint("f", "transférer"),
+    hint("c", "nouveau message"),
     hint("z", "défaire"),
 ];
 
@@ -65,6 +77,18 @@ const SEARCH_INPUT: &[Hint] = &[
     hint("Entrée", "chercher"),
     hint("Échap", "annuler"),
     hint("Retour arrière", "effacer"),
+];
+
+const COMPOSE: &[Hint] = &[
+    hint("Ctrl+s", "enregistrer"),
+    hint("Tab/Maj+Tab", "champ suivant/précédent"),
+    hint("Échap", "fermer"),
+];
+
+const CONFIRM_CLOSE: &[Hint] = &[
+    hint("s/Entrée", "enregistrer"),
+    hint("d", "abandonner"),
+    hint("c/Échap", "continuer"),
 ];
 
 const CONFIRM: &[Hint] = &[hint("Entrée/y", "confirmer"), hint("Échap/n", "annuler")];
@@ -93,6 +117,8 @@ pub fn hints_for(context: KeyContext) -> &'static [Hint] {
         KeyContext::SearchResults => SEARCH_RESULTS,
         KeyContext::Reader => READER,
         KeyContext::SearchInput => SEARCH_INPUT,
+        KeyContext::Compose => COMPOSE,
+        KeyContext::ConfirmClose => CONFIRM_CLOSE,
         KeyContext::Confirm => CONFIRM,
         KeyContext::MovePicker => MOVE_PICKER,
         KeyContext::Help => HELP,
@@ -107,6 +133,8 @@ pub fn context_name(context: KeyContext) -> &'static str {
         KeyContext::SearchResults => "résultats de recherche",
         KeyContext::Reader => "lecture",
         KeyContext::SearchInput => "saisie de recherche",
+        KeyContext::Compose => "rédaction",
+        KeyContext::ConfirmClose => "fermeture du brouillon",
         KeyContext::Confirm => "confirmation",
         KeyContext::MovePicker => "déplacement",
         KeyContext::Help => "aide",

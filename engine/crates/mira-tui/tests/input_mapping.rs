@@ -13,7 +13,7 @@ use action_fixtures::state_with_mailboxes;
 use crossterm::event::KeyCode;
 use input_fixtures::{code, ctrl, key, map};
 use mira_tui::state::{AppState, Pane};
-use mira_tui::update::{Intent, SearchIntent, update};
+use mira_tui::update::{ComposeIntent, Intent, SearchIntent, update};
 use navigation_fixtures::press;
 use search_fixtures::{search_reply, type_text};
 
@@ -39,11 +39,14 @@ fn j_and_down_map_to_move_down() {
     }
 }
 
-/// Hors saisie, `r` (répondre, étape 2) ne fait rien ; en saisie de recherche, `r`, `q`, `j` et `/` sont du texte.
+/// Hors saisie, `r` répond (étape 2) ; en saisie de recherche, `r`, `q`, `j` et `/` sont du texte.
 #[test]
 fn r_in_reader_maps_to_reply_but_in_search_is_text() {
     let mut state = focused(Pane::Reader);
-    assert_eq!(map(&state, key('r')), None);
+    assert_eq!(
+        map(&state, key('r')),
+        Some(Intent::Compose(ComposeIntent::Reply))
+    );
     press(&mut state, Intent::Search(SearchIntent::Open));
     for c in ['r', 'q', 'j', '/', '?', 'e', 'D'] {
         let typed = Some(Intent::Search(SearchIntent::Char(c)));

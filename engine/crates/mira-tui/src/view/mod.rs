@@ -1,6 +1,7 @@
 //! Dessin de l'état à l'écran ; aucune modification de l'état.
 
 pub mod ansi_skip;
+pub mod compose;
 pub mod layout;
 pub mod message_list;
 pub mod narrow;
@@ -20,7 +21,9 @@ use crate::state::AppState;
 /// Dessine l'état complet dans le cadre donné.
 pub fn render(frame: &mut Frame, state: &AppState) {
     let areas = layout::split(frame.area(), state.focus);
-    if state.accounts.is_empty() {
+    if let Some(compose) = state.compose.open() {
+        compose::render_compose(frame, layout::body(frame.area()), compose);
+    } else if state.accounts.is_empty() {
         welcome::render_welcome(frame, layout::body(frame.area()));
     } else {
         sidebar::render_sidebar(frame, areas.sidebar, state);

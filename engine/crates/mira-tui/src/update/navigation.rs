@@ -9,8 +9,14 @@ fn with_focused(
     on_reader: impl FnOnce(u16) -> u16,
 ) {
     match state.focus {
-        Pane::Sidebar => on_list(&mut state.mailboxes.selection, state.mailboxes.items.len()),
-        Pane::List => on_list(&mut state.messages.selection, state.messages.items.len()),
+        Pane::Sidebar => {
+            let len = state.mailboxes.len();
+            on_list(&mut state.mailboxes.selection, len);
+        }
+        Pane::List => {
+            let len = state.messages.len();
+            on_list(&mut state.messages.selection, len);
+        }
         Pane::Reader => state.reader.scroll = on_reader(state.reader.scroll),
     }
 }

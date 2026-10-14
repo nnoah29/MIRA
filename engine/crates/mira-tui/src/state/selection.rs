@@ -34,4 +34,13 @@ impl Selection {
     pub fn bottom(&mut self, len: usize) {
         self.selected = len.checked_sub(1);
     }
+
+    /// Recadre la sélection après un changement de longueur de la liste.
+    pub fn clamp_to(&mut self, len: usize) {
+        self.selected = match (len, self.selected) {
+            (0, _) => None,
+            (_, None) => Some(0),
+            (_, Some(index)) => Some(index.min(len - 1)),
+        };
+    }
 }

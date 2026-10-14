@@ -13,7 +13,12 @@ pub fn press(state: &mut AppState, intent: Intent) -> Vec<Command> {
 /// État dont la liste de messages contient `count` éléments et qui a le focus sur elle.
 pub fn state_with_messages(count: usize) -> AppState {
     let mut state = AppState::new(80, 24);
-    state.messages.items = (0..count).map(|n| format!("m{n}")).collect();
+    state.messages.replace_items(numbered(count));
     state.focus = Pane::List;
     state
+}
+
+/// Fabrique `count` éléments de liste numérotés.
+pub fn numbered(count: usize) -> Vec<String> {
+    (0..count).map(|n| format!("m{n}")).collect()
 }

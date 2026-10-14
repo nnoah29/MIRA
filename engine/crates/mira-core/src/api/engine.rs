@@ -12,6 +12,7 @@ use crate::auth::{CredentialVault, OAuthFlows};
 use crate::events::{EventBus, EventSink, EventSubscription};
 use crate::operations::OperationRegistry;
 use crate::profile::{ProfileLock, ProfilePaths};
+use crate::replayer::ReplayerHandle;
 use crate::storage::Database;
 
 /// Moteur ouvert : un profil, sa base, son verrou, son bus d'événements.
@@ -24,6 +25,7 @@ pub struct Engine {
     pub(crate) operations: OperationRegistry,
     pub(crate) oauth_flows: OAuthFlows,
     pub(crate) account_lock: tokio::sync::Mutex<()>,
+    pub(crate) replayers: ReplayerHandle,
     _lock: ProfileLock,
 }
 
@@ -36,6 +38,8 @@ impl Engine {
         let sink: Arc<dyn EventSink> = Arc::new(events.clone());
         let operations = OperationRegistry::new(Arc::clone(&config.ids), sink);
         events.emit(EventKind::EngineStarted)?;
+        let replayers =
+            ReplayerHandle::start(config.clone(), Arc::clone(&database), events.clone());
         Ok(Self {
             config,
             paths,
@@ -44,6 +48,7 @@ impl Engine {
             operations,
             oauth_flows: OAuthFlows::new(),
             account_lock: tokio::sync::Mutex::new(()),
+            replayers,
             _lock: lock,
         })
     }
@@ -65,6 +70,7 @@ impl Engine {
 
     /// Ferme proprement le moteur ; le verrou du profil est libéré
     pub fn shutdown(self) -> Result<(), MiraError> {
+        self.replayers.stop();
         self.events.emit(EventKind::EngineStopping)?;
         Ok(())
     }

@@ -83,6 +83,7 @@ pub async fn run_pass(
             code: error.code.clone(),
         },
     });
+    session.ctx.apply_event_retention();
     outcome
 }
 

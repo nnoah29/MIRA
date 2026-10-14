@@ -46,6 +46,14 @@ impl SyncContext {
             .plus_millis(-i64::from(days).saturating_mul(MILLIS_PER_DAY))
     }
 
+    /// Applique la rétention des événements ; un échec est journalisé sans interrompre la synchronisation.
+    pub fn apply_event_retention(&self) {
+        let now = self.clock.now();
+        if let Err(error) = self.db.write(|tx| tx.apply_event_retention(now)) {
+            tracing::warn!(code = %error.code, "rétention des événements non appliquée");
+        }
+    }
+
     /// Journalise une décision de synchronisation et l'émet comme événement de diagnostic.
     pub fn diagnose(&self, level: LogLevel, target: &str, text: &str) {
         tracing::info!(target: "mira::sync", decision = target, "{text}");

@@ -16,7 +16,8 @@ pub(super) async fn register_account(
     staged: &StagedCredential,
     key: &IdempotencyKey,
 ) -> Result<Account, MiraError> {
-    check_imap_login(&plan.servers.connect, &staged.login).await?;
+    let budget = engine.budget_for(staged.account.as_str(), plan.provider.as_ref());
+    check_imap_login(&plan.servers.connect, &staged.login, &budget).await?;
     let parts = NewAccountParts {
         id: staged.account.clone(),
         identity_id: IdentityId::from_raw(engine.config.ids.next_id()),

@@ -10,7 +10,10 @@ use crate::accounts::finish_interrupted_deletions;
 use crate::auth::CredentialVault;
 use crate::events::EventBus;
 use crate::profile::{ProfileEnvironment, ProfileLock, ProfilePaths};
+use crate::replayer::ReplayerHandle;
 use crate::storage::Database;
+use crate::sync::ConnectionBudgets;
+use crate::sync_service::SyncService;
 
 /// Refuse un client dont la version du contrat est incompatible (invariant 33)
 pub(crate) fn check_client_version(client: ContractVersion) -> Result<(), MiraError> {
@@ -48,4 +51,23 @@ pub(crate) fn resume_interrupted_deletions(
     if let Err(error) = finish_interrupted_deletions(database, &vault, events) {
         tracing::warn!(code = %error.code, "suppression de compte interrompue non achevée");
     }
+}
+
+/// Lance le rejeu et la synchronisation de fond, qui partagent les budgets de connexions des comptes
+pub(crate) fn start_background(
+    config: &EngineConfig,
+    database: &Arc<Database>,
+    events: &EventBus,
+    budgets: &ConnectionBudgets,
+) -> (ReplayerHandle, SyncService) {
+    let replayers = ReplayerHandle::start(
+        config.clone(),
+        Arc::clone(database),
+        events.clone(),
+        budgets.clone(),
+    );
+    (
+        replayers,
+        SyncService::start(config, database, events, budgets),
+    )
 }

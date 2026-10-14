@@ -8,7 +8,9 @@ use mira_vocabulary::{ContractVersion, EventFilter, EventKind, MiraError};
 use super::config::EngineConfig;
 use super::contract::{Request, Response};
 use super::router::route;
-use super::startup::{check_client_version, open_profile, resume_interrupted_deletions};
+use super::startup::{
+    check_client_version, open_profile, resume_interrupted_deletions, start_background,
+};
 use crate::auth::{CredentialVault, OAuthFlows};
 use crate::events::{EventBus, EventSink, EventSubscription};
 use crate::fetching::ServerSearchResults;
@@ -16,6 +18,7 @@ use crate::operations::OperationRegistry;
 use crate::profile::{ProfileLock, ProfilePaths};
 use crate::replayer::ReplayerHandle;
 use crate::storage::Database;
+use crate::sync::ConnectionBudgets;
 use crate::sync_service::SyncService;
 
 /// Moteur ouvert : un profil, sa base, son verrou, son bus d'événements.
@@ -31,6 +34,7 @@ pub struct Engine {
     pub(crate) account_lock: tokio::sync::Mutex<()>,
     pub(crate) replayers: ReplayerHandle,
     pub(crate) sync: SyncService,
+    pub(crate) budgets: ConnectionBudgets,
     _lock: ProfileLock,
 }
 
@@ -44,9 +48,8 @@ impl Engine {
         let operations = OperationRegistry::new(Arc::clone(&config.ids), sink);
         events.emit(EventKind::EngineStarted)?;
         resume_interrupted_deletions(&config, &database, &events);
-        let replayers =
-            ReplayerHandle::start(config.clone(), Arc::clone(&database), events.clone());
-        let sync = SyncService::start(&config, &database, &events);
+        let budgets = ConnectionBudgets::default();
+        let (replayers, sync) = start_background(&config, &database, &events, &budgets);
         Ok(Self {
             config,
             paths,
@@ -58,6 +61,7 @@ impl Engine {
             account_lock: tokio::sync::Mutex::new(()),
             replayers,
             sync,
+            budgets,
             _lock: lock,
         })
     }

@@ -71,7 +71,7 @@ async fn select_if_present(
     }
 }
 
-/// Retrouve un message : par son UID s'il est encore valable, sinon par son `Message-ID`
+/// Retrouve un message : par son UID s'il est encore valable, sinon par son `Message-ID` s'il est unique (un doublon est ambigu)
 async fn find_uid(
     client: &mut ImapClient,
     item: &Wanted,
@@ -85,7 +85,11 @@ async fn find_uid(
     let Some(header) = &item.header else {
         return Ok(None);
     };
-    Ok(client.uids_with_message_id(header).await?.first().copied())
+    let candidates = client.uids_with_message_id(header).await?;
+    Ok(match candidates.as_slice() {
+        [only] => Some(*only),
+        _ => None,
+    })
 }
 
 /// Sélectionne la boîte et dit, pour chaque message cherché, son UID actuel ou son absence

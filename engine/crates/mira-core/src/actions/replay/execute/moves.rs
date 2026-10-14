@@ -4,6 +4,7 @@ use std::collections::BTreeSet;
 
 use mira_vocabulary::{MessageId, MiraError, ProviderQuirks};
 
+use super::landed::{arrived_in_destination, landed_sources};
 use super::locate::{Scope, locate, wanted_by_mailbox};
 use super::locate_require::require_any_handled;
 use super::purge::{effective, purge_selected};
@@ -11,14 +12,14 @@ use crate::actions::replay::job::ReplayJob;
 use crate::capabilities::{EffectiveCapabilities, MoveMethod, choose_move};
 use crate::imap::ImapClient;
 
-/// UID d'une boîte source à déplacer, et UID dont la copie existe déjà dans la destination.
+/// UID d'une boîte source à déplacer, et UID dont une copie identique existe déjà dans la destination.
 #[derive(Debug, Default)]
 struct GroupPlan {
     transfer: Vec<u32>,
     purge: Vec<u32>,
 }
 
-/// Déplace chaque message vers `destination` ; vérifie d'abord ce que le serveur contient déjà (inv. 18)
+/// Déplace chaque message vers `destination` ; ne tient pour « déjà arrivée » qu'une copie identique (inv. 18)
 pub(super) async fn move_to(
     client: &mut ImapClient,
     quirks: &ProviderQuirks,
@@ -26,53 +27,41 @@ pub(super) async fn move_to(
     destination: &str,
 ) -> Result<(), MiraError> {
     let capabilities = effective(client, quirks);
-    let landed = already_in_destination(client, job, destination).await?;
     let mut moved = BTreeSet::new();
+    let mut vanished = Vec::new();
     let scope = Scope::Except(destination.to_string());
     for (source, wanted) in wanted_by_mailbox(&job.messages, &scope) {
         let located = locate(client, &source, &wanted).await?;
+        vanished.extend(located.absent.iter().cloned());
+        if located.found.is_empty() {
+            continue;
+        }
+        let landed = landed_sources(client, job, &located.found, destination).await?;
+        client.select(&source, None).await?;
         let plan = plan_group(located.found, &landed, &mut moved);
         purge_selected(client, &capabilities, &plan.purge).await?;
         transfer(client, &capabilities, &plan.transfer, destination).await?;
     }
-    moved.extend(landed);
+    moved.extend(arrived_in_destination(client, job, &vanished, destination).await?);
     require_any_handled(&job.messages, &moved)
 }
 
 /// Sépare les messages à déplacer de ceux déjà arrivés ; un message n'est déplacé qu'une fois
 fn plan_group(
     found: Vec<(MessageId, u32)>,
-    landed: &BTreeSet<MessageId>,
+    landed: &BTreeSet<u32>,
     moved: &mut BTreeSet<MessageId>,
 ) -> GroupPlan {
     let mut plan = GroupPlan::default();
     for (message, uid) in found {
-        if landed.contains(&message) {
+        if landed.contains(&uid) {
+            moved.insert(message);
             plan.purge.push(uid);
         } else if moved.insert(message) {
             plan.transfer.push(uid);
         }
     }
     plan
-}
-
-/// Messages que la boîte de destination contient déjà, retrouvés par `Message-ID`
-async fn already_in_destination(
-    client: &mut ImapClient,
-    job: &ReplayJob,
-    destination: &str,
-) -> Result<BTreeSet<MessageId>, MiraError> {
-    client.select(destination, None).await?;
-    let mut landed = BTreeSet::new();
-    for message in &job.messages {
-        let Some(header) = &message.header else {
-            continue;
-        };
-        if !client.uids_with_message_id(header).await?.is_empty() {
-            landed.insert(message.id.clone());
-        }
-    }
-    Ok(landed)
 }
 
 /// Déplace les UID de la boîte sélectionnée : MOVE, ou copie puis purge

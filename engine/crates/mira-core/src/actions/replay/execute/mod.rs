@@ -3,6 +3,7 @@
 mod delete;
 mod flags;
 mod labels;
+mod landed;
 mod locate;
 mod locate_require;
 mod mailbox_admin;

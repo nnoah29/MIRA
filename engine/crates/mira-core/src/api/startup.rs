@@ -1,5 +1,6 @@
 //! Étapes de l'ouverture : version du contrat, emplacements, verrou, base.
 
+use std::path::Path;
 use std::sync::Arc;
 
 use mira_vocabulary::error::codes::invalid_input;
@@ -46,9 +47,10 @@ pub(crate) fn resume_interrupted_deletions(
     config: &EngineConfig,
     database: &Arc<Database>,
     events: &EventBus,
+    cache_directory: &Path,
 ) {
     let vault = CredentialVault::new(Arc::clone(&config.secrets), Arc::clone(database));
-    if let Err(error) = finish_interrupted_deletions(database, &vault, events) {
+    if let Err(error) = finish_interrupted_deletions(database, &vault, events, cache_directory) {
         tracing::warn!(code = %error.code, "suppression de compte interrompue non achevée");
     }
 }

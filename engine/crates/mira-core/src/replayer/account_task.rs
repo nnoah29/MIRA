@@ -31,6 +31,8 @@ pub(crate) async fn run_account_replayer(shared: Arc<ReplayShared>, id: AccountI
 
 /// Un tour : rien si le compte est en pause ou sans travail prêt, sinon une passe en ligne
 async fn tick(shared: &Arc<ReplayShared>, id: &AccountId, recovered: &mut bool) -> Tick {
+    let gate = shared.gates.gate(id);
+    let _busy = gate.lock().await;
     let account = match load_active(shared, id) {
         Ok(Some(account)) => account,
         Ok(None) => return Tick::Gone,

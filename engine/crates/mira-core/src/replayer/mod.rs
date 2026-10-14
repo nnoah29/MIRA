@@ -2,6 +2,7 @@
 
 mod account_task;
 mod credentials;
+mod gates;
 mod handle;
 mod session;
 mod shared;

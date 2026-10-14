@@ -19,7 +19,10 @@ pub fn on_body(
         return Vec::new();
     }
     match result {
-        Ok(Response::MessageBody(body)) => state.reader.content = ReaderContent::Body(body),
+        Ok(Response::MessageBody(mut body)) => {
+            body.text = display_safe_multiline(&body.text);
+            state.reader.content = ReaderContent::Body(body);
+        }
         Ok(_) => return unexpected(state),
         Err(error) if is_offline_absence(&error) => {
             state.reader.content = ReaderContent::OfflineMissing;

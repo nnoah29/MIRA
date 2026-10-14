@@ -1,5 +1,6 @@
 //! Étapes de l'ouverture : version du contrat, emplacements, verrou, base.
 
+use std::path::Path;
 use std::sync::Arc;
 
 use mira_vocabulary::error::codes::invalid_input;
@@ -10,7 +11,10 @@ use crate::accounts::finish_interrupted_deletions;
 use crate::auth::CredentialVault;
 use crate::events::EventBus;
 use crate::profile::{ProfileEnvironment, ProfileLock, ProfilePaths};
+use crate::replayer::ReplayerHandle;
 use crate::storage::Database;
+use crate::sync::ConnectionBudgets;
+use crate::sync_service::SyncService;
 
 /// Refuse un client dont la version du contrat est incompatible (invariant 33)
 pub(crate) fn check_client_version(client: ContractVersion) -> Result<(), MiraError> {
@@ -43,9 +47,37 @@ pub(crate) fn resume_interrupted_deletions(
     config: &EngineConfig,
     database: &Arc<Database>,
     events: &EventBus,
+    cache_directory: &Path,
 ) {
     let vault = CredentialVault::new(Arc::clone(&config.secrets), Arc::clone(database));
-    if let Err(error) = finish_interrupted_deletions(database, &vault, events) {
+    if let Err(error) = finish_interrupted_deletions(database, &vault, events, cache_directory) {
         tracing::warn!(code = %error.code, "suppression de compte interrompue non achevée");
     }
+}
+
+/// Applique la rétention des événements à l'ouverture ; un échec est journalisé sans empêcher l'ouverture
+pub(crate) fn apply_event_retention(config: &EngineConfig, database: &Arc<Database>) {
+    let now = config.clock.now();
+    if let Err(error) = database.write(|tx| tx.apply_event_retention(now)) {
+        tracing::warn!(code = %error.code, "rétention des événements non appliquée");
+    }
+}
+
+/// Lance le rejeu et la synchronisation de fond, qui partagent les budgets de connexions des comptes
+pub(crate) fn start_background(
+    config: &EngineConfig,
+    database: &Arc<Database>,
+    events: &EventBus,
+    budgets: &ConnectionBudgets,
+) -> (ReplayerHandle, SyncService) {
+    let replayers = ReplayerHandle::start(
+        config.clone(),
+        Arc::clone(database),
+        events.clone(),
+        budgets.clone(),
+    );
+    (
+        replayers,
+        SyncService::start(config, database, events, budgets),
+    )
 }

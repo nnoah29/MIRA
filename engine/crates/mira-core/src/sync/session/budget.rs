@@ -1,16 +1,20 @@
 //! Budget de connexions d'un compte : jamais plus que la limite du provider (invariant 25).
 
 use std::sync::Arc;
+use std::sync::atomic::AtomicUsize;
 
 use mira_vocabulary::error::codes::internal;
 use mira_vocabulary::{ErrorCategory, MiraError};
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
+
+use super::waiting::WaitingSlot;
 
 /// Permis de connexion partagés par toutes les connexions IMAP d'un compte.
 #[derive(Debug, Clone)]
 pub struct ConnectionBudget {
     semaphore: Arc<Semaphore>,
     limit: usize,
+    waiting: Arc<AtomicUsize>,
 }
 
 impl ConnectionBudget {
@@ -20,6 +24,7 @@ impl ConnectionBudget {
         Self {
             semaphore: Arc::new(Semaphore::new(limit)),
             limit,
+            waiting: Arc::new(AtomicUsize::new(0)),
         }
     }
 
@@ -44,5 +49,11 @@ impl ConnectionBudget {
     /// Prend un permis seulement s'il est disponible tout de suite.
     pub fn try_acquire(&self) -> Option<OwnedSemaphorePermit> {
         Arc::clone(&self.semaphore).try_acquire_owned().ok()
+    }
+
+    /// Attend un permis pour une demande explicite de l'utilisateur ; refuse si trop de demandes attendent déjà.
+    pub async fn acquire_explicit(&self) -> Result<OwnedSemaphorePermit, MiraError> {
+        let _slot = WaitingSlot::take(&self.waiting)?;
+        self.acquire().await
     }
 }

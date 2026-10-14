@@ -9,12 +9,13 @@ use tokio::sync::watch;
 use super::config::SupervisorConfig;
 use super::running::{AccountTable, RunningAccount, stop_all};
 use crate::sync::context::SyncContext;
-use crate::sync::session::{ConnectionBudget, CredentialProvider};
+use crate::sync::session::{ConnectionBudget, ConnectionBudgets, CredentialProvider};
 
 /// Lance et arrête les tâches de synchronisation des comptes.
 #[derive(Debug)]
 pub struct SyncSupervisor {
     config: SupervisorConfig,
+    budgets: ConnectionBudgets,
     pub(super) shutdown: watch::Sender<bool>,
     pub(super) accounts: AccountTable,
 }
@@ -22,9 +23,15 @@ pub struct SyncSupervisor {
 impl SyncSupervisor {
     /// Crée un superviseur sans compte.
     pub fn new(config: SupervisorConfig) -> Self {
+        Self::with_budgets(config, ConnectionBudgets::default())
+    }
+
+    /// Crée un superviseur dont les budgets de connexions sont partagés avec le reste du moteur.
+    pub fn with_budgets(config: SupervisorConfig, budgets: ConnectionBudgets) -> Self {
         let (shutdown, _) = watch::channel(false);
         Self {
             config,
+            budgets,
             shutdown,
             accounts: AccountTable::default(),
         }
@@ -42,7 +49,9 @@ impl SyncSupervisor {
             return false;
         }
         let shutdown = self.shutdown.subscribe();
-        let running = RunningAccount::launch(ctx, credentials, self.config, shutdown);
+        let limit = ctx.provider.descriptor().limits.max_connections;
+        let budget = self.budgets.budget_for(id.as_str(), limit);
+        let running = RunningAccount::launch(ctx, credentials, self.config, budget, shutdown);
         table.insert(id, running);
         true
     }

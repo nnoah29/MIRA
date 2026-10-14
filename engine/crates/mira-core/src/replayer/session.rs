@@ -10,11 +10,12 @@ use crate::accounts::{imap_login_of, resolve_servers};
 use crate::actions::ReplayCredentials;
 use crate::imap::ImapClient;
 use crate::registry::resolve_account_provider;
+use crate::sync::LeasedClient;
 
 /// Session ouverte : connexion IMAP, serveur SMTP du compte et particularités du service.
 #[derive(Debug)]
 pub(crate) struct Session {
-    pub(crate) client: ImapClient,
+    pub(crate) client: LeasedClient,
     pub(crate) smtp: ServerEndpoint,
     pub(crate) quirks: ProviderQuirks,
 }
@@ -33,20 +34,32 @@ pub(crate) async fn open_session(
         account.servers.clone(),
     )
     .connect;
-    let credentials = ProductionCredentials::new(shared);
-    credentials.renew_if_expired(&account.id).await?;
-    let client = match connect(&credentials, account, &servers).await {
-        Err(error) if is_refusal(&error) => {
-            credentials.renew_now(&account.id).await?;
-            connect(&credentials, account, &servers).await?
-        }
-        other => other?,
-    };
+    let limit = provider.descriptor().limits.max_connections;
+    let permit = shared.budgets.budget_for(account.id.as_str(), limit);
+    let permit = permit.acquire().await?;
+    let client = connect_renewing(shared, account, &servers).await?;
     Ok(Session {
-        client,
+        client: LeasedClient::new(client, permit),
         smtp: servers.smtp,
         quirks: provider.descriptor().quirks,
     })
+}
+
+/// Rafraîchit un jeton expiré avant de se connecter, ou après un refus du serveur
+async fn connect_renewing(
+    shared: &Arc<ReplayShared>,
+    account: &Account,
+    servers: &ServerSettings,
+) -> Result<ImapClient, MiraError> {
+    let credentials = ProductionCredentials::new(shared);
+    credentials.renew_if_expired(&account.id).await?;
+    match connect(&credentials, account, servers).await {
+        Err(error) if is_refusal(&error) => {
+            credentials.renew_now(&account.id).await?;
+            connect(&credentials, account, servers).await
+        }
+        other => other,
+    }
 }
 
 /// Une tentative de connexion IMAP avec le secret actuel du trousseau

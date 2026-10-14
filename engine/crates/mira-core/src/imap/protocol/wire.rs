@@ -24,6 +24,8 @@ pub(crate) struct Wire {
     pub(super) next_tag: u32,
     pub(crate) wait: Duration,
     pub(super) literal_plus: bool,
+    pub(super) response_bytes: usize,
+    pub(super) broken: bool,
 }
 
 impl fmt::Debug for Wire {
@@ -47,6 +49,8 @@ impl Wire {
             next_tag: 0,
             wait,
             literal_plus: false,
+            response_bytes: 0,
+            broken: false,
         }
     }
 
@@ -63,6 +67,7 @@ impl Wire {
     /// Fabrique l'étiquette de la prochaine commande.
     pub(crate) fn fresh_tag(&mut self) -> String {
         self.next_tag += 1;
+        self.response_bytes = 0;
         format!("A{:04}", self.next_tag)
     }
 

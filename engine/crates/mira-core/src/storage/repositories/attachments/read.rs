@@ -1,6 +1,6 @@
 //! Lectures sur les pièces jointes.
 
-use mira_vocabulary::{Attachment, AttachmentId, MessageId, MiraError};
+use mira_vocabulary::{AccountId, Attachment, AttachmentId, MessageId, MiraError};
 use rusqlite::OptionalExtension;
 
 use super::rows::{COLUMNS, attachment_from_row};
@@ -53,5 +53,19 @@ impl Tx<'_> {
             .optional()
             .map_err(storage_error)?;
         Ok(path.flatten())
+    }
+
+    /// Chemins des contenus téléchargés des pièces jointes d'un compte
+    pub fn attachment_cache_paths_of_account(
+        &self,
+        account: &AccountId,
+    ) -> Result<Vec<String>, MiraError> {
+        let sql = "SELECT a.cache_path FROM attachments a JOIN messages m ON m.id = a.message_id WHERE m.account_id = ?1 AND a.cache_path IS NOT NULL";
+        let mut statement = self.sql().prepare(sql).map_err(storage_error)?;
+        statement
+            .query_map([account.as_str()], |row| row.get::<_, String>(0))
+            .map_err(storage_error)?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(storage_error)
     }
 }

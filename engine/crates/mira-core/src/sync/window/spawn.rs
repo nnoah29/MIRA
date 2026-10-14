@@ -18,7 +18,7 @@ async fn run_extension(
     mailbox: MailboxId,
     extra_days: u32,
 ) -> Result<(), MiraError> {
-    let permit = budget.acquire().await?;
+    let permit = budget.acquire_explicit().await?;
     let connection = open_connection(&ctx, permit, credentials.as_ref()).await?;
     let mut session = SyncSession::new(ctx, connection);
     extend_window(&mut session, handle, &mailbox, extra_days)

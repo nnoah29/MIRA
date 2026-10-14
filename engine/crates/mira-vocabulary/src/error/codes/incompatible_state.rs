@@ -23,5 +23,7 @@ pub const ACCOUNT_PAUSED: ErrorCode = ErrorCode("incompatible_state.account_paus
 pub const DRAFT_NOT_EDITABLE: ErrorCode = ErrorCode("incompatible_state.draft_not_editable");
 /// Seule une action échouée peut être relancée.
 pub const ACTION_NOT_RETRYABLE: ErrorCode = ErrorCode("incompatible_state.action_not_retryable");
+/// Le serveur a renuméroté la boîte depuis le dernier relevé : il faut la resynchroniser.
+pub const MAILBOX_CHANGED: ErrorCode = ErrorCode("incompatible_state.mailbox_changed");
 /// La synchronisation en arrière-plan n'est pas active dans ce moteur.
 pub const SYNC_DISABLED: ErrorCode = ErrorCode("incompatible_state.sync_disabled");

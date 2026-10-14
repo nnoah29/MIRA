@@ -22,8 +22,23 @@ pub fn add_message(
     uid: u32,
     millis: i64,
 ) -> MessageId {
+    let header = format!("<{id}@example.org>");
+    add_message_with_header(db, account, mailbox, id, uid, millis, &header)
+}
+
+/// Comme `add_message`, avec le `Message-ID` que porte le courrier déposé sur le serveur
+pub fn add_message_with_header(
+    db: &Database,
+    account: &AccountId,
+    mailbox: &MailboxId,
+    id: &str,
+    uid: u32,
+    millis: i64,
+    header: &str,
+) -> MessageId {
     let mut summary: MessageSummary = sample_message(id, account.as_str());
     summary.subject = format!("Sujet {id}");
+    summary.message_id_header = Some(header.to_string());
     db.write(|tx| {
         tx.insert_message(&summary, Timestamp::from_millis(millis))?;
         tx.add_appearance(&appearance(id, mailbox.as_str(), uid))

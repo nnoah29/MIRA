@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
 
-use super::remote::{is_auto_loading, is_remote_url};
+use super::remote::{is_blocked_until_allowed, is_data_link};
 
 /// HTML sûr à afficher, avec la liste des ressources distantes retirées.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -33,6 +33,7 @@ fn builder(allow_remote: bool, blocked: Arc<Mutex<Vec<String>>>) -> ammonia::Bui
     let mut builder = ammonia::Builder::default();
     builder
         .url_schemes(HashSet::from(["http", "https", "mailto", "cid", "data"]))
+        .url_relative(ammonia::UrlRelative::Deny)
         .link_rel(Some("noopener noreferrer nofollow"))
         .add_tag_attributes("table", &["background"])
         .add_tag_attributes("td", &["background"])
@@ -52,7 +53,10 @@ fn filter_attribute<'v>(
     allow_remote: bool,
     blocked: &Mutex<Vec<String>>,
 ) -> Option<Cow<'v, str>> {
-    if allow_remote || !is_auto_loading(element, attribute) || !is_remote_url(value) {
+    if is_data_link(attribute, value) {
+        return None;
+    }
+    if allow_remote || !is_blocked_until_allowed(element, attribute, value) {
         return Some(Cow::Borrowed(value));
     }
     blocked

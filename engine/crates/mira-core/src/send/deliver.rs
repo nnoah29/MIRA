@@ -26,9 +26,9 @@ pub(crate) async fn deliver(
     }
 }
 
-/// Un échec de rafraîchissement n'a rien envoyé : une coupure du service de jetons n'est pas une issue incertaine
+/// Un échec de rafraîchissement n'a rien envoyé : une panne réseau du service de jetons n'est pas une issue incertaine
 fn renewal_failure(error: MiraError) -> MiraError {
-    if error.code != network::CONNECTION_LOST.0 {
+    if error.category != ErrorCategory::Network {
         return error;
     }
     let message = "service d'autorisation injoignable, jeton non rafraîchi";

@@ -19,4 +19,9 @@ impl FakeSmtpServer {
     pub fn drop_after_data_once(&self) {
         self.shared.with(|state| state.drop_after_data = true);
     }
+
+    /// Enregistre le prochain message puis se tait : aucune réponse de fin de DATA n'arrive
+    pub fn stall_after_data_once(&self) {
+        self.shared.with(|state| state.stall_after_data = true);
+    }
 }

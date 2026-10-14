@@ -11,6 +11,7 @@ pub(crate) struct SmtpState {
     pub(crate) received: Vec<ReceivedMail>,
     pub(crate) failures: VecDeque<String>,
     pub(crate) drop_after_data: bool,
+    pub(crate) stall_after_data: bool,
 }
 
 /// Poignée clonable vers l'état partagé.

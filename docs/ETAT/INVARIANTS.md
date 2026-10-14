@@ -8,7 +8,7 @@
 | 4 | Aucune notion d'écran (P1) | garde-fou `tools/check-architecture` A9 |
 | 5 | Bibliothèque externe via son module d'encapsulation (D-34) | garde-fou `tools/check-architecture` A8 (auto-test) |
 | 6 | Tout ce que fait l'interface, le CLI le fait (P1) | `invariant_6_every_request_has_a_cli_command` (mira-cli) |
-| 7 | Identifiant interne unique et stable (D-13) | `invariant_7_internal_id_survives_uid_change` (mira-core) |
+| 7 | Identifiant interne unique et stable (D-13) | `invariant_7_internal_id_stable_across_move_and_renumber` (mira-core)<br>`invariant_7_internal_id_survives_uid_change` (mira-core) |
 | 8 | Message : au moins une apparition | `invariant_8_message_without_appearance_is_purged` (mira-core) |
 | 9 | Apparition → boîte du même compte | `invariant_9_appearance_mailbox_same_account` (mira-core) |
 | 10 | Message → un compte ; compte → un profil | manquant |
@@ -21,12 +21,12 @@
 | 17 | Action écrite avant d'être tentée | `invariant_17_action_persisted_before_attempt` (mira-core)<br>`invariant_17_action_written_before_attempt` (mira-core) |
 | 18 | Action rejouée : pas deux effets | `invariant_18_enqueue_is_idempotent` (mira-core)<br>`invariant_18_replay_after_crash_has_single_effect` (mira-core)<br>`invariant_18_resubmission_with_same_key_has_single_effect` (mira-core) |
 | 19 | Actions d'un compte rejouées dans l'ordre | `invariant_19_actions_replayed_in_order` (mira-core)<br>`invariant_19_actions_replayed_in_submission_order` (mira-core) |
-| 20 | Repère avancé après écriture des données | manquant |
-| 21 | Le serveur gagne ; actions rejouées (D-23) | manquant |
+| 20 | Repère avancé après écriture des données | `invariant_20_marker_advanced_after_data` (mira-core) |
+| 21 | Le serveur gagne ; actions rejouées (D-23) | `invariant_21_server_wins_on_flags` (mira-core) |
 | 22 | Erreur définitive : effet local annulé, utilisateur informé | `invariant_22_definitive_failure_reverts_local_effect` (mira-core)<br>`invariant_22_server_refusal_reverts_local_effect_and_informs` (mira-core) |
-| 23 | Doute d'identité : garder deux messages (P7) | manquant |
-| 24 | Une tâche de synchro par compte | manquant |
-| 25 | Connexions ≤ plafond du provider | manquant |
+| 23 | Doute d'identité : garder deux messages (P7) | `invariant_23_ambiguous_fingerprint_keeps_two_messages` (mira-core) |
+| 24 | Une tâche de synchro par compte | `invariant_24_single_sync_task_per_account` (mira-core) |
+| 25 | Connexions ≤ plafond du provider | `invariant_25_connections_within_provider_limit` (mira-core) |
 | 26 | Jamais deux envois sans décision de l'utilisateur | `invariant_26_interrupted_send_becomes_uncertain_never_resent` (mira-core) |
 | 27 | Aucune lecture ordinaire par le réseau (P5) | `invariant_27_reads_never_touch_network` (mira-core) |
 | 28 | Toute écriture rend la main sans réseau | `invariant_28_submit_returns_without_network` (mira-core)<br>`invariant_28_write_returns_without_network` (mira-core) |
@@ -41,14 +41,14 @@
 | S1 | Ajouter un compte Gmail par OAuth | `scenario_s1_add_oauth_account` (mira-core) |
 | S2 | Ajouter un compte Yahoo (mot de passe d'application) | `scenario_s2_add_app_password_account` (mira-core) |
 | S3 | Ajouter un compte « Autre » | `scenario_s3_add_other_account_with_manual_servers` (mira-core) |
-| S4 | Première synchronisation | manquant |
-| S5 | Nouveau message en temps réel | manquant |
+| S4 | Première synchronisation | `scenario_s4_first_sync_downloads_inbox_first_with_progress` (mira-core) |
+| S5 | Nouveau message en temps réel | `scenario_s5_idle_new_message_emits_event` (mira-core) |
 | S6 | Lire un message hors ligne | `scenario_s6_read_offline_body_present_or_unavailable` (mira-core) |
 | S7 | Déplacer des messages hors ligne | `scenario_s7_move_offline_then_replay_in_order` (mira-core)<br>`scenario_s7_move_without_move_extension_copies_then_expunges` (mira-core) |
 | S8 | Message supprimé ailleurs | `scenario_s8_action_on_deleted_message_fails_and_reverts` (mira-core) |
 | S9 | Envoyer, avec annulation | `scenario_s9_send_with_undo_then_send` (mira-core) |
 | S10 | Jeton expiré en pleine opération | `scenario_s10_token_expired_keeps_actions_queued` (mira-core) |
-| S11 | Message Gmail à plusieurs libellés | `scenario_s11_unified_view_lists_each_message_once` (mira-core) |
-| S12 | Remonter au-delà de 90 jours, chercher | manquant |
-| S13 | Le serveur renumérote une boîte | manquant |
+| S11 | Message Gmail à plusieurs libellés | `scenario_s11_message_in_two_labels_is_one_message` (mira-core)<br>`scenario_s11_unified_view_lists_each_message_once` (mira-core) |
+| S12 | Remonter au-delà de 90 jours, chercher | `scenario_s12_extend_window_downloads_older_headers` (mira-core) |
+| S13 | Le serveur renumérote une boîte | `scenario_s13_uidvalidity_change_resynchronizes_mailbox` (mira-core) |
 | S14 | Supprimer un compte | `scenario_s14_delete_account_keeps_others_and_server` (mira-core) |

@@ -3,11 +3,13 @@
 mod authorize;
 mod callback;
 mod complete;
+mod connection;
 mod pending;
 mod pending_debug;
 mod phase;
 mod redirect;
 mod start;
+mod state_check;
 
 pub use authorize::authorize_until_cancelled;
 pub use callback::AuthorizationCode;

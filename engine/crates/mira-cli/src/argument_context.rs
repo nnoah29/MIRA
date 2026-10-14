@@ -1,6 +1,6 @@
 //! Ressources dont l'analyse d'une commande a besoin : entrée standard (secrets) et identifiants.
 
-use std::io::Read;
+use std::io::{ErrorKind, Read};
 
 use mira_assembly::api::SecretInput;
 use mira_assembly::mira_vocabulary::MiraError;
@@ -19,21 +19,35 @@ pub struct ArgumentContext<'a> {
 impl ArgumentContext<'_> {
     /// Lit la première ligne de l'entrée standard comme secret (jamais d'argument de ligne de commande).
     pub fn read_secret(&mut self) -> Result<SecretInput, MiraError> {
-        let mut bytes = Vec::new();
-        let mut byte = [0u8; 1];
-        while bytes.len() < MAX_SECRET_BYTES {
-            let count = self.stdin.read(&mut byte).unwrap_or(0);
-            if count == 0 || byte[0] == b'\n' {
-                break;
-            }
-            bytes.push(byte[0]);
+        let bytes = self.read_first_line()?;
+        let mut line = String::from_utf8(bytes).map_err(|_| {
+            invalid_argument("le secret reçu sur l'entrée standard n'est pas de l'UTF-8")
+        })?;
+        while line.ends_with('\r') {
+            line.pop();
         }
-        let text = String::from_utf8_lossy(&bytes);
-        let line = text.trim_end_matches('\r');
         if line.is_empty() {
             return Err(invalid_argument("aucun secret reçu sur l'entrée standard"));
         }
         Ok(SecretInput::new(line))
+    }
+
+    /// Lit les octets jusqu'à la fin de ligne ; refuse une erreur de lecture ou plus de 4096 octets.
+    fn read_first_line(&mut self) -> Result<Vec<u8>, MiraError> {
+        let mut bytes = Vec::new();
+        let mut byte = [0u8; 1];
+        loop {
+            match self.stdin.read(&mut byte) {
+                Ok(0) => return Ok(bytes),
+                Ok(_) if byte[0] == b'\n' => return Ok(bytes),
+                Ok(_) if bytes.len() >= MAX_SECRET_BYTES => {
+                    return Err(invalid_argument("le secret dépasse 4096 octets"));
+                }
+                Ok(_) => bytes.push(byte[0]),
+                Err(error) if error.kind() == ErrorKind::Interrupted => {}
+                Err(_) => return Err(invalid_argument("lecture du secret impossible")),
+            }
+        }
     }
 
     /// Fabrique une clé d'idempotence quand l'utilisateur n'en fournit pas.

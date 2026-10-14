@@ -1,6 +1,7 @@
 //! Un flux OAuth en cours dans le moteur, avec le compte qu'il a réservé.
 
 use std::sync::Arc;
+use std::time::Instant;
 
 use mira_vocabulary::{AccountId, EmailAddress, ProviderId};
 use tokio::sync::Notify;
@@ -14,6 +15,7 @@ pub struct FlowEntry {
     pub(super) cancel: Arc<Notify>,
     pub(super) target: FlowTarget,
     pub(super) completed: bool,
+    pub(super) created: Instant,
 }
 
 /// Ce que le flux vise : compte réservé, adresse, provider, et réauthentification ou non.
@@ -40,6 +42,7 @@ impl FlowEntry {
             cancel: Arc::new(Notify::new()),
             target,
             completed: false,
+            created: Instant::now(),
         }
     }
 

@@ -2,6 +2,7 @@
 
 use mail_parser::{Message, MessagePart, MimeHeaders, PartType};
 
+use super::attachment_name::{clean_filename, clean_mime_type};
 use super::ids::clean_message_id;
 use super::model::ParsedAttachment;
 
@@ -30,8 +31,8 @@ fn describe(index: u32, part: &MessagePart<'_>) -> ParsedAttachment {
     let content_id = part.content_id().and_then(clean_message_id);
     ParsedAttachment {
         part_index: index,
-        filename: part.attachment_name().map(str::to_string),
-        mime_type: mime_type_of(part),
+        filename: part.attachment_name().and_then(clean_filename),
+        mime_type: clean_mime_type(mime_type_of(part)),
         size: part.len() as u64,
         inline: is_inline(part, &content_id),
         content_id,

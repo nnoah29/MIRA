@@ -12,6 +12,7 @@ mod register;
 mod resume;
 mod test_connection;
 mod update;
+mod verify_servers;
 
 use mira_vocabulary::MiraError;
 
@@ -34,7 +35,7 @@ pub(crate) async fn route(engine: &Engine, request: AccountRequest) -> Result<Re
         } => add::handle_add_account(engine, draft, credential, idempotency_key).await,
         AccountRequest::ListAccounts => list::handle_list_accounts(engine),
         AccountRequest::UpdateAccount { account, changes } => {
-            update::handle_update_account(engine, &account, changes)
+            update::handle_update_account(engine, &account, changes).await
         }
         AccountRequest::PauseAccount { account } => {
             pause::handle_pause_account(engine, &account).await

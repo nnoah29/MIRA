@@ -1,6 +1,7 @@
 //! Analyse MIME tolérante : encapsule `mail-parser` et ne rend jamais d'erreur (12.7).
 
 mod addresses;
+mod attachment_name;
 mod attachments;
 mod bodies;
 mod headers;

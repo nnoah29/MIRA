@@ -64,9 +64,9 @@ async fn authorize_url_is_encoded_and_challenge_matches_the_verifier() {
     .unwrap();
 }
 
-/// Un `state` modifié est refusé, le flux échoue et l'écouteur est fermé
+/// Un `state` modifié reçoit 400 et l'écouteur continue d'attendre la vraie redirection
 #[tokio::test]
-async fn tampered_state_is_refused_and_the_listener_closes() {
+async fn regression_tampered_state_gets_400_and_the_listener_keeps_waiting() {
     timeout(LIMIT, async {
         let (server, _) = started_oauth().await;
         let mut rng = seeded_rng(3);
@@ -74,23 +74,20 @@ async fn tampered_state_is_refused_and_the_listener_closes() {
             .await
             .unwrap();
         let redirect = flow.redirect_uri().to_string();
-        let (reply, outcome) = tokio::join!(
-            get(&redirect, "/callback?code=abc&state=falsifie"),
-            wait_for_redirect(&mut flow, Duration::from_secs(5))
+        let state = query_value(flow.authorize_url(), "state").unwrap();
+        let browser = async {
+            let forged = get(&redirect, "/callback?code=abc&state=falsifie").await;
+            let genuine = get(&redirect, &format!("/callback?code=xyz&state={state}")).await;
+            (forged, genuine)
+        };
+        let (outcome, (forged, genuine)) = tokio::join!(
+            wait_for_redirect(&mut flow, Duration::from_secs(5)),
+            browser
         );
-        assert_eq!(
-            outcome.unwrap_err().code,
-            "authentication.oauth_state_mismatch"
-        );
-        assert!(reply.starts_with("HTTP/1.1 200"), "{reply}");
-        assert_eq!(flow.phase(), FlowPhase::Failed);
-        let authority = redirect
-            .strip_prefix("http://")
-            .unwrap()
-            .split('/')
-            .next()
-            .unwrap();
-        assert!(tokio::net::TcpStream::connect(authority).await.is_err());
+        assert!(forged.starts_with("HTTP/1.1 400"), "{forged}");
+        assert!(genuine.starts_with("HTTP/1.1 200"), "{genuine}");
+        assert_eq!(outcome.unwrap().expose(), "xyz");
+        assert_eq!(flow.phase(), FlowPhase::CodeReceived);
     })
     .await
     .unwrap();

@@ -4,17 +4,14 @@ use std::time::Duration;
 
 use mira_vocabulary::error::codes::{authentication, invalid_input, network};
 use mira_vocabulary::{ErrorCategory, MiraError};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::{TcpListener, TcpStream};
+use tokio::net::TcpListener;
+use tokio::task::JoinSet;
 use tokio::time::timeout;
 
-use super::callback::{AuthorizationCode, parse_callback};
+use super::callback::AuthorizationCode;
+use super::connection::serve_connection;
 use super::pending::PendingFlow;
 use super::phase::FlowPhase;
-
-const REQUEST_LIMIT: usize = 8192;
-const READ_PATIENCE: Duration = Duration::from_secs(5);
-const DONE_PAGE: &str = "<!doctype html><html lang=\"fr\"><head><meta charset=\"utf-8\"><title>MIRA</title></head><body><p>Autorisation reçue : vous pouvez revenir à MIRA.</p></body></html>";
 
 /// Attend la redirection du navigateur, vérifie `state` et ferme l'écouteur
 pub async fn wait_for_redirect(
@@ -50,57 +47,32 @@ pub(super) fn wrong_phase() -> MiraError {
     )
 }
 
-/// Sert les connexions jusqu'à la requête `/callback`, répond aux autres par 404
+/// Sert chaque connexion dans sa propre tâche jusqu'à une redirection portant le bon `state`
 async fn serve_until_callback(
     listener: &TcpListener,
     state: &str,
 ) -> Result<AuthorizationCode, MiraError> {
+    let mut connections = JoinSet::new();
     loop {
-        let (mut stream, _) = listener.accept().await.map_err(|_| {
-            MiraError::new(
-                ErrorCategory::Network,
-                network::CONNECTION_LOST,
-                "écouteur local interrompu",
-            )
-        })?;
-        let Some(target) = read_request_target(&mut stream).await else {
-            continue;
-        };
-        let Some(query) = target.strip_prefix("/callback?") else {
-            respond(&mut stream, "404 Not Found", "").await;
-            continue;
-        };
-        let result = parse_callback(query, state);
-        respond(&mut stream, "200 OK", DONE_PAGE).await;
-        return result;
-    }
-}
-
-/// Lit la ligne de requête d'un `GET` et renvoie sa cible, ou rien si la requête est inutilisable
-async fn read_request_target(stream: &mut TcpStream) -> Option<String> {
-    let mut buffer = Vec::new();
-    let mut chunk = [0_u8; 1024];
-    while !buffer.windows(4).any(|window| window == b"\r\n\r\n") && buffer.len() < REQUEST_LIMIT {
-        let read = timeout(READ_PATIENCE, stream.read(&mut chunk))
-            .await
-            .ok()?
-            .ok()?;
-        if read == 0 {
-            return None;
+        tokio::select! {
+            accepted = listener.accept() => {
+                let (stream, _) = accepted.map_err(|_| listener_lost())?;
+                connections.spawn(serve_connection(stream, state.to_string()));
+            }
+            Some(finished) = connections.join_next() => {
+                if let Ok(Some(result)) = finished {
+                    return result;
+                }
+            }
         }
-        buffer.extend_from_slice(chunk.get(..read)?);
     }
-    let text = String::from_utf8_lossy(&buffer).into_owned();
-    let mut parts = text.lines().next()?.split_whitespace();
-    (parts.next()? == "GET").then(|| parts.next().map(str::to_string))?
 }
 
-/// Écrit une réponse HTTP minimale (sans JavaScript) puis ferme la connexion
-async fn respond(stream: &mut TcpStream, status: &str, body: &str) {
-    let reply = format!(
-        "HTTP/1.1 {status}\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nCache-Control: no-store\r\nReferrer-Policy: no-referrer\r\nContent-Security-Policy: default-src 'none'\r\nConnection: close\r\n\r\n{body}",
-        body.len()
-    );
-    let _ = stream.write_all(reply.as_bytes()).await;
-    let _ = stream.shutdown().await;
+/// Erreur d'un écouteur local qui ne répond plus
+fn listener_lost() -> MiraError {
+    MiraError::new(
+        ErrorCategory::Network,
+        network::CONNECTION_LOST,
+        "écouteur local interrompu",
+    )
 }

@@ -3,6 +3,7 @@
 use mira_vocabulary::error::codes::authentication;
 use mira_vocabulary::{ErrorCategory, MiraError};
 
+use super::state_check::state_matches;
 use crate::auth::form::parse_query;
 use crate::ports::SecretValue;
 
@@ -34,7 +35,7 @@ pub(super) fn parse_callback(
             .find(|(key, _)| key == name)
             .map(|(_, value)| value.as_str())
     };
-    if find("state") != Some(expected_state) {
+    if !state_matches(find("state"), expected_state) {
         return Err(failure(
             authentication::OAUTH_STATE_MISMATCH,
             "paramètre state inattendu",

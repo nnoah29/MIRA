@@ -12,6 +12,8 @@ mod request;
 mod response;
 mod search_requests;
 mod secret_input;
+mod sync_requests;
+mod sync_response;
 mod thread_requests;
 mod write;
 
@@ -29,6 +31,8 @@ pub use response::{
 };
 pub use search_requests::SearchRequest;
 pub use secret_input::SecretInput;
+pub use sync_requests::{SyncRequest, SyncScope};
+pub use sync_response::{AccountSyncStatus, SyncResponse};
 pub use thread_requests::ThreadRequest;
 pub use write::{
     ActionRequest, ComposeRequest, DraftChanges, DraftMode, OutboxEntry, QueueRequest,

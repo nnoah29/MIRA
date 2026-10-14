@@ -2,13 +2,13 @@
 
 use std::sync::Arc;
 
-use mira_vocabulary::{AccountId, AuthMethodKind, MiraError};
+use mira_vocabulary::{AccountId, MiraError};
 
 use super::shared::ReplayShared;
 use crate::accounts::require_account;
 use crate::actions::{BoxFuture, ReplayCredentials};
 use crate::auth::CredentialVault;
-use crate::registry::resolve_account_provider;
+use crate::auth::renewal::renew_access_token;
 use crate::smtp::SmtpLogin;
 
 /// Fournisseur d'identifiants d'un moteur, au-dessus du coffre du profil.
@@ -36,31 +36,8 @@ impl ProductionCredentials {
 
     /// Rafraîchit le jeton OAuth du compte, toujours ou seulement s'il est expiré
     async fn renew(&self, account: &AccountId, always: bool) -> Result<(), MiraError> {
-        let config = &self.shared.config;
-        let found = self
-            .shared
-            .database
-            .read(|tx| require_account(tx, account))?;
-        if found.auth != AuthMethodKind::OAuth2 {
-            return Ok(());
-        }
-        let expired = self
-            .vault()
-            .access_token_expired(account, config.clock.now())?;
-        if !always && !expired {
-            return Ok(());
-        }
-        let provider = resolve_account_provider(&config.registry, &found.provider)?;
-        let (settings, client_id) = config.oauth.resolve(&provider.descriptor())?;
-        let vault = self.vault();
-        let refreshed = vault.refresh_access_token(
-            &found.profile,
-            account,
-            &settings.token_url,
-            &client_id,
-            config.clock.as_ref(),
-        );
-        refreshed.await.map(|_| ())
+        let shared = &self.shared;
+        renew_access_token(&shared.config, &shared.database, account, always).await
     }
 }
 

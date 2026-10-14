@@ -6,7 +6,7 @@ mod credential_login;
 mod delete;
 mod draft_plan;
 mod list;
-mod pause;
+pub(crate) mod pause;
 mod prepare;
 mod register;
 mod resume;
@@ -36,12 +36,14 @@ pub(crate) async fn route(engine: &Engine, request: AccountRequest) -> Result<Re
         AccountRequest::UpdateAccount { account, changes } => {
             update::handle_update_account(engine, &account, changes)
         }
-        AccountRequest::PauseAccount { account } => pause::handle_pause_account(engine, &account),
+        AccountRequest::PauseAccount { account } => {
+            pause::handle_pause_account(engine, &account).await
+        }
         AccountRequest::ResumeAccount { account } => {
             resume::handle_resume_account(engine, &account)
         }
         AccountRequest::DeleteAccount { account } => {
-            delete::handle_delete_account(engine, &account)
+            delete::handle_delete_account(engine, &account).await
         }
     }
 }

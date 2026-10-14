@@ -11,6 +11,8 @@ use crate::sync::realtime::Backoff;
 /// Journalise la rupture (code seulement, jamais de secret) et passe le compte dans l'état voulu.
 fn record_break(runtime: &mut AccountRuntime, error: &MiraError, state: Option<AccountState>) {
     tracing::info!(code = %error.code, "session de synchronisation interrompue");
+    runtime.report.broke(error);
+    runtime.requests.fail_all(error);
     if let Some(next) = state {
         transition(runtime, next);
     }

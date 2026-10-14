@@ -6,6 +6,7 @@ pub mod flow_table;
 pub mod form;
 pub mod loopback;
 pub mod pkce;
+pub(crate) mod renewal;
 pub mod tokens;
 pub mod vault;
 

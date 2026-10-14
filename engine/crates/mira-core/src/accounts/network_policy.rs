@@ -4,10 +4,13 @@ use std::collections::BTreeMap;
 
 use mira_vocabulary::ServerSettings;
 
-/// Serveurs imposés par domaine d'adresse ; vide en production.
+use crate::sync::BackgroundSync;
+
+/// Serveurs imposés par domaine d'adresse (vide en production) et mode de la synchronisation en arrière-plan.
 #[derive(Debug, Clone, Default)]
 pub struct NetworkPolicy {
     pub server_overrides: BTreeMap<String, ServerSettings>,
+    pub background_sync: BackgroundSync,
 }
 
 impl NetworkPolicy {

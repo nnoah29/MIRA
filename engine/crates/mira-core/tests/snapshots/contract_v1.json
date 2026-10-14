@@ -628,6 +628,63 @@
         "query": "facture"
       }
     },
+    "sync.extend_window": {
+      "domain": "sync",
+      "request": {
+        "days": 90,
+        "mailbox": "mailbox-1",
+        "op": "extend_window"
+      }
+    },
+    "sync.get_sync_status": {
+      "domain": "sync",
+      "request": {
+        "op": "get_sync_status"
+      }
+    },
+    "sync.pause_sync": {
+      "domain": "sync",
+      "request": {
+        "account": "account-1",
+        "op": "pause_sync"
+      }
+    },
+    "sync.resync_mailbox": {
+      "domain": "sync",
+      "request": {
+        "mailbox": "mailbox-1",
+        "op": "resync_mailbox"
+      }
+    },
+    "sync.start_sync": {
+      "domain": "sync",
+      "request": {
+        "op": "start_sync",
+        "scope": {
+          "type": "all"
+        }
+      }
+    },
+    "sync.start_sync.2": {
+      "domain": "sync",
+      "request": {
+        "op": "start_sync",
+        "scope": {
+          "account": "account-1",
+          "type": "account"
+        }
+      }
+    },
+    "sync.start_sync.3": {
+      "domain": "sync",
+      "request": {
+        "op": "start_sync",
+        "scope": {
+          "mailbox": "mailbox-1",
+          "type": "mailbox"
+        }
+      }
+    },
     "thread.get_thread": {
       "domain": "thread",
       "request": {
@@ -1105,6 +1162,46 @@
         "threads": 1
       },
       "type": "storage_stats"
+    },
+    "sync.paused": {
+      "data": {
+        "data": {
+          "account": "account-1",
+          "last_error": null,
+          "last_synced_at": 1700000000000,
+          "mailboxes_in_progress": [
+            "mailbox-1"
+          ],
+          "pending_actions": 2,
+          "state": {
+            "type": "connected"
+          },
+          "syncing": true
+        },
+        "type": "paused"
+      },
+      "type": "sync"
+    },
+    "sync.status": {
+      "data": {
+        "data": [
+          {
+            "account": "account-1",
+            "last_error": null,
+            "last_synced_at": 1700000000000,
+            "mailboxes_in_progress": [
+              "mailbox-1"
+            ],
+            "pending_actions": 2,
+            "state": {
+              "type": "connected"
+            },
+            "syncing": true
+          }
+        ],
+        "type": "status"
+      },
+      "type": "sync"
     },
     "thread": {
       "data": {

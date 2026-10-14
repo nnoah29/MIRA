@@ -1,0 +1,27 @@
+[package]
+name = "mira-tui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Client plein écran (TUI) de MIRA"
+
+[lib]
+name = "mira_tui"
+path = "src/lib.rs"
+
+[[bin]]
+name = "mira-tui"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+mira-assembly.workspace = true
+crossterm.workspace = true
+ratatui.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing-subscriber.workspace = true

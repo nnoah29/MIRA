@@ -232,3 +232,11 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 ## AG-33 — Effacement des traces d'un compte, attente sur compte à réauthentifier
 - `PRAGMA secure_delete=ON` à l'ouverture ; `Database::erase_traces()` = `optimize` de l'index FTS5 puis `wal_checkpoint(TRUNCATE)` (checkpoint bloqué par un lecteur : `warn`, journal non tronqué), appelé par `erase_account` et `discard_mirror_of`. Pas de `VACUUM` (réécriture complète, double espace disque) : les traces d'une base créée avant ce correctif ne sont pas purgées rétroactivement.
 - `--wait` : si une action à jouer appartient à un compte `AuthRequired`, sortie immédiate `authentication.rejected` (code 15, action suggérée `reauthenticate`), l'action reste en file. Testé pour `action apply` et `mailbox create` (mêmes chemins pour `draft send|resolve-send`, `queue retry`). Deux assertions de S10 passent de 13 à 15 (elles figeaient l'ancien défaut).
+
+## AG-34 — J10 partiel (rapport à la pause)
+- `maintenance::discard_mirror_and_cache` est la porte d'entrée pour abandonner un miroir : fichiers de cache d'abord (chemin sous `attachments_cache`, sans `..`), base ensuite ; un plantage laisse au pire un `cache_path` vers un fichier absent (relu depuis la source).
+- proptest invariants 7–12 : 12 propriétés (200 cas stockage, 40 serveur, `failure_persistence` désactivé, ~32 s) ; 1500/400 cas lancés une fois sans défaut ; deux régressions injectées volontairement ont été détectées.
+- Les tests du cœur ne nomment pas de fournisseur (A6) : « identifiant stable », `deliver_with_labels`.
+- **Défaut trouvé, NON corrigé** : `html::sanitize_html` est quadratique en profondeur d'imbrication (1 000 niveaux 68 ms, 10 000 niveaux 5,3 s, 100 000 niveaux > 10 min) → un mail hostile bloque la lecture. Correctif proposé : plafonner taille/profondeur avant `ammonia`.
+- Aucun décodage UTF-7 modifié dans le code (noms `&AOk-` non décodés) : lacune.
+- **Reste de J10** : fuzz léger (MIME, HTML, réponses IMAP — tests internes `#[cfg(test)]` dans `imap/parse` et `imap/protocol`), perf 100 000 messages (chiffres dans TESTS.md), revue des 33 invariants et S1–S14.

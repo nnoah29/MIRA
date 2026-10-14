@@ -5,6 +5,7 @@ use mira_assembly::api::AccountRequest;
 use mira_assembly::mira_vocabulary::{IdempotencyKey, MiraError};
 
 use super::input_args::AccountInputArgs;
+use super::sync_wait::SyncWaitArgs;
 use crate::argument_context::ArgumentContext;
 
 /// Options de `mira account add`.
@@ -15,6 +16,8 @@ pub struct AddArgs {
     /// Clé d'idempotence (générée si absente) ; la rejouer ne crée qu'un compte.
     #[arg(long)]
     pub key: Option<String>,
+    #[command(flatten)]
+    pub sync: SyncWaitArgs,
 }
 
 /// Construit la requête d'ajout de compte.

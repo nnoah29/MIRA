@@ -24,7 +24,7 @@ pub struct Bench {
 }
 
 /// Serveurs en clair sur la boucle locale (le SMTP n'est pas utilisé).
-fn local_servers(imap_port: u16) -> ServerSettings {
+pub fn local_servers(imap_port: u16) -> ServerSettings {
     let endpoint = |port: u16| ServerEndpoint {
         host: "127.0.0.1".to_string(),
         port,

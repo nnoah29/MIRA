@@ -52,7 +52,7 @@ async fn scenario_s10_revoked_token_keeps_actions_queued_via_cli() {
     world.oauth.expire_access_tokens(OAUTH_USER);
     let action = world.apply_pending("mark-read", &alpha).await;
     let waited = wait_three_seconds(&world, &beta).await;
-    assert_eq!(waited.code, 13, "{}", waited.stderr);
+    assert_eq!(waited.code, 15, "{}", waited.stderr);
     let listed = world.run_ok(&["account", "list"]).await;
     assert_eq!(listed["data"][0]["state"]["type"], "auth_required");
     let actions = world.queued_actions(&account).await;
@@ -109,7 +109,7 @@ async fn scenario_s10_new_password_resumes_the_queue_via_cli() {
     let beta = world.message_id_of(&inbox, "Beta").await;
     world.credentials.add_password(user, "nouveau-mdp-4455");
     let action = world.apply_pending("mark-read", &alpha).await;
-    assert_eq!(wait_three_seconds(&world, &beta).await.code, 13);
+    assert_eq!(wait_three_seconds(&world, &beta).await.code, 15);
     let listed = world.run_ok(&["account", "list"]).await;
     assert_eq!(listed["data"][0]["state"]["type"], "auth_required");
     let store = ["auth", "app-password", &account, "--password-stdin"];

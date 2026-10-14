@@ -2,6 +2,7 @@
 //! Une opération longue est toujours attendue ; une action de la file l'est avec `--wait`.
 
 pub mod actions;
+pub mod authentication;
 pub mod failure;
 pub mod operations;
 pub mod policy;

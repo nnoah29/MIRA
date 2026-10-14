@@ -107,3 +107,9 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - `cancel` possible tant que l'action est `Pending` ; `submit(Send)` refusé (passer par `schedule_send`) ; archive/corbeille/spam sans boîte de rôle → `server.mailbox_missing` dès la soumission ; `RemoveFromMailbox` sur compte à dossiers = archiver.
 - Nouveaux codes : `incompatible_state.draft_not_editable`, `incompatible_state.action_not_retryable`.
 - Garde-fou A6 : `ymail` détecté seulement hors d'un identifiant (faux positif `EmptyMailbox`) ; auto-test étendu.
+
+## AG-17 — Reprise sans les worktrees locaux
+- **Contexte** : la session reprend dans un conteneur dont le clone ne contient pas les branches `feat/E-01-j5b-sync`, `feat/E-01-j9a-cli`, `feat/E-01-j7c-replay-send` (jamais poussées).
+- **Choix** : réimplémenter J5b, J7c, J9a depuis les specs (`docs/specs/`) sur la branche de travail, par sous-agents en worktree.
+- **Raison** : seule option disponible ; les specs sont complètes.
+- **Retour arrière** : si les worktrees d'origine réapparaissent, comparer et fusionner l'avance.

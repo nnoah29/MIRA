@@ -11,25 +11,24 @@ use support_api::fixture;
 use support_api::oauth::{OAUTH_USER, add_oauth_account, authorize, reauthenticate, start_oauth};
 use support_api::oauth_requests::{add_oauth_request, complete_request};
 
-/// Un `state` falsifié dans la redirection est refusé et le flux est clos
+/// Un `state` falsifié reçoit 400 ; le flux n'est pas clos et la vraie redirection l'achève
 #[tokio::test]
-async fn forged_state_in_redirect_is_refused() {
+async fn regression_forged_state_does_not_kill_the_flow() {
     let f = fixture::start().await;
     let started = start_oauth(&f.engine, OAUTH_USER).await;
     let redirect = browser::query_value(&started.authorize_url, "redirect_uri").unwrap();
-    let forged = browser::get(&redirect, "/callback?state=falsifie&code=x");
-    let (_, outcome) = tokio::join!(forged, f.engine.execute(complete_request(&started.flow)));
-    assert_eq!(
-        outcome.unwrap_err().code,
-        "authentication.oauth_state_mismatch"
+    let browser_side = async {
+        let forged = browser::get(&redirect, "/callback?state=falsifie&code=x").await;
+        let approved = f.oauth.approve(&started.authorize_url, OAUTH_USER).await;
+        (forged, approved)
+    };
+    let (outcome, (forged, approved)) = tokio::join!(
+        f.engine.execute(complete_request(&started.flow)),
+        browser_side
     );
-    let again = f
-        .engine
-        .execute(complete_request(&started.flow))
-        .await
-        .unwrap_err();
-    assert_eq!(again.code, "invalid_input.parameter");
-    assert_eq!(f.secrets.entry_count(), 0);
+    approved.unwrap();
+    assert!(forged.starts_with("HTTP/1.1 400"), "{forged}");
+    assert_eq!(outcome.unwrap(), Response::Done);
 }
 
 /// Un refus de l'utilisateur donne `oauth_cancelled` et ne range aucun jeton

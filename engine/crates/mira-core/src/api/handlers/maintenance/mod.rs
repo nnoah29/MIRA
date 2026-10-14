@@ -21,7 +21,7 @@ pub(crate) async fn route(
         MaintenanceRequest::GetStorageStats => stats::handle_get_storage_stats(engine),
         MaintenanceRequest::PurgeAttachmentCache => purge_cache::handle_purge_cache(engine),
         MaintenanceRequest::RebuildSearchIndex => rebuild_index::handle_rebuild_index(engine),
-        MaintenanceRequest::CheckIntegrity => integrity::handle_check_integrity(engine),
+        MaintenanceRequest::CheckIntegrity => integrity::handle_check_integrity(engine).await,
         MaintenanceRequest::ExportDiagnostic { destination } => {
             diagnostic::handle_export_diagnostic(engine, &destination)
         }

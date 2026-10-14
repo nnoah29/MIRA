@@ -6,4 +6,6 @@ pub mod secrets;
 
 pub use clock::{Clock, ManualClock, SystemClock};
 pub use ids::{IdGenerator, SequentialIds, UuidV7Ids};
-pub use secrets::{KeyringSecretStore, MemorySecretStore, SecretStore, SecretValue};
+pub use secrets::{
+    KeyringSecretStore, MemorySecretStore, SecretStore, SecretValue, run_blocking_call,
+};

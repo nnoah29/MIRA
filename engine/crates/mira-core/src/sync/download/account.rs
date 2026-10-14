@@ -1,0 +1,63 @@
+//! Descente d'un compte (D-20) : boîtes, en-têtes de chaque boîte (réception d'abord), corps préchargés.
+
+use mira_vocabulary::{ErrorCategory, EventKind, LogLevel, Mailbox, MailboxRole, MiraError};
+
+use super::mailbox_list::sync_mailbox_list;
+use super::order::sync_order;
+use super::orphans::delete_orphans;
+use super::prefetch::prefetch_bodies;
+use crate::sync::session::SyncSession;
+use crate::sync::strategy::sync_mailbox;
+
+/// Synchronise une boîte puis, pour la réception, précharge les corps ; un refus du serveur n'arrête pas les autres boîtes.
+async fn sync_one(session: &mut SyncSession, mailbox: &Mailbox) -> Result<(), MiraError> {
+    match sync_mailbox(session, mailbox).await {
+        Err(error) if error.category == ErrorCategory::Server => {
+            let text = format!("boîte {} ignorée : {}", mailbox.name, error.code);
+            session.ctx.diagnose(LogLevel::Warn, "sync.mailbox", &text);
+            return Ok(());
+        }
+        other => other?,
+    }
+    match mailbox.role {
+        MailboxRole::Inbox => prefetch_bodies(session, mailbox).await,
+        _ => Ok(()),
+    }
+}
+
+/// Les étapes de la descente, sans les événements de début et de fin.
+async fn run_steps(session: &mut SyncSession) -> Result<(), MiraError> {
+    let mailboxes = sync_order(sync_mailbox_list(session).await?);
+    for mailbox in &mailboxes {
+        sync_one(session, mailbox).await?;
+    }
+    delete_orphans(&session.ctx)
+}
+
+/// Encadre une passe par `SyncStarted` puis `SyncFinished` ou `SyncFailed`.
+pub async fn run_pass(
+    session: &mut SyncSession,
+    work: impl AsyncFnOnce(&mut SyncSession) -> Result<(), MiraError>,
+) -> Result<(), MiraError> {
+    session.begin_pass();
+    let (account, operation) = (session.ctx.account.id.clone(), session.operation.clone());
+    session.ctx.emit(EventKind::SyncStarted {
+        account: account.clone(),
+        operation: operation.clone(),
+    });
+    let outcome = work(session).await;
+    session.ctx.emit(match &outcome {
+        Ok(()) => EventKind::SyncFinished { account, operation },
+        Err(error) => EventKind::SyncFailed {
+            account,
+            operation,
+            code: error.code.clone(),
+        },
+    });
+    outcome
+}
+
+/// Synchronise tout le compte : liste des boîtes, chaque boîte, ménage des orphelins.
+pub async fn sync_account(session: &mut SyncSession) -> Result<(), MiraError> {
+    run_pass(session, async |pass| run_steps(pass).await).await
+}

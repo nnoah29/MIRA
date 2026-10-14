@@ -3,8 +3,8 @@
 use mira_assembly::mira_vocabulary::{AddressEntry, Attachment, MessageSummary};
 use ratatui::text::Line;
 
+use super::fit::{clip, fit};
 use crate::state::AppState;
-use crate::theme;
 use crate::view::message_list::short_date::short_date;
 use crate::view::safe_text::display_safe;
 
@@ -23,45 +23,45 @@ fn addresses(entries: &[AddressEntry]) -> String {
 }
 
 /// Ligne `Libellé : valeur` ; rien si la valeur est vide.
-fn field(label: &str, value: String) -> Option<Line<'static>> {
-    (!value.is_empty()).then(|| Line::from(format!("{label} : {value}")))
+fn field(label: &str, value: String) -> Option<String> {
+    (!value.is_empty()).then(|| format!("{label} : {value}"))
 }
 
-/// Une ligne par pièce jointe avec son nom neutralisé et sa taille.
-fn attachment_lines(files: &[Attachment]) -> Vec<Line<'static>> {
-    let mut lines = Vec::new();
+/// Une ligne par pièce jointe, précédée de son titre, avec le nom neutralisé et la taille.
+fn attachment_lines(files: &[Attachment]) -> Vec<String> {
+    if files.is_empty() {
+        return Vec::new();
+    }
+    let mut lines = vec!["Pièces jointes :".to_string()];
     for file in files {
         let name = file
             .filename
             .as_deref()
             .map_or_else(|| "(sans nom)".into(), display_safe);
-        lines.push(Line::from(format!("  {name} ({} o)", file.size)));
+        lines.push(format!("  {name} ({} o)", file.size));
     }
     lines
 }
 
 /// Fil de conversation : une ligne par message, dans l'ordre reçu (du plus ancien au plus récent).
-fn thread_lines(thread: &[MessageSummary]) -> Vec<Line<'static>> {
-    let mut lines = vec![Line::styled(
-        format!("Fil ({} messages) :", thread.len()),
-        theme::dim(),
-    )];
+fn thread_lines(thread: &[MessageSummary]) -> Vec<String> {
+    if thread.len() < 2 {
+        return Vec::new();
+    }
+    let mut lines = vec![format!("Fil ({} messages) :", thread.len())];
     for message in thread {
         let date = message.date.or(message.internal_date).map(short_date);
         let sender = addresses(&message.from);
         let subject = display_safe(&message.subject);
-        lines.push(Line::from(format!(
-            "  {} {sender} {subject}",
-            date.unwrap_or_default()
-        )));
+        lines.push(format!("  {} {sender} {subject}", date.unwrap_or_default()));
     }
     lines
 }
 
-/// Toutes les lignes de l'en-tête du lecteur, séparateur compris.
-pub fn header_lines(message: &MessageSummary, state: &AppState) -> Vec<Line<'static>> {
+/// Champs d'en-tête non vides du message.
+fn essential_lines(message: &MessageSummary) -> Vec<String> {
     let date = message.date.or(message.internal_date).map(short_date);
-    let mut lines: Vec<Line<'static>> = [
+    [
         field("De", addresses(&message.from)),
         field("À", addresses(&message.to)),
         field("Cc", addresses(&message.cc)),
@@ -70,14 +70,32 @@ pub fn header_lines(message: &MessageSummary, state: &AppState) -> Vec<Line<'sta
     ]
     .into_iter()
     .flatten()
-    .collect();
-    if !state.reader.attachments.is_empty() {
-        lines.push(Line::styled("Pièces jointes :", theme::dim()));
-        lines.extend(attachment_lines(&state.reader.attachments));
-    }
-    if state.reader.thread.len() > 1 {
-        lines.extend(thread_lines(&state.reader.thread));
-    }
-    lines.push(Line::styled("─".repeat(20), theme::dim()));
+    .collect()
+}
+
+/// Lignes de l'en-tête tenant dans `budget` lignes de `width` colonnes ; fil et pièces jointes cèdent d'abord.
+pub fn header_lines(
+    message: &MessageSummary,
+    state: &AppState,
+    width: usize,
+    budget: usize,
+) -> Vec<Line<'static>> {
+    let mut lines = essential_lines(message);
+    let attachments = attachment_lines(&state.reader.attachments);
+    let thread = thread_lines(&state.reader.thread);
+    let room = budget.saturating_sub(lines.len() + 1);
+    let for_files = if thread.is_empty() {
+        room
+    } else {
+        room - room / 2
+    };
+    let files = fit(attachments, for_files);
+    lines.extend(files.iter().cloned());
+    lines.extend(fit(thread, room - files.len()));
+    lines.push("─".repeat(width));
+    lines.truncate(budget);
     lines
+        .iter()
+        .map(|line| Line::from(clip(line, width)))
+        .collect()
 }

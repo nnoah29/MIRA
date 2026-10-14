@@ -1,11 +1,17 @@
 //! Réponses du contrat : une variante par forme de données rendue.
 
 use mira_vocabulary::{
-    Account, ContractVersion, Event, Identity, ProfileId, ProviderDescriptor, ServerSettings,
+    Account, Attachment, ContractVersion, Event, Identity, Mailbox, MessageSummary, Page,
+    ProfileId, ProviderDescriptor, ServerSettings, Thread,
 };
 use serde::{Deserialize, Serialize};
 
+use super::read_responses::{ExportReport, IntegrityReport, RawSourceView, ThreadView};
+use crate::fetching::ServerSearchResult;
+use crate::html::SafeHtml;
 use crate::operations::OperationInfo;
+use crate::reading::BodyView;
+use crate::storage::repositories::maintenance::StorageStats;
 
 /// Version du contrat et capacités du moteur (12.4, Moteur).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -57,6 +63,19 @@ pub enum Response {
     Account(Account),
     Identities(Vec<Identity>),
     Identity(Identity),
+    Mailboxes(Vec<Mailbox>),
+    Messages(Page<MessageSummary>),
+    Message(MessageSummary),
+    MessageBody(BodyView),
+    RawSource(RawSourceView),
+    Attachments(Vec<Attachment>),
+    SafeHtml(SafeHtml),
+    Threads(Page<Thread>),
+    Thread(ThreadView),
+    ServerSearch(ServerSearchResult),
+    StorageStats(StorageStats),
+    Integrity(IntegrityReport),
+    Exported(ExportReport),
     #[serde(rename = "oauth_started")]
     OAuthStarted(OAuthStart),
     Operation(OperationInfo),

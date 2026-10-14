@@ -13,6 +13,7 @@ mod report;
 mod run;
 mod settle;
 
+pub use classify::send_outcome_is_unknown;
 pub use context::{BoxFuture, ReplayContext, ReplayCredentials};
 pub(crate) use execute::{effective, purge_selected};
 pub use recover::{RecoveryReport, recover_interrupted_actions};

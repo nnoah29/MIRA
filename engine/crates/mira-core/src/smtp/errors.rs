@@ -20,17 +20,14 @@ pub(super) fn map_error(error: &SmtpError, xoauth: bool) -> MiraError {
     map_io_failure(error)
 }
 
-/// Erreur d'entrée-sortie : délai, hôte injoignable ou connexion coupée (issue incertaine)
+/// Erreur d'entrée-sortie : distingue l'échec de connexion TCP de toute panne survenue dans la session
 fn map_io_failure(error: &SmtpError) -> MiraError {
-    if error.is_timeout() {
-        return fail(
-            ErrorCategory::Network,
-            network::TIMEOUT,
-            "délai SMTP dépassé",
-            false,
-        );
-    }
-    if error.to_string().starts_with("Connection error") {
+    transport_failure(error.to_string().starts_with("Connection error"))
+}
+
+/// Panne de transport : hôte injoignable (rien n'est parti) ou session perdue, délai compris (issue incertaine)
+pub(super) fn transport_failure(before_session: bool) -> MiraError {
+    if before_session {
         let message = "serveur SMTP injoignable";
         return fail(ErrorCategory::Network, network::UNREACHABLE, message, true);
     }

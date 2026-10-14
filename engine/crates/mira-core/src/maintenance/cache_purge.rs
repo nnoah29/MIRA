@@ -3,6 +3,7 @@
 use std::fs;
 use std::path::Path;
 
+use super::account_cache::is_inside_cache;
 use crate::storage::Database;
 use mira_vocabulary::MiraError;
 
@@ -15,7 +16,7 @@ pub fn purge_attachment_cache(
     let mut removed = 0;
     for path in paths {
         let file = Path::new(&path);
-        if file.starts_with(cache_directory) && fs::remove_file(file).is_ok() {
+        if is_inside_cache(file, cache_directory) && fs::remove_file(file).is_ok() {
             removed += 1;
         }
     }

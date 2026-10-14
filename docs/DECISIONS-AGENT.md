@@ -201,3 +201,17 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - Rétention des événements : 30 jours ou 100 000 lignes, à l'ouverture et après chaque passe ; opérations : 256 terminées conservées.
 - S14 : suppression des fichiers de cache de pièces jointes, attente de la passe de rejeu (30 s, verrou par compte `replayer/gates.rs`) ; `extend_window` refuse si l'UIDVALIDITY a changé (`incompatible_state.mailbox_changed`) ; la synchro respecte `NetworkPolicy`.
 - Non traité : `extend_window` s'exécute encore en parallèle de la tâche du compte ; attente du rejeu sans test déterministe ; repli VANISHED sans test d'intégration.
+
+## AG-29 — Corrections du lot C (HTML, auth, divers)
+- Contenu distant : liste blanche (`cid:` et `data:image/*` hors SVG dans les attributs auto-chargés), URL normalisée avant test, `UrlRelative::Deny` (les URL relatives retirées ne sont pas comptées dans `blocked_resources`), `data:` interdit dans `href`.
+- Trousseau : `block_in_place` sur exécuteur multi-fils, appel direct en mono-fil ; `GetSafeHtml` et `CheckIntegrity` hors verrou (`spawn_blocking`).
+- Rafraîchissement de jeton sérialisé par compte (table statique `OnceLock` `profil/compte`) ; un seul `is_loopback_host` (127.0.0.0/8, `::1`, localhost) ; OAuth : `state` faux → 400 et l'écouteur continue, une tâche par connexion (10 s), TTL 300 s, comparaison en temps constant ; réponse de jetons ≤ 1 Mo.
+- Noms de pièces jointes assainis (`mime/attachment_name.rs`), types MIME validés ; export : `create_new` + suffixe aléatoire (pas de `O_NOFOLLOW`, qui exigerait `libc`) ; `AttachFile` : ouverture unique, `take(MAX+1)` ; `read_secret` du CLI strict.
+- `UpdateAccount` avec d'autres serveurs : test de connexion avec le secret rangé avant écriture (pas de nouvelle saisie : un serveur hostile verrait le secret — défense complète = changement de contrat).
+- Dépendances retirées : `thiserror` (mira-core), feature `json` de reqwest, `async-imap`, `futures`, `anyhow` du workspace.
+- **Non traité** : revue #28 (`X-GM-EXT-1`, `\Inbox` en dur → particularités du provider), audit #17 (`zeroize`), mutex std de la base sur threads tokio hors trousseau/GetSafeHtml/CheckIntegrity.
+
+## AG-30 — Lot D : un envoi dont l'issue est inconnue n'est jamais renvoyé
+- Pour une action `Send`, toute erreur réseau autre que `network.unreachable` est « issue inconnue » → `settle_interrupted_send` (Message-ID cherché dans Envoyés : `Succeeded` ou `Uncertain`). `network.timeout` n'est plus produit par le client SMTP : échec de connexion TCP (délai compris) = `network.unreachable` (passager) ; panne dans la session = `network.connection_lost`. **Corrige AG-27** sur ce point.
+- Toute future erreur réseau passagère d'un envoi doit être normalisée en `network.unreachable` avant `settle_failure` (fait pour le rafraîchissement de jeton).
+- La copie serveur du brouillon est aussi purgée quand l'envoi est retrouvé dans Envoyés à la reprise (échec seulement journalisé).

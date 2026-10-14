@@ -1,9 +1,10 @@
 //! Réponses du moteur aux actions de l'utilisateur et à leur annulation.
 
 use mira_assembly::api::{Response, WriteResponse};
-use mira_assembly::mira_vocabulary::{IdempotencyKey, MiraError};
+use mira_assembly::mira_vocabulary::{ActionId, IdempotencyKey, MiraError};
 
 use super::accounts_reply::{report, unexpected};
+use super::message_load::load_view;
 use crate::commands::Command;
 use crate::state::AppState;
 
@@ -20,23 +21,40 @@ pub fn on_user_action(
         }
         Ok(Response::Write(WriteResponse::Action(_))) => {}
         Ok(_) => return unexpected(state),
-        Err(error) => {
-            if current {
-                state.actions.forget_awaited();
-            }
-            return report(state, error);
-        }
+        Err(error) => return fail_action(state, current, error),
     }
     Vec::new()
 }
 
-/// Confirme l'annulation dans la barre d'état, ou montre l'erreur.
-pub fn on_undo(state: &mut AppState, result: Result<Response, MiraError>) -> Vec<Command> {
+/// Montre l'erreur ; si c'est la dernière action, recharge la vue pour défaire le changement optimiste.
+fn fail_action(state: &mut AppState, current: bool, error: MiraError) -> Vec<Command> {
+    let mut commands = report(state, error);
+    if !current {
+        return commands;
+    }
+    state.actions.forget_awaited();
+    if let Some(view) = state.messages.view().cloned() {
+        commands.extend(load_view(state, view));
+    }
+    commands
+}
+
+/// Confirme l'annulation ; à l'échec, rend l'action pour pouvoir réessayer.
+pub fn on_undo(
+    state: &mut AppState,
+    action: ActionId,
+    result: Result<Response, MiraError>,
+) -> Vec<Command> {
     match result {
         Ok(_) => {
             state.status.message = Some("Action annulée".to_string());
             Vec::new()
         }
-        Err(error) => report(state, error),
+        Err(error) => {
+            if !state.actions.in_flight() && state.actions.last_action.is_none() {
+                state.actions.last_action = Some(action);
+            }
+            report(state, error)
+        }
     }
 }

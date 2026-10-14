@@ -47,6 +47,6 @@ fn late_action_reply_does_not_replace_last_action() {
 #[test]
 fn undo_reply_is_reported_in_status() {
     let mut state = state_with_mailboxes();
-    update(&mut state, undo_reply(Ok(())));
+    update(&mut state, undo_reply("act-1", Ok(())));
     assert!(state.status.message.is_some());
 }

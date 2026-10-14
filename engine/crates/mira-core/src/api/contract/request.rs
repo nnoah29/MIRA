@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use super::account_requests::AccountRequest;
 use super::auth_requests::AuthRequest;
 use super::identity_requests::IdentityRequest;
+use super::write::{ActionRequest, ComposeRequest, QueueRequest};
 
 /// Toute requête qu'un client peut adresser au moteur.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -18,6 +19,9 @@ pub enum Request {
     Auth(AuthRequest),
     Operation(OperationRequest),
     Event(EventRequest),
+    Action(ActionRequest),
+    Compose(ComposeRequest),
+    Queue(QueueRequest),
 }
 
 /// Requêtes sur le moteur lui-même.

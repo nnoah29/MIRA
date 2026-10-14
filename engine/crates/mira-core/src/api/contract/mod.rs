@@ -7,6 +7,7 @@ mod identity_requests;
 mod request;
 mod response;
 mod secret_input;
+mod write;
 
 pub use account_requests::{AccountChanges, AccountDraft, AccountRequest};
 pub use auth_requests::AuthRequest;
@@ -17,3 +18,7 @@ pub use response::{
     AccountPreparation, AccountStatus, ContractInfo, EngineStatus, OAuthStart, Response,
 };
 pub use secret_input::SecretInput;
+pub use write::{
+    ActionRequest, ComposeRequest, DraftChanges, DraftMode, OutboxEntry, QueueRequest,
+    TargetSelection, WriteResponse,
+};

@@ -3,6 +3,7 @@
 pub mod examples;
 pub mod names_accounts;
 pub mod names_simple;
+pub mod names_write;
 
 use std::io::Cursor;
 
@@ -15,6 +16,7 @@ use mira_cli::commands::request_builder::build_request;
 
 use names_accounts::{account_name, auth_name, identity_name};
 use names_simple::{engine_name, event_name, operation_name, provider_name};
+use names_write::{action_name, compose_name, queue_name};
 
 /// Nom `domaine.opération` d'une requête, par `match` exhaustif sur tous les domaines.
 pub fn variant_name(request: &Request) -> &'static str {
@@ -26,6 +28,9 @@ pub fn variant_name(request: &Request) -> &'static str {
         Request::Auth(inner) => auth_name(inner),
         Request::Operation(inner) => operation_name(inner),
         Request::Event(inner) => event_name(inner),
+        Request::Action(inner) => action_name(inner),
+        Request::Compose(inner) => compose_name(inner),
+        Request::Queue(inner) => queue_name(inner),
     }
 }
 

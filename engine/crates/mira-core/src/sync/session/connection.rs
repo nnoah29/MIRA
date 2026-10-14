@@ -6,6 +6,7 @@ use mira_vocabulary::{ErrorCategory, MiraError, ServerEndpoint};
 use tokio::sync::OwnedSemaphorePermit;
 
 use super::credentials::CredentialProvider;
+use crate::accounts::resolve_servers;
 use crate::capabilities::{EffectiveCapabilities, ServerCapability, parse_capabilities};
 use crate::imap::ImapClient;
 use crate::sync::context::SyncContext;
@@ -18,12 +19,12 @@ pub struct Connection {
     _permit: OwnedSemaphorePermit,
 }
 
-/// Serveur IMAP du compte : réglages saisis, sinon ceux du provider.
+/// Serveur IMAP du compte : politique réseau, puis réglages saisis, puis ceux du provider.
 fn imap_endpoint(ctx: &SyncContext) -> ServerEndpoint {
-    let settings = ctx.account.servers.clone();
-    settings
-        .unwrap_or_else(|| ctx.provider.servers_for(&ctx.account.address))
-        .imap
+    let requested = ctx.account.servers.clone();
+    let provider = ctx.provider.as_ref();
+    let servers = resolve_servers(&ctx.network, provider, &ctx.account.address, requested);
+    servers.connect.imap
 }
 
 /// Se connecte ; un refus d'authentification déclenche un rafraîchissement puis un seul nouvel essai.

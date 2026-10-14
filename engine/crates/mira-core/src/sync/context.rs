@@ -4,13 +4,14 @@ use std::sync::Arc;
 
 use mira_vocabulary::{Account, AccountId, EventKind, LogLevel, Provider, Timestamp};
 
+use crate::accounts::NetworkPolicy;
 use crate::events::EventSink;
 use crate::ports::{Clock, IdGenerator};
 use crate::storage::Database;
 
 const MILLIS_PER_DAY: i64 = 86_400_000;
 
-/// Dépendances d'une synchronisation : base, provider, compte, horloge, identifiants, événements.
+/// Dépendances d'une synchronisation : base, provider, compte, horloge, identifiants, événements, politique réseau.
 #[derive(Debug, Clone)]
 pub struct SyncContext {
     pub db: Arc<Database>,
@@ -19,6 +20,7 @@ pub struct SyncContext {
     pub clock: Arc<dyn Clock>,
     pub ids: Arc<dyn IdGenerator>,
     pub events: Arc<dyn EventSink>,
+    pub network: NetworkPolicy,
 }
 
 impl SyncContext {

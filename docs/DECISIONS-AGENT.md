@@ -240,3 +240,9 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - **Défaut trouvé, NON corrigé** : `html::sanitize_html` est quadratique en profondeur d'imbrication (1 000 niveaux 68 ms, 10 000 niveaux 5,3 s, 100 000 niveaux > 10 min) → un mail hostile bloque la lecture. Correctif proposé : plafonner taille/profondeur avant `ammonia`.
 - Aucun décodage UTF-7 modifié dans le code (noms `&AOk-` non décodés) : lacune.
 - **Reste de J10** : fuzz léger (MIME, HTML, réponses IMAP — tests internes `#[cfg(test)]` dans `imap/parse` et `imap/protocol`), perf 100 000 messages (chiffres dans TESTS.md), revue des 33 invariants et S1–S14.
+
+## AG-35 — Identifiants OAuth lus dans un fichier de configuration TOML
+- **Contexte** : `production_config` construisait un `OAuthClientConfig` vide, donc `account add-oauth` était inutilisable en production. Choix de l'utilisateur : un fichier de configuration (pas de variables d'environnement).
+- **Choix** : `mira-assembly` lit `$MIRA_CONFIG`, sinon `$XDG_CONFIG_HOME/mira/config.toml` (absolu), sinon `~/.config/mira/config.toml`. Format `[oauth.<provider>] client_id = "…"` ; champ inconnu dans une entrée et `client_id` vide refusés. Fichier absent = configuration vide ; fichier illisible = `tracing::warn!` puis configuration vide (`production_config` reste infaillible). `production_config_with_oauth` permet d'imposer la configuration (tests hermétiques). Dépendances ajoutées : `toml` (features `parse`, `serde`), `tracing` et `serde` dans `mira-assembly`.
+- **Raison** : l'identifiant dépend de l'installation, pas du provider (providers purs, P10) ; seul l'assemblage lit l'environnement. Les noms de providers du fichier ne sont pas validés contre le registre (une faute de frappe donne le code 10).
+- **Retour arrière** : retirer les trois modules `oauth_file_*` et rétablir `OAuthClientConfig::default()` dans `production_config`.

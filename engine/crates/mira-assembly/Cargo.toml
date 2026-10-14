@@ -17,3 +17,9 @@ mira-provider-gmail.workspace = true
 mira-provider-outlook.workspace = true
 mira-provider-yahoo.workspace = true
 mira-provider-generic.workspace = true
+serde.workspace = true
+toml.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

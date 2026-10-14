@@ -50,7 +50,7 @@ fn shortened_list_clamps_selection() {
 /// Une liste vide puis remplie sélectionne le premier élément.
 #[test]
 fn filled_list_selects_first() {
-    let mut state = AppState::new(80, 24);
+    let mut state = AppState::new(80, 24, 1);
     state.mailboxes.replace_items(vec![
         mailbox("a", "one", MailboxRole::Other, 0),
         mailbox("a", "two", MailboxRole::Other, 0),

@@ -12,7 +12,7 @@ use navigation_fixtures::{press, state_with_messages};
 /// Tab et Maj+Tab font tourner le focus dans les deux sens.
 #[test]
 fn tab_cycles_panes_forward_and_back() {
-    let mut state = AppState::new(80, 24);
+    let mut state = AppState::new(80, 24, 1);
     assert_eq!(state.focus, Pane::Sidebar);
     press(&mut state, Intent::NextPane);
     assert_eq!(state.focus, Pane::List);
@@ -51,7 +51,7 @@ fn move_up_stops_at_first_item() {
 /// Quitter lève l'indicateur de sortie et demande la commande Quit.
 #[test]
 fn quit_intent_sets_should_quit_and_returns_quit_command() {
-    let mut state = AppState::new(80, 24);
+    let mut state = AppState::new(80, 24, 1);
     let commands = press(&mut state, Intent::Quit);
     assert!(state.should_quit);
     assert_eq!(commands, vec![Command::Quit]);
@@ -60,7 +60,7 @@ fn quit_intent_sets_should_quit_and_returns_quit_command() {
 /// Le redimensionnement met à jour la taille sans effet de bord.
 #[test]
 fn resize_updates_screen_size() {
-    let mut state = AppState::new(80, 24);
+    let mut state = AppState::new(80, 24, 1);
     let commands = update(&mut state, Msg::Resize(120, 40));
     assert_eq!((state.width, state.height), (120, 40));
     assert!(commands.is_empty());

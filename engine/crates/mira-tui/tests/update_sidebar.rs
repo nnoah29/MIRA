@@ -13,7 +13,7 @@ use sidebar_fixtures::{account, mailbox};
 /// Les comptes reçus sont affichés et la boîte du premier compte est demandée.
 #[test]
 fn accounts_reply_triggers_mailbox_load_for_first_account() {
-    let mut state = AppState::new(80, 24);
+    let mut state = AppState::new(80, 24, 1);
     let reply = Reply {
         tag: Tag::Accounts,
         result: Ok(Response::Accounts(vec![account("a1"), account("a2")])),
@@ -34,7 +34,7 @@ fn accounts_reply_triggers_mailbox_load_for_first_account() {
 /// Aucun compte : aucune commande de suite, pas de panique.
 #[test]
 fn empty_accounts_reply_triggers_nothing() {
-    let mut state = AppState::new(80, 24);
+    let mut state = AppState::new(80, 24, 1);
     let reply = Reply {
         tag: Tag::Accounts,
         result: Ok(Response::Accounts(Vec::new())),
@@ -46,7 +46,7 @@ fn empty_accounts_reply_triggers_nothing() {
 /// Les boîtes reçues sont triées par rôle puis par nom.
 #[test]
 fn mailboxes_reply_sorts_by_role_then_name() {
-    let mut state = AppState::new(80, 24);
+    let mut state = AppState::new(80, 24, 1);
     state.accounts.replace_items(vec![account("a1")]);
     let boxes = vec![
         mailbox("a1", "Zeta", MailboxRole::Other, 0),
@@ -72,7 +72,7 @@ fn mailboxes_reply_sorts_by_role_then_name() {
 /// Les boîtes d'un autre compte que le compte sélectionné sont ignorées.
 #[test]
 fn mailboxes_of_another_account_are_ignored() {
-    let mut state = AppState::new(80, 24);
+    let mut state = AppState::new(80, 24, 1);
     state.accounts.replace_items(vec![account("a1")]);
     let boxes = vec![mailbox("a2", "INBOX", MailboxRole::Inbox, 1)];
     let reply = Reply {
@@ -86,7 +86,7 @@ fn mailboxes_of_another_account_are_ignored() {
 /// Une erreur du moteur va à la barre d'état, sans panique ni changement de liste.
 #[test]
 fn error_reply_goes_to_status_line_not_panic() {
-    let mut state = AppState::new(80, 24);
+    let mut state = AppState::new(80, 24, 1);
     state.accounts.replace_items(vec![account("a1")]);
     let error = MiraError::new(
         ErrorCategory::Network,

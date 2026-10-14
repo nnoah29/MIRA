@@ -9,7 +9,7 @@ use mira_tui::update::{Msg, Reply, update};
 /// Au démarrage, l'état demande la liste des comptes.
 #[test]
 fn boot_commands_load_accounts() {
-    let commands = AppState::new(80, 24).boot_commands();
+    let commands = AppState::new(80, 24, 1).boot_commands();
     assert_eq!(
         commands,
         vec![Command::Execute {
@@ -22,7 +22,7 @@ fn boot_commands_load_accounts() {
 /// Une réponse de forme inattendue est signalée dans la barre d'état.
 #[test]
 fn unexpected_response_goes_to_status_line() {
-    let mut state = AppState::new(80, 24);
+    let mut state = AppState::new(80, 24, 1);
     let reply = Reply {
         tag: Tag::Accounts,
         result: Ok(Response::Mailboxes(Vec::new())),

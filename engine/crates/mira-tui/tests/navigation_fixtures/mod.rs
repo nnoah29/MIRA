@@ -13,7 +13,7 @@ pub fn press(state: &mut AppState, intent: Intent) -> Vec<Command> {
 
 /// État dont la liste de messages contient `count` éléments et qui a le focus sur elle.
 pub fn state_with_messages(count: usize) -> AppState {
-    let mut state = AppState::new(80, 24);
+    let mut state = AppState::new(80, 24, 1);
     state.messages.replace_items(numbered(count));
     state.focus = Pane::List;
     state

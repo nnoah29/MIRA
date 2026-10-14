@@ -51,7 +51,7 @@ fn body_reply_is_stored_for_the_open_message() {
 fn open_marks_message_read_via_action() {
     let mut state = list_state(vec![unread_message()]);
     let commands = press(&mut state, Intent::Open);
-    let wanted = mark_read_command("m1", "tui-read-m1-1");
+    let wanted = mark_read_command("m1", "tui-1-read-m1-1");
     assert!(commands.contains(&wanted), "{commands:?}");
     assert!(state.messages.items()[0].flags.seen);
 }
@@ -77,5 +77,5 @@ fn successive_mark_read_keys_differ() {
     press(&mut state, Intent::Back);
     press(&mut state, Intent::MoveDown);
     let commands = press(&mut state, Intent::Open);
-    assert!(commands.contains(&mark_read_command("m2", "tui-read-m2-2")));
+    assert!(commands.contains(&mark_read_command("m2", "tui-1-read-m2-2")));
 }

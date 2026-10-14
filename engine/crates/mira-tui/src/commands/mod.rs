@@ -1,7 +1,9 @@
 //! Effets demandés par `update` et exécutés par la boucle d'événements.
 
 use mira_assembly::api::Request;
-use mira_assembly::mira_vocabulary::{AccountId, Cursor, MessageId, ThreadId, ViewRef};
+use mira_assembly::mira_vocabulary::{
+    AccountId, Cursor, IdempotencyKey, MessageId, ThreadId, ViewRef,
+};
 
 pub mod idempotency;
 
@@ -19,6 +21,8 @@ pub enum Tag {
     Attachments(MessageId),
     Thread(ThreadId),
     Action,
+    UserAction(IdempotencyKey),
+    Undo,
 }
 
 /// Effet de bord que la boucle doit réaliser après une transition.

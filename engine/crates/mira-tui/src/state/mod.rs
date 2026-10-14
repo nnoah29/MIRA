@@ -1,22 +1,28 @@
 //! État complet de l'application : données affichées, focus et taille d'écran.
 
 pub mod accounts;
+pub mod actions;
 pub mod boot;
 pub mod focus;
+pub mod keys;
 pub mod mailbox_order;
 pub mod mailboxes;
 pub mod messages;
+pub mod messages_edit;
 pub mod messages_load;
 pub mod messages_paging;
+pub mod move_picker;
 pub mod popup;
 pub mod reader;
 pub mod selection;
 pub mod status;
 
 pub use accounts::AccountsState;
+pub use actions::ActionsState;
 pub use focus::Pane;
 pub use mailboxes::MailboxesState;
 pub use messages::MessagesState;
+pub use move_picker::MovePicker;
 pub use popup::Popup;
 pub use reader::{ReaderContent, ReaderState};
 pub use selection::Selection;
@@ -35,13 +41,14 @@ pub struct AppState {
     pub reader: ReaderState,
     pub status: StatusState,
     pub popup: Popup,
+    pub actions: ActionsState,
     pub key_prefix: String,
     pub key_counter: u64,
 }
 
 impl AppState {
-    /// État initial pour un terminal de la taille donnée, focus sur la barre latérale.
-    pub fn new(width: u16, height: u16) -> AppState {
+    /// État initial pour un terminal de la taille donnée ; le nonce distingue les clés de cette session.
+    pub fn new(width: u16, height: u16, nonce: u64) -> AppState {
         AppState {
             width,
             height,
@@ -53,7 +60,8 @@ impl AppState {
             reader: ReaderState::default(),
             status: StatusState::default(),
             popup: Popup::Closed,
-            key_prefix: "tui".to_string(),
+            actions: ActionsState::default(),
+            key_prefix: format!("tui-{nonce}"),
             key_counter: 0,
         }
     }

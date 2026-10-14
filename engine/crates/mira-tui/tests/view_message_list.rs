@@ -11,7 +11,7 @@ use sidebar_fixtures::{account, rendered_text};
 
 /// État avec un compte et la liste de messages donnée.
 fn state_with(items: Vec<mira_assembly::mira_vocabulary::MessageSummary>) -> AppState {
-    let mut state = AppState::new(100, 30);
+    let mut state = AppState::new(100, 30, 1);
     state.accounts.replace_items(vec![account("a1")]);
     let page = Page {
         items,

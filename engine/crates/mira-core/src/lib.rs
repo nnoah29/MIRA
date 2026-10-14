@@ -19,4 +19,5 @@ pub mod reading;
 pub mod registry;
 pub mod smtp;
 pub mod storage;
+pub mod sync;
 pub mod threads;

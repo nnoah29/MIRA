@@ -39,6 +39,22 @@ impl Tx<'_> {
         require_change(changed, id)
     }
 
+    /// Indique si le message porte des pièces jointes visibles
+    pub fn set_message_has_attachments(
+        &self,
+        id: &MessageId,
+        value: bool,
+    ) -> Result<(), MiraError> {
+        let changed = self
+            .sql()
+            .execute(
+                "UPDATE messages SET has_attachments = ?2 WHERE id = ?1",
+                params![id.as_str(), value],
+            )
+            .map_err(storage_error)?;
+        require_change(changed, id)
+    }
+
     /// Rattache le message à un fil, ou le détache
     pub fn set_thread(&self, id: &MessageId, thread: Option<&ThreadId>) -> Result<(), MiraError> {
         let changed = self

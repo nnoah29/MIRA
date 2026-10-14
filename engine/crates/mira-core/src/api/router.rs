@@ -4,7 +4,10 @@ use mira_vocabulary::MiraError;
 
 use super::contract::{Request, Response};
 use super::engine::Engine;
-use super::handlers::{account, auth, engine, event, identity, operation, provider};
+use super::handlers::{
+    account, auth, engine, event, identity, mailbox, maintenance, message, operation, provider,
+    search, thread,
+};
 
 /// Dirige une requête vers le routeur de son domaine
 pub(crate) async fn route(engine_ref: &Engine, request: Request) -> Result<Response, MiraError> {
@@ -13,6 +16,11 @@ pub(crate) async fn route(engine_ref: &Engine, request: Request) -> Result<Respo
         Request::Provider(request) => provider::route(engine_ref, request).await,
         Request::Account(request) => account::route(engine_ref, request).await,
         Request::Identity(request) => identity::route(engine_ref, request).await,
+        Request::Mailbox(request) => mailbox::route(engine_ref, request).await,
+        Request::Message(request) => message::route(engine_ref, request).await,
+        Request::Thread(request) => thread::route(engine_ref, request).await,
+        Request::Search(request) => search::route(engine_ref, request).await,
+        Request::Maintenance(request) => maintenance::route(engine_ref, request).await,
         Request::Auth(request) => auth::route(engine_ref, request).await,
         Request::Operation(request) => operation::route(engine_ref, request).await,
         Request::Event(request) => event::route(engine_ref, request).await,

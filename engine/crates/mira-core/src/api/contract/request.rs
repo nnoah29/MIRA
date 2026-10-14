@@ -6,6 +6,11 @@ use serde::{Deserialize, Serialize};
 use super::account_requests::AccountRequest;
 use super::auth_requests::AuthRequest;
 use super::identity_requests::IdentityRequest;
+use super::mailbox_requests::MailboxRequest;
+use super::maintenance_requests::MaintenanceRequest;
+use super::message_requests::MessageRequest;
+use super::search_requests::SearchRequest;
+use super::thread_requests::ThreadRequest;
 
 /// Toute requête qu'un client peut adresser au moteur.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -15,6 +20,11 @@ pub enum Request {
     Provider(ProviderRequest),
     Account(AccountRequest),
     Identity(IdentityRequest),
+    Mailbox(MailboxRequest),
+    Message(MessageRequest),
+    Thread(ThreadRequest),
+    Search(SearchRequest),
+    Maintenance(MaintenanceRequest),
     Auth(AuthRequest),
     Operation(OperationRequest),
     Event(EventRequest),

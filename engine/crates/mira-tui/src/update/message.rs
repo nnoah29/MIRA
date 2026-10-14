@@ -50,7 +50,7 @@ fn on_reply(state: &mut AppState, reply: Reply) -> Vec<Command> {
         Tag::Startup => Vec::new(),
         Tag::Accounts => on_accounts(state, reply.result),
         Tag::Mailboxes(account) => on_mailboxes(state, account, reply.result),
-        Tag::Messages { view, append } => on_messages(state, view, append, reply.result),
+        Tag::Messages { view, after } => on_messages(state, view, after, reply.result),
     }
 }
 

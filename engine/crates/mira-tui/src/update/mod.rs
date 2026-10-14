@@ -5,6 +5,7 @@ pub mod accounts_reply;
 pub mod intent;
 pub mod mailboxes_reply;
 pub mod message;
+pub mod message_load;
 pub mod messages_reply;
 pub mod navigation;
 pub mod pagination;

@@ -1,7 +1,7 @@
 //! Effets demandés par `update` et exécutés par la boucle d'événements.
 
 use mira_assembly::api::Request;
-use mira_assembly::mira_vocabulary::{AccountId, ViewRef};
+use mira_assembly::mira_vocabulary::{AccountId, Cursor, ViewRef};
 
 /// Étiquette qui relie une réponse du moteur à l'intention qui l'a demandée.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -9,7 +9,10 @@ pub enum Tag {
     Startup,
     Accounts,
     Mailboxes(AccountId),
-    Messages { view: ViewRef, append: bool },
+    Messages {
+        view: ViewRef,
+        after: Option<Cursor>,
+    },
 }
 
 /// Effet de bord que la boucle doit réaliser après une transition.

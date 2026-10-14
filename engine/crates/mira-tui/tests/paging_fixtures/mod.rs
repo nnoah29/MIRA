@@ -26,18 +26,18 @@ pub fn next_page_command(cursor: &str) -> Command {
     Command::Execute {
         tag: Tag::Messages {
             view: inbox_view(),
-            append: true,
+            after: Some(Cursor(cursor.to_string())),
         },
         request: Request::Message(MessageRequest::ListMessages(query)),
     }
 }
 
 /// Réponse d'une page de messages pour la vue de réception.
-pub fn messages_reply(append: bool, page: Result<Page<MessageSummary>, MiraError>) -> Msg {
+pub fn messages_reply(after: Option<&str>, page: Result<Page<MessageSummary>, MiraError>) -> Msg {
     Msg::Reply(Reply {
         tag: Tag::Messages {
             view: inbox_view(),
-            append,
+            after: after.map(|value| Cursor(value.to_string())),
         },
         result: page.map(Response::Messages),
     })

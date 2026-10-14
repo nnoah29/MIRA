@@ -1,14 +1,21 @@
 //! Changement de panneau et sortie de l'application.
 
+use super::message_load::load_selected_mailbox;
 use crate::commands::Command;
 use crate::state::{AppState, Pane};
 
-/// Ouvre l'élément sélectionné en passant au panneau de droite.
-pub fn open(state: &mut AppState) {
-    state.focus = match state.focus {
-        Pane::Sidebar => Pane::List,
-        Pane::List | Pane::Reader => Pane::Reader,
-    };
+/// Ouvre l'élément sélectionné en passant au panneau de droite ; une boîte ouverte est chargée.
+pub fn open(state: &mut AppState) -> Vec<Command> {
+    match state.focus {
+        Pane::Sidebar => {
+            state.focus = Pane::List;
+            load_selected_mailbox(state)
+        }
+        Pane::List | Pane::Reader => {
+            state.focus = Pane::Reader;
+            Vec::new()
+        }
+    }
 }
 
 /// Revient au panneau de gauche.

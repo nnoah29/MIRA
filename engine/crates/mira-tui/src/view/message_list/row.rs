@@ -20,7 +20,7 @@ fn truncate(text: &str, max: usize) -> String {
 }
 
 /// Nom ou adresse du premier expéditeur, neutralisé.
-fn sender_text(message: &MessageSummary) -> String {
+pub fn sender_text(message: &MessageSummary) -> String {
     match message.from.first() {
         Some(entry) => match entry.name.as_deref().filter(|name| !name.trim().is_empty()) {
             Some(name) => display_safe(name),

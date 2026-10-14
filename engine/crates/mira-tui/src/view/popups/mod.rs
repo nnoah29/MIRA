@@ -3,6 +3,7 @@
 pub mod confirm;
 pub mod help;
 pub mod move_target;
+pub mod target_label;
 
 use ratatui::Frame;
 use ratatui::layout::Rect;
@@ -27,13 +28,13 @@ pub fn render_popup(frame: &mut Frame, state: &AppState) {
     match &state.popup {
         Popup::Closed => {}
         Popup::ConfirmDelete { messages } => {
-            let area = centered(frame.area(), 56, 5);
+            let area = centered(frame.area(), 64, 7);
             frame.render_widget(Clear, area);
-            confirm::render_confirm(frame, area, messages.len());
+            confirm::render_confirm(frame, area, messages);
         }
         Popup::MovePicker(picker) => {
             let rows = u16::try_from(picker.targets().len()).unwrap_or(u16::MAX);
-            let area = centered(frame.area(), 44, rows.saturating_add(2));
+            let area = centered(frame.area(), 64, rows.saturating_add(2));
             frame.render_widget(Clear, area);
             move_target::render_move_target(frame, area, picker);
         }

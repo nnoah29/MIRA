@@ -54,7 +54,8 @@ fn step_picker(state: &mut AppState, step: fn(&mut MovePicker)) -> Vec<Command> 
 fn confirm(state: &mut AppState) -> Vec<Command> {
     match std::mem::take(&mut state.popup) {
         Popup::ConfirmDelete { messages } => {
-            send_removing(state, ActionKind::DeletePermanently, messages)
+            let ids = messages.into_iter().map(|m| m.id).collect();
+            send_removing(state, ActionKind::DeletePermanently, ids)
         }
         Popup::MovePicker(picker) => confirm_move(state, &picker),
         Popup::Help | Popup::Closed => Vec::new(),

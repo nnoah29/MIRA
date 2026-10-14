@@ -7,7 +7,7 @@ use mira_vocabulary::{AccountId, AttachmentId, MailboxId, MessageId};
 
 use super::calls::{operation_of, run, wait_finished};
 use super::mail;
-use super::seed::{add_inbox, add_message};
+use super::seed::{add_inbox, add_message, add_message_with_header};
 use crate::support_api::fixture::{self, FOLDERS_USER, Fixture};
 
 /// Ce qu'un test de lecture manipule.
@@ -24,10 +24,12 @@ impl World {
         FOLDERS_USER
     }
 
-    /// Dépose le courrier sur le serveur et déclare son en-tête dans le miroir sous l'identifiant `m1`
+    /// Dépose le courrier sur le serveur et déclare son en-tête dans le miroir sous l'identifiant `m1`, avec son vrai `Message-ID`
     pub fn deliver_header_only(&self, raw: &[u8]) -> MessageId {
         let uid = self.fixture.store.deliver(self.user(), "INBOX", raw, &[]);
-        add_message(&self.mirror, &self.account, &self.mailbox, "m1", uid, 1_000)
+        let header = mail::message_id_of(raw);
+        let (db, account, mailbox) = (&self.mirror, &self.account, &self.mailbox);
+        add_message_with_header(db, account, mailbox, "m1", uid, 1_000, &header)
     }
 
     /// Lance FetchMessageBody et rend l'état final de l'opération

@@ -27,3 +27,14 @@ pub fn with_attachment(size: usize) -> Vec<u8> {
     let file = "--B\r\nContent-Type: application/octet-stream; name=\"data.bin\"\r\nContent-Disposition: attachment; filename=\"data.bin\"\r\nContent-Transfer-Encoding: base64\r\n\r\n";
     format!("{head}{text}{file}{}\r\n--B--\r\n", wrapped.join("\r\n")).into_bytes()
 }
+
+/// `Message-ID` (avec chevrons) d'un courrier brut produit par ces outils
+pub fn message_id_of(raw: &[u8]) -> String {
+    let text = String::from_utf8_lossy(raw);
+    let found = text.lines().find(|line| line.starts_with("Message-ID:"));
+    found
+        .unwrap_or_default()
+        .trim_start_matches("Message-ID:")
+        .trim()
+        .to_string()
+}

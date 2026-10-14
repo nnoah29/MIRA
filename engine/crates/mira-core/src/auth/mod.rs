@@ -16,5 +16,7 @@ pub use flow::{
     start_flow, wait_for_redirect,
 };
 pub use flow_table::{FlowEntry, FlowSummary, FlowTarget, OAuthFlows};
-pub use tokens::{TokenSet, exchange_code, refresh_tokens};
+pub use tokens::{
+    TokenSet, exchange_code, exchange_code_with_secret, refresh_tokens, refresh_tokens_with_secret,
+};
 pub use vault::{CredentialVault, LoginSecret};

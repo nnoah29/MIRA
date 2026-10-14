@@ -17,6 +17,12 @@ pub(crate) fn handle(request: &HttpRequest, context: &OAuthContext) -> HttpRespo
         return HttpResponse::error(400, "invalid_request");
     }
     let form = Form::parse(&String::from_utf8_lossy(&request.body));
+    let accepted = context
+        .shared
+        .with(|state| state.client_secret_accepted(form.get("client_secret")));
+    if !accepted {
+        return HttpResponse::error(401, "invalid_client");
+    }
     match form.get("grant_type") {
         Some("authorization_code") => authorization_code::handle(&form, context),
         Some("refresh_token") => refresh::handle(&form, context),

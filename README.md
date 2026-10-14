@@ -289,12 +289,13 @@ Exemple de sélection par requête : `mira action apply archive --mailbox <boite
 > ```toml
 > [oauth.gmail]
 > client_id = "xxxx.apps.googleusercontent.com"
+> client_secret = "xxxx"   # facultatif
 >
 > [oauth.outlook]
 > client_id = "xxxx-xxxx-xxxx"
 > ```
 >
-> Fichier absent ou provider non déclaré : `account add-oauth` s'arrête en code 10 (« identifiant d'application OAuth absent de la configuration »). Fichier illisible : avertissement sur stderr, puis même comportement. Les comptes à mot de passe ou mot de passe d'application ne sont pas concernés.
+> `client_secret` est facultatif : à renseigner si le service l'exige à l'échange des jetons (c'est en général le cas des clients « application de bureau » de Google, d'après nos connaissances, non vérifiées en ligne ; un client public Microsoft n'en a pas). Le fichier contient alors un secret : `chmod 600` dessus. Fichier absent ou provider non déclaré : `account add-oauth` s'arrête en code 10 (« identifiant d'application OAuth absent de la configuration »). Fichier illisible : avertissement sur stderr, puis même comportement. Les comptes à mot de passe ou mot de passe d'application ne sont pas concernés.
 
 ### Session d'exemple
 

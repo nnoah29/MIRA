@@ -29,13 +29,13 @@ pub(crate) async fn renew_access_token(
     let provider = resolve_account_provider(&config.registry, &found.provider)?;
     let (settings, client_id) = config.oauth.resolve(&provider.descriptor())?;
     let seen = vault.load_secret(&found.profile, account, SecretKind::AccessToken)?;
-    let refreshed = vault.refresh_access_token_if_stale(
+    let secret = config.oauth.client_secret(&provider.descriptor());
+    let refreshed = vault.refresh_access_token_if_stale_with_secret(
         &found.profile,
         account,
         &settings.token_url,
-        &client_id,
-        config.clock.as_ref(),
-        seen.as_ref(),
+        (&client_id, secret.as_ref()),
+        (config.clock.as_ref(), seen.as_ref()),
     );
     refreshed.await.map(|_| ())
 }

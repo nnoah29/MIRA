@@ -17,6 +17,7 @@ pub(crate) struct OAuthState {
     codes: HashMap<String, PendingCode>,
     refresh_tokens: HashMap<String, RefreshGrant>,
     issued_access: HashMap<String, Vec<String>>,
+    required_client_secret: Option<String>,
 }
 
 /// Poignée clonable vers l'état partagé.
@@ -43,6 +44,19 @@ impl OAuthState {
     /// Compte une requête reçue sur le point d'accès `/token`
     pub(crate) fn count_token_request(&mut self) {
         self.token_requests += 1;
+    }
+
+    /// Exige désormais ce `client_secret` sur le point d'accès `/token`
+    pub(crate) fn require_client_secret(&mut self, secret: &str) {
+        self.required_client_secret = Some(secret.to_string());
+    }
+
+    /// Indique si le secret présenté convient (toujours vrai si aucun n'est exigé)
+    pub(crate) fn client_secret_accepted(&self, given: Option<&str>) -> bool {
+        match &self.required_client_secret {
+            Some(required) => given == Some(required.as_str()),
+            None => true,
+        }
     }
 
     /// Nombre de requêtes `/token` reçues jusqu'ici

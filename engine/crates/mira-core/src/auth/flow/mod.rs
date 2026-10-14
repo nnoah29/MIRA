@@ -2,6 +2,7 @@
 
 mod authorize;
 mod callback;
+mod client_secret;
 mod complete;
 mod connection;
 mod pending;

@@ -1,11 +1,14 @@
 //! Effets demandés par `update` et exécutés par la boucle d'événements.
 
 use mira_assembly::api::Request;
+use mira_assembly::mira_vocabulary::AccountId;
 
 /// Étiquette qui relie une réponse du moteur à l'intention qui l'a demandée.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Tag {
     Startup,
+    Accounts,
+    Mailboxes(AccountId),
 }
 
 /// Effet de bord que la boucle doit réaliser après une transition.

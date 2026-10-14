@@ -1,7 +1,9 @@
 //! État complet de l'application : données affichées, focus et taille d'écran.
 
 pub mod accounts;
+pub mod boot;
 pub mod focus;
+pub mod mailbox_order;
 pub mod mailboxes;
 pub mod messages;
 pub mod popup;

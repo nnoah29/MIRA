@@ -1,23 +1,25 @@
 //! Liste des boîtes et sa sélection, toujours cohérentes entre elles.
 
+use mira_assembly::mira_vocabulary::Mailbox;
+
 use super::selection::Selection;
 
 /// Éléments affichés et sélection courante.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct MailboxesState {
-    items: Vec<String>,
+    items: Vec<Mailbox>,
     pub selection: Selection,
 }
 
 impl MailboxesState {
     /// Remplace les éléments et recadre la sélection sur la nouvelle longueur.
-    pub fn replace_items(&mut self, items: Vec<String>) {
+    pub fn replace_items(&mut self, items: Vec<Mailbox>) {
         self.items = items;
         self.selection.clamp_to(self.items.len());
     }
 
     /// Éléments affichés.
-    pub fn items(&self) -> &[String] {
+    pub fn items(&self) -> &[Mailbox] {
         &self.items
     }
 

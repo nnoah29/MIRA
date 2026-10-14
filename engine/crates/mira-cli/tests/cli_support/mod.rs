@@ -25,9 +25,12 @@ use mira_assembly::ports::{ManualClock, MemorySecretStore, SequentialIds};
 use mira_assembly::profile::ProfileEnvironment;
 use mira_cli::{CliDeps, CliIo, run};
 
+pub mod sa_events;
 pub mod sa_flows;
+pub mod sa_flows_sync;
 pub mod sa_leak;
 pub mod sa_mail;
+pub mod sa_s4_first_sync;
 pub mod sa_s6_reading;
 pub mod sa_s7_moves;
 pub mod sa_world;

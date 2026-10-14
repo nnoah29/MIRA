@@ -9,7 +9,8 @@ use super::config::EngineConfig;
 use super::contract::{Request, Response};
 use super::router::route;
 use super::startup::{
-    check_client_version, open_profile, resume_interrupted_deletions, start_background,
+    apply_event_retention, check_client_version, open_profile, resume_interrupted_deletions,
+    start_background,
 };
 use crate::auth::{CredentialVault, OAuthFlows};
 use crate::events::{EventBus, EventSink, EventSubscription};
@@ -46,6 +47,7 @@ impl Engine {
         let events = EventBus::new(Arc::clone(&database), Arc::clone(&config.clock));
         let sink: Arc<dyn EventSink> = Arc::new(events.clone());
         let operations = OperationRegistry::new(Arc::clone(&config.ids), sink);
+        apply_event_retention(&config, &database);
         events.emit(EventKind::EngineStarted)?;
         resume_interrupted_deletions(&config, &database, &events, &paths.attachments_cache);
         let budgets = ConnectionBudgets::default();

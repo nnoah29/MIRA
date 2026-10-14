@@ -55,6 +55,14 @@ pub(crate) fn resume_interrupted_deletions(
     }
 }
 
+/// Applique la rétention des événements à l'ouverture ; un échec est journalisé sans empêcher l'ouverture
+pub(crate) fn apply_event_retention(config: &EngineConfig, database: &Arc<Database>) {
+    let now = config.clock.now();
+    if let Err(error) = database.write(|tx| tx.apply_event_retention(now)) {
+        tracing::warn!(code = %error.code, "rétention des événements non appliquée");
+    }
+}
+
 /// Lance le rejeu et la synchronisation de fond, qui partagent les budgets de connexions des comptes
 pub(crate) fn start_background(
     config: &EngineConfig,

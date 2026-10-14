@@ -125,3 +125,12 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - Secrets uniquement via `--password-stdin` (1re ligne, 4 Ko). Clé d'idempotence de `account add` : `--key`, sinon `cli-<id>`.
 - OAuth en deux processus (`oauth-start` puis `oauth-complete`) impossible : table des flux en mémoire du moteur ; à traiter avec une commande combinée (J9).
 - Ajouter une variante de `Request` : module `commands/<domaine>/`, bras dans `request_builder.rs` et `render/mod.rs`, exemples du test invariant 6.
+
+## AG-20 — Rejeu, envoi, reprise (rapport J7c)
+- `Message-ID` d'envoi dans `ServerTargets.sent_message_id` (serde default, sans migration) ; un envoi relancé par l'utilisateur reçoit un nouveau `Message-ID`.
+- Le rejeu s'arrête au premier échec passager ou d'authentification (ordre, inv. 19) ; définitif ou succès : on continue.
+- Classement : `Authentication` et `secrets.secret_missing` → auth ; `Network/Tls/LocalStorage/Internal/Cancelled/Secrets` et `Server` retryable → passager ; le reste → définitif.
+- Après acceptation SMTP aucune erreur ne remonte (copie Envoyés, événements, suppression du brouillon : `tracing::warn`) : jamais de renvoi pour un échec secondaire.
+- Coupure `network.connection_lost` après DATA → vérification immédiate dans Envoyés (Uncertain ou Succeeded). Reprise : Envoyés illisible → reste `InProgress`.
+- Copie Envoyés sans Bcc ; `SaveDraft` sans destinataire = sans effet.
+- **À faire (J8)** : `Engine::open` construit un `ReplayContext` par compte, appelle `recover_interrupted_actions` puis `replay_actions` ; implémentation de production de `ReplayCredentials` au-dessus de `CredentialVault`.

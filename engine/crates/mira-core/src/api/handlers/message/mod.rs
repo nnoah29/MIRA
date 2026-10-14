@@ -34,7 +34,7 @@ pub(crate) async fn route(engine: &Engine, request: MessageRequest) -> Result<Re
         MessageRequest::GetRawSource { message } => handle_get_raw_source(engine, &message),
         MessageRequest::ListAttachments { message } => handle_list_attachments(engine, &message),
         MessageRequest::SaveAttachment(target) => handle_save_attachment(engine, target),
-        MessageRequest::GetSafeHtml { message } => handle_get_safe_html(engine, &message),
+        MessageRequest::GetSafeHtml { message } => handle_get_safe_html(engine, &message).await,
         MessageRequest::AllowRemoteContent { scope } => handle_allow_remote_content(engine, &scope),
     }
 }

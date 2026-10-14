@@ -7,7 +7,6 @@ mod cli_support;
 use cli_support::run_cli;
 use mira_assembly::mira_vocabulary::ErrorCategory;
 use mira_cli::exit_codes::exit_code_for;
-use mira_cli::{CliIo, run};
 use serde_json::Value;
 
 /// Table complète catégorie vers code de sortie
@@ -62,15 +61,8 @@ fn help_exits_zero_on_stdout() {
 /// `run` écrit sur les flux injectés, pas sur les flux du processus
 #[test]
 fn run_writes_only_to_injected_streams() {
-    let mut out = Vec::new();
-    let mut err = Vec::new();
-    let args = vec![
-        "mira".to_string(),
-        "provider".to_string(),
-        "list".to_string(),
-    ];
-    let code = run(args, &mut CliIo::new(&mut out, &mut err));
-    assert_eq!(code, 0);
-    assert!(!out.is_empty());
-    assert!(err.is_empty());
+    let result = run_cli(&["provider", "list"]);
+    assert_eq!(result.code, 0);
+    assert!(!result.stdout.is_empty());
+    assert!(result.stderr.is_empty());
 }

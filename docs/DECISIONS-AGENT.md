@@ -215,3 +215,9 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - Pour une action `Send`, toute erreur réseau autre que `network.unreachable` est « issue inconnue » → `settle_interrupted_send` (Message-ID cherché dans Envoyés : `Succeeded` ou `Uncertain`). `network.timeout` n'est plus produit par le client SMTP : échec de connexion TCP (délai compris) = `network.unreachable` (passager) ; panne dans la session = `network.connection_lost`. **Corrige AG-27** sur ce point.
 - Toute future erreur réseau passagère d'un envoi doit être normalisée en `network.unreachable` avant `settle_failure` (fait pour le rafraîchissement de jeton).
 - La copie serveur du brouillon est aussi purgée quand l'envoi est retrouvé dans Envoyés à la reprise (échec seulement journalisé).
+
+## AG-31 — Scénarios S1–S7 via le CLI : écarts constatés
+- S5 temps réel : un CLI de courte durée ne garde aucune écoute IDLE ouverte ; testé au plus près (relevé incrémental, arrivées concurrentes à `sync start`). Une commande `watch` de longue durée est un ajout possible (v1+).
+- S6 : un message au corps préchargé a sa source complète en base : `message attachments` indique `not_downloaded` mais `save-attachment` réussit hors ligne depuis la source locale (« cache local d'abord », `fetching/attachment.rs`). Comportement conservé : le but de « indisponible hors ligne » vise les messages en en-tête seul.
+- S4 : les corps de la réception sont préchargés juste après ses en-têtes, avant les en-têtes des autres boîtes ; le §10.2 ne fixe pas cet ordre (« préchargement des plus récents »), conservé.
+- Coupure réseau des tests simulée en visant un port fermé (`go_offline`/`go_online`).

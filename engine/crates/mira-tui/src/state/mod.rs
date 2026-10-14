@@ -6,6 +6,7 @@ pub mod focus;
 pub mod mailbox_order;
 pub mod mailboxes;
 pub mod messages;
+pub mod messages_paging;
 pub mod popup;
 pub mod reader;
 pub mod selection;

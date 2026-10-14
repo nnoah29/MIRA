@@ -2,6 +2,8 @@
 
 use mira_assembly::mira_vocabulary::{Mailbox, MailboxRole};
 
+use crate::view::safe_text::display_safe;
+
 /// Nom affiché d'une boîte : libellé du rôle, ou nom d'affichage pour les autres.
 pub fn label(mailbox: &Mailbox) -> String {
     match mailbox.role {
@@ -13,6 +15,6 @@ pub fn label(mailbox: &Mailbox) -> String {
         MailboxRole::Archive => "Archives".to_string(),
         MailboxRole::All => "Tous les messages".to_string(),
         MailboxRole::Flagged => "Suivis".to_string(),
-        MailboxRole::Other => mailbox.display_name.clone(),
+        MailboxRole::Other => display_safe(&mailbox.display_name),
     }
 }

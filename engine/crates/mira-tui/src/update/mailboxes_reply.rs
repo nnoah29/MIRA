@@ -3,7 +3,7 @@
 use mira_assembly::api::Response;
 use mira_assembly::mira_vocabulary::{AccountId, Mailbox, MiraError};
 
-use super::accounts_reply::unexpected;
+use super::accounts_reply::{report, unexpected};
 use crate::commands::Command;
 use crate::state::AppState;
 use crate::state::mailbox_order::sort_mailboxes;
@@ -17,10 +17,7 @@ pub fn on_mailboxes(
     match result {
         Ok(Response::Mailboxes(mailboxes)) => store_mailboxes(state, &account, mailboxes),
         Ok(_) => unexpected(state),
-        Err(error) => {
-            state.status.message = Some(error.to_string());
-            Vec::new()
-        }
+        Err(error) => report(state, error),
     }
 }
 

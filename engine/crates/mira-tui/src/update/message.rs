@@ -6,6 +6,7 @@ use mira_assembly::mira_vocabulary::{Event, MiraError};
 use super::accounts_reply::on_accounts;
 use super::intent::{Intent, on_intent};
 use super::mailboxes_reply::on_mailboxes;
+use super::messages_reply::on_messages;
 use crate::commands::{Command, Tag};
 use crate::state::AppState;
 
@@ -49,6 +50,7 @@ fn on_reply(state: &mut AppState, reply: Reply) -> Vec<Command> {
         Tag::Startup => Vec::new(),
         Tag::Accounts => on_accounts(state, reply.result),
         Tag::Mailboxes(account) => on_mailboxes(state, account, reply.result),
+        Tag::Messages { view, append } => on_messages(state, view, append, reply.result),
     }
 }
 

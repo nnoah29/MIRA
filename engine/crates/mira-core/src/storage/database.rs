@@ -31,7 +31,7 @@ impl Database {
     fn prepare(mut connection: Connection) -> Result<Self, MiraError> {
         connection
             .execute_batch(
-                "PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA synchronous=NORMAL;",
+                "PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA synchronous=NORMAL; PRAGMA secure_delete=ON;",
             )
             .map_err(storage_error)?;
         apply_migrations(&mut connection)?;
@@ -66,7 +66,7 @@ impl Database {
     }
 
     /// Prend le verrou de la connexion en ignorant un empoisonnement
-    fn lock(&self) -> MutexGuard<'_, Connection> {
+    pub(super) fn lock(&self) -> MutexGuard<'_, Connection> {
         self.connection
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())

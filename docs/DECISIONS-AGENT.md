@@ -189,3 +189,15 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - Retrait de la copie serveur du brouillon via une action `SaveDraft` de retrait (clé `remove-draft-copy-<id>`) ; la `SaveDraft` d'un brouillon supprimé purge la copie au lieu d'échouer.
 - Erreurs SMTP « client » : défaut `server.protocol` (seul « challenge » reste authentification) ; échec du service de jetons → `network.unreachable` (passager).
 - **Non traité** : purge de la copie du brouillon dans `recover_interrupted_send` ; fournisseur d'identifiants unique pour `ImapAccess` (rafraîchissement) ; audit #4 (toute erreur de transport après la connexion pour un `Send`, dont `ETIMEDOUT` après DATA, doit être incertaine) — à vérifier dans un lot D.
+
+## AG-28 — Corrections du lot B (synchro, budget, lecteur IMAP, suppression)
+- Un `ConnectionBudget` par compte, tenu par le moteur (`ConnectionBudgets`, clé = identifiant du compte ; `candidate:<adresse>` pour un test avant ajout), pris avant tout `ImapClient::connect` (rejeu, téléchargements, recherche serveur, tests de connexion, synchro, extension de plage). `ImapAccess::connect` rend un `LeasedClient` ; au plus 16 demandes explicites en attente par compte (`server.rate_limited`).
+- Téléchargement à la demande : ignore les apparitions à revalider, compare `uid_validity`, exige le même Message-ID (sinon `not_found.message`).
+- Orphelins : recoupement contre l'orphelin unique de la passe (sans jumeau vivant) ; pas de purge si une boîte a été ignorée. **Limite** : boîte de destination traitée avant la source (désarchivage vers la réception) crée encore un nouveau message — fusion en fin de passe non faite.
+- Déplacement : « déjà arrivé » = même Message-ID + même taille + date interne à ±60 s ; Message-ID en plusieurs exemplaires sans UID fiable = ambigu, rien n'est touché. **Limite** : deux copies identiques à ±60 s sont tenues pour la même (fermer en persistant « tentative commencée »).
+- Lecteur IMAP : ligne 1 Mo, littéral 64 Mo, réponse 64 Mo, allocation progressive, délai d'inactivité réarmé par bloc ; dépassement = connexion `broken`.
+- Préchargement : échec Server d'un message journalisé et ignoré ; pas de préchargement > 10 Mo.
+- VANISHED > 1 M d'UID ou avec `*` → repli sur la comparaison complète ; dates internes bornées 1900–9999, `checked_*`.
+- Rétention des événements : 30 jours ou 100 000 lignes, à l'ouverture et après chaque passe ; opérations : 256 terminées conservées.
+- S14 : suppression des fichiers de cache de pièces jointes, attente de la passe de rejeu (30 s, verrou par compte `replayer/gates.rs`) ; `extend_window` refuse si l'UIDVALIDITY a changé (`incompatible_state.mailbox_changed`) ; la synchro respecte `NetworkPolicy`.
+- Non traité : `extend_window` s'exécute encore en parallèle de la tâche du compte ; attente du rejeu sans test déterministe ; repli VANISHED sans test d'intégration.

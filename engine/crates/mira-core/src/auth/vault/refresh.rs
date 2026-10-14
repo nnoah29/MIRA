@@ -6,6 +6,7 @@ use mira_vocabulary::{
 };
 
 use super::credential_vault::CredentialVault;
+use super::refresh_lock::refresh_lock;
 use crate::auth::tokens::refresh_tokens;
 use crate::ports::{Clock, SecretValue};
 
@@ -32,5 +33,27 @@ impl CredentialVault {
         let tokens = refresh_tokens(token_url, client_id, &refresh, clock).await?;
         self.store_tokens(profile, account, &tokens)?;
         Ok(tokens.access_token)
+    }
+
+    /// Rafraîchit sous verrou de compte, sauf si un autre appelant a déjà remplacé le jeton `stale`
+    pub async fn refresh_access_token_if_stale(
+        &self,
+        profile: &ProfileId,
+        account: &AccountId,
+        token_url: &str,
+        client_id: &str,
+        clock: &dyn Clock,
+        stale: Option<&SecretValue>,
+    ) -> Result<SecretValue, MiraError> {
+        let lock = refresh_lock(profile, account);
+        let _guard = lock.lock().await;
+        let current = self.load_secret(profile, account, SecretKind::AccessToken)?;
+        if let Some(current) = current
+            && stale.map(SecretValue::expose) != Some(current.expose())
+        {
+            return Ok(current);
+        }
+        self.refresh_access_token(profile, account, token_url, client_id, clock)
+            .await
     }
 }

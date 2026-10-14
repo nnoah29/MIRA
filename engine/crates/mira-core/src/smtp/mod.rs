@@ -6,6 +6,8 @@ mod login;
 mod outgoing;
 mod reply_codes;
 mod send;
+#[cfg(test)]
+mod tests;
 mod transport;
 
 pub use login::{SmtpCredential, SmtpLogin};

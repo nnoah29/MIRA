@@ -34,3 +34,22 @@ async fn regression_token_refresh_cut_off_is_transient_not_an_uncertain_send() {
     })
     .await;
 }
+
+/// Un service de jetons trop lent (network.timeout) n'a rien envoyé : passager, jamais incertain
+#[tokio::test]
+async fn regression_token_refresh_timeout_is_transient_not_an_uncertain_send() {
+    within(async {
+        let mut fx = started().await;
+        fx.credentials = FakeCredentials::stale_login_with_slow_token_service();
+        let (_, action) = schedule_ready_draft(&fx, "k-slow-refresh");
+        fx.advance(SEND_UNDO_DELAY_MILLIS);
+        let mut client = fx.client().await;
+        let report = fx.replay(&mut client).await;
+        assert_eq!(report.uncertain, 0);
+        let code = "network.unreachable".to_string();
+        assert_eq!(report.stopped, Some(ReplayStop::Retry { code }));
+        assert_eq!(state_of(&fx, &action), ActionState::Pending);
+        assert!(fx.smtp.received().is_empty());
+    })
+    .await;
+}

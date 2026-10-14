@@ -14,6 +14,7 @@ pub mod sb_mail;
 pub mod sb_oauth;
 pub mod sb_replay;
 pub mod sb_run;
+pub mod sb_server;
 pub mod sb_views;
 pub mod sb_world;
 pub mod seed;

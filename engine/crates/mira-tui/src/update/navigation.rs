@@ -17,7 +17,9 @@ fn with_focused(
             let len = state.messages.len();
             on_list(&mut state.messages.selection, len);
         }
-        Pane::Reader => state.reader.scroll = on_reader(state.reader.scroll),
+        Pane::Reader => {
+            state.reader.scroll = on_reader(state.reader.scroll).min(state.reader.max_scroll());
+        }
     }
 }
 

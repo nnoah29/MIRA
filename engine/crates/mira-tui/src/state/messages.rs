@@ -7,7 +7,7 @@ use super::selection::Selection;
 /// Éléments affichés, vue d'origine, pagination et sélection courante.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct MessagesState {
-    items: Vec<MessageSummary>,
+    pub(super) items: Vec<MessageSummary>,
     pub(super) view: Option<ViewRef>,
     pub(super) next_cursor: Option<Cursor>,
     pub(super) requested: Option<Cursor>,

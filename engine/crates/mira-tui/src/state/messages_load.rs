@@ -1,6 +1,6 @@
 //! Chargement d'une vue de messages : vue voulue, remise à zéro et demande en attente.
 
-use mira_assembly::mira_vocabulary::{Cursor, ViewRef};
+use mira_assembly::mira_vocabulary::{Cursor, MessageId, ViewRef};
 
 use super::messages::MessagesState;
 
@@ -20,5 +20,12 @@ impl MessagesState {
     /// Vrai si la page après ce curseur est bien celle qui est attendue pour cette vue.
     pub fn awaits(&self, view: &ViewRef, cursor: &Cursor) -> bool {
         self.view.as_ref() == Some(view) && self.requested.as_ref() == Some(cursor)
+    }
+
+    /// Marque le message comme lu dans la liste, sans effet s'il n'y est pas.
+    pub fn mark_seen(&mut self, id: &MessageId) {
+        if let Some(item) = self.items.iter_mut().find(|item| &item.id == id) {
+            item.flags.seen = true;
+        }
     }
 }

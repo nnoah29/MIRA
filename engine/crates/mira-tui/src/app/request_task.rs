@@ -7,7 +7,7 @@ use std::time::Duration;
 use mira_assembly::api::Response;
 use mira_assembly::mira_vocabulary::MiraError;
 use tokio::sync::mpsc::UnboundedSender;
-use tokio::task::{Id, JoinError, JoinSet};
+use tokio::task::{Id, JoinError, JoinHandle, JoinSet};
 
 use super::task_failure::task_failed;
 use crate::commands::Tag;
@@ -81,5 +81,10 @@ impl RequestTasks {
         let drain = async { while self.tasks.join_next().await.is_some() {} };
         let _ = tokio::time::timeout(DRAIN_DEADLINE, drain).await;
         self.tasks.shutdown().await;
+    }
+
+    /// Même arrêt dans une tâche à part : rend la main tout de suite, la poignée dit quand c'est fini.
+    pub fn stop_detached(self) -> JoinHandle<()> {
+        tokio::spawn(self.stop())
     }
 }

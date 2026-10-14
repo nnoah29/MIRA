@@ -52,7 +52,6 @@ fn on_resize(state: &mut AppState, width: u16, height: u16) -> Vec<Command> {
 /// Traite la réponse du moteur selon son étiquette.
 fn on_reply(state: &mut AppState, reply: Reply) -> Vec<Command> {
     match reply.tag {
-        Tag::Startup => Vec::new(),
         Tag::Accounts => on_accounts(state, reply.result),
         Tag::Mailboxes(account) => on_mailboxes(state, account, reply.result),
         Tag::Messages { view, after } => on_messages(state, view, after, reply.result),

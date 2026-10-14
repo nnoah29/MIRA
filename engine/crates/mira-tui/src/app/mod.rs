@@ -20,5 +20,4 @@ pub mod terminal_guard;
 pub use engine_session::{close_engine, open_engine};
 pub use error::TuiError;
 pub use raw_mode::{RawMode, SystemRawMode};
-pub use run_loop::run_loop;
 pub use terminal_guard::TerminalGuard;

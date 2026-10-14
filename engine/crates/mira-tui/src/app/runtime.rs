@@ -4,11 +4,12 @@ use std::sync::Arc;
 
 use crossterm::event::KeyEvent;
 use mira_assembly::api::Engine;
+use mira_assembly::mira_vocabulary::EventSeq;
 use tokio::sync::mpsc::{self, UnboundedReceiver};
 use tokio::task::JoinHandle;
 use tokio::time::Interval;
 
-use super::event_feed::spawn_live_event_feed;
+use super::event_feed::spawn_event_feed_after;
 use super::request_task::RequestTasks;
 use crate::commands::Command;
 use crate::update::Msg;
@@ -33,10 +34,10 @@ pub(crate) struct Runtime {
 }
 
 impl Runtime {
-    /// Ouvre la file de messages et y branche les événements du moteur.
-    pub(crate) fn start(engine: Arc<Engine>) -> Runtime {
+    /// Ouvre la file de messages et y branche les événements du moteur postérieurs à `after`.
+    pub(crate) fn start(engine: Arc<Engine>, after: Option<EventSeq>) -> Runtime {
         let (sender, receiver) = mpsc::unbounded_channel();
-        let feed = spawn_live_event_feed(Arc::clone(&engine), sender.clone());
+        let feed = spawn_event_feed_after(&engine, after, sender.clone());
         Runtime {
             engine,
             receiver,

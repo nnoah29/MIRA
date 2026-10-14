@@ -5,6 +5,7 @@ pub mod config;
 pub mod event_log;
 pub mod failing_writer;
 pub mod imap_account;
+pub mod journal;
 pub mod notice_writer;
 pub mod recording_raw;
 pub mod recording_writer;

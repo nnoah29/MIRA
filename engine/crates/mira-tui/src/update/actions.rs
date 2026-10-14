@@ -41,6 +41,7 @@ pub fn toggle_flag(state: &mut AppState) -> Vec<Command> {
     };
     let flagged = !message.flags.flagged;
     state.messages.set_flagged(&message.id, flagged);
+    state.reader.set_flagged(&message.id, flagged);
     let kind = ActionKind::MarkFlagged { flagged };
     vec![apply_command(state, kind, vec![message.id])]
 }
@@ -52,6 +53,7 @@ pub fn toggle_read(state: &mut AppState) -> Vec<Command> {
     };
     let read = !message.flags.seen;
     state.messages.set_seen(&message.id, read);
+    state.reader.set_seen(&message.id, read);
     let kind = ActionKind::MarkRead { read };
     vec![apply_command(state, kind, vec![message.id])]
 }

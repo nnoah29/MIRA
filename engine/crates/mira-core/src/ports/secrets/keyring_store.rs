@@ -3,6 +3,7 @@
 use mira_vocabulary::error::codes::secrets;
 use mira_vocabulary::{ErrorCategory, ErrorCode, MiraError, SecretRef};
 
+use super::blocking::run_blocking_call;
 use super::store::SecretStore;
 use super::value::SecretValue;
 
@@ -22,26 +23,28 @@ impl KeyringSecretStore {
 impl SecretStore for KeyringSecretStore {
     /// Enregistre le secret dans le trousseau système
     fn put(&self, key: &SecretRef, value: &SecretValue) -> Result<(), MiraError> {
-        Self::entry(key)?
-            .set_password(value.expose())
-            .map_err(|error| translate(&error))
+        run_blocking_call(|| {
+            Self::entry(key)?
+                .set_password(value.expose())
+                .map_err(|error| translate(&error))
+        })
     }
 
     /// Relit le secret, ou rien si le trousseau n'a pas d'entrée
     fn get(&self, key: &SecretRef) -> Result<Option<SecretValue>, MiraError> {
-        match Self::entry(key)?.get_password() {
+        run_blocking_call(|| match Self::entry(key)?.get_password() {
             Ok(value) => Ok(Some(SecretValue::new(value))),
             Err(keyring::Error::NoEntry) => Ok(None),
             Err(error) => Err(translate(&error)),
-        }
+        })
     }
 
     /// Supprime l'entrée du trousseau ; une entrée absente n'est pas une erreur
     fn delete(&self, key: &SecretRef) -> Result<(), MiraError> {
-        match Self::entry(key)?.delete_credential() {
+        run_blocking_call(|| match Self::entry(key)?.delete_credential() {
             Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
             Err(error) => Err(translate(&error)),
-        }
+        })
     }
 }
 

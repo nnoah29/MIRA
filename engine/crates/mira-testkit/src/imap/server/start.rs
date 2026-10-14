@@ -19,7 +19,17 @@ impl FakeImapServer {
         credentials: Credentials,
         caps: CapabilitySet,
     ) -> std::io::Result<Self> {
-        let listener = TcpListener::bind("127.0.0.1:0").await?;
+        Self::start_on_port(0, store, credentials, caps).await
+    }
+
+    /// Démarre un serveur sur 127.0.0.1 au port donné (0 : éphémère), pour simuler un retour en ligne
+    pub async fn start_on_port(
+        port: u16,
+        store: FakeMailStore,
+        credentials: Credentials,
+        caps: CapabilitySet,
+    ) -> std::io::Result<Self> {
+        let listener = TcpListener::bind(("127.0.0.1", port)).await?;
         let port = listener.local_addr()?.port();
         let tracker = Arc::new(Tracker::default());
         let context = Arc::new(ServerContext {

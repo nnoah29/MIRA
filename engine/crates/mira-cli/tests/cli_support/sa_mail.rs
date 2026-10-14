@@ -13,6 +13,15 @@ pub fn raw_mail(user: &str, subject: &str, extra_headers: &str) -> Vec<u8> {
     .into_bytes()
 }
 
+/// Courrier à pièce jointe `notes.txt` (douze octets) dont le sujet est donné.
+pub fn mail_with_notes(user: &str, subject: &str) -> Vec<u8> {
+    let id = subject.replace(' ', "-");
+    format!(
+        "From: Bob <bob@example.org>\r\nTo: {user}\r\nSubject: {subject}\r\nMessage-ID: <{id}@example.org>\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary=\"B\"\r\n\r\n--B\r\nContent-Type: text/plain\r\n\r\nVoir notes\r\n--B\r\nContent-Type: text/plain; name=\"notes.txt\"\r\nContent-Disposition: attachment; filename=\"notes.txt\"\r\n\r\nnotes: douze\r\n--B--\r\n"
+    )
+    .into_bytes()
+}
+
 impl SaWorld {
     /// Dépose un courrier dans la boîte du serveur et rend son UID.
     pub fn deliver(&self, mailbox: &str, subject: &str, extra_headers: &str) -> u32 {

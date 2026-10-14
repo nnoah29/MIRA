@@ -14,6 +14,7 @@ pub enum Popup {
     },
     MovePicker(MovePicker),
     Help,
+    ConfirmCloseDraft,
 }
 
 impl Popup {

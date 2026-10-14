@@ -3,6 +3,7 @@
 pub mod accounts;
 pub mod actions;
 pub mod boot;
+pub mod compose;
 pub mod focus;
 pub mod keys;
 pub mod mailbox_order;
@@ -25,6 +26,7 @@ pub mod view_change;
 
 pub use accounts::AccountsState;
 pub use actions::ActionsState;
+pub use compose::ComposeSlot;
 pub use focus::Pane;
 pub use mailboxes::MailboxesState;
 pub use messages::MessagesState;
@@ -51,6 +53,7 @@ pub struct AppState {
     pub popup: Popup,
     pub actions: ActionsState,
     pub search: SearchState,
+    pub compose: ComposeSlot,
     pub refresh: RefreshState,
     pub key_prefix: String,
     pub key_counter: u64,
@@ -72,6 +75,7 @@ impl AppState {
             popup: Popup::Closed,
             actions: ActionsState::default(),
             search: SearchState::default(),
+            compose: ComposeSlot::default(),
             refresh: RefreshState::default(),
             key_prefix: format!("tui-{nonce}"),
             key_counter: 0,

@@ -40,6 +40,12 @@ impl SearchState {
         Some(query)
     }
 
+    /// Ferme la saisie sans toucher aux résultats affichés.
+    pub fn close_input(&mut self) {
+        self.editing = false;
+        self.input.clear();
+    }
+
     /// Ferme la saisie et la recherche ; vrai si des résultats étaient affichés.
     pub fn leave(&mut self) -> bool {
         self.editing = false;

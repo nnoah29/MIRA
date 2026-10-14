@@ -1,4 +1,4 @@
-//! Contexte clavier : fenêtre ouverte, saisie de recherche ou panneau qui a le focus.
+//! Contexte clavier : fenêtre ouverte, éditeur de brouillon, saisie de recherche ou panneau qui a le focus.
 
 use crate::state::{AppState, Pane, Popup};
 
@@ -10,6 +10,8 @@ pub enum KeyContext {
     SearchResults,
     Reader,
     SearchInput,
+    Compose,
+    ConfirmClose,
     Confirm,
     MovePicker,
     Help,
@@ -25,12 +27,14 @@ pub fn pane_context(state: &AppState) -> KeyContext {
     }
 }
 
-/// Contexte qui reçoit le clavier : la fenêtre ouverte, sinon la saisie, sinon le panneau.
+/// Contexte qui reçoit le clavier : la fenêtre ouverte, sinon l'éditeur, sinon la saisie, sinon le panneau.
 pub fn context_of(state: &AppState) -> KeyContext {
     match &state.popup {
         Popup::ConfirmDelete { .. } => KeyContext::Confirm,
         Popup::MovePicker(_) => KeyContext::MovePicker,
         Popup::Help => KeyContext::Help,
+        Popup::ConfirmCloseDraft => KeyContext::ConfirmClose,
+        Popup::Closed if state.compose.open().is_some() => KeyContext::Compose,
         Popup::Closed if state.search.is_editing() => KeyContext::SearchInput,
         Popup::Closed => pane_context(state),
     }

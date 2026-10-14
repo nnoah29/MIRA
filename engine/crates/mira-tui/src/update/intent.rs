@@ -1,5 +1,7 @@
 //! Intentions de l'utilisateur, indépendantes des touches qui les produisent.
 
+use super::compose::ComposeIntent;
+use super::compose::route::{route_editing, route_idle};
 use super::intent_actions::on_message_intent;
 use super::search_intent::SearchIntent;
 use super::{
@@ -32,46 +34,37 @@ pub enum Intent {
     Confirm,
     Cancel,
     Search(SearchIntent),
+    Compose(ComposeIntent),
     StartSync,
     Help,
 }
 
 /// Route une intention vers son gestionnaire ; une fenêtre ouverte la reçoit en premier.
+#[rustfmt::skip]
 pub fn on_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
     if let Some(commands) = route_modal(state, intent) {
         return commands;
     }
     match intent {
-        Intent::MoveDown
-        | Intent::MoveUp
-        | Intent::Top
-        | Intent::Bottom
-        | Intent::Open
-        | Intent::Back
-        | Intent::NextPane
-        | Intent::PrevPane
-        | Intent::NextAccount
-        | Intent::PrevAccount
+        Intent::MoveDown | Intent::MoveUp | Intent::Top | Intent::Bottom | Intent::Open | Intent::Back
+        | Intent::NextPane | Intent::PrevPane | Intent::NextAccount | Intent::PrevAccount
         | Intent::Quit => on_navigation_intent(state, intent),
-        Intent::Archive
-        | Intent::Trash
-        | Intent::DeletePermanently
-        | Intent::ToggleFlag
-        | Intent::ToggleRead
-        | Intent::OpenMovePicker
-        | Intent::Undo
-        | Intent::Confirm
-        | Intent::Cancel => on_message_intent(state, intent),
+        Intent::Archive | Intent::Trash | Intent::DeletePermanently | Intent::ToggleFlag | Intent::ToggleRead
+        | Intent::OpenMovePicker | Intent::Undo | Intent::Confirm | Intent::Cancel => on_message_intent(state, intent),
         Intent::Search(search) => search_intent::route_idle(state, search),
+        Intent::Compose(compose) => route_idle(state, compose),
         Intent::StartSync => sync_status::start_sync(state),
         Intent::Help => help::open_help(state),
     }
 }
 
-/// Route l'intention vers la fenêtre ou la saisie de recherche ouverte, qui la reçoit avant tout.
+/// Route l'intention vers la fenêtre, l'éditeur de brouillon ou la saisie de recherche ouverte, qui la reçoit avant tout.
 fn route_modal(state: &mut AppState, intent: Intent) -> Option<Vec<Command>> {
     if state.popup.is_open() {
         return Some(popup_intent::route(state, intent));
+    }
+    if state.compose.open().is_some() {
+        return Some(route_editing(state, intent));
     }
     if state.search.is_editing() {
         return Some(search_intent::route_editing(state, intent));
@@ -103,6 +96,7 @@ fn on_navigation_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
         | Intent::Confirm
         | Intent::Cancel
         | Intent::Search(_)
+        | Intent::Compose(_)
         | Intent::StartSync
         | Intent::Help => {}
     }

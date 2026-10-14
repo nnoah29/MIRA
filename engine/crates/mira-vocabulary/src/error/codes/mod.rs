@@ -42,6 +42,7 @@ pub const ALL: &[ErrorCode] = &[
     incompatible_state::DRAFT_NOT_EDITABLE,
     incompatible_state::ACTION_NOT_RETRYABLE,
     incompatible_state::SYNC_DISABLED,
+    incompatible_state::MAILBOX_CHANGED,
     network::OFFLINE,
     network::TIMEOUT,
     network::UNREACHABLE,

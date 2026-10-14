@@ -4,6 +4,7 @@ use mira_assembly::api::Response;
 use mira_assembly::mira_vocabulary::{Event, MiraError};
 
 use super::accounts_reply::on_accounts;
+use super::action_reply::{on_undo, on_user_action};
 use super::intent::{Intent, on_intent};
 use super::mailboxes_reply::on_mailboxes;
 use super::messages_reply::on_messages;
@@ -56,6 +57,8 @@ fn on_reply(state: &mut AppState, reply: Reply) -> Vec<Command> {
         Tag::Attachments(id) => on_attachments(state, id, reply.result),
         Tag::Thread(thread) => on_thread(state, thread, reply.result),
         Tag::Action => on_action(state, reply.result),
+        Tag::UserAction(key) => on_user_action(state, key, reply.result),
+        Tag::Undo => on_undo(state, reply.result),
     }
 }
 

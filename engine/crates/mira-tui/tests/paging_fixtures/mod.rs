@@ -11,7 +11,7 @@ use mira_tui::update::{Msg, Reply};
 
 /// État sur la liste avec une première page de 20 messages et un curseur suivant.
 pub fn paged_state() -> AppState {
-    let mut state = AppState::new(100, 30);
+    let mut state = AppState::new(100, 30, 1);
     state
         .messages
         .replace_page(inbox_view(), page(0, 20, Some("c1")));

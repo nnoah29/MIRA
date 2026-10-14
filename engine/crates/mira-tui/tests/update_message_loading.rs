@@ -32,7 +32,7 @@ fn opening_a_mailbox_emits_list_messages_without_cursor() {
 /// Les boîtes reçues déclenchent le chargement de la première, une seule fois.
 #[test]
 fn mailboxes_arrival_loads_first_mailbox_once() {
-    let mut state = AppState::new(100, 30);
+    let mut state = AppState::new(100, 30, 1);
     refresh(&mut state, &["a1"]);
     assert_eq!(mailboxes_arrive(&mut state), vec![load_command("a1-INBOX")]);
     assert!(mailboxes_arrive(&mut state).is_empty());

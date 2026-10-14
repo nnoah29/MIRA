@@ -34,7 +34,7 @@ fn next_page_is_requested_once_per_cursor() {
 /// Sans curseur suivant, rien n'est demandé même en fin de liste.
 #[test]
 fn no_cursor_means_no_request() {
-    let mut state = AppState::new(100, 30);
+    let mut state = AppState::new(100, 30, 1);
     state.messages.replace_page(inbox_view(), page(0, 20, None));
     state.focus = Pane::List;
     assert!(press(&mut state, Intent::Bottom).is_empty());

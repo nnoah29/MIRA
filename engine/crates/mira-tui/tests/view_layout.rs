@@ -12,7 +12,7 @@ use sidebar_fixtures::account;
 /// Un terminal minuscule ne fait pas paniquer le rendu.
 #[test]
 fn tiny_terminal_does_not_panic() {
-    let mut state = AppState::new(100, 30);
+    let mut state = AppState::new(100, 30, 1);
     state.accounts.replace_items(vec![account("a1")]);
     let mut terminal = Terminal::new(TestBackend::new(3, 2)).unwrap();
     terminal.draw(|frame| render(frame, &state)).unwrap();
@@ -21,7 +21,7 @@ fn tiny_terminal_does_not_panic() {
 /// Sous 100 colonnes, seul le panneau actif est dessiné.
 #[test]
 fn narrow_terminal_shows_only_focused_pane() {
-    let mut state = AppState::new(80, 24);
+    let mut state = AppState::new(80, 24, 1);
     state.accounts.replace_items(vec![account("a1")]);
     let mut terminal = Terminal::new(TestBackend::new(80, 24)).unwrap();
     terminal.draw(|frame| render(frame, &state)).unwrap();

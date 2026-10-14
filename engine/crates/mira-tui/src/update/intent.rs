@@ -1,6 +1,7 @@
 //! Intentions de l'utilisateur, indépendantes des touches qui les produisent.
 
-use super::{account_switch, navigation, pagination, panes};
+use super::intent_actions::on_message_intent;
+use super::{account_switch, navigation, pagination, panes, popup_intent};
 use crate::commands::Command;
 use crate::state::AppState;
 
@@ -18,10 +19,48 @@ pub enum Intent {
     NextAccount,
     PrevAccount,
     Quit,
+    Archive,
+    Trash,
+    DeletePermanently,
+    ToggleFlag,
+    ToggleRead,
+    OpenMovePicker,
+    Undo,
+    Confirm,
+    Cancel,
 }
 
-/// Route une intention vers son gestionnaire.
+/// Route une intention vers son gestionnaire ; une fenêtre ouverte la reçoit en premier.
 pub fn on_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
+    if state.popup.is_open() {
+        return popup_intent::route(state, intent);
+    }
+    match intent {
+        Intent::MoveDown
+        | Intent::MoveUp
+        | Intent::Top
+        | Intent::Bottom
+        | Intent::Open
+        | Intent::Back
+        | Intent::NextPane
+        | Intent::PrevPane
+        | Intent::NextAccount
+        | Intent::PrevAccount
+        | Intent::Quit => on_navigation_intent(state, intent),
+        Intent::Archive
+        | Intent::Trash
+        | Intent::DeletePermanently
+        | Intent::ToggleFlag
+        | Intent::ToggleRead
+        | Intent::OpenMovePicker
+        | Intent::Undo
+        | Intent::Confirm
+        | Intent::Cancel => on_message_intent(state, intent),
+    }
+}
+
+/// Intentions de navigation entre panneaux, comptes et messages.
+fn on_navigation_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
     match intent {
         Intent::MoveDown => return scroll(state, navigation::move_down),
         Intent::MoveUp => return scroll(state, navigation::move_up),
@@ -34,6 +73,15 @@ pub fn on_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
         Intent::NextAccount => return account_switch::next_account(state),
         Intent::PrevAccount => return account_switch::prev_account(state),
         Intent::Quit => return panes::quit(state),
+        Intent::Archive
+        | Intent::Trash
+        | Intent::DeletePermanently
+        | Intent::ToggleFlag
+        | Intent::ToggleRead
+        | Intent::OpenMovePicker
+        | Intent::Undo
+        | Intent::Confirm
+        | Intent::Cancel => {}
     }
     Vec::new()
 }

@@ -62,7 +62,7 @@ pub fn rendered_text(state: &AppState) -> String {
 
 /// État avec les comptes a1 et a2, a1 sélectionné et sa boîte chargée.
 pub fn loaded_state() -> AppState {
-    let mut state = AppState::new(100, 30);
+    let mut state = AppState::new(100, 30, 1);
     state
         .accounts
         .replace_items(vec![account("a1"), account("a2")]);

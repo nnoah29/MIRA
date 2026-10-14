@@ -3,6 +3,7 @@
 pub mod ansi_skip;
 pub mod layout;
 pub mod message_list;
+pub mod popups;
 pub mod reader;
 pub mod safe_text;
 pub mod sidebar;
@@ -24,4 +25,5 @@ pub fn render(frame: &mut Frame, state: &AppState) {
         reader::render_reader(frame, areas.reader, state);
     }
     status_bar::render_status(frame, areas.status, state);
+    popups::render_popup(frame, state);
 }

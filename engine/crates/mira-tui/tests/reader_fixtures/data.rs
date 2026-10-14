@@ -13,7 +13,7 @@ use mira_tui::state::{AppState, Pane};
 
 /// État sur la liste avec ces messages, le premier sélectionné.
 pub fn list_state(items: Vec<MessageSummary>) -> AppState {
-    let mut state = AppState::new(100, 30);
+    let mut state = AppState::new(100, 30, 1);
     state
         .accounts
         .replace_items(vec![crate::sidebar_fixtures::account("a1")]);

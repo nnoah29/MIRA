@@ -38,7 +38,7 @@ pub fn mailboxes_arrive(state: &mut AppState) -> Vec<Command> {
 
 /// État avec les comptes a1 et a2 chargés et les boîtes de a1 reçues.
 pub fn loaded() -> AppState {
-    let mut state = AppState::new(100, 30);
+    let mut state = AppState::new(100, 30, 1);
     refresh(&mut state, &["a1", "a2"]);
     mailboxes_arrive(&mut state);
     state

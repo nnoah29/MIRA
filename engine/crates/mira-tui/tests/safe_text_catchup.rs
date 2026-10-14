@@ -23,7 +23,7 @@ fn hostile_error() -> MiraError {
 /// Le nom d'une boîte de rôle « Autre » est neutralisé.
 #[test]
 fn other_mailbox_label_is_neutralized() {
-    let mut state = AppState::new(100, 30);
+    let mut state = AppState::new(100, 30, 1);
     state.accounts.replace_items(vec![account("a1")]);
     let hostile = mailbox("a1", "Pro\u{1b}[2J\u{7}jets", MailboxRole::Other, 0);
     state.mailboxes.replace_items(vec![hostile]);
@@ -35,7 +35,7 @@ fn other_mailbox_label_is_neutralized() {
 /// L'adresse d'un compte passe par le texte neutralisé quand elle est affichée.
 #[test]
 fn account_address_goes_through_safe_text() {
-    let mut state = AppState::new(100, 30);
+    let mut state = AppState::new(100, 30, 1);
     let mut hostile = account("a1");
     hostile.address = EmailAddress::parse("ann\u{1b}[2J@example.org").unwrap();
     state.accounts.replace_items(vec![hostile]);
@@ -47,7 +47,7 @@ fn account_address_goes_through_safe_text() {
 /// Une erreur de la liste des comptes est neutralisée dans la barre d'état.
 #[test]
 fn accounts_error_status_is_neutralized() {
-    let mut state = AppState::new(100, 30);
+    let mut state = AppState::new(100, 30, 1);
     let reply = Reply {
         tag: Tag::Accounts,
         result: Err(hostile_error()),
@@ -61,7 +61,7 @@ fn accounts_error_status_is_neutralized() {
 /// Une erreur de la liste des boîtes est neutralisée dans la barre d'état.
 #[test]
 fn mailboxes_error_status_is_neutralized() {
-    let mut state = AppState::new(100, 30);
+    let mut state = AppState::new(100, 30, 1);
     let reply = Reply {
         tag: Tag::Mailboxes(AccountId::from_raw("a1")),
         result: Err(hostile_error()),

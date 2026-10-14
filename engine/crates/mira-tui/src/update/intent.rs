@@ -3,7 +3,7 @@
 use super::intent_actions::on_message_intent;
 use super::search_intent::SearchIntent;
 use super::{
-    account_switch, navigation, pagination, panes, popup_intent, search_intent, sync_status,
+    account_switch, help, navigation, pagination, panes, popup_intent, search_intent, sync_status,
 };
 use crate::commands::Command;
 use crate::state::AppState;
@@ -33,6 +33,7 @@ pub enum Intent {
     Cancel,
     Search(SearchIntent),
     StartSync,
+    Help,
 }
 
 /// Route une intention vers son gestionnaire ; une fenêtre ouverte la reçoit en premier.
@@ -63,6 +64,7 @@ pub fn on_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
         | Intent::Cancel => on_message_intent(state, intent),
         Intent::Search(search) => search_intent::route_idle(state, search),
         Intent::StartSync => sync_status::start_sync(state),
+        Intent::Help => help::open_help(state),
     }
 }
 
@@ -101,7 +103,8 @@ fn on_navigation_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
         | Intent::Confirm
         | Intent::Cancel
         | Intent::Search(_)
-        | Intent::StartSync => {}
+        | Intent::StartSync
+        | Intent::Help => {}
     }
     Vec::new()
 }

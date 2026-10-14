@@ -3,6 +3,7 @@
 pub mod ansi_skip;
 pub mod layout;
 pub mod message_list;
+pub mod narrow;
 pub mod popups;
 pub mod reader;
 pub mod safe_text;

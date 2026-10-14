@@ -9,6 +9,7 @@ pub struct SearchState {
     pub(super) input: String,
     pub(super) query: Option<String>,
     pub(super) previous: Option<ViewRef>,
+    pub(super) first_page_only: Option<usize>,
 }
 
 impl SearchState {

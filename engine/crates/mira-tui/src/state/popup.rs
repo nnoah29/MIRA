@@ -13,6 +13,7 @@ pub enum Popup {
         messages: Vec<MessageId>,
     },
     MovePicker(MovePicker),
+    Help,
 }
 
 impl Popup {

@@ -7,6 +7,7 @@ pub mod action_reply;
 pub mod actions;
 pub mod engine_event;
 pub mod event_reaction;
+pub mod help;
 pub mod intent;
 pub mod intent_actions;
 pub mod mailboxes_reply;

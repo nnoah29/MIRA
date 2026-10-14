@@ -3,9 +3,14 @@
 use serde_json::Value;
 
 use super::sa_world::SaWorld;
-use super::{account_id_of, parse_json};
+use super::{CliResult, account_id_of, parse_json};
 
 impl SaWorld {
+    /// Lance une commande avec une entrée standard vide (synchro de fond coupée).
+    pub async fn run(&self, arguments: &[&str]) -> CliResult {
+        self.run_stdin("", arguments).await
+    }
+
     /// Ajoute le compte de l'utilisateur (secret sur l'entrée standard) et rend son identifiant.
     pub async fn add_account(&self, extra: &[&str]) -> String {
         let mut line = vec!["account", "add", "--address", &self.user];

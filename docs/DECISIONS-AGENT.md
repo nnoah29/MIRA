@@ -134,3 +134,13 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - Coupure `network.connection_lost` après DATA → vérification immédiate dans Envoyés (Uncertain ou Succeeded). Reprise : Envoyés illisible → reste `InProgress`.
 - Copie Envoyés sans Bcc ; `SaveDraft` sans destinataire = sans effet.
 - **À faire (J8)** : `Engine::open` construit un `ReplayContext` par compte, appelle `recover_interrupted_actions` puis `replay_actions` ; implémentation de production de `ReplayCredentials` au-dessus de `CredentialVault`.
+
+## AG-21 — Synchronisation (rapport J5b)
+- Test S11 nommé `scenario_s11_message_in_two_labels_is_one_message` (A6 interdit le nom du fournisseur) ; A9 interdit « fenêtre » dans le cœur : les commentaires disent « plage », identifiants `window_*`.
+- Orphelins supprimés seulement en fin de passe complète (sinon un déplacement changerait l'identifiant interne) ; une passe limitée à la réception peut laisser un orphelin invisible jusqu'au relevé complet.
+- Recoupement (P7) appliqué chaque fois qu'un candidat unique attend une revalidation dans la boîte (couvre l'apparition provisoire d'un déplacement hors ligne).
+- Resynchronisation interrompue : pas de nouveau marquage si des apparitions sont déjà « à revalider » ; les apparitions provisoires survivent.
+- QRESYNC : nouveaux via `UID SEARCH UID n:*` ; CONDSTORE/comparaison : `UID SEARCH ALL` ; repère sans compteur → comparaison complète.
+- IDLE seulement s'il reste un permis de réserve (limite ≥ 3), sinon relevé périodique + Diagnostic `sync.realtime`.
+- Erreur serveur sur une boîte : Diagnostic Warn, les autres continuent. Pas de trait `LocalIntentReplayer` : appel direct de `reapply_pending_local_effects`.
+- Limites : annulation de `extend_window` testée seulement avant le premier lot.

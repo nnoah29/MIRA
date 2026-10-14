@@ -4,6 +4,8 @@ use mira_assembly::api::{Engine, Request, Response};
 use mira_assembly::mira_vocabulary::{CONTRACT_VERSION, MiraError, ProfileId};
 
 use super::request_builder::build_request;
+use super::waiting::policy::policy_of;
+use super::waiting::{WaitPolicy, execute_and_wait};
 use crate::argument_context::ArgumentContext;
 use crate::arguments::Commands;
 use crate::cli_io::CliIo;
@@ -15,12 +17,13 @@ use crate::render::human_text;
 /// Ouvre le moteur du profil, exécute la requête, puis ferme le moteur.
 async fn execute_request(
     request: Request,
+    policy: WaitPolicy,
     profile: &str,
     deps: &CliDeps,
 ) -> Result<Response, MiraError> {
     let config = deps.engine_config(ProfileId::from_raw(profile));
     let engine = Engine::open(config, CONTRACT_VERSION)?;
-    let outcome = engine.execute(request).await;
+    let outcome = execute_and_wait(&engine, request, policy).await;
     let _ = engine.shutdown();
     outcome
 }
@@ -49,7 +52,7 @@ pub async fn run_command(
         build_request(command, &mut context)
     };
     let outcome = match built {
-        Ok(request) => execute_request(request, profile, deps).await,
+        Ok(request) => execute_request(request, policy_of(command), profile, deps).await,
         Err(error) => Err(error),
     };
     match outcome {

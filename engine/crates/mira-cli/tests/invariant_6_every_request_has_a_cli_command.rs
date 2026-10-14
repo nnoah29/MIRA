@@ -10,6 +10,7 @@ use std::collections::BTreeSet;
 
 use cli_support::run_cli;
 use request_catalog::examples::all_examples;
+use request_catalog::lines_read_write::READ_WRITE_LINES;
 use request_catalog::{request_of_line, serialized_name, variant_name};
 
 /// Table des commandes : au moins une ligne par variante de `Request`.
@@ -53,6 +54,7 @@ const COMMAND_LINES: &[&[&str]] = &[
 fn invariant_6_every_request_has_a_cli_command() {
     let produced: BTreeSet<String> = COMMAND_LINES
         .iter()
+        .chain(READ_WRITE_LINES)
         .map(|line| serialized_name(&request_of_line(line)))
         .collect();
     for example in all_examples() {
@@ -68,8 +70,9 @@ fn invariant_6_every_request_has_a_cli_command() {
 /// Aucune commande ne produit deux fois exactement la même ligne de table
 #[test]
 fn command_table_has_no_duplicate_line() {
-    let unique: BTreeSet<&&[&str]> = COMMAND_LINES.iter().collect();
-    assert_eq!(unique.len(), COMMAND_LINES.len());
+    let all: Vec<&&[&str]> = COMMAND_LINES.iter().chain(READ_WRITE_LINES).collect();
+    let unique: BTreeSet<&&&[&str]> = all.iter().collect();
+    assert_eq!(unique.len(), all.len());
 }
 
 /// Un mot de passe ne se passe pas en argument : l'option n'existe pas

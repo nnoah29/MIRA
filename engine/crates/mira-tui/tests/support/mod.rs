@@ -9,4 +9,5 @@ pub mod notice_writer;
 pub mod recording_raw;
 pub mod recording_writer;
 pub mod seed;
+pub mod seed_events;
 pub mod world;

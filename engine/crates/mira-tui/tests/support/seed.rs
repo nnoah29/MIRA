@@ -81,7 +81,7 @@ fn seed_message(
 
 impl TestWorld {
     /// Ouvre la base du profil (le moteur reste ouvert : SQLite sérialise les écritures).
-    fn open_mirror(&self) -> Result<Database, MiraError> {
+    pub(super) fn open_mirror(&self) -> Result<Database, MiraError> {
         let paths = ProfilePaths::resolve(&self.config.profile, &self.config.environment)?;
         Database::open(&paths.database)
     }

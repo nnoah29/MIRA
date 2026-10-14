@@ -8,7 +8,7 @@ use tokio::sync::mpsc::{self, UnboundedReceiver};
 use tokio::task::JoinHandle;
 use tokio::time::Interval;
 
-use super::event_feed::spawn_event_feed;
+use super::event_feed::spawn_live_event_feed;
 use super::request_task::RequestTasks;
 use crate::commands::Command;
 use crate::update::Msg;
@@ -36,7 +36,7 @@ impl Runtime {
     /// Ouvre la file de messages et y branche les événements du moteur.
     pub(crate) fn start(engine: Arc<Engine>) -> Runtime {
         let (sender, receiver) = mpsc::unbounded_channel();
-        let feed = spawn_event_feed(&engine, sender.clone());
+        let feed = spawn_live_event_feed(Arc::clone(&engine), sender.clone());
         Runtime {
             engine,
             receiver,
@@ -75,6 +75,11 @@ impl Runtime {
             Some(()) = stop_requested(stop) => Wake::Stop,
             _ = tick.tick() => Wake::Tick,
         }
+    }
+
+    /// Message déjà arrivé dans la file, sans attendre.
+    pub(crate) fn pending_msg(&mut self) -> Option<Msg> {
+        self.receiver.try_recv().ok()
     }
 
     /// Arrête le flux puis les requêtes, et rend ainsi le moteur.

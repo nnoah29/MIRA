@@ -10,6 +10,7 @@ use crate::view::safe_text::display_safe;
 
 /// Range les comptes reçus et demande les boîtes du compte sélectionné.
 pub fn on_accounts(state: &mut AppState, result: Result<Response, MiraError>) -> Vec<Command> {
+    state.refresh.accounts = false;
     match result {
         Ok(Response::Accounts(accounts)) => store_accounts(state, accounts),
         Ok(_) => unexpected(state),

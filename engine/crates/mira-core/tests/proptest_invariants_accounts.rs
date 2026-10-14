@@ -23,7 +23,7 @@ fn apply_identity_operation(db: &Database, account: &str, kind: u8, pick: u8, se
         0 => tx.insert_identity(&sample_identity(
             &format!("{account}-extra-{serial}"),
             account,
-            pick % 2 == 0,
+            pick.is_multiple_of(2),
         )),
         1 => tx.set_default_identity(&chosen.account, &chosen.id),
         _ => tx.update_identity(&chosen),

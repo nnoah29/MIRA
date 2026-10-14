@@ -2,7 +2,7 @@
 
 use mira_assembly::api::Request;
 use mira_assembly::mira_vocabulary::{
-    AccountId, Cursor, IdempotencyKey, MessageId, ThreadId, ViewRef,
+    AccountId, ActionId, Cursor, IdempotencyKey, MessageId, ThreadId, ViewRef,
 };
 
 pub mod idempotency;
@@ -22,7 +22,7 @@ pub enum Tag {
     Thread(ThreadId),
     Action,
     UserAction(IdempotencyKey),
-    Undo,
+    Undo(ActionId),
 }
 
 /// Effet de bord que la boucle doit réaliser après une transition.

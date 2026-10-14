@@ -30,7 +30,7 @@ pub fn action_reply(key: &str, result: Result<&str, MiraError>) -> Msg {
 /// Annulation attendue de cette action.
 pub fn undo_command(action: &str) -> Command {
     Command::Execute {
-        tag: Tag::Undo,
+        tag: Tag::Undo(ActionId::from_raw(action)),
         request: Request::Action(ActionRequest::UndoAction {
             action: ActionId::from_raw(action),
         }),
@@ -38,9 +38,36 @@ pub fn undo_command(action: &str) -> Command {
 }
 
 /// Réponse du moteur à une annulation.
-pub fn undo_reply(result: Result<(), MiraError>) -> Msg {
+pub fn undo_reply(action: &str, result: Result<(), MiraError>) -> Msg {
     Msg::Reply(Reply {
-        tag: Tag::Undo,
+        tag: Tag::Undo(ActionId::from_raw(action)),
         result: result.map(|()| Response::Done),
+    })
+}
+
+/// Liste des messages de la boîte de réception attendue pour recharger la vue.
+pub fn reload_command() -> Command {
+    let view = crate::message_fixtures::inbox_view();
+    Command::Execute {
+        tag: Tag::Messages {
+            view: view.clone(),
+            after: None,
+        },
+        request: Request::Message(mira_assembly::api::MessageRequest::ListMessages(
+            mira_assembly::reading::ListQuery::of(view),
+        )),
+    }
+}
+
+/// Réponse du moteur à ce rechargement, avec ces messages.
+pub fn reload_reply(count: usize) -> Msg {
+    Msg::Reply(Reply {
+        tag: Tag::Messages {
+            view: crate::message_fixtures::inbox_view(),
+            after: None,
+        },
+        result: Ok(Response::Messages(crate::message_fixtures::page(
+            0, count, None,
+        ))),
     })
 }

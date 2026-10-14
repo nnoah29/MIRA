@@ -253,3 +253,9 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - **Fuite évitée** : le message d'erreur de `toml` cite la valeur fautive ; les erreurs de lecture ne donnent plus que la ligne (test `empty_secret_refused_and_value_never_printed`).
 - **Limite** : le secret est en clair dans `config.toml` (`chmod 600` recommandé) ; MIRA ne vérifie pas les permissions du fichier. Ce n'est pas le trousseau : il s'agit d'un secret d'application, pas d'un secret de compte.
 - **Retour arrière** : retirer `client_secrets` et les variantes `_with_secret`.
+
+## AG-37 — Actions du TUI : corbeille sans confirmation, nonce de session
+- **Contexte** : le TUI envoie des actions sur les messages (archiver, corbeille, suppression définitive, étoile, lu, déplacement). Le moteur dédoublonne par clé d'idempotence : des clés fixes réutilisées d'un lancement à l'autre feraient prendre de vraies actions pour des doublons.
+- **Choix** : seule `DeletePermanently` exige une confirmation modale ; `Trash` part sans confirmation (réversible par `z`). Le constructeur `AppState::new(width, height, nonce)` exige un nonce de session (sans valeur par défaut), repris dans toutes les clés : `tui-<nonce>-act-<n>`, `tui-<nonce>-read-<id>-<n>`. À l'échec de la dernière action, l'erreur est affichée et la vue courante rechargée ; `z` n'annule que l'action confirmée la plus récente (rien tant qu'une action est en vol), et une annulation échouée restaure l'action pour réessayer.
+- **Raison** : la corbeille se défait ; la suppression définitive non. Le nonce garantit l'unicité des clés entre sessions, le compteur au sein d'une session.
+- **Retour arrière** : demander la confirmation aussi pour `Trash` (ajouter une variante de `Popup`) ; le nonce ne se retire pas sans risque de collision de clés.

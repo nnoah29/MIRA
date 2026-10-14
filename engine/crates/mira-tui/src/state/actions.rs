@@ -10,9 +10,15 @@ pub struct ActionsState {
 }
 
 impl ActionsState {
-    /// Note que la réponse de l'action envoyée avec cette clé est attendue ; les plus anciennes sont périmées.
+    /// Note l'envoi d'une action : plus rien d'ancien à annuler, et seule sa réponse compte.
     pub fn await_reply(&mut self, key: IdempotencyKey) {
+        self.last_action = None;
         self.awaited = Some(key);
+    }
+
+    /// Vrai tant que la réponse de la dernière action envoyée n'est pas arrivée.
+    pub fn in_flight(&self) -> bool {
+        self.awaited.is_some()
     }
 
     /// Vrai si la réponse pour cette clé est celle de la dernière action envoyée.

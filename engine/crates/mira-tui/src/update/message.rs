@@ -58,7 +58,7 @@ fn on_reply(state: &mut AppState, reply: Reply) -> Vec<Command> {
         Tag::Thread(thread) => on_thread(state, thread, reply.result),
         Tag::Action => on_action(state, reply.result),
         Tag::UserAction(key) => on_user_action(state, key, reply.result),
-        Tag::Undo => on_undo(state, reply.result),
+        Tag::Undo(action) => on_undo(state, action, reply.result),
     }
 }
 

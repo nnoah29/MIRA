@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use tokio::sync::Notify;
 
+use super::gates::AccountGates;
 use crate::actions::QueueContext;
 use crate::api::EngineConfig;
 use crate::events::EventBus;
@@ -19,6 +20,7 @@ pub(crate) struct ReplayShared {
     pub(crate) database: Arc<Database>,
     pub(crate) events: EventBus,
     pub(crate) budgets: ConnectionBudgets,
+    pub(crate) gates: AccountGates,
     wake: Notify,
     stopping: AtomicBool,
 }
@@ -36,6 +38,7 @@ impl ReplayShared {
             database,
             events,
             budgets,
+            gates: AccountGates::default(),
             wake: Notify::new(),
             stopping: AtomicBool::new(false),
         }

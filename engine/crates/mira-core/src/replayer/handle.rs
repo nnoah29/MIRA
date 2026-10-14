@@ -1,7 +1,9 @@
 //! Poignée du rejeu en tâche de fond : démarrage, réveil, arrêt.
 
 use std::sync::Arc;
+use std::time::Duration;
 
+use mira_vocabulary::AccountId;
 use tokio::runtime::Handle;
 use tokio::task::JoinHandle;
 
@@ -11,6 +13,8 @@ use crate::api::EngineConfig;
 use crate::events::EventBus;
 use crate::storage::Database;
 use crate::sync::ConnectionBudgets;
+
+const STOP_PATIENCE: Duration = Duration::from_secs(30);
 
 /// Le rejeu d'un moteur : le superviseur n'existe que si un runtime tokio est actif à l'ouverture.
 #[derive(Debug)]
@@ -37,6 +41,12 @@ impl ReplayerHandle {
     /// Signale que du travail est peut-être prêt (soumission, relance, reprise)
     pub(crate) fn wake(&self) {
         self.shared.wake_all();
+    }
+
+    /// Attend la fin de la passe en cours du compte (au plus 30 s) ; le compte doit être marqué « en suppression » pour qu'aucune autre ne commence
+    pub(crate) async fn stop_account(&self, id: &AccountId) {
+        let gate = self.shared.gates.gate(id);
+        let _ = tokio::time::timeout(STOP_PATIENCE, gate.lock()).await;
     }
 
     /// Arrête le superviseur et, avec lui, toutes les tâches de compte

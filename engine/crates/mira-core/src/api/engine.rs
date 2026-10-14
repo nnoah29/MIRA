@@ -47,7 +47,7 @@ impl Engine {
         let sink: Arc<dyn EventSink> = Arc::new(events.clone());
         let operations = OperationRegistry::new(Arc::clone(&config.ids), sink);
         events.emit(EventKind::EngineStarted)?;
-        resume_interrupted_deletions(&config, &database, &events);
+        resume_interrupted_deletions(&config, &database, &events, &paths.attachments_cache);
         let budgets = ConnectionBudgets::default();
         let (replayers, sync) = start_background(&config, &database, &events, &budgets);
         Ok(Self {

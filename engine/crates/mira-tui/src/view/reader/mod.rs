@@ -1,11 +1,12 @@
 //! Colonne de droite : en-têtes, pièces jointes, fil et corps du message ouvert.
 
 pub mod body;
+pub mod fit;
 pub mod header;
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::widgets::{Block, Paragraph, Wrap};
+use ratatui::widgets::{Block, Paragraph};
 
 use crate::state::{AppState, Pane};
 use crate::theme;
@@ -23,9 +24,11 @@ pub fn render_reader(frame: &mut Frame, area: Rect, state: &AppState) {
         frame.render_widget(hint, inner);
         return;
     };
-    let lines = header::header_lines(message, state);
+    let budget = usize::from((inner.height / 2).min(inner.height.saturating_sub(3)));
+    let lines = header::header_lines(message, state, usize::from(inner.width), budget);
     let height = u16::try_from(lines.len()).unwrap_or(u16::MAX);
-    let [head, text] = Layout::vertical([Constraint::Max(height), Constraint::Min(0)]).areas(inner);
-    frame.render_widget(Paragraph::new(lines).wrap(Wrap { trim: false }), head);
+    let [head, text] =
+        Layout::vertical([Constraint::Length(height), Constraint::Min(0)]).areas(inner);
+    frame.render_widget(Paragraph::new(lines), head);
     body::render_body(frame, text, state);
 }

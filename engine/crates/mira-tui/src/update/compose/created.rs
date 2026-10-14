@@ -1,9 +1,9 @@
 //! Réponse du moteur à la création d'un brouillon ; celle d'une autre demande est ignorée.
 
-use mira_assembly::api::{Response, WriteResponse};
+use mira_assembly::api::{ComposeRequest, Request, Response, WriteResponse};
 use mira_assembly::mira_vocabulary::{Draft, IdempotencyKey, MiraError};
 
-use crate::commands::Command;
+use crate::commands::{Command, Tag};
 use crate::state::compose::ComposeState;
 use crate::state::{AppState, ComposeSlot, Popup};
 use crate::update::accounts_reply::{report, unexpected};
@@ -15,7 +15,7 @@ pub fn on_draft_created(
     result: Result<Response, MiraError>,
 ) -> Vec<Command> {
     if !state.compose.awaits(&token) {
-        return Vec::new();
+        return delete_orphan(state, &token, result);
     }
     match result {
         Ok(Response::Write(WriteResponse::Draft(draft))) => open_editor(state, &draft),
@@ -27,6 +27,34 @@ pub fn on_draft_created(
             state.compose = ComposeSlot::Closed;
             report(state, error)
         }
+    }
+}
+
+/// Annule la création en attente ; sa réponse, si elle arrive, sera ignorée et son brouillon supprimé.
+pub fn cancel_creation(state: &mut AppState) -> Vec<Command> {
+    if let ComposeSlot::Creating(token) = std::mem::take(&mut state.compose) {
+        state.cancelled_drafts.push(token);
+        state.status.message = Some("Création du brouillon annulée".to_string());
+    }
+    Vec::new()
+}
+
+/// Réponse d'une création annulée : le brouillon que le moteur a quand même créé est supprimé.
+fn delete_orphan(
+    state: &mut AppState,
+    token: &IdempotencyKey,
+    result: Result<Response, MiraError>,
+) -> Vec<Command> {
+    let Some(position) = state.cancelled_drafts.iter().position(|t| t == token) else {
+        return Vec::new();
+    };
+    state.cancelled_drafts.remove(position);
+    match result {
+        Ok(Response::Write(WriteResponse::Draft(draft))) => vec![Command::Execute {
+            tag: Tag::DraftDeleted(draft.id.clone()),
+            request: Request::Compose(ComposeRequest::DeleteDraft { draft: draft.id }),
+        }],
+        Ok(_) | Err(_) => Vec::new(),
     }
 }
 

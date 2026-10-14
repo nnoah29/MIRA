@@ -5,6 +5,9 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use super::keys::{is_ctrl, is_plain, lookup};
 use crate::update::{ComposeIntent, EditKey, Intent};
 
+const CREATING_KEYS: [(KeyCode, Intent); 1] =
+    [(KeyCode::Esc, Intent::Compose(ComposeIntent::Close))];
+
 const COMPOSE_KEYS: [(KeyCode, Intent); 12] = [
     (KeyCode::Esc, Intent::Compose(ComposeIntent::Close)),
     (KeyCode::Tab, Intent::Compose(ComposeIntent::NextField)),
@@ -46,6 +49,11 @@ const COMPOSE_KEYS: [(KeyCode, Intent); 12] = [
         Intent::Compose(ComposeIntent::Edit(EditKey::End)),
     ),
 ];
+
+/// Pendant la création du brouillon seul Échap compte (il annule) ; tout le reste est ignoré, jamais mis en file.
+pub fn creating_intent(key: KeyEvent) -> Option<Intent> {
+    lookup(&CREATING_KEYS, key)
+}
 
 /// Vrai pour Ctrl+Alt ensemble, que certains terminaux envoient pour AltGr.
 fn is_alt_gr(key: KeyEvent) -> bool {

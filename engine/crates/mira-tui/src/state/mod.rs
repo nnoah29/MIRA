@@ -24,6 +24,8 @@ pub mod selection;
 pub mod status;
 pub mod view_change;
 
+use mira_assembly::mira_vocabulary::IdempotencyKey;
+
 pub use accounts::AccountsState;
 pub use actions::ActionsState;
 pub use compose::ComposeSlot;
@@ -54,6 +56,7 @@ pub struct AppState {
     pub actions: ActionsState,
     pub search: SearchState,
     pub compose: ComposeSlot,
+    pub cancelled_drafts: Vec<IdempotencyKey>,
     pub refresh: RefreshState,
     pub key_prefix: String,
     pub key_counter: u64,
@@ -76,6 +79,7 @@ impl AppState {
             actions: ActionsState::default(),
             search: SearchState::default(),
             compose: ComposeSlot::default(),
+            cancelled_drafts: Vec::new(),
             refresh: RefreshState::default(),
             key_prefix: format!("tui-{nonce}"),
             key_counter: 0,

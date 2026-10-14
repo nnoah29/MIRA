@@ -9,6 +9,7 @@ pub mod edit;
 pub mod fields;
 pub mod intent;
 pub mod popup;
+pub mod quit;
 pub mod route;
 pub mod save;
 pub mod saved;

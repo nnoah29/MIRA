@@ -33,6 +33,7 @@ impl ComposeState {
     pub fn fail_save(&mut self) {
         self.saving = None;
         self.close_after_save = false;
+        self.then_quit = false;
     }
 
     /// Demande (ou annule) la fermeture dès que l'enregistrement aura réussi.

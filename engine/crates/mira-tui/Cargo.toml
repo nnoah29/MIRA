@@ -18,6 +18,10 @@ path = "src/main.rs"
 [lints]
 workspace = true
 
+[dev-dependencies]
+mira-testkit.workspace = true
+tempfile.workspace = true
+
 [dependencies]
 mira-assembly.workspace = true
 crossterm.workspace = true

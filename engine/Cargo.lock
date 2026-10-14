@@ -1886,7 +1886,9 @@ version = "0.1.0"
 dependencies = [
  "crossterm",
  "mira-assembly",
+ "mira-testkit",
  "ratatui",
+ "tempfile",
  "thiserror 2.0.21",
  "tokio",
  "tracing-subscriber",

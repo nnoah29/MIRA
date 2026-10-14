@@ -1,4 +1,5 @@
 //! Le terminal est restauré quand le garde est détruit : sortie d'écran avant fin du mode brut.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 mod support;
 

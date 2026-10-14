@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use mira_vocabulary::{AccountId, AuthMethodKind, MiraError};
+use mira_vocabulary::{AccountId, AuthMethodKind, MiraError, SecretKind};
 
 use super::vault::CredentialVault;
 use crate::accounts::require_account;
@@ -28,12 +28,14 @@ pub(crate) async fn renew_access_token(
     }
     let provider = resolve_account_provider(&config.registry, &found.provider)?;
     let (settings, client_id) = config.oauth.resolve(&provider.descriptor())?;
-    let refreshed = vault.refresh_access_token(
+    let seen = vault.load_secret(&found.profile, account, SecretKind::AccessToken)?;
+    let refreshed = vault.refresh_access_token_if_stale(
         &found.profile,
         account,
         &settings.token_url,
         &client_id,
         config.clock.as_ref(),
+        seen.as_ref(),
     );
     refreshed.await.map(|_| ())
 }

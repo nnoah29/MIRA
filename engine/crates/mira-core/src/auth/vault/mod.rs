@@ -5,6 +5,7 @@ mod delete;
 mod expiry;
 mod load;
 mod refresh;
+mod refresh_lock;
 mod store;
 
 pub use credential_vault::CredentialVault;

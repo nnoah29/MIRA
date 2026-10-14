@@ -93,7 +93,7 @@ Les jalons suivent le §5 du brief et le chapitre 17 de la référence (phases 1
 - [ ] Scénarios S1–S14 exécutés comme tests via le CLI en processus contre le testkit.
 - **Acceptation** : invariant 6 (couverture CLI = façade, testée par énumération) ; S1–S14 verts.
 
-## J10 — Rendu sûr et durcissement — EN COURS (assainissement HTML fait, liste blanche du contenu distant ; effacement sûr S14 ; proptest/fuzz/perf 100 000 en cours sur feat/E-01-j10-hardening ; documents de fin à écrire)
+## J10 — Rendu sûr et durcissement — EN COURS (assainissement HTML fait, liste blanche du contenu distant ; effacement sûr S14 ; cache de pièces jointes et proptest invariants 7–12 FAITS ; reste : correctif `sanitize_html` (profondeur), fuzz MIME/HTML/IMAP, perf 100 000, revue des invariants, UTF-7, documents de fin)
 
 - [ ] HTML assaini dans le moteur (sans script, contenu distant bloqué, liste des ressources retirées) ; autorisation par message ou expéditeur ; pièces jointes à la demande, sans fichier partiel exposé.
 - [ ] proptest sur les invariants 7–12 ; fuzz léger des parseurs ; revue des invariants 1–33 un par un ; performance sur 100 000 messages ; `README.md`, `ARCHITECTURE-IMPLEMENTEE.md`, `GUIDE-RUST-POUR-CPP.md`.

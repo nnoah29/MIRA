@@ -26,6 +26,7 @@ pub struct SelectedMailbox {
     pub exists: u32,
     pub flags: Vec<String>,
     pub vanished: Vec<u32>,
+    pub vanished_incomplete: bool,
     pub changed: Vec<FetchedFlags>,
 }
 

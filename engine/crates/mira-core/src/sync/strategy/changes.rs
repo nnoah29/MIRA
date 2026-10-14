@@ -26,6 +26,9 @@ async fn detect_changes(
 ) -> Result<Changes, MiraError> {
     let marker: SyncMarker = mailbox.marker.ok_or_else(missing_marker)?;
     match detection {
+        ChangeDetection::Qresync if selected.vanished_incomplete => {
+            compared_changes(session, mailbox, marker, true).await
+        }
         ChangeDetection::Qresync => qresync_changes(session, selected, marker).await,
         ChangeDetection::Condstore => compared_changes(session, mailbox, marker, true).await,
         ChangeDetection::FullCompare => compared_changes(session, mailbox, marker, false).await,

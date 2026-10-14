@@ -2,10 +2,10 @@
 
 use super::token::Token;
 use super::tokenizer::tokenize;
-use super::uid_set::parse_uid_set;
+use super::uid_set::{UidSet, parse_uid_set};
 
-/// Lit `VANISHED [(EARLIER)] ensemble` et rend les UID disparus.
-pub(crate) fn parse_vanished(line: &[u8]) -> Option<Vec<u32>> {
+/// Lit `VANISHED [(EARLIER)] ensemble` et rend les UID disparus, avec l'indication d'un ensemble incomplet.
+pub(crate) fn parse_vanished(line: &[u8]) -> Option<UidSet> {
     let mut tokens = tokenize(line).into_iter();
     (tokens.next()?.keyword()? == "VANISHED").then_some(())?;
     let set = tokens.find_map(|token| match token {

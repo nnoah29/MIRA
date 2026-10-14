@@ -1,11 +1,11 @@
-//! Amorçage du miroir local d'un monde de test : une boîte et des messages en-têtes seuls.
+//! Amorçage du miroir local d'un monde de test : une boîte et des messages en-têtes seuls, indexés pour la recherche.
 
 use mira_assembly::mira_vocabulary::{
     AccountId, AddressEntry, Appearance, ContentState, Flags, Mailbox, MailboxId, MailboxRole,
     MessageId, MessageSummary, MiraError, Timestamp,
 };
 use mira_assembly::profile::ProfilePaths;
-use mira_assembly::storage::Database;
+use mira_assembly::storage::{Database, Tx};
 
 use super::world::TestWorld;
 
@@ -57,6 +57,28 @@ fn message_row(id: &MessageId, account: &AccountId, subject: &str) -> MessageSum
     }
 }
 
+/// Insère le message `index` de la boîte, son apparition (UID `index + 1`) et son entrée d'index de recherche.
+fn seed_message(
+    tx: &Tx<'_>,
+    mailbox: &MailboxId,
+    account: &AccountId,
+    name: &str,
+    index: usize,
+    subject: &str,
+) -> Result<(), MiraError> {
+    let id = MessageId::from_raw(format!("{name}-{}", index + 1));
+    let sorted_at = Timestamp::from_millis(1_000 * (index as i64 + 1));
+    tx.insert_message(&message_row(&id, account, subject), sorted_at)?;
+    tx.index_message(&id, subject, "Bob bob@example.org", "")?;
+    tx.add_appearance(&Appearance {
+        message: id,
+        mailbox: mailbox.clone(),
+        uid: index as u32 + 1,
+        deleted: false,
+        needs_revalidation: false,
+    })
+}
+
 impl TestWorld {
     /// Ouvre la base du profil (le moteur reste ouvert : SQLite sérialise les écritures).
     fn open_mirror(&self) -> Result<Database, MiraError> {
@@ -78,16 +100,7 @@ impl TestWorld {
         self.open_mirror()?.write(|tx| {
             tx.upsert_mailbox(&mailbox_row(&mailbox, &account, name, role))?;
             for (index, subject) in subjects.iter().enumerate() {
-                let id = MessageId::from_raw(format!("{name}-{}", index + 1));
-                let sorted_at = Timestamp::from_millis(1_000 * (index as i64 + 1));
-                tx.insert_message(&message_row(&id, &account, subject), sorted_at)?;
-                tx.add_appearance(&Appearance {
-                    message: id,
-                    mailbox: mailbox.clone(),
-                    uid: index as u32 + 1,
-                    deleted: false,
-                    needs_revalidation: false,
-                })?;
+                seed_message(tx, &mailbox, &account, name, index, subject)?;
             }
             tx.refresh_mailbox_counters(&mailbox)
         })?;

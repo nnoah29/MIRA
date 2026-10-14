@@ -1,4 +1,4 @@
-//! Barre d'état : indicateurs, puis dernier message, dernière erreur de synchro ou rappel des touches.
+//! Barre d'état : indicateurs, puis dernier message, dernière erreur de synchro ou touches du contexte.
 
 use ratatui::Frame;
 use ratatui::layout::Rect;
@@ -7,12 +7,11 @@ use ratatui::widgets::Paragraph;
 
 use super::search_bar::render_search_bar;
 use super::status_text::indicators;
+use crate::input::context_of;
+use crate::input::hints::{Hint, hints_for};
 use crate::state::AppState;
 use crate::theme;
 use crate::view::safe_text::display_safe;
-
-const HINT: &str =
-    "Tab panneau · / recherche · Ctrl+r synchro · j/k déplacer · Entrée ouvrir · q quitter";
 
 /// Affiche la saisie de recherche si elle est ouverte, sinon indicateurs et message.
 pub fn render_status(frame: &mut Frame, area: Rect, state: &AppState) {
@@ -33,6 +32,18 @@ fn message_span(state: &AppState) -> Span<'static> {
     match (&state.status.message, &state.status.sync_error) {
         (Some(message), _) => Span::styled(display_safe(message), theme::status()),
         (None, Some(error)) => Span::styled(display_safe(error), theme::status()),
-        (None, None) => Span::styled(HINT, theme::dim()),
+        (None, None) => Span::styled(key_footer(state), theme::dim()),
     }
+}
+
+/// Touches valables dans le contexte courant, précédées du rappel de l'aide.
+fn key_footer(state: &AppState) -> String {
+    let hints = hints_for(context_of(state));
+    let mut parts = vec!["? aide".to_string()];
+    parts.extend(
+        hints
+            .iter()
+            .map(|Hint { keys, action }| format!("{keys} {action}")),
+    );
+    parts.join(" · ")
 }

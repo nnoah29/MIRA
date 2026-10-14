@@ -3,6 +3,7 @@
 
 pub mod app;
 pub mod commands;
+pub mod input;
 pub mod state;
 pub mod theme;
 pub mod update;

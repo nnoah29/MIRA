@@ -31,7 +31,8 @@ pub fn route(state: &mut AppState, intent: Intent) -> Vec<Command> {
         | Intent::OpenMovePicker
         | Intent::Undo
         | Intent::Search(_)
-        | Intent::StartSync => Vec::new(),
+        | Intent::StartSync
+        | Intent::Help => Vec::new(),
     }
 }
 
@@ -56,6 +57,6 @@ fn confirm(state: &mut AppState) -> Vec<Command> {
             send_removing(state, ActionKind::DeletePermanently, messages)
         }
         Popup::MovePicker(picker) => confirm_move(state, &picker),
-        Popup::Closed => Vec::new(),
+        Popup::Help | Popup::Closed => Vec::new(),
     }
 }

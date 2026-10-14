@@ -17,7 +17,11 @@ pub fn on_search(
         return Vec::new();
     }
     match result {
-        Ok(Response::Messages(page)) => state.messages.replace_items(page.items),
+        Ok(Response::Messages(page)) => {
+            let has_more = page.next_cursor.is_some();
+            state.search.note_results(page.items.len(), has_more);
+            state.messages.replace_items(page.items);
+        }
         Ok(_) => return unexpected(state),
         Err(error) => return report(state, error),
     }

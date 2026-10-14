@@ -1,6 +1,7 @@
 //! Fenêtres modales dessinées au-dessus de l'écran principal.
 
 pub mod confirm;
+pub mod help;
 pub mod move_target;
 
 use ratatui::Frame;
@@ -35,6 +36,12 @@ pub fn render_popup(frame: &mut Frame, state: &AppState) {
             let area = centered(frame.area(), 44, rows.saturating_add(2));
             frame.render_widget(Clear, area);
             move_target::render_move_target(frame, area, picker);
+        }
+        Popup::Help => {
+            let rows = u16::try_from(help::help_lines(state).len()).unwrap_or(u16::MAX);
+            let area = centered(frame.area(), 64, rows.saturating_add(2));
+            frame.render_widget(Clear, area);
+            help::render_help(frame, area, state);
         }
     }
 }

@@ -35,6 +35,7 @@ impl SearchState {
             return None;
         }
         self.query = Some(query.clone());
+        self.first_page_only = None;
         self.editing = false;
         Some(query)
     }

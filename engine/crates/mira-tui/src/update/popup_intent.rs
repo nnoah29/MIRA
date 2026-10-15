@@ -39,7 +39,9 @@ pub fn route(state: &mut AppState, intent: Intent) -> Vec<Command> {
         | Intent::Undo
         | Intent::Search(_)
         | Intent::StartSync
-        | Intent::Help => Vec::new(),
+        | Intent::Help
+        | Intent::Palette(_)
+        | Intent::Settings(_) => Vec::new(),
     }
 }
 

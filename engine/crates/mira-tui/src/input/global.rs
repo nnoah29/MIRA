@@ -5,9 +5,9 @@ use crossterm::event::{KeyCode, KeyEvent};
 use super::context::{KeyContext, pane_context};
 use super::keys::{is_ctrl, lookup};
 use crate::state::AppState;
-use crate::update::{Intent, SearchIntent};
+use crate::update::{Intent, PaletteIntent, SearchIntent};
 
-const GLOBAL_KEYS: [(KeyCode, Intent); 15] = [
+const GLOBAL_KEYS: [(KeyCode, Intent); 16] = [
     (KeyCode::Tab, Intent::NextPane),
     (KeyCode::BackTab, Intent::PrevPane),
     (KeyCode::Char('?'), Intent::Help),
@@ -23,6 +23,7 @@ const GLOBAL_KEYS: [(KeyCode, Intent); 15] = [
     (KeyCode::End, Intent::Bottom),
     (KeyCode::Enter, Intent::Open),
     (KeyCode::Esc, Intent::Back),
+    (KeyCode::Char(':'), Intent::Palette(PaletteIntent::Open)),
 ];
 
 /// Intention d'une touche commune ; Échap quitte d'abord les résultats de recherche de la liste.

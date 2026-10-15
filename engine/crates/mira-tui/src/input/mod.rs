@@ -7,10 +7,13 @@ pub mod global;
 pub mod hints;
 pub mod keys;
 pub mod list;
+pub mod palette;
 pub mod popup;
 pub mod queue;
 pub mod reader;
 pub mod search;
+pub mod settings;
+pub mod settings_hints;
 pub mod sidebar;
 
 use crossterm::event::{KeyEvent, KeyEventKind};
@@ -42,6 +45,10 @@ pub fn intent_for(state: &AppState, key: KeyEvent) -> Option<Intent> {
         KeyContext::Confirm => popup::confirm_intent(key),
         KeyContext::MovePicker => popup::picker_intent(key),
         KeyContext::Help => popup::help_intent(key),
+        KeyContext::Palette => palette::intent(key),
+        KeyContext::Settings => settings::intent(state, key),
+        KeyContext::SettingsForm => settings::form_intent(key),
+        KeyContext::SettingsConfirm => popup::confirm_intent(key),
         KeyContext::Sidebar => in_pane(state, key, sidebar::intent),
         KeyContext::List | KeyContext::SearchResults => in_pane(state, key, list::intent),
         KeyContext::Reader => in_pane(state, key, reader::intent),

@@ -4,6 +4,7 @@ pub mod ansi_skip;
 pub mod compose;
 pub mod drafts;
 pub mod layout;
+pub mod masked_input;
 pub mod message_list;
 pub mod narrow;
 pub mod popups;
@@ -39,4 +40,5 @@ pub fn render(frame: &mut Frame, state: &AppState) {
     }
     status_bar::render_status(frame, areas.status, state);
     popups::render_popup(frame, state);
+    popups::account_form::render_account_form(frame, state);
 }

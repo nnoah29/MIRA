@@ -44,6 +44,8 @@ pub enum Tag {
     QueueChange(ActionId),
     Drafts(u64),
     DraftLoaded(u64),
+    Prepared(u64),
+    AccountAdded(u64),
 }
 
 /// Effet de bord que la boucle doit réaliser après une transition.

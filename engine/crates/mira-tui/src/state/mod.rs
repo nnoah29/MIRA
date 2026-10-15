@@ -1,5 +1,6 @@
 //! État complet de l'application : données affichées, focus et taille d'écran.
 
+pub mod account_form;
 pub mod accounts;
 pub mod actions;
 pub mod boot;
@@ -29,6 +30,7 @@ pub mod view_change;
 
 use mira_assembly::mira_vocabulary::IdempotencyKey;
 
+pub use account_form::AccountFormSlot;
 pub use accounts::AccountsState;
 pub use actions::ActionsState;
 pub use compose::ComposeSlot;
@@ -69,6 +71,7 @@ pub struct AppState {
     pub refresh: RefreshState,
     pub key_prefix: String,
     pub key_counter: u64,
+    pub account_form: AccountFormSlot,
 }
 
 impl AppState {
@@ -95,6 +98,7 @@ impl AppState {
             refresh: RefreshState::default(),
             key_prefix: format!("tui-{nonce}"),
             key_counter: 0,
+            account_form: AccountFormSlot::default(),
         }
     }
 }

@@ -1,37 +1,29 @@
-//! Confirmation d'envoi : destinataires et objet du brouillon, neutralisés et raccourcis.
+//! Confirmation d'envoi : résumé des destinataires et de l'objet, une ligne chacun, sans retour à la ligne.
 
 use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::text::Line;
-use ratatui::widgets::{Block, Paragraph, Wrap};
+use ratatui::widgets::{Block, Paragraph};
 
-use crate::state::compose::{ComposeState, Field};
+use super::send_summary::send_summary;
+use crate::state::compose::ComposeState;
 use crate::theme;
-use crate::view::queue::outbox::shown;
 
-const RECIPIENT_FIELDS: [Field; 3] = [Field::To, Field::Cc, Field::Bcc];
-
-/// Lignes de la confirmation : question, destinataires non vides, objet, touches.
-fn send_lines(compose: &ComposeState) -> Vec<Line<'static>> {
-    let mut lines = vec![Line::from("Envoyer ce message ?")];
-    for field in RECIPIENT_FIELDS {
-        let text = compose.text(field);
-        if !text.trim().is_empty() {
-            lines.push(Line::from(format!("{} : {}", field.label(), shown(&text))));
-        }
-    }
-    let subject = shown(&compose.text(Field::Subject));
-    lines.push(Line::from(format!("Objet : {subject}")));
-    lines.push(Line::from("Entrée ou y : envoyer · Échap ou n : annuler"));
-    lines
+/// Nombre de lignes du résumé pour ce brouillon (aucune sans brouillon ouvert).
+pub fn summary_rows(compose: Option<&ComposeState>) -> usize {
+    compose.map_or(0, |compose| send_summary(compose).len())
 }
 
 /// Dessine la confirmation du brouillon ouvert (vide s'il n'y en a pas).
 pub fn render_confirm_send(frame: &mut Frame, area: Rect, compose: Option<&ComposeState>) {
-    let lines = compose.map(send_lines).unwrap_or_default();
+    let lines: Vec<Line> = compose
+        .map(send_summary)
+        .unwrap_or_default()
+        .into_iter()
+        .map(Line::from)
+        .collect();
     let block = Block::bordered()
         .title("Envoyer")
         .border_style(theme::border(true));
-    let paragraph = Paragraph::new(lines).wrap(Wrap { trim: true }).block(block);
-    frame.render_widget(paragraph, area);
+    frame.render_widget(Paragraph::new(lines).block(block), area);
 }

@@ -6,6 +6,7 @@ pub mod error;
 pub mod event_cursor;
 pub mod event_feed;
 pub mod input_thread;
+pub mod keyboard_flags;
 pub mod panic_hook;
 pub mod raw_mode;
 pub mod request_task;

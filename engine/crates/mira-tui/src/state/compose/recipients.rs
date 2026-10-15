@@ -1,5 +1,7 @@
 //! Contrôle des destinataires avant l'envoi : tous les champs d'adresses, modifiés ou non.
 
+use mira_assembly::mira_vocabulary::AddressEntry;
+
 use super::addresses::parse_addresses;
 use super::field::Field;
 use super::state::ComposeState;
@@ -28,5 +30,10 @@ impl ComposeState {
             return RecipientCheck::Empty;
         }
         RecipientCheck::Ready(count)
+    }
+
+    /// Adresses valides de ce champ (aucune si la saisie est invalide).
+    pub fn recipients(&self, field: Field) -> Vec<AddressEntry> {
+        parse_addresses(&self.text(field)).unwrap_or_default()
     }
 }

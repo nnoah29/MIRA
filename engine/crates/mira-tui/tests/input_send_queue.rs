@@ -11,19 +11,19 @@ mod reader_fixtures;
 mod sidebar_fixtures;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use input_fixtures::{code, ctrl, key, map};
+use input_fixtures::{code, key, map};
 use mira_assembly::mira_vocabulary::ActionState;
 use mira_tui::update::{ComposeIntent, EditKey, Intent, QueueIntent};
 use navigation_fixtures::press;
 
-/// Ctrl+Entrée (ou Ctrl+j, que certains terminaux envoient pour lui) demande l'envoi ; Entrée reste un saut de ligne.
+/// Ctrl+Entrée réel (protocole clavier étendu) ou F5 demandent l'envoi ; Entrée reste un saut de ligne.
 #[test]
 fn ctrl_enter_requests_send_in_the_editor() {
     let state = compose_fixtures::open_reply();
     let ctrl_enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::CONTROL);
     let send = Some(Intent::Compose(ComposeIntent::Send));
     assert_eq!(map(&state, ctrl_enter), send);
-    assert_eq!(map(&state, ctrl('j')), send);
+    assert_eq!(map(&state, code(KeyCode::F(5))), send);
     let newline = Some(Intent::Compose(ComposeIntent::Edit(EditKey::Newline)));
     assert_eq!(map(&state, code(KeyCode::Enter)), newline);
     assert_eq!(

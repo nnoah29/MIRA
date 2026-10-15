@@ -85,7 +85,7 @@ const SEARCH_INPUT: &[Hint] = &[
 const CREATING: &[Hint] = &[hint("Échap", "annuler")];
 
 const COMPOSE: &[Hint] = &[
-    hint("Ctrl+Entrée", "envoyer"),
+    hint("F5/Ctrl+Entrée", "envoyer"),
     hint("Ctrl+s", "enregistrer"),
     hint("Tab/Maj+Tab", "champ suivant/précédent"),
     hint("Échap", "fermer"),

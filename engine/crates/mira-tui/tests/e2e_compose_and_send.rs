@@ -14,8 +14,12 @@ use ratatui::buffer::Buffer;
 use support::send_world::SendWorld;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
-/// Ouvre la boîte, commence un message à bob, objet et corps tapés, puis Ctrl+Entrée jusqu'à la confirmation.
-async fn fill_and_ask(keys: &UnboundedSender<KeyEvent>, frames: &mut UnboundedReceiver<Buffer>) {
+/// Ouvre la boîte, commence un message à bob, objet et corps tapés, puis la touche d'envoi jusqu'à la confirmation.
+async fn fill_and_ask(
+    keys: &UnboundedSender<KeyEvent>,
+    frames: &mut UnboundedReceiver<Buffer>,
+    send_key: KeyEvent,
+) {
     wait_for(frames, "boîte listée", |s| s.contains("Réception")).await;
     press(keys, &[KeyCode::Enter]);
     wait_for(frames, "message listé", |s| s.contains("Facture")).await;
@@ -33,14 +37,14 @@ async fn fill_and_ask(keys: &UnboundedSender<KeyEvent>, frames: &mut UnboundedRe
         s.contains("Brouillon enregistré")
     })
     .await;
-    keys.send(KeyEvent::new(KeyCode::Enter, KeyModifiers::CONTROL))
-        .unwrap();
+    keys.send(send_key).unwrap();
     wait_for(frames, "confirmation", |s| s.contains("Envoyer ce message")).await;
 }
 
-/// Confirme, voit l'envoi en file puis dans la vue « file », revient et quitte.
+/// F5, confirme, voit l'envoi en file puis dans la vue « file », revient et quitte.
 async fn send_script(keys: UnboundedSender<KeyEvent>, mut frames: UnboundedReceiver<Buffer>) {
-    fill_and_ask(&keys, &mut frames).await;
+    let f5 = KeyEvent::new(KeyCode::F(5), KeyModifiers::NONE);
+    fill_and_ask(&keys, &mut frames, f5).await;
     press(&keys, &[KeyCode::Enter]);
     wait_for(&mut frames, "en file", |s| s.contains("En file d'envoi")).await;
     press(&keys, &[KeyCode::Char('Q')]);
@@ -49,9 +53,10 @@ async fn send_script(keys: UnboundedSender<KeyEvent>, mut frames: UnboundedRecei
     press(&keys, &[KeyCode::Esc, KeyCode::Char('q')]);
 }
 
-/// Confirme puis quitte aussitôt (Ctrl+c), sans attendre la réponse du moteur.
+/// Ctrl+Entrée (protocole étendu simulé), confirme puis quitte aussitôt (Ctrl+c), sans attendre la réponse du moteur.
 async fn quit_script(keys: UnboundedSender<KeyEvent>, mut frames: UnboundedReceiver<Buffer>) {
-    fill_and_ask(&keys, &mut frames).await;
+    let ctrl_enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::CONTROL);
+    fill_and_ask(&keys, &mut frames, ctrl_enter).await;
     press(&keys, &[KeyCode::Enter]);
     keys.send(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL))
         .unwrap();

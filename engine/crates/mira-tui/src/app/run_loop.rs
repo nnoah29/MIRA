@@ -19,6 +19,7 @@ use super::screen::{Screen, terminal_error};
 use super::session_nonce::session_nonce;
 use crate::input::intent_for;
 use crate::state::AppState;
+use crate::update::shutdown::shutdown_commands;
 use crate::update::sync_status::refresh_status;
 use crate::update::{Msg, update};
 
@@ -83,7 +84,7 @@ async fn run_session<B: Backend>(
     (outcome, runtime.stop_detached())
 }
 
-/// Tour de boucle : taille, dessin, attente d'un réveil, transition ; s'arrête sur sortie, signal ou clavier fermé.
+/// Tour de boucle : taille, dessin, réveil, transition ; sur signal ou clavier fermé, enregistre d'abord le brouillon modifié.
 async fn drive<B: Backend>(
     screen: &mut Screen<'_, B>,
     state: &mut AppState,
@@ -101,7 +102,10 @@ async fn drive<B: Backend>(
             Wake::Key(key) => intent_for(state, key).map(Msg::Intent),
             Wake::Msg(msg) => Some(msg),
             Wake::Settled | Wake::Tick => None,
-            Wake::Stop | Wake::KeysClosed => return Ok(()),
+            Wake::Stop | Wake::KeysClosed => {
+                runtime.run(shutdown_commands(state));
+                return Ok(());
+            }
         };
         if msg.is_some_and(|msg| apply(state, runtime, msg)) || apply_pending(state, runtime) {
             return Ok(());

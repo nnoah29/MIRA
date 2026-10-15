@@ -28,7 +28,7 @@ fn decide(state: &mut AppState, resend: bool) -> Vec<Command> {
     state.status.message = Some(if resend {
         "Renvoi demandé".to_string()
     } else {
-        "Envoi abandonné : le brouillon revient en édition".to_string()
+        "Envoi abandonné : le brouillon revient en édition (rouvrez-le avec B)".to_string()
     });
     let request = ComposeRequest::ResolveUncertainSend {
         action: action.clone(),

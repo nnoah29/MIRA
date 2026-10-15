@@ -23,6 +23,7 @@ pub fn route(state: &mut AppState, intent: Intent) -> Vec<Command> {
         Intent::Quit => panes::quit(state),
         Intent::Compose(compose) => compose_popup::route(state, compose),
         Intent::Queue(queue) => queue_popup::route(state, queue),
+        Intent::Drafts(drafts) => super::drafts::delete::route_popup(state, drafts),
         Intent::Top
         | Intent::Bottom
         | Intent::NextPane
@@ -57,7 +58,7 @@ fn step_picker(state: &mut AppState, step: fn(&mut MovePicker)) -> Vec<Command> 
     Vec::new()
 }
 
-/// Ferme la fenêtre et envoie l'action qu'elle confirmait ; décision d'envoi incertain (`r`/`n`) et abandon (`D`) exigent leur touche.
+/// Ferme la fenêtre et envoie l'action qu'elle confirmait ; décision d'envoi incertain (`r`/`n`), abandon et suppression de brouillon (`D`) exigent leur touche.
 fn confirm(state: &mut AppState) -> Vec<Command> {
     match std::mem::take(&mut state.popup) {
         Popup::ConfirmDelete { messages } => {
@@ -67,7 +68,9 @@ fn confirm(state: &mut AppState) -> Vec<Command> {
         Popup::MovePicker(picker) => confirm_move(state, &picker),
         Popup::ConfirmCloseDraft => save_and_close(state),
         Popup::ConfirmSend => confirm_send(state),
-        kept @ (Popup::ResolveUncertain { .. } | Popup::ConfirmDiscardDraft) => {
+        kept @ (Popup::ResolveUncertain { .. }
+        | Popup::ConfirmDiscardDraft
+        | Popup::ConfirmDeleteDraft { .. }) => {
             state.popup = kept;
             Vec::new()
         }

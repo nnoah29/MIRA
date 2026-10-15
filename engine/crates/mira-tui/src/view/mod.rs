@@ -2,6 +2,7 @@
 
 pub mod ansi_skip;
 pub mod compose;
+pub mod drafts;
 pub mod layout;
 pub mod message_list;
 pub mod narrow;
@@ -27,6 +28,8 @@ pub fn render(frame: &mut Frame, state: &AppState) {
         compose::render_compose(frame, layout::body(frame.area()), compose, &from);
     } else if state.queue.is_open() {
         queue::render_queue(frame, layout::body(frame.area()), state);
+    } else if state.drafts.is_open() {
+        drafts::render_drafts(frame, layout::body(frame.area()), state);
     } else if state.accounts.is_empty() {
         welcome::render_welcome(frame, layout::body(frame.area()));
     } else {

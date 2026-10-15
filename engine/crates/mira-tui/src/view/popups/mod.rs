@@ -3,6 +3,7 @@
 pub mod close_draft;
 pub mod confirm;
 pub mod confirm_send;
+pub mod delete_draft;
 pub mod help;
 pub mod move_target;
 pub mod send_summary;
@@ -48,6 +49,7 @@ fn popup_size(state: &AppState) -> Option<(u16, u16)> {
         Popup::ConfirmDiscardDraft => Some((64, 6)),
         Popup::ConfirmSend => Some((64, rows(confirm_send::summary_rows(state)))),
         Popup::ResolveUncertain { .. } => Some((64, 8)),
+        Popup::ConfirmDeleteDraft { .. } => Some((64, 6)),
         Popup::Help => Some((64, rows(help::help_lines(state).len()))),
     }
 }
@@ -61,10 +63,15 @@ fn draw_popup(frame: &mut Frame, area: Rect, state: &AppState) {
         Popup::ConfirmCloseDraft => {
             close_draft::render_close_draft(frame, area, state.compose.open())
         }
-        Popup::ConfirmDiscardDraft => close_draft::render_discard_draft(frame, area),
+        Popup::ConfirmDiscardDraft => {
+            close_draft::render_discard_draft(frame, area, state.compose.open())
+        }
         Popup::ConfirmSend => confirm_send::render_confirm_send(frame, area, state),
         Popup::ResolveUncertain { subject, .. } => {
             uncertain::render_uncertain(frame, area, subject)
+        }
+        Popup::ConfirmDeleteDraft { subject, .. } => {
+            delete_draft::render_delete_draft(frame, area, subject)
         }
         Popup::Help => help::render_help(frame, area, state),
     }

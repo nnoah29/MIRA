@@ -31,6 +31,7 @@ pub fn on_message_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
         | Intent::Search(_)
         | Intent::Compose(_)
         | Intent::Queue(_)
+        | Intent::Drafts(_)
         | Intent::StartSync
         | Intent::Help => Vec::new(),
     }

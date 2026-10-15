@@ -4,6 +4,7 @@ use mira_assembly::api::{AccountRequest, Request};
 use mira_assembly::mira_vocabulary::{Event, EventKind};
 
 use super::account_switch::{list_mailboxes, selected_id};
+use super::drafts::events::on_drafts_event;
 use super::event_reaction::{Reaction, reaction_of};
 use super::message_refresh::refresh_view;
 use super::queue::events::on_queue_event;
@@ -24,6 +25,7 @@ pub fn on_event(state: &mut AppState, event: Event) -> Vec<Command> {
     }
     let mut commands = reload(state, reaction);
     commands.extend(on_queue_event(state, &event.kind));
+    commands.extend(on_drafts_event(state, &event.kind));
     commands
 }
 

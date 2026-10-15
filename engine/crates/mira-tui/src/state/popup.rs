@@ -1,6 +1,6 @@
 //! Fenêtre modale affichée au-dessus de l'écran principal.
 
-use mira_assembly::mira_vocabulary::{ActionId, MessageSummary};
+use mira_assembly::mira_vocabulary::{ActionId, DraftId, MessageSummary};
 
 use super::move_picker::MovePicker;
 
@@ -19,6 +19,10 @@ pub enum Popup {
     ConfirmSend,
     ResolveUncertain {
         action: ActionId,
+        subject: String,
+    },
+    ConfirmDeleteDraft {
+        draft: DraftId,
         subject: String,
     },
 }

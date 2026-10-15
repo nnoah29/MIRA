@@ -43,7 +43,7 @@ fn key_footer(state: &AppState) -> String {
     let mut parts = Vec::new();
     if !matches!(
         context,
-        KeyContext::Compose | KeyContext::Creating | KeyContext::Queue
+        KeyContext::Compose | KeyContext::Creating | KeyContext::Queue | KeyContext::Drafts
     ) {
         parts.push("? aide".to_string());
     }

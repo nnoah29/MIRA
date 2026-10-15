@@ -4,6 +4,7 @@ pub mod accounts;
 pub mod actions;
 pub mod boot;
 pub mod compose;
+pub mod drafts;
 pub mod focus;
 pub mod keys;
 pub mod mailbox_order;
@@ -31,6 +32,7 @@ use mira_assembly::mira_vocabulary::IdempotencyKey;
 pub use accounts::AccountsState;
 pub use actions::ActionsState;
 pub use compose::ComposeSlot;
+pub use drafts::DraftsState;
 pub use focus::Pane;
 pub use mailboxes::MailboxesState;
 pub use messages::MessagesState;
@@ -61,6 +63,7 @@ pub struct AppState {
     pub search: SearchState,
     pub compose: ComposeSlot,
     pub queue: QueueState,
+    pub drafts: DraftsState,
     pub sent_subjects: SentSubjects,
     pub cancelled_drafts: Vec<IdempotencyKey>,
     pub refresh: RefreshState,
@@ -86,6 +89,7 @@ impl AppState {
             search: SearchState::default(),
             compose: ComposeSlot::default(),
             queue: QueueState::default(),
+            drafts: DraftsState::default(),
             sent_subjects: SentSubjects::default(),
             cancelled_drafts: Vec::new(),
             refresh: RefreshState::default(),

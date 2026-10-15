@@ -41,7 +41,8 @@ pub fn route_editing(state: &mut AppState, intent: Intent) -> Vec<Command> {
         Intent::MoveDown | Intent::MoveUp | Intent::Top | Intent::Bottom | Intent::Open | Intent::Back | Intent::NextPane
         | Intent::PrevPane | Intent::NextAccount | Intent::PrevAccount | Intent::Archive | Intent::Trash
         | Intent::DeletePermanently | Intent::ToggleFlag | Intent::ToggleRead | Intent::OpenMovePicker | Intent::Undo
-        | Intent::Confirm | Intent::Cancel | Intent::Search(_) | Intent::Queue(_) | Intent::StartSync | Intent::Help => Vec::new(),
+        | Intent::Confirm | Intent::Cancel | Intent::Search(_) | Intent::Queue(_) | Intent::Drafts(_) | Intent::StartSync
+        | Intent::Help => Vec::new(),
     }
 }
 
@@ -54,7 +55,8 @@ pub fn route_creating(state: &mut AppState, intent: Intent) -> Vec<Command> {
         Intent::Compose(_) | Intent::MoveDown | Intent::MoveUp | Intent::Top | Intent::Bottom | Intent::Open | Intent::Back
         | Intent::NextPane | Intent::PrevPane | Intent::NextAccount | Intent::PrevAccount | Intent::Archive | Intent::Trash
         | Intent::DeletePermanently | Intent::ToggleFlag | Intent::ToggleRead | Intent::OpenMovePicker | Intent::Undo
-        | Intent::Confirm | Intent::Cancel | Intent::Search(_) | Intent::Queue(_) | Intent::StartSync | Intent::Help => Vec::new(),
+        | Intent::Confirm | Intent::Cancel | Intent::Search(_) | Intent::Queue(_) | Intent::Drafts(_) | Intent::StartSync
+        | Intent::Help => Vec::new(),
     }
 }
 

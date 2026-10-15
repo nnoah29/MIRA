@@ -67,7 +67,9 @@ pub fn on_queue_change(
         Ok(_) => {
             if let Some(subject) = cancelled {
                 let subject = display_safe(&subject);
-                state.status.message = Some(format!("Envoi « {subject} » annulé"));
+                state.status.message = Some(format!(
+                    "Envoi « {subject} » annulé : le brouillon revient en édition (rouvrez-le avec B)"
+                ));
             }
             refresh_queue(state)
         }

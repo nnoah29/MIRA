@@ -8,6 +8,8 @@ use super::action_reply::{on_undo, on_user_action};
 use super::compose::created::on_draft_created;
 use super::compose::deleted::on_draft_deleted;
 use super::compose::saved::on_draft_saved;
+use super::drafts::reopen::on_draft_loaded;
+use super::drafts::reply::on_drafts;
 use super::engine_event::on_event;
 use super::intent::{Intent, on_intent};
 use super::mailboxes_reply::on_mailboxes;
@@ -79,5 +81,7 @@ fn on_reply(state: &mut AppState, reply: Reply) -> Vec<Command> {
             on_queue_actions(state, account, round, reply.result)
         }
         Tag::QueueChange(action) => on_queue_change(state, action, reply.result),
+        Tag::Drafts(token) => on_drafts(state, token, reply.result),
+        Tag::DraftLoaded(token) => on_draft_loaded(state, token, reply.result),
     }
 }

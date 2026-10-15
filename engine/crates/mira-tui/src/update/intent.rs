@@ -2,6 +2,7 @@
 
 use super::compose::ComposeIntent;
 use super::compose::route::{route_creating, route_editing, route_idle};
+use super::drafts::DraftsIntent;
 use super::intent_actions::on_message_intent;
 use super::queue::QueueIntent;
 use super::queue::route::route_open;
@@ -38,6 +39,7 @@ pub enum Intent {
     Search(SearchIntent),
     Compose(ComposeIntent),
     Queue(QueueIntent),
+    Drafts(DraftsIntent),
     StartSync,
     Help,
 }
@@ -57,12 +59,13 @@ pub fn on_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
         Intent::Search(search) => search_intent::route_idle(state, search),
         Intent::Compose(compose) => route_idle(state, compose),
         Intent::Queue(queue) => super::queue::route::route_idle(state, queue),
+        Intent::Drafts(drafts) => super::drafts::route::route_idle(state, drafts),
         Intent::StartSync => sync_status::start_sync(state),
         Intent::Help => help::open_help(state),
     }
 }
 
-/// Route l'intention vers la fenêtre, l'éditeur, la vue « file » ou la saisie de recherche ouverte, qui la reçoit avant tout.
+/// Route l'intention vers la fenêtre, l'éditeur, la vue « file », la vue « Brouillons » ou la saisie de recherche ouverte, qui la reçoit avant tout.
 fn route_modal(state: &mut AppState, intent: Intent) -> Option<Vec<Command>> {
     if state.compose.is_creating() {
         return Some(route_creating(state, intent));
@@ -76,6 +79,9 @@ fn route_modal(state: &mut AppState, intent: Intent) -> Option<Vec<Command>> {
     if state.queue.is_open() {
         return Some(route_open(state, intent));
     }
+    if state.drafts.is_open() {
+        return Some(super::drafts::route::route_open(state, intent));
+    }
     if state.search.is_editing() {
         return Some(search_intent::route_editing(state, intent));
     }
@@ -83,6 +89,7 @@ fn route_modal(state: &mut AppState, intent: Intent) -> Option<Vec<Command>> {
 }
 
 /// Intentions de navigation entre panneaux, comptes et messages.
+#[rustfmt::skip]
 fn on_navigation_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
     match intent {
         Intent::MoveDown => return scroll(state, navigation::move_down),
@@ -96,20 +103,9 @@ fn on_navigation_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
         Intent::NextAccount => return account_switch::next_account(state),
         Intent::PrevAccount => return account_switch::prev_account(state),
         Intent::Quit => return panes::quit(state),
-        Intent::Archive
-        | Intent::Trash
-        | Intent::DeletePermanently
-        | Intent::ToggleFlag
-        | Intent::ToggleRead
-        | Intent::OpenMovePicker
-        | Intent::Undo
-        | Intent::Confirm
-        | Intent::Cancel
-        | Intent::Search(_)
-        | Intent::Compose(_)
-        | Intent::Queue(_)
-        | Intent::StartSync
-        | Intent::Help => {}
+        Intent::Archive | Intent::Trash | Intent::DeletePermanently | Intent::ToggleFlag | Intent::ToggleRead
+        | Intent::OpenMovePicker | Intent::Undo | Intent::Confirm | Intent::Cancel | Intent::Search(_)
+        | Intent::Compose(_) | Intent::Queue(_) | Intent::Drafts(_) | Intent::StartSync | Intent::Help => {}
     }
     Vec::new()
 }

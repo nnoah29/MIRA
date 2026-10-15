@@ -35,6 +35,7 @@ const LIST: &[Hint] = &[
     hint("c", "nouveau message"),
     hint("z", "défaire"),
     hint("Q", "file d'envoi"),
+    hint("B", "brouillons"),
     hint("j/k", "message suivant/précédent"),
     hint("g/G", "début/fin"),
     hint("Échap", "retour"),
@@ -55,6 +56,7 @@ const SEARCH_RESULTS: &[Hint] = &[
     hint("c", "nouveau message"),
     hint("z", "défaire"),
     hint("Q", "file d'envoi"),
+    hint("B", "brouillons"),
     hint("j/k", "résultat suivant/précédent"),
 ];
 
@@ -74,6 +76,7 @@ const READER: &[Hint] = &[
     hint("c", "nouveau message"),
     hint("z", "défaire"),
     hint("Q", "file d'envoi"),
+    hint("B", "brouillons"),
 ];
 
 const SEARCH_INPUT: &[Hint] = &[
@@ -118,6 +121,18 @@ const QUEUE: &[Hint] = &[
     hint("Échap", "retour"),
 ];
 
+const DRAFTS: &[Hint] = &[
+    hint("Entrée", "rouvrir le brouillon"),
+    hint("j/k", "brouillon suivant/précédent"),
+    hint("D", "supprimer (à confirmer par D)"),
+    hint("Échap", "retour"),
+];
+
+const CONFIRM_DELETE_DRAFT: &[Hint] = &[
+    hint("D", "supprimer le brouillon"),
+    hint("autre touche", "annuler"),
+];
+
 const CONFIRM: &[Hint] = &[hint("Entrée/y", "confirmer"), hint("Échap/n", "annuler")];
 
 const MOVE_PICKER: &[Hint] = &[
@@ -151,6 +166,8 @@ pub fn hints_for(context: KeyContext) -> &'static [Hint] {
         KeyContext::ConfirmSend => CONFIRM_SEND,
         KeyContext::ResolveUncertain => RESOLVE_UNCERTAIN,
         KeyContext::Queue => QUEUE,
+        KeyContext::Drafts => DRAFTS,
+        KeyContext::ConfirmDeleteDraft => CONFIRM_DELETE_DRAFT,
         KeyContext::Confirm => CONFIRM,
         KeyContext::MovePicker => MOVE_PICKER,
         KeyContext::Help => HELP,
@@ -172,6 +189,8 @@ pub fn context_name(context: KeyContext) -> &'static str {
         KeyContext::ConfirmSend => "confirmation d'envoi",
         KeyContext::ResolveUncertain => "envoi incertain",
         KeyContext::Queue => "file d'envoi et d'actions",
+        KeyContext::Drafts => "brouillons",
+        KeyContext::ConfirmDeleteDraft => "suppression du brouillon",
         KeyContext::Confirm => "confirmation",
         KeyContext::MovePicker => "déplacement",
         KeyContext::Help => "aide",

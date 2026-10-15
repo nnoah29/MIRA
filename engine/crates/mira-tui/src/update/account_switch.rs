@@ -3,6 +3,7 @@
 use mira_assembly::api::{MailboxRequest, Request};
 use mira_assembly::mira_vocabulary::{Account, AccountId};
 
+use super::drafts::open::close_drafts;
 use crate::commands::{Command, Tag};
 use crate::state::{AppState, Selection};
 
@@ -21,13 +22,14 @@ pub fn selected_id(state: &AppState) -> Option<AccountId> {
     state.accounts.selected().map(|account| account.id.clone())
 }
 
-/// Vide les boîtes (et ferme la vue « file ») puis recharge celles du compte sélectionné si ce compte a changé.
+/// Vide les boîtes (et ferme les vues « file » et « Brouillons ») puis recharge celles du compte sélectionné si ce compte a changé.
 pub fn reload_if_changed(state: &mut AppState, previous: Option<AccountId>) -> Vec<Command> {
     if selected_id(state) == previous {
         return Vec::new();
     }
     state.search.cancel();
     state.queue.close();
+    close_drafts(state);
     state.mailboxes.replace_items(Vec::new());
     state.clear_view();
     match state.accounts.selected() {

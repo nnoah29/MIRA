@@ -33,10 +33,14 @@ pub fn render_close_draft(frame: &mut Frame, area: Rect, compose: Option<&Compos
     frame.render_widget(paragraph, area);
 }
 
-/// Seconde confirmation : l'abandon perd le texte non enregistré.
-pub fn render_discard_draft(frame: &mut Frame, area: Rect) {
-    let text = "Abandonner le brouillon ? Le texte non enregistré sera perdu.\n\
-                D : abandonner · toute autre touche : revenir à l'éditeur";
+/// Seconde confirmation : l'abandon perd le texte non enregistré ; un brouillon déjà enregistré garde sa dernière version.
+pub fn render_discard_draft(frame: &mut Frame, area: Rect, compose: Option<&ComposeState>) {
+    let stake = if compose.is_some_and(|c| c.saved_once()) {
+        "Abandonner les modifications ? La version enregistrée est gardée."
+    } else {
+        "Abandonner le brouillon ? Le texte non enregistré sera perdu."
+    };
+    let text = format!("{stake}\nD : abandonner · toute autre touche : revenir à l'éditeur");
     let block = Block::bordered()
         .title("Abandonner")
         .border_style(theme::border(true));

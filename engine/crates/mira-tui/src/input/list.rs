@@ -3,9 +3,9 @@
 use crossterm::event::{KeyCode, KeyEvent};
 
 use super::keys::lookup;
-use crate::update::{ComposeIntent, Intent, QueueIntent};
+use crate::update::{ComposeIntent, DraftsIntent, Intent, QueueIntent};
 
-pub const MESSAGE_KEYS: [(KeyCode, Intent); 12] = [
+pub const MESSAGE_KEYS: [(KeyCode, Intent); 13] = [
     (KeyCode::Char('e'), Intent::Archive),
     (KeyCode::Char('d'), Intent::Trash),
     (KeyCode::Char('D'), Intent::DeletePermanently),
@@ -18,6 +18,7 @@ pub const MESSAGE_KEYS: [(KeyCode, Intent); 12] = [
     (KeyCode::Char('f'), Intent::Compose(ComposeIntent::Forward)),
     (KeyCode::Char('c'), Intent::Compose(ComposeIntent::New)),
     (KeyCode::Char('Q'), Intent::Queue(QueueIntent::Open)),
+    (KeyCode::Char('B'), Intent::Drafts(DraftsIntent::Open)),
 ];
 
 /// Intention d'une touche de la liste de messages.

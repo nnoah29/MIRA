@@ -6,6 +6,7 @@ pub mod action_command;
 pub mod action_reply;
 pub mod actions;
 pub mod compose;
+pub mod drafts;
 pub mod engine_event;
 pub mod event_reaction;
 pub mod help;
@@ -38,6 +39,7 @@ pub mod sync_status;
 pub mod undo;
 
 pub use compose::{ComposeIntent, EditKey};
+pub use drafts::DraftsIntent;
 pub use intent::Intent;
 pub use message::{Msg, Reply, update};
 pub use queue::QueueIntent;

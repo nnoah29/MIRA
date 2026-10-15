@@ -2,6 +2,7 @@
 
 pub mod compose;
 pub mod context;
+pub mod drafts;
 pub mod global;
 pub mod hints;
 pub mod keys;
@@ -36,6 +37,8 @@ pub fn intent_for(state: &AppState, key: KeyEvent) -> Option<Intent> {
         KeyContext::ConfirmSend => popup::confirm_intent(key),
         KeyContext::ResolveUncertain => queue::uncertain_intent(key),
         KeyContext::Queue => queue::intent(key),
+        KeyContext::Drafts => drafts::intent(key),
+        KeyContext::ConfirmDeleteDraft => drafts::confirm_delete_intent(key),
         KeyContext::Confirm => popup::confirm_intent(key),
         KeyContext::MovePicker => popup::picker_intent(key),
         KeyContext::Help => popup::help_intent(key),

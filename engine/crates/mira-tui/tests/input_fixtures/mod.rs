@@ -37,3 +37,17 @@ pub fn released(c: char) -> KeyEvent {
 pub fn map(state: &AppState, event: KeyEvent) -> Option<Intent> {
     intent_for(state, event)
 }
+
+/// Fait passer ces touches par la table de touches puis par `update` ; rend toutes les commandes produites.
+pub fn type_keys(state: &mut AppState, keys: &[KeyEvent]) -> Vec<mira_tui::commands::Command> {
+    let mut commands = Vec::new();
+    for event in keys {
+        if let Some(intent) = intent_for(state, *event) {
+            commands.extend(mira_tui::update::update(
+                state,
+                mira_tui::update::Msg::Intent(intent),
+            ));
+        }
+    }
+    commands
+}

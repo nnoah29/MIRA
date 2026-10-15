@@ -9,7 +9,7 @@ use crate::view::safe_text::display_safe;
 
 const SEGMENT_CHARS: usize = 40;
 
-/// Ctrl+Entrée : ouvre la confirmation si les destinataires sont valides, sinon dit pourquoi ; ignoré pendant un envoi.
+/// F5 : ouvre la confirmation si les destinataires sont valides (une fermeture ou sortie demandée avant est annulée).
 pub fn request_send(state: &mut AppState) -> Vec<Command> {
     let Some(compose) = state.compose.open_mut() else {
         return Vec::new();
@@ -18,7 +18,11 @@ pub fn request_send(state: &mut AppState) -> Vec<Command> {
         return busy(state);
     }
     match compose.check_recipients() {
-        RecipientCheck::Ready(_) => state.popup = Popup::ConfirmSend,
+        RecipientCheck::Ready(_) => {
+            compose.set_close_after_save(false);
+            compose.set_then_quit(false);
+            state.popup = Popup::ConfirmSend;
+        }
         RecipientCheck::Empty => {
             state.status.message = Some("Envoi : aucun destinataire".to_string());
         }
@@ -38,6 +42,8 @@ pub fn confirm_send(state: &mut AppState) -> Vec<Command> {
     if compose.send_phase() != SendPhase::Idle {
         return busy(state);
     }
+    compose.set_close_after_save(false);
+    compose.set_then_quit(false);
     if compose.is_saving() {
         compose.set_send_phase(SendPhase::Saving);
         return Vec::new();

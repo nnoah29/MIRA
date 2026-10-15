@@ -3,6 +3,7 @@
 use super::quit::{mark_then_quit, take_then_quit, with_quit};
 use super::save::save;
 use crate::commands::{Command, Tag};
+use crate::state::compose::SendPhase;
 use crate::state::{AppState, ComposeSlot, Popup};
 use mira_assembly::api::{ComposeRequest, Request};
 
@@ -21,6 +22,9 @@ pub fn close_now(state: &mut AppState) -> Vec<Command> {
     let ComposeSlot::Open(compose) = std::mem::take(&mut state.compose) else {
         return Vec::new();
     };
+    if state.popup == Popup::ConfirmSend {
+        state.popup = Popup::Closed;
+    }
     if compose.saved_once() {
         return Vec::new();
     }
@@ -39,20 +43,32 @@ pub fn discard(state: &mut AppState) -> Vec<Command> {
     with_quit(state, quit, commands)
 }
 
-/// Enregistre puis ferme dès que le moteur a confirmé ; l'éditeur reste ouvert si rien ne peut partir.
+/// Enregistre puis ferme dès que le moteur a confirmé ; ferme tout de suite si tout est déjà enregistré.
 pub fn save_and_close(state: &mut AppState) -> Vec<Command> {
     state.popup = Popup::Closed;
     if state.compose.open().is_some_and(|c| c.is_saving()) {
         mark_close_after_save(state, true);
         return Vec::new();
     }
+    if state.compose.open().is_some_and(|c| !c.has_unsaved()) {
+        let quit = take_then_quit(state);
+        let commands = close_now(state);
+        return with_quit(state, quit, commands);
+    }
     let commands = save(state);
     mark_close_after_save(state, !commands.is_empty());
     commands
 }
 
-/// Après un enregistrement réussi : ferme si la fermeture était demandée et que tout est enregistré, sinon renvoie le reste.
+/// Après un enregistrement réussi : ferme si la fermeture était demandée et que tout est enregistré (jamais pendant un envoi).
 pub fn continue_close(state: &mut AppState) -> Vec<Command> {
+    if state
+        .compose
+        .open()
+        .is_some_and(|c| c.send_phase() != SendPhase::Idle)
+    {
+        return Vec::new();
+    }
     let wanted = state
         .compose
         .open_mut()

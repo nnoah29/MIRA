@@ -15,6 +15,7 @@ pub enum Popup {
     MovePicker(MovePicker),
     Help,
     ConfirmCloseDraft,
+    ConfirmDiscardDraft,
     ConfirmSend,
     ResolveUncertain {
         action: ActionId,

@@ -26,7 +26,7 @@ fn ctrl_c_quits_and_releases_are_ignored_while_editing() {
     assert!(map(&open_reply(), repeat).is_some());
 }
 
-/// La confirmation de fermeture : `s` ou Entrée enregistrent, `d` abandonne, `c` ou Échap continuent.
+/// La confirmation de fermeture : `s` ou Entrée enregistrent, `D` demande l'abandon (`d` ne fait rien), `c` ou Échap continuent.
 #[test]
 fn close_confirmation_keys() {
     let mut state = open_reply();
@@ -36,9 +36,10 @@ fn close_confirmation_keys() {
         map(&state, key('s')),
         Some(Intent::Compose(ComposeIntent::SaveAndClose))
     );
+    assert_eq!(map(&state, key('d')), None);
     assert_eq!(
-        map(&state, key('d')),
-        Some(Intent::Compose(ComposeIntent::Discard))
+        map(&state, key('D')),
+        Some(Intent::Compose(ComposeIntent::AskDiscard))
     );
     assert_eq!(map(&state, code(KeyCode::Enter)), Some(Intent::Confirm));
     assert_eq!(map(&state, code(KeyCode::Esc)), Some(Intent::Cancel));

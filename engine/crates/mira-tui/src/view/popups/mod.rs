@@ -45,6 +45,7 @@ fn popup_size(state: &AppState) -> Option<(u16, u16)> {
         Popup::ConfirmDelete { .. } => Some((64, 7)),
         Popup::MovePicker(picker) => Some((64, rows(picker.targets().len()))),
         Popup::ConfirmCloseDraft => Some((64, 6)),
+        Popup::ConfirmDiscardDraft => Some((64, 6)),
         Popup::ConfirmSend => Some((64, rows(confirm_send::summary_rows(state.compose.open())))),
         Popup::ResolveUncertain { .. } => Some((64, 8)),
         Popup::Help => Some((64, rows(help::help_lines(state).len()))),
@@ -57,7 +58,10 @@ fn draw_popup(frame: &mut Frame, area: Rect, state: &AppState) {
         Popup::Closed => {}
         Popup::ConfirmDelete { messages } => confirm::render_confirm(frame, area, messages),
         Popup::MovePicker(picker) => move_target::render_move_target(frame, area, picker),
-        Popup::ConfirmCloseDraft => close_draft::render_close_draft(frame, area),
+        Popup::ConfirmCloseDraft => {
+            close_draft::render_close_draft(frame, area, state.compose.open())
+        }
+        Popup::ConfirmDiscardDraft => close_draft::render_discard_draft(frame, area),
         Popup::ConfirmSend => confirm_send::render_confirm_send(frame, area, state.compose.open()),
         Popup::ResolveUncertain { subject, .. } => {
             uncertain::render_uncertain(frame, area, subject)

@@ -10,6 +10,18 @@ impl ComposeState {
         !slot.buffer.matches(&slot.baseline)
     }
 
+    /// Vrai si un champ diffère à la fois de son dernier enregistrement et du texte d'un enregistrement en vol.
+    pub fn has_dirty_fields(&self) -> bool {
+        let in_flight = self.saving.as_deref().unwrap_or_default();
+        Field::ALL.into_iter().any(|field| {
+            let slot = &self.fields[field.index()];
+            let sent = in_flight
+                .iter()
+                .any(|(f, text)| *f == field && slot.buffer.matches(text));
+            self.is_dirty(field) && !sent
+        })
+    }
+
     /// Vrai si des modifications ne sont pas (ou pas encore) enregistrées.
     pub fn has_unsaved(&self) -> bool {
         self.saving.is_some() || Field::ALL.into_iter().any(|field| self.is_dirty(field))

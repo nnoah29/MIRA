@@ -14,6 +14,7 @@ use crate::commands::Command;
 use crate::state::{AppState, MovePicker, Popup};
 
 /// Route une intention vers la fenêtre ouverte ; celles qui ne la concernent pas sont ignorées.
+#[rustfmt::skip]
 pub fn route(state: &mut AppState, intent: Intent) -> Vec<Command> {
     match intent {
         Intent::Confirm | Intent::Open => confirm(state),
@@ -24,23 +25,11 @@ pub fn route(state: &mut AppState, intent: Intent) -> Vec<Command> {
         Intent::Compose(compose) => compose_popup::route(state, compose),
         Intent::Queue(queue) => queue_popup::route(state, queue),
         Intent::Drafts(drafts) => super::drafts::delete::route_popup(state, drafts),
-        Intent::Top
-        | Intent::Bottom
-        | Intent::NextPane
-        | Intent::PrevPane
-        | Intent::NextAccount
-        | Intent::PrevAccount
-        | Intent::Archive
-        | Intent::Trash
-        | Intent::DeletePermanently
-        | Intent::ToggleFlag
-        | Intent::ToggleRead
-        | Intent::OpenMovePicker
-        | Intent::Undo
-        | Intent::Search(_)
-        | Intent::StartSync
-        | Intent::Help
-        | Intent::AccountForm(_) => Vec::new(),
+        Intent::Top | Intent::Bottom | Intent::NextPane | Intent::PrevPane | Intent::NextAccount
+        | Intent::PrevAccount | Intent::Archive | Intent::Trash | Intent::DeletePermanently
+        | Intent::ToggleFlag | Intent::ToggleRead | Intent::OpenMovePicker | Intent::Undo
+        | Intent::Search(_) | Intent::StartSync | Intent::Help
+        | Intent::AccountForm(_) | Intent::Palette(_) | Intent::Settings(_) => Vec::new(),
     }
 }
 

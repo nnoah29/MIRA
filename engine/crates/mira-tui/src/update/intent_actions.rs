@@ -19,6 +19,7 @@ pub fn on_message_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
         Intent::MoveDown | Intent::MoveUp | Intent::Top | Intent::Bottom | Intent::Open | Intent::Back
         | Intent::NextPane | Intent::PrevPane | Intent::NextAccount | Intent::PrevAccount | Intent::Quit
         | Intent::Confirm | Intent::Cancel | Intent::Search(_) | Intent::Compose(_) | Intent::Queue(_)
-        | Intent::Drafts(_) | Intent::StartSync | Intent::Help | Intent::AccountForm(_) => Vec::new(),
+        | Intent::Drafts(_) | Intent::StartSync | Intent::Help
+        | Intent::AccountForm(_) | Intent::Palette(_) | Intent::Settings(_) => Vec::new(),
     }
 }

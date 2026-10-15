@@ -20,6 +20,7 @@ use super::queue_reply::{on_outbox, on_queue_actions, on_queue_change};
 use super::reader_reply::{on_action, on_attachments, on_body, on_thread};
 use super::search_reply::on_search;
 use super::send_reply::on_sent;
+use super::settings::reply::on_settings;
 use super::status_reply::{on_start_sync, on_status, on_sync_status};
 use crate::commands::{Command, Tag};
 use crate::state::AppState;
@@ -59,6 +60,7 @@ fn on_resize(state: &mut AppState, width: u16, height: u16) -> Vec<Command> {
 }
 
 /// Traite la réponse du moteur selon son étiquette.
+#[rustfmt::skip]
 fn on_reply(state: &mut AppState, reply: Reply) -> Vec<Command> {
     match reply.tag {
         Tag::Accounts => on_accounts(state, reply.result),
@@ -79,13 +81,12 @@ fn on_reply(state: &mut AppState, reply: Reply) -> Vec<Command> {
         Tag::DraftDeleted(draft) => on_draft_deleted(state, draft, reply.result),
         Tag::Sent { draft, key } => on_sent(state, draft, key, reply.result),
         Tag::Outbox { account, round } => on_outbox(state, account, round, reply.result),
-        Tag::QueueActions { account, round } => {
-            on_queue_actions(state, account, round, reply.result)
-        }
+        Tag::QueueActions { account, round } => on_queue_actions(state, account, round, reply.result),
         Tag::QueueChange(action) => on_queue_change(state, action, reply.result),
         Tag::Drafts(token) => on_drafts(state, token, reply.result),
         Tag::DraftLoaded(token) => on_draft_loaded(state, token, reply.result),
         Tag::Prepared(token) => on_prepared(state, token, reply.result),
         Tag::AccountAdded(token) => on_account_added(state, token, reply.result),
+        Tag::Settings(tag) => on_settings(state, tag, reply.result),
     }
 }

@@ -21,6 +21,7 @@ pub fn route(state: &mut AppState, intent: ComposeIntent) -> Vec<Command> {
         | ComposeIntent::NextField
         | ComposeIntent::PrevField
         | ComposeIntent::Save
-        | ComposeIntent::Close => Vec::new(),
+        | ComposeIntent::Close
+        | ComposeIntent::Send => Vec::new(),
     }
 }

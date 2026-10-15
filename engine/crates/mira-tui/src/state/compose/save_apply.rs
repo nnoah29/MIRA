@@ -2,6 +2,7 @@
 
 use super::field::Field;
 use super::save_plan::SavePlan;
+use super::sending::SendPhase;
 use super::state::ComposeState;
 
 impl ComposeState {
@@ -29,9 +30,12 @@ impl ComposeState {
         self.saved_once = true;
     }
 
-    /// L'enregistrement a échoué : tout reste à enregistrer et la fermeture demandée est annulée.
+    /// L'enregistrement a échoué : tout reste à enregistrer, la fermeture et l'envoi demandés sont annulés.
     pub fn fail_save(&mut self) {
         self.saving = None;
+        if self.send_phase == SendPhase::Saving {
+            self.send_phase = SendPhase::Idle;
+        }
         self.close_after_save = false;
         self.then_quit = false;
     }

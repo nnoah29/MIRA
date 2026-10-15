@@ -34,6 +34,7 @@ const LIST: &[Hint] = &[
     hint("f", "transférer"),
     hint("c", "nouveau message"),
     hint("z", "défaire"),
+    hint("Q", "file d'envoi"),
     hint("j/k", "message suivant/précédent"),
     hint("g/G", "début/fin"),
     hint("Échap", "retour"),
@@ -53,6 +54,7 @@ const SEARCH_RESULTS: &[Hint] = &[
     hint("f", "transférer"),
     hint("c", "nouveau message"),
     hint("z", "défaire"),
+    hint("Q", "file d'envoi"),
     hint("j/k", "résultat suivant/précédent"),
 ];
 
@@ -71,6 +73,7 @@ const READER: &[Hint] = &[
     hint("f", "transférer"),
     hint("c", "nouveau message"),
     hint("z", "défaire"),
+    hint("Q", "file d'envoi"),
 ];
 
 const SEARCH_INPUT: &[Hint] = &[
@@ -82,6 +85,7 @@ const SEARCH_INPUT: &[Hint] = &[
 const CREATING: &[Hint] = &[hint("Échap", "annuler")];
 
 const COMPOSE: &[Hint] = &[
+    hint("Ctrl+Entrée", "envoyer"),
     hint("Ctrl+s", "enregistrer"),
     hint("Tab/Maj+Tab", "champ suivant/précédent"),
     hint("Échap", "fermer"),
@@ -91,6 +95,22 @@ const CONFIRM_CLOSE: &[Hint] = &[
     hint("s/Entrée", "enregistrer"),
     hint("d", "abandonner"),
     hint("c/Échap", "continuer"),
+];
+
+const CONFIRM_SEND: &[Hint] = &[hint("Entrée/y", "envoyer"), hint("Échap/n", "annuler")];
+
+const RESOLVE_UNCERTAIN: &[Hint] = &[
+    hint("r", "renvoyer"),
+    hint("n", "ne pas renvoyer"),
+    hint("Échap", "plus tard"),
+];
+
+const QUEUE: &[Hint] = &[
+    hint("j/k", "fiche suivante/précédente"),
+    hint("r", "réessayer"),
+    hint("x", "annuler"),
+    hint("u/Entrée", "décider d'un envoi incertain"),
+    hint("Échap", "retour"),
 ];
 
 const CONFIRM: &[Hint] = &[hint("Entrée/y", "confirmer"), hint("Échap/n", "annuler")];
@@ -122,6 +142,9 @@ pub fn hints_for(context: KeyContext) -> &'static [Hint] {
         KeyContext::Creating => CREATING,
         KeyContext::Compose => COMPOSE,
         KeyContext::ConfirmClose => CONFIRM_CLOSE,
+        KeyContext::ConfirmSend => CONFIRM_SEND,
+        KeyContext::ResolveUncertain => RESOLVE_UNCERTAIN,
+        KeyContext::Queue => QUEUE,
         KeyContext::Confirm => CONFIRM,
         KeyContext::MovePicker => MOVE_PICKER,
         KeyContext::Help => HELP,
@@ -139,6 +162,9 @@ pub fn context_name(context: KeyContext) -> &'static str {
         KeyContext::Creating => "création du brouillon",
         KeyContext::Compose => "rédaction",
         KeyContext::ConfirmClose => "fermeture du brouillon",
+        KeyContext::ConfirmSend => "confirmation d'envoi",
+        KeyContext::ResolveUncertain => "envoi incertain",
+        KeyContext::Queue => "file d'envoi et d'actions",
         KeyContext::Confirm => "confirmation",
         KeyContext::MovePicker => "déplacement",
         KeyContext::Help => "aide",

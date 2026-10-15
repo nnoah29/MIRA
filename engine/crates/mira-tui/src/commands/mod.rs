@@ -29,6 +29,19 @@ pub enum Tag {
     DraftCreated(IdempotencyKey),
     DraftSaved(DraftId),
     DraftDeleted(DraftId),
+    Sent {
+        draft: DraftId,
+        key: IdempotencyKey,
+    },
+    Outbox {
+        account: AccountId,
+        round: u64,
+    },
+    QueueActions {
+        account: AccountId,
+        round: u64,
+    },
+    QueueChange(ActionId),
 }
 
 /// Effet de bord que la boucle doit réaliser après une transition.

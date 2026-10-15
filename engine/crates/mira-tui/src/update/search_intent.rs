@@ -35,7 +35,7 @@ pub fn route_editing(state: &mut AppState, intent: Intent) -> Vec<Command> {
         Intent::MoveDown | Intent::MoveUp | Intent::Top | Intent::Bottom | Intent::NextPane | Intent::PrevPane
         | Intent::NextAccount | Intent::PrevAccount | Intent::Archive | Intent::Trash | Intent::DeletePermanently
         | Intent::ToggleFlag | Intent::ToggleRead | Intent::OpenMovePicker | Intent::Undo | Intent::StartSync
-        | Intent::Help | Intent::Compose(_) => Vec::new(),
+        | Intent::Help | Intent::Compose(_) | Intent::Queue(_) => Vec::new(),
     }
 }
 

@@ -61,8 +61,11 @@ fn is_alt_gr(key: KeyEvent) -> bool {
         .contains(KeyModifiers::CONTROL | KeyModifiers::ALT)
 }
 
-/// Intention d'une touche dans l'éditeur ; Ctrl+Entrée (envoi) n'est pas câblé ici.
+/// Intention d'une touche dans l'éditeur : Ctrl+Entrée envoie, Ctrl+s enregistre, le reste est du texte.
 pub fn intent(key: KeyEvent) -> Option<Intent> {
+    if is_send_key(key) {
+        return Some(Intent::Compose(ComposeIntent::Send));
+    }
     if is_ctrl(key, 's') && !is_alt_gr(key) {
         return Some(Intent::Compose(ComposeIntent::Save));
     }
@@ -74,4 +77,10 @@ pub fn intent(key: KeyEvent) -> Option<Intent> {
         return Some(Intent::Compose(ComposeIntent::PrevField));
     }
     lookup(&COMPOSE_KEYS, key)
+}
+
+/// Vrai pour Ctrl+Entrée, ou Ctrl+j que des terminaux envoient à sa place (même code que le saut de ligne).
+fn is_send_key(key: KeyEvent) -> bool {
+    let ctrl_enter = key.code == KeyCode::Enter && key.modifiers.contains(KeyModifiers::CONTROL);
+    ctrl_enter || (is_ctrl(key, 'j') && !is_alt_gr(key))
 }

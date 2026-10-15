@@ -34,7 +34,7 @@ fn network_for(imap_port: u16) -> NetworkPolicy {
 }
 
 /// Enregistre le compte de test par le contrat du moteur et rend son identifiant.
-async fn add_test_account(engine: &Engine) -> Option<AccountId> {
+pub(super) async fn add_test_account(engine: &Engine) -> Option<AccountId> {
     let draft = AccountDraft {
         address: USER.to_string(),
         display_name: USER.to_string(),

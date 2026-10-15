@@ -8,6 +8,7 @@ use ratatui::widgets::Paragraph;
 use super::search_bar::render_search_bar;
 use super::status_text::indicators;
 use crate::input::hints::{Hint, hints_for};
+use crate::input::settings_hints::settings_hints;
 use crate::input::{KeyContext, context_of};
 use crate::state::AppState;
 use crate::theme;
@@ -39,7 +40,10 @@ fn message_span(state: &AppState) -> Span<'static> {
 /// Touches valables dans le contexte courant, précédées du rappel de l'aide.
 fn key_footer(state: &AppState) -> String {
     let context = context_of(state);
-    let hints = hints_for(context);
+    let hints = match context {
+        KeyContext::Settings => settings_hints(state.settings.tab),
+        other => hints_for(other),
+    };
     let mut parts = Vec::new();
     if !matches!(
         context,
@@ -49,6 +53,10 @@ fn key_footer(state: &AppState) -> String {
             | KeyContext::Drafts
             | KeyContext::AccountForm
             | KeyContext::AccountFormConfirm
+            | KeyContext::Palette
+            | KeyContext::Settings
+            | KeyContext::SettingsForm
+            | KeyContext::SettingsConfirm
     ) {
         parts.push("? aide".to_string());
     }

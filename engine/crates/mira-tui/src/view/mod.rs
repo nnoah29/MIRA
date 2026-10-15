@@ -12,6 +12,7 @@ pub mod queue;
 pub mod reader;
 pub mod safe_text;
 pub mod search_bar;
+pub mod settings;
 pub mod sidebar;
 pub mod status_bar;
 pub mod status_text;
@@ -31,6 +32,8 @@ pub fn render(frame: &mut Frame, state: &AppState) {
         queue::render_queue(frame, layout::body(frame.area()), state);
     } else if state.drafts.is_open() {
         drafts::render_drafts(frame, layout::body(frame.area()), state);
+    } else if state.settings.is_open() {
+        settings::render_settings(frame, layout::body(frame.area()), state);
     } else if state.accounts.is_empty() {
         welcome::render_welcome(frame, layout::body(frame.area()));
     } else {

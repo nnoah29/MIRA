@@ -8,10 +8,13 @@ pub mod global;
 pub mod hints;
 pub mod keys;
 pub mod list;
+pub mod palette;
 pub mod popup;
 pub mod queue;
 pub mod reader;
 pub mod search;
+pub mod settings;
+pub mod settings_hints;
 pub mod sidebar;
 
 use crossterm::event::{KeyEvent, KeyEventKind};
@@ -22,6 +25,7 @@ use crate::state::AppState;
 use crate::update::Intent;
 
 /// Intention d'une touche dans l'état courant ; `None` pour une touche sans effet ici.
+#[rustfmt::skip]
 pub fn intent_for(state: &AppState, key: KeyEvent) -> Option<Intent> {
     if key.kind == KeyEventKind::Release {
         return None;
@@ -35,16 +39,18 @@ pub fn intent_for(state: &AppState, key: KeyEvent) -> Option<Intent> {
         KeyContext::Compose => compose::intent(key),
         KeyContext::ConfirmClose => popup::close_draft_intent(key),
         KeyContext::ConfirmDiscard => popup::discard_draft_intent(key),
-        KeyContext::ConfirmSend => popup::confirm_intent(key),
+        KeyContext::ConfirmSend | KeyContext::Confirm | KeyContext::SettingsConfirm => popup::confirm_intent(key),
         KeyContext::ResolveUncertain => queue::uncertain_intent(key),
         KeyContext::Queue => queue::intent(key),
         KeyContext::Drafts => drafts::intent(key),
         KeyContext::ConfirmDeleteDraft => drafts::confirm_delete_intent(key),
-        KeyContext::Confirm => popup::confirm_intent(key),
         KeyContext::MovePicker => popup::picker_intent(key),
         KeyContext::Help => popup::help_intent(key),
         KeyContext::AccountForm => account_form::intent(key),
         KeyContext::AccountFormConfirm => account_form::confirm_intent(key),
+        KeyContext::Palette => palette::intent(key),
+        KeyContext::Settings => settings::intent(state, key),
+        KeyContext::SettingsForm => settings::form_intent(key),
         KeyContext::Sidebar => in_pane(state, key, sidebar::intent),
         KeyContext::List | KeyContext::SearchResults => in_pane(state, key, list::intent),
         KeyContext::Reader => in_pane(state, key, reader::intent),

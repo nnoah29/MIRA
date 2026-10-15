@@ -9,6 +9,7 @@ pub mod confirm_send;
 pub mod delete_draft;
 pub mod help;
 pub mod move_target;
+pub mod palette;
 pub mod send_summary;
 pub mod target_label;
 pub mod uncertain;
@@ -33,6 +34,10 @@ pub fn centered(area: Rect, width: u16, height: u16) -> Rect {
 
 /// Dessine la fenêtre ouverte, s'il y en a une, centrée sur un fond effacé.
 pub fn render_popup(frame: &mut Frame, state: &AppState) {
+    if state.palette.is_open() {
+        palette::render_palette(frame, state);
+        return;
+    }
     let Some((width, height)) = popup_size(state) else {
         return;
     };

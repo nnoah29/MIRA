@@ -36,7 +36,7 @@ pub fn render_close_draft(frame: &mut Frame, area: Rect, compose: Option<&Compos
 /// Seconde confirmation : l'abandon perd le texte non enregistré.
 pub fn render_discard_draft(frame: &mut Frame, area: Rect) {
     let text = "Abandonner le brouillon ? Le texte non enregistré sera perdu.\n\
-                D : abandonner · Échap : revenir à l'éditeur";
+                D : abandonner · toute autre touche : revenir à l'éditeur";
     let block = Block::bordered()
         .title("Abandonner")
         .border_style(theme::border(true));

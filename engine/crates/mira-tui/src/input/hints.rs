@@ -99,7 +99,7 @@ const CONFIRM_CLOSE: &[Hint] = &[
 
 const CONFIRM_DISCARD: &[Hint] = &[
     hint("D", "abandonner le brouillon"),
-    hint("Échap", "revenir"),
+    hint("autre touche", "revenir"),
 ];
 
 const CONFIRM_SEND: &[Hint] = &[hint("Entrée/y", "envoyer"), hint("Échap/n", "annuler")];

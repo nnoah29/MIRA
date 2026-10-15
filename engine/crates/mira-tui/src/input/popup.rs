@@ -2,7 +2,7 @@
 
 use crossterm::event::{KeyCode, KeyEvent};
 
-use super::keys::lookup;
+use super::keys::{is_plain, lookup};
 use crate::update::{ComposeIntent, Intent};
 
 const CONFIRM_KEYS: [(KeyCode, Intent); 4] = [
@@ -35,11 +35,6 @@ const CLOSE_DRAFT_KEYS: [(KeyCode, Intent); 5] = [
     (KeyCode::Esc, Intent::Cancel),
 ];
 
-const DISCARD_DRAFT_KEYS: [(KeyCode, Intent); 2] = [
-    (KeyCode::Char('D'), Intent::Compose(ComposeIntent::Discard)),
-    (KeyCode::Esc, Intent::Cancel),
-];
-
 const HELP_KEYS: [(KeyCode, Intent); 4] = [
     (KeyCode::Esc, Intent::Cancel),
     (KeyCode::Char('?'), Intent::Cancel),
@@ -62,9 +57,14 @@ pub fn close_draft_intent(key: KeyEvent) -> Option<Intent> {
     lookup(&CLOSE_DRAFT_KEYS, key)
 }
 
-/// Touches de la seconde confirmation d'abandon : seul `D` abandonne, Échap revient à l'éditeur.
+/// Seconde confirmation d'abandon : seul un `D` immédiat abandonne ; toute autre touche ramène à l'éditeur.
 pub fn discard_draft_intent(key: KeyEvent) -> Option<Intent> {
-    lookup(&DISCARD_DRAFT_KEYS, key)
+    let capital_d = key.code == KeyCode::Char('D') && is_plain(key);
+    Some(if capital_d {
+        Intent::Compose(ComposeIntent::Discard)
+    } else {
+        Intent::Cancel
+    })
 }
 
 /// Touches de la fenêtre d'aide : toutes la ferment.

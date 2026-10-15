@@ -31,14 +31,16 @@ fn lowercase_d_in_close_confirmation_destroys_nothing() {
     assert_eq!(open.text(Field::Subject), "Re: Bonjour!");
 }
 
-/// `D` ouvre une seconde confirmation ; `D` encore abandonne ; Échap y revient à l'éditeur sans rien perdre.
+/// `D` ouvre une seconde confirmation ; `D` encore abandonne ; `d` ou Échap y reviennent à l'éditeur sans rien perdre.
 #[test]
 fn capital_d_twice_is_the_deliberate_discard() {
     let mut state = open_modified();
     let esc_then_d = [code(KeyCode::Esc), key('D')];
     assert!(type_keys(&mut state, &esc_then_d).is_empty());
     assert_eq!(state.popup, Popup::ConfirmDiscardDraft);
-    assert!(type_keys(&mut state, &[key('d'), code(KeyCode::Enter)]).is_empty());
+    assert!(type_keys(&mut state, &[key('d')]).is_empty());
+    assert_eq!(state.popup, Popup::Closed);
+    assert!(type_keys(&mut state, &esc_then_d).is_empty());
     assert!(type_keys(&mut state, &[code(KeyCode::Esc)]).is_empty());
     assert_eq!(state.popup, Popup::Closed);
     assert!(state.compose.open().unwrap().is_dirty(Field::Subject));

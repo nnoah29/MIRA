@@ -8,6 +8,7 @@ use super::queue::open::refresh_queue;
 use crate::commands::Command;
 use crate::state::AppState;
 use crate::state::queue::QueueList;
+use crate::view::safe_text::display_safe;
 
 /// Range la boîte d'envoi lue, si c'est la lecture attendue.
 pub fn on_outbox(
@@ -55,14 +56,21 @@ pub fn on_queue_actions(
     settle(state, QueueList::Actions)
 }
 
-/// Modification acceptée : la vue est relue ; refusée : l'erreur est affichée.
+/// Modification acceptée : la vue est relue (et l'annulation d'envoi annoncée) ; refusée : l'erreur est affichée.
 pub fn on_queue_change(
     state: &mut AppState,
-    _action: ActionId,
+    action: ActionId,
     result: Result<Response, MiraError>,
 ) -> Vec<Command> {
+    let cancelled = state.queue.take_cancel(&action);
     match result {
-        Ok(_) => refresh_queue(state),
+        Ok(_) => {
+            if let Some(subject) = cancelled {
+                let subject = display_safe(&subject);
+                state.status.message = Some(format!("Envoi « {subject} » annulé"));
+            }
+            refresh_queue(state)
+        }
         Err(error) => report(state, error),
     }
 }

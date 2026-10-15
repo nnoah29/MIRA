@@ -1,6 +1,7 @@
 //! Vue « boîte d'envoi et file d'actions » d'un compte : fiches lues, sélection, lectures en cours.
 
 pub mod anchor;
+pub mod cancelling;
 pub mod entries;
 pub mod loading;
 
@@ -21,6 +22,7 @@ pub struct QueueState {
     entries: Vec<QueueEntry>,
     pub selection: Selection,
     anchor: Option<ActionId>,
+    cancelling: Option<(ActionId, String)>,
     round: u64,
     waiting_outbox: bool,
     waiting_actions: bool,

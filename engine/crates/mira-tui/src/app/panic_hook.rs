@@ -6,6 +6,7 @@ use crossterm::cursor::Show;
 use crossterm::execute;
 use crossterm::terminal::LeaveAlternateScreen;
 
+use super::keyboard_flags::{keyboard_flags_pushed, pop_keyboard_flags, set_keyboard_flags_pushed};
 use super::raw_mode::{RawMode, SystemRawMode};
 
 /// Installe le crochet qui restaure le vrai terminal ; à appeler depuis le fil qui détient le terminal.
@@ -25,13 +26,23 @@ pub fn install_panic_hook_with(restore: impl Fn() + Send + Sync + 'static) {
     }));
 }
 
-/// Rend le vrai terminal (écran normal, curseur visible, mode brut coupé), en ignorant les échecs.
+/// Rend le vrai terminal (protocole clavier retiré, écran normal, curseur visible, mode brut coupé), échecs ignorés.
 pub fn restore_terminal() {
-    restore_terminal_on(&mut stdout(), &mut SystemRawMode);
+    let keyboard = keyboard_flags_pushed();
+    set_keyboard_flags_pushed(false);
+    restore_terminal_keys_on(&mut stdout(), &mut SystemRawMode, keyboard);
 }
 
 /// Quitte l'écran alternatif et réaffiche le curseur sur `out`, puis coupe le mode brut.
 pub fn restore_terminal_on(out: &mut impl Write, raw: &mut impl RawMode) {
+    restore_terminal_keys_on(out, raw, false);
+}
+
+/// Retire d'abord le protocole clavier étendu s'il est posé, puis restaure comme `restore_terminal_on`.
+pub fn restore_terminal_keys_on(out: &mut impl Write, raw: &mut impl RawMode, keyboard: bool) {
+    if keyboard {
+        pop_keyboard_flags(out);
+    }
     let _ = execute!(out, LeaveAlternateScreen, Show);
     let _ = raw.disable();
 }

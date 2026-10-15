@@ -5,6 +5,7 @@ pub mod confirm;
 pub mod confirm_send;
 pub mod help;
 pub mod move_target;
+pub mod send_summary;
 pub mod target_label;
 pub mod uncertain;
 
@@ -44,7 +45,7 @@ fn popup_size(state: &AppState) -> Option<(u16, u16)> {
         Popup::ConfirmDelete { .. } => Some((64, 7)),
         Popup::MovePicker(picker) => Some((64, rows(picker.targets().len()))),
         Popup::ConfirmCloseDraft => Some((64, 6)),
-        Popup::ConfirmSend => Some((64, 10)),
+        Popup::ConfirmSend => Some((64, rows(confirm_send::summary_rows(state.compose.open())))),
         Popup::ResolveUncertain { .. } => Some((64, 8)),
         Popup::Help => Some((64, rows(help::help_lines(state).len()))),
     }

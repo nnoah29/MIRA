@@ -61,13 +61,16 @@ fn is_alt_gr(key: KeyEvent) -> bool {
         .contains(KeyModifiers::CONTROL | KeyModifiers::ALT)
 }
 
-/// Intention d'une touche dans l'éditeur : Ctrl+Entrée envoie, Ctrl+s enregistre, le reste est du texte.
+/// Intention d'une touche dans l'éditeur : F5 ou Ctrl+Entrée envoie, Ctrl+s enregistre, Ctrl+j saute une ligne, le reste est du texte.
 pub fn intent(key: KeyEvent) -> Option<Intent> {
     if is_send_key(key) {
         return Some(Intent::Compose(ComposeIntent::Send));
     }
     if is_ctrl(key, 's') && !is_alt_gr(key) {
         return Some(Intent::Compose(ComposeIntent::Save));
+    }
+    if is_ctrl(key, 'j') && !is_alt_gr(key) {
+        return Some(Intent::Compose(ComposeIntent::Edit(EditKey::Newline)));
     }
     if let KeyCode::Char(c) = key.code {
         let typed = is_plain(key) || is_alt_gr(key);
@@ -79,8 +82,8 @@ pub fn intent(key: KeyEvent) -> Option<Intent> {
     lookup(&COMPOSE_KEYS, key)
 }
 
-/// Vrai pour Ctrl+Entrée, ou Ctrl+j que des terminaux envoient à sa place (même code que le saut de ligne).
+/// Vrai pour F5 (jamais du texte) ou un Ctrl+Entrée réel, que seul le protocole clavier étendu distingue d'Entrée.
 fn is_send_key(key: KeyEvent) -> bool {
     let ctrl_enter = key.code == KeyCode::Enter && key.modifiers.contains(KeyModifiers::CONTROL);
-    ctrl_enter || (is_ctrl(key, 'j') && !is_alt_gr(key))
+    ctrl_enter || key.code == KeyCode::F(5)
 }

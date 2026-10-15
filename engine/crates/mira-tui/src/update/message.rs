@@ -3,6 +3,8 @@
 use mira_assembly::api::Response;
 use mira_assembly::mira_vocabulary::{Event, MiraError};
 
+use super::account_form::added::on_account_added;
+use super::account_form::prepare::on_prepared;
 use super::accounts_reply::on_accounts;
 use super::action_reply::{on_undo, on_user_action};
 use super::compose::created::on_draft_created;
@@ -83,5 +85,7 @@ fn on_reply(state: &mut AppState, reply: Reply) -> Vec<Command> {
         Tag::QueueChange(action) => on_queue_change(state, action, reply.result),
         Tag::Drafts(token) => on_drafts(state, token, reply.result),
         Tag::DraftLoaded(token) => on_draft_loaded(state, token, reply.result),
+        Tag::Prepared(token) => on_prepared(state, token, reply.result),
+        Tag::AccountAdded(token) => on_account_added(state, token, reply.result),
     }
 }

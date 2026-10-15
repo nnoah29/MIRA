@@ -6,6 +6,7 @@ use crate::commands::Command;
 use crate::state::AppState;
 
 /// Route une intention d'action ; confirmer ou annuler sans fenêtre ouverte ne fait rien.
+#[rustfmt::skip]
 pub fn on_message_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
     match intent {
         Intent::Archive => actions::archive(state),
@@ -15,24 +16,9 @@ pub fn on_message_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
         Intent::ToggleRead => actions::toggle_read(state),
         Intent::OpenMovePicker => move_picker::open_move_picker(state),
         Intent::Undo => undo::undo(state),
-        Intent::MoveDown
-        | Intent::MoveUp
-        | Intent::Top
-        | Intent::Bottom
-        | Intent::Open
-        | Intent::Back
-        | Intent::NextPane
-        | Intent::PrevPane
-        | Intent::NextAccount
-        | Intent::PrevAccount
-        | Intent::Quit
-        | Intent::Confirm
-        | Intent::Cancel
-        | Intent::Search(_)
-        | Intent::Compose(_)
-        | Intent::Queue(_)
-        | Intent::Drafts(_)
-        | Intent::StartSync
-        | Intent::Help => Vec::new(),
+        Intent::MoveDown | Intent::MoveUp | Intent::Top | Intent::Bottom | Intent::Open | Intent::Back
+        | Intent::NextPane | Intent::PrevPane | Intent::NextAccount | Intent::PrevAccount | Intent::Quit
+        | Intent::Confirm | Intent::Cancel | Intent::Search(_) | Intent::Compose(_) | Intent::Queue(_)
+        | Intent::Drafts(_) | Intent::StartSync | Intent::Help | Intent::AccountForm(_) => Vec::new(),
     }
 }

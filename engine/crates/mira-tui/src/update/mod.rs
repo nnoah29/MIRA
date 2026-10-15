@@ -1,5 +1,6 @@
 //! Transition pure `(état, message) -> commandes` ; aucune I/O.
 
+pub mod account_form;
 pub mod account_switch;
 pub mod accounts_reply;
 pub mod action_command;
@@ -38,6 +39,7 @@ pub mod status_reply;
 pub mod sync_status;
 pub mod undo;
 
+pub use account_form::AccountFormIntent;
 pub use compose::{ComposeIntent, EditKey};
 pub use drafts::DraftsIntent;
 pub use intent::Intent;

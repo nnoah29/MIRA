@@ -1,5 +1,8 @@
 //! Fenêtres modales dessinées au-dessus de l'écran principal.
 
+pub mod account_form;
+pub mod account_form_info;
+pub mod account_form_rows;
 pub mod close_draft;
 pub mod confirm;
 pub mod confirm_send;

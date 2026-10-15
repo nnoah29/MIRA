@@ -42,7 +42,7 @@ pub fn route_editing(state: &mut AppState, intent: Intent) -> Vec<Command> {
         | Intent::PrevPane | Intent::NextAccount | Intent::PrevAccount | Intent::Archive | Intent::Trash
         | Intent::DeletePermanently | Intent::ToggleFlag | Intent::ToggleRead | Intent::OpenMovePicker | Intent::Undo
         | Intent::Confirm | Intent::Cancel | Intent::Search(_) | Intent::Queue(_) | Intent::Drafts(_) | Intent::StartSync
-        | Intent::Help => Vec::new(),
+        | Intent::Help | Intent::AccountForm(_) => Vec::new(),
     }
 }
 
@@ -56,7 +56,7 @@ pub fn route_creating(state: &mut AppState, intent: Intent) -> Vec<Command> {
         | Intent::NextPane | Intent::PrevPane | Intent::NextAccount | Intent::PrevAccount | Intent::Archive | Intent::Trash
         | Intent::DeletePermanently | Intent::ToggleFlag | Intent::ToggleRead | Intent::OpenMovePicker | Intent::Undo
         | Intent::Confirm | Intent::Cancel | Intent::Search(_) | Intent::Queue(_) | Intent::Drafts(_) | Intent::StartSync
-        | Intent::Help => Vec::new(),
+        | Intent::Help | Intent::AccountForm(_) => Vec::new(),
     }
 }
 

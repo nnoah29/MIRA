@@ -48,5 +48,11 @@ pub fn render_identities(frame: &mut Frame, area: Rect, state: &AppState) {
     }
     let items = identities.items();
     let line = |index: usize| items.get(index).map(identity_line).unwrap_or_default();
-    render_window(frame, body, items.len(), identities.selection.selected, &line);
+    render_window(
+        frame,
+        body,
+        items.len(),
+        identities.selection.selected,
+        &line,
+    );
 }

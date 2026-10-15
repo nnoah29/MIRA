@@ -39,7 +39,11 @@ pub fn render_maintenance(frame: &mut Frame, area: Rect, state: &AppState) {
         lines.push(Line::styled(display_safe(report), theme::unread()));
         lines.push(Line::from(""));
     }
-    lines.push(Line::from("s volumes · c intégrité · p vider le cache de pièces jointes"));
-    lines.push(Line::from("i reconstruire l'index · d exporter un diagnostic · x exporter le profil"));
+    lines.push(Line::from(
+        "s volumes · c intégrité · p vider le cache de pièces jointes",
+    ));
+    lines.push(Line::from(
+        "i reconstruire l'index · d exporter un diagnostic · x exporter le profil",
+    ));
     frame.render_widget(Paragraph::new(lines), area);
 }

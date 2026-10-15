@@ -10,10 +10,22 @@ pub const COMMANDS: [(&str, Intent); 8] = [
     ("drafts", Intent::Drafts(DraftsIntent::Open)),
     ("sync", Intent::StartSync),
     ("help", Intent::Help),
-    ("settings", Intent::Settings(SettingsIntent::Show(SettingsTab::Accounts))),
-    ("identities", Intent::Settings(SettingsIntent::Show(SettingsTab::Identities))),
-    ("maintenance", Intent::Settings(SettingsIntent::Show(SettingsTab::Maintenance))),
-    ("events", Intent::Settings(SettingsIntent::Show(SettingsTab::Events))),
+    (
+        "settings",
+        Intent::Settings(SettingsIntent::Show(SettingsTab::Accounts)),
+    ),
+    (
+        "identities",
+        Intent::Settings(SettingsIntent::Show(SettingsTab::Identities)),
+    ),
+    (
+        "maintenance",
+        Intent::Settings(SettingsIntent::Show(SettingsTab::Maintenance)),
+    ),
+    (
+        "events",
+        Intent::Settings(SettingsIntent::Show(SettingsTab::Events)),
+    ),
 ];
 
 /// Intention d'une commande tapée, avec ou sans `:` devant ; `None` pour un mot inconnu ou des arguments en trop.

@@ -34,44 +34,113 @@ const COMMON_KEYS: [(KeyCode, Intent); 15] = [
 const ACCOUNT_KEYS: [(KeyCode, Intent); 6] = [
     (KeyCode::Char('g'), Intent::Top),
     (KeyCode::Char('G'), Intent::Bottom),
-    (KeyCode::Char('E'), Intent::Settings(SettingsIntent::Account(AccountOp::Edit))),
-    (KeyCode::Char('p'), Intent::Settings(SettingsIntent::Account(AccountOp::Pause))),
-    (KeyCode::Char('r'), Intent::Settings(SettingsIntent::Account(AccountOp::Resume))),
-    (KeyCode::Char('X'), Intent::Settings(SettingsIntent::Account(AccountOp::Delete))),
+    (
+        KeyCode::Char('E'),
+        Intent::Settings(SettingsIntent::Account(AccountOp::Edit)),
+    ),
+    (
+        KeyCode::Char('p'),
+        Intent::Settings(SettingsIntent::Account(AccountOp::Pause)),
+    ),
+    (
+        KeyCode::Char('r'),
+        Intent::Settings(SettingsIntent::Account(AccountOp::Resume)),
+    ),
+    (
+        KeyCode::Char('X'),
+        Intent::Settings(SettingsIntent::Account(AccountOp::Delete)),
+    ),
 ];
 
 const IDENTITY_KEYS: [(KeyCode, Intent); 5] = [
     (KeyCode::Char('g'), Intent::Top),
     (KeyCode::Char('G'), Intent::Bottom),
-    (KeyCode::Char('a'), Intent::Settings(SettingsIntent::Identity(IdentityOp::Add))),
-    (KeyCode::Char('e'), Intent::Settings(SettingsIntent::Identity(IdentityOp::Edit))),
-    (KeyCode::Char('d'), Intent::Settings(SettingsIntent::Identity(IdentityOp::SetDefault))),
+    (
+        KeyCode::Char('a'),
+        Intent::Settings(SettingsIntent::Identity(IdentityOp::Add)),
+    ),
+    (
+        KeyCode::Char('e'),
+        Intent::Settings(SettingsIntent::Identity(IdentityOp::Edit)),
+    ),
+    (
+        KeyCode::Char('d'),
+        Intent::Settings(SettingsIntent::Identity(IdentityOp::SetDefault)),
+    ),
 ];
 
 const MAINTENANCE_KEYS: [(KeyCode, Intent); 6] = [
-    (KeyCode::Char('s'), Intent::Settings(SettingsIntent::Maintenance(MaintenanceOp::Stats))),
-    (KeyCode::Char('c'), Intent::Settings(SettingsIntent::Maintenance(MaintenanceOp::Check))),
-    (KeyCode::Char('p'), Intent::Settings(SettingsIntent::Maintenance(MaintenanceOp::Purge))),
-    (KeyCode::Char('i'), Intent::Settings(SettingsIntent::Maintenance(MaintenanceOp::Rebuild))),
-    (KeyCode::Char('d'), Intent::Settings(SettingsIntent::Maintenance(MaintenanceOp::ExportDiagnostic))),
-    (KeyCode::Char('x'), Intent::Settings(SettingsIntent::Maintenance(MaintenanceOp::ExportProfile))),
+    (
+        KeyCode::Char('s'),
+        Intent::Settings(SettingsIntent::Maintenance(MaintenanceOp::Stats)),
+    ),
+    (
+        KeyCode::Char('c'),
+        Intent::Settings(SettingsIntent::Maintenance(MaintenanceOp::Check)),
+    ),
+    (
+        KeyCode::Char('p'),
+        Intent::Settings(SettingsIntent::Maintenance(MaintenanceOp::Purge)),
+    ),
+    (
+        KeyCode::Char('i'),
+        Intent::Settings(SettingsIntent::Maintenance(MaintenanceOp::Rebuild)),
+    ),
+    (
+        KeyCode::Char('d'),
+        Intent::Settings(SettingsIntent::Maintenance(MaintenanceOp::ExportDiagnostic)),
+    ),
+    (
+        KeyCode::Char('x'),
+        Intent::Settings(SettingsIntent::Maintenance(MaintenanceOp::ExportProfile)),
+    ),
 ];
 
 const EVENTS_KEYS: [(KeyCode, Intent); 7] = [
     (KeyCode::Char('g'), Intent::Top),
-    (KeyCode::Char('G'), Intent::Settings(SettingsIntent::Page(PageOp::Last))),
-    (KeyCode::Home, Intent::Settings(SettingsIntent::Page(PageOp::First))),
-    (KeyCode::Char('n'), Intent::Settings(SettingsIntent::Page(PageOp::Next))),
-    (KeyCode::PageDown, Intent::Settings(SettingsIntent::Page(PageOp::Next))),
-    (KeyCode::Char('p'), Intent::Settings(SettingsIntent::Page(PageOp::Previous))),
-    (KeyCode::PageUp, Intent::Settings(SettingsIntent::Page(PageOp::Previous))),
+    (
+        KeyCode::Char('G'),
+        Intent::Settings(SettingsIntent::Page(PageOp::Last)),
+    ),
+    (
+        KeyCode::Home,
+        Intent::Settings(SettingsIntent::Page(PageOp::First)),
+    ),
+    (
+        KeyCode::Char('n'),
+        Intent::Settings(SettingsIntent::Page(PageOp::Next)),
+    ),
+    (
+        KeyCode::PageDown,
+        Intent::Settings(SettingsIntent::Page(PageOp::Next)),
+    ),
+    (
+        KeyCode::Char('p'),
+        Intent::Settings(SettingsIntent::Page(PageOp::Previous)),
+    ),
+    (
+        KeyCode::PageUp,
+        Intent::Settings(SettingsIntent::Page(PageOp::Previous)),
+    ),
 ];
 
 const FORM_KEYS: [(KeyCode, Intent); 4] = [
-    (KeyCode::Backspace, Intent::Settings(SettingsIntent::Form(FormOp::Backspace))),
-    (KeyCode::Tab, Intent::Settings(SettingsIntent::Form(FormOp::NextField))),
-    (KeyCode::BackTab, Intent::Settings(SettingsIntent::Form(FormOp::PrevField))),
-    (KeyCode::Enter, Intent::Settings(SettingsIntent::Form(FormOp::Submit))),
+    (
+        KeyCode::Backspace,
+        Intent::Settings(SettingsIntent::Form(FormOp::Backspace)),
+    ),
+    (
+        KeyCode::Tab,
+        Intent::Settings(SettingsIntent::Form(FormOp::NextField)),
+    ),
+    (
+        KeyCode::BackTab,
+        Intent::Settings(SettingsIntent::Form(FormOp::PrevField)),
+    ),
+    (
+        KeyCode::Enter,
+        Intent::Settings(SettingsIntent::Form(FormOp::Submit)),
+    ),
 ];
 
 /// Intention d'une touche de la vue : les touches communes, puis celles de la page affichée.

@@ -32,6 +32,7 @@ pub mod search_reply;
 pub mod send;
 pub mod send_dispatch;
 pub mod send_reply;
+pub mod shutdown;
 pub mod status_reply;
 pub mod sync_status;
 pub mod undo;

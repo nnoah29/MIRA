@@ -1,4 +1,4 @@
-//! Champs d'en-tête (À, Cc, Cci, Objet) : une ligne chacun, fenêtrée autour du curseur.
+//! En-tête de l'éditeur : expéditeur (lecture seule), puis À, Cc, Cci, Objet, une ligne chacun fenêtrée autour du curseur.
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Position, Rect};
@@ -14,10 +14,17 @@ const LABEL_WIDTH: usize = 8;
 const FLAG: &str = " ✗ adresse invalide";
 const HEADER_FIELDS: [Field; 4] = [Field::To, Field::Cc, Field::Bcc, Field::Subject];
 
-/// Dessine les quatre champs d'en-tête, un par ligne de la zone.
-pub fn render_headers(frame: &mut Frame, area: Rect, compose: &ComposeState) {
-    let rows = Layout::vertical([Constraint::Length(1); 4]).split(area);
-    for (field, row) in HEADER_FIELDS.into_iter().zip(rows.iter()) {
+/// Dessine l'expéditeur puis les quatre champs d'en-tête, un par ligne de la zone.
+pub fn render_headers(frame: &mut Frame, area: Rect, compose: &ComposeState, from: &str) {
+    let rows = Layout::vertical([Constraint::Length(1); 5]).split(area);
+    if let Some(first) = rows.first() {
+        let line = Line::from(vec![
+            Span::styled(format!("{:<5} : ", "De"), theme::dim()),
+            Span::raw(from.to_string()),
+        ]);
+        frame.render_widget(Paragraph::new(line), *first);
+    }
+    for (field, row) in HEADER_FIELDS.into_iter().zip(rows.iter().skip(1)) {
         render_row(frame, *row, compose, field);
     }
 }

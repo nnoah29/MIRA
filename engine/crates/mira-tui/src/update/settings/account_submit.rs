@@ -1,7 +1,9 @@
 //! Validation des formulaires de compte : seuls les champs changés partent, la suppression exige l'adresse.
 
 use mira_assembly::api::{AccountChanges, AccountRequest, Request};
-use mira_assembly::mira_vocabulary::{Account, AccountId, Security, ServerEndpoint, ServerSettings};
+use mira_assembly::mira_vocabulary::{
+    Account, AccountId, Security, ServerEndpoint, ServerSettings,
+};
 
 use super::operation::{say, submit_operation};
 use crate::commands::Command;
@@ -37,7 +39,10 @@ pub fn submit_delete_account(
     address: &str,
 ) -> Vec<Command> {
     if !form.value(0).trim().eq_ignore_ascii_case(address) {
-        return say(state, "Ce texte n'est pas l'adresse du compte : rien n'est supprimé");
+        return say(
+            state,
+            "Ce texte n'est pas l'adresse du compte : rien n'est supprimé",
+        );
     }
     let request = Request::Account(AccountRequest::DeleteAccount { account });
     submit_operation(state, Operation::DeleteAccount, request)

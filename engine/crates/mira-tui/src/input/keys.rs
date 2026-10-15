@@ -18,7 +18,10 @@ pub fn is_plain(key: KeyEvent) -> bool {
 
 /// Vrai pour un caractère à taper : sans Ctrl ni Alt, ou avec Ctrl+Alt ensemble (AltGr de certains terminaux).
 pub fn is_typed(key: KeyEvent) -> bool {
-    is_plain(key) || key.modifiers.contains(KeyModifiers::CONTROL | KeyModifiers::ALT)
+    is_plain(key)
+        || key
+            .modifiers
+            .contains(KeyModifiers::CONTROL | KeyModifiers::ALT)
 }
 
 /// Intention associée à une touche sans Ctrl ni Alt dans cette table.

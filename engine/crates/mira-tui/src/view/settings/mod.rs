@@ -22,7 +22,11 @@ fn tab_bar(current: SettingsTab) -> Line<'static> {
     let mut spans = Vec::new();
     for (index, tab) in SettingsTab::all().into_iter().enumerate() {
         let label = format!(" {} {} ", index + 1, tab.title());
-        let style = if tab == current { theme::selected() } else { theme::dim() };
+        let style = if tab == current {
+            theme::selected()
+        } else {
+            theme::dim()
+        };
         spans.push(Span::styled(label, style));
     }
     Line::from(spans)

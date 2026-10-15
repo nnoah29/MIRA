@@ -26,8 +26,14 @@ pub fn confirm_ask(state: &mut AppState) -> Vec<Command> {
         return Vec::new();
     };
     let (operation, request) = match asked {
-        Ask::PurgeCache => (Operation::PurgeCache, MaintenanceRequest::PurgeAttachmentCache),
-        Ask::RebuildIndex => (Operation::RebuildIndex, MaintenanceRequest::RebuildSearchIndex),
+        Ask::PurgeCache => (
+            Operation::PurgeCache,
+            MaintenanceRequest::PurgeAttachmentCache,
+        ),
+        Ask::RebuildIndex => (
+            Operation::RebuildIndex,
+            MaintenanceRequest::RebuildSearchIndex,
+        ),
     };
     submit_operation(state, operation, Request::Maintenance(request))
 }

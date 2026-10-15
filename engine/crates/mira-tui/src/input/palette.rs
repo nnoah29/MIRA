@@ -6,7 +6,10 @@ use super::keys::{is_typed, lookup};
 use crate::update::{Intent, PaletteIntent};
 
 const PALETTE_KEYS: [(KeyCode, Intent); 3] = [
-    (KeyCode::Backspace, Intent::Palette(PaletteIntent::Backspace)),
+    (
+        KeyCode::Backspace,
+        Intent::Palette(PaletteIntent::Backspace),
+    ),
     (KeyCode::Enter, Intent::Palette(PaletteIntent::Submit)),
     (KeyCode::Esc, Intent::Palette(PaletteIntent::Close)),
 ];

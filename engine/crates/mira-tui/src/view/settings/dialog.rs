@@ -39,6 +39,8 @@ pub fn render_dialog(frame: &mut Frame, area: Rect, state: &AppState) {
     let block = Block::bordered()
         .title(title)
         .border_style(theme::border(true));
-    let paragraph = Paragraph::new(lines).wrap(Wrap { trim: false }).block(block);
+    let paragraph = Paragraph::new(lines)
+        .wrap(Wrap { trim: false })
+        .block(block);
     frame.render_widget(paragraph, rect);
 }

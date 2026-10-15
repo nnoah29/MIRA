@@ -4,10 +4,10 @@ use super::intent::PaletteIntent;
 use super::parse::parse_command;
 use crate::commands::Command;
 use crate::state::AppState;
+use crate::update::Intent;
 use crate::update::intent::on_intent;
 use crate::update::panes;
 use crate::update::settings::open::close_settings;
-use crate::update::Intent;
 use crate::view::safe_text::display_safe;
 
 /// Intention de palette reçue hors saisie : seule l'ouverture agit.

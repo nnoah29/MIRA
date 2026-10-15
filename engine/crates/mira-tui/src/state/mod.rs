@@ -24,8 +24,8 @@ pub mod search;
 pub mod search_edit;
 pub mod search_restore;
 pub mod selection;
-pub mod settings;
 pub mod sent_subjects;
+pub mod settings;
 pub mod status;
 pub mod view_change;
 
@@ -46,8 +46,8 @@ pub use reader::{ReaderContent, ReaderState};
 pub use refresh::RefreshState;
 pub use search::SearchState;
 pub use selection::Selection;
-pub use settings::SettingsState;
 pub use sent_subjects::SentSubjects;
+pub use settings::SettingsState;
 pub use status::StatusState;
 
 /// Source unique de vérité de l'interface.

@@ -29,10 +29,7 @@ pub enum ExportKind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FormKind {
     EditAccount(AccountId),
-    DeleteAccount {
-        account: AccountId,
-        address: String,
-    },
+    DeleteAccount { account: AccountId, address: String },
     AddIdentity(AccountId),
     EditIdentity(IdentityId),
     Export(ExportKind),

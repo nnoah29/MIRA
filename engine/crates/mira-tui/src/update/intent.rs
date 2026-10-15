@@ -3,12 +3,12 @@
 use super::compose::ComposeIntent;
 use super::compose::route::{route_creating, route_editing, route_idle};
 use super::drafts::DraftsIntent;
-use super::palette::PaletteIntent;
-use super::settings::SettingsIntent;
 use super::intent_actions::on_message_intent;
+use super::palette::PaletteIntent;
 use super::queue::QueueIntent;
 use super::queue::route::route_open;
 use super::search_intent::SearchIntent;
+use super::settings::SettingsIntent;
 use super::{
     account_switch, help, navigation, pagination, panes, popup_intent, search_intent, sync_status,
 };

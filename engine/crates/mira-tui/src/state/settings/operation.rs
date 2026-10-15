@@ -53,13 +53,13 @@ impl Operation {
             | Operation::PauseAccount
             | Operation::ResumeAccount
             | Operation::DeleteAccount => FollowUp::Accounts,
-            Operation::AddIdentity
-            | Operation::UpdateIdentity
-            | Operation::SetDefaultIdentity => FollowUp::Identities,
+            Operation::AddIdentity | Operation::UpdateIdentity | Operation::SetDefaultIdentity => {
+                FollowUp::Identities
+            }
             Operation::PurgeCache | Operation::RebuildIndex => FollowUp::Stats,
-            Operation::CheckIntegrity
-            | Operation::ExportDiagnostic
-            | Operation::ExportProfile => FollowUp::Nothing,
+            Operation::CheckIntegrity | Operation::ExportDiagnostic | Operation::ExportProfile => {
+                FollowUp::Nothing
+            }
         }
     }
 }

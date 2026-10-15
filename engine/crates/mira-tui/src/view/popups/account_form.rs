@@ -13,7 +13,7 @@ use crate::state::account_form::{AccountForm, FormField};
 use crate::theme;
 use crate::view::layout;
 
-const WIDTH: u16 = 76;
+const WIDTH: u16 = 80;
 
 /// Lignes de la fenêtre et position (ligne, colonne) du curseur dans ces lignes.
 struct Content {

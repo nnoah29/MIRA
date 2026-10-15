@@ -40,4 +40,3 @@ pub fn added_command(commands: &[Command]) -> AccountRequest {
     });
     found.expect("aucun AddAccount émis")
 }
-

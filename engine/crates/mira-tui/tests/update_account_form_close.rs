@@ -39,8 +39,14 @@ fn confirming_closes_and_a_stray_key_changes_nothing() {
     type_text(&mut state, SECRET);
     hit(&mut state, KeyCode::Esc);
     type_text(&mut state, "xzw");
-    assert_eq!(state.account_form.form().unwrap().password.char_count(), SECRET.len());
-    assert_eq!(state.account_form.form().unwrap().address.text(), "alice@acme.test");
+    assert_eq!(
+        state.account_form.form().unwrap().password.char_count(),
+        SECRET.len()
+    );
+    assert_eq!(
+        state.account_form.form().unwrap().address.text(),
+        "alice@acme.test"
+    );
     type_text(&mut state, "y");
     assert!(!state.account_form.is_open());
     assert!(!format!("{state:?}").contains(SECRET));

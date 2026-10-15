@@ -43,14 +43,25 @@ fn address_triggers_prepare_account() {
 fn manual_servers_asked_only_for_generic_provider() {
     let fallback = ready_state(fallback_provider());
     let fields = fallback.account_form.form().unwrap().visible_fields();
-    for wanted in [FormField::ImapHost, FormField::ImapPort, FormField::SmtpHost, FormField::SmtpPort] {
+    for wanted in [
+        FormField::ImapHost,
+        FormField::ImapPort,
+        FormField::SmtpHost,
+        FormField::SmtpPort,
+    ] {
         assert!(fields.contains(&wanted), "{wanted:?} absent : {fields:?}");
     }
-    assert_eq!(fallback.account_form.form().unwrap().focus, FormField::ImapHost);
+    assert_eq!(
+        fallback.account_form.form().unwrap().focus,
+        FormField::ImapHost
+    );
     let known = ready_state(known_provider());
     let fields = known.account_form.form().unwrap().visible_fields();
     assert!(!fields.contains(&FormField::ImapHost), "{fields:?}");
-    assert_eq!(known.account_form.form().unwrap().focus, FormField::Password);
+    assert_eq!(
+        known.account_form.form().unwrap().focus,
+        FormField::Password
+    );
 }
 
 /// Une adresse vide n'envoie rien et le dit dans le formulaire.
@@ -88,7 +99,10 @@ fn typing_waits_for_the_prepared_reply() {
     type_text(&mut state, "a@acme.test");
     hit(&mut state, KeyCode::Enter);
     type_text(&mut state, "zzz");
-    assert_eq!(state.account_form.form().unwrap().address.text(), "a@acme.test");
+    assert_eq!(
+        state.account_form.form().unwrap().address.text(),
+        "a@acme.test"
+    );
     update(&mut state, prepared_reply(99, known_provider()));
     assert!(state.account_form.form().unwrap().prepared.is_none());
     update(&mut state, prepared_reply(1, known_provider()));

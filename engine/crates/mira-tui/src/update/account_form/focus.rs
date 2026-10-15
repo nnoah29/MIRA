@@ -23,10 +23,10 @@ pub fn on_enter(state: &mut AppState) -> Vec<Command> {
 
 /// Passe au champ visible suivant ou précédent ; sans effet pendant une requête.
 pub fn step_focus(state: &mut AppState, forward: bool) -> Vec<Command> {
-    if let Some(form) = state.account_form.form_mut() {
-        if matches!(form.phase, Phase::Typing | Phase::Ready) {
-            form.step_focus(forward);
-        }
+    if let Some(form) = state.account_form.form_mut()
+        && matches!(form.phase, Phase::Typing | Phase::Ready)
+    {
+        form.step_focus(forward);
     }
     Vec::new()
 }

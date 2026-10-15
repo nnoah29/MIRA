@@ -87,10 +87,14 @@ pub fn footer_lines(form: &AccountForm) -> Vec<Line<'static>> {
         Phase::Adding(_) => Some("Test de la connexion et ajout du compte…"),
         Phase::Typing | Phase::Ready => None,
     };
-    let error = form.error.as_deref().map(display_safe);
-    busy.map(str::to_string)
-        .into_iter()
-        .chain(error)
-        .map(|text| Line::styled(text, theme::status()))
-        .collect()
+    let mut lines = Vec::new();
+    if let Some(text) = busy {
+        lines.push(Line::styled(text, theme::status()));
+    }
+    if let Some(error) = &form.error {
+        for part in error.split(" — ") {
+            lines.push(Line::styled(display_safe(part), theme::status()));
+        }
+    }
+    lines
 }

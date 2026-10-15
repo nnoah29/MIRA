@@ -23,7 +23,10 @@ fn secret_cleared_from_state_after_submit() {
     let AccountRequest::AddAccount { credential, .. } = added_command(&commands) else {
         panic!("AddAccount attendu");
     };
-    assert_eq!(credential, CredentialInput::Password(SecretInput::new(SECRET)));
+    assert_eq!(
+        credential,
+        CredentialInput::Password(SecretInput::new(SECRET))
+    );
     let form = state.account_form.form().unwrap();
     assert_eq!(form.password.char_count(), 0);
     assert_eq!(form.phase, Phase::Adding(token_of(&commands)));
@@ -36,7 +39,12 @@ fn submit_sends_add_account_with_session_key() {
     let mut state = ready_state(known_provider());
     type_text(&mut state, SECRET);
     let commands = hit(&mut state, KeyCode::Enter);
-    let AccountRequest::AddAccount { draft, idempotency_key, .. } = added_command(&commands) else {
+    let AccountRequest::AddAccount {
+        draft,
+        idempotency_key,
+        ..
+    } = added_command(&commands)
+    else {
         panic!("AddAccount attendu");
     };
     assert_eq!(draft.address, "alice@acme.test");
@@ -44,7 +52,10 @@ fn submit_sends_add_account_with_session_key() {
     assert_eq!(draft.provider, Some(ProviderId::new("acme")));
     assert_eq!(draft.servers, None);
     assert_eq!(draft.auth, AuthMethodKind::Password);
-    assert_eq!(idempotency_key, IdempotencyKey("tui-7-add-account-1".to_string()));
+    assert_eq!(
+        idempotency_key,
+        IdempotencyKey("tui-7-add-account-1".to_string())
+    );
 }
 
 /// Après un refus, le renvoi de la même adresse réutilise la même clé d'idempotence.
@@ -53,11 +64,16 @@ fn retry_after_error_reuses_the_same_key() {
     let mut state = ready_state(known_provider());
     type_text(&mut state, SECRET);
     let first = hit(&mut state, KeyCode::Enter);
-    update(&mut state, added_reply(token_of(&first), Err(login_error())));
+    update(
+        &mut state,
+        added_reply(token_of(&first), Err(login_error())),
+    );
     type_text(&mut state, SECRET);
     let second = hit(&mut state, KeyCode::Enter);
     let key_of = |commands: &[_]| match added_command(commands) {
-        AccountRequest::AddAccount { idempotency_key, .. } => idempotency_key,
+        AccountRequest::AddAccount {
+            idempotency_key, ..
+        } => idempotency_key,
         other => panic!("{other:?}"),
     };
     assert_eq!(key_of(&first), key_of(&second));

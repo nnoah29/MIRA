@@ -26,9 +26,17 @@ const CLOSE_DRAFT_KEYS: [(KeyCode, Intent); 5] = [
         KeyCode::Char('s'),
         Intent::Compose(ComposeIntent::SaveAndClose),
     ),
-    (KeyCode::Char('d'), Intent::Compose(ComposeIntent::Discard)),
+    (
+        KeyCode::Char('D'),
+        Intent::Compose(ComposeIntent::AskDiscard),
+    ),
     (KeyCode::Enter, Intent::Confirm),
     (KeyCode::Char('c'), Intent::Cancel),
+    (KeyCode::Esc, Intent::Cancel),
+];
+
+const DISCARD_DRAFT_KEYS: [(KeyCode, Intent); 2] = [
+    (KeyCode::Char('D'), Intent::Compose(ComposeIntent::Discard)),
     (KeyCode::Esc, Intent::Cancel),
 ];
 
@@ -52,6 +60,11 @@ pub fn picker_intent(key: KeyEvent) -> Option<Intent> {
 /// Touches de la confirmation de fermeture d'un brouillon modifié.
 pub fn close_draft_intent(key: KeyEvent) -> Option<Intent> {
     lookup(&CLOSE_DRAFT_KEYS, key)
+}
+
+/// Touches de la seconde confirmation d'abandon : seul `D` abandonne, Échap revient à l'éditeur.
+pub fn discard_draft_intent(key: KeyEvent) -> Option<Intent> {
+    lookup(&DISCARD_DRAFT_KEYS, key)
 }
 
 /// Touches de la fenêtre d'aide : toutes la ferment.

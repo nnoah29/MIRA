@@ -23,6 +23,7 @@ pub fn route_idle(state: &mut AppState, intent: ComposeIntent) -> Vec<Command> {
         | ComposeIntent::Save
         | ComposeIntent::Close
         | ComposeIntent::SaveAndClose
+        | ComposeIntent::AskDiscard
         | ComposeIntent::Discard
         | ComposeIntent::Send => Vec::new(),
     }
@@ -74,6 +75,7 @@ fn on_compose(state: &mut AppState, intent: ComposeIntent) -> Vec<Command> {
         | ComposeIntent::Forward
         | ComposeIntent::New
         | ComposeIntent::SaveAndClose
+        | ComposeIntent::AskDiscard
         | ComposeIntent::Discard => Vec::new(),
     }
 }
@@ -92,6 +94,7 @@ fn locked_while_sending(intent: ComposeIntent) -> bool {
         | ComposeIntent::Forward
         | ComposeIntent::New
         | ComposeIntent::SaveAndClose
+        | ComposeIntent::AskDiscard
         | ComposeIntent::Discard => false,
     }
 }

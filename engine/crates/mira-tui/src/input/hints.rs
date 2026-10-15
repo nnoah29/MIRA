@@ -93,8 +93,13 @@ const COMPOSE: &[Hint] = &[
 
 const CONFIRM_CLOSE: &[Hint] = &[
     hint("s/Entrée", "enregistrer"),
-    hint("d", "abandonner"),
+    hint("D", "abandonner (à confirmer)"),
     hint("c/Échap", "continuer"),
+];
+
+const CONFIRM_DISCARD: &[Hint] = &[
+    hint("D", "abandonner le brouillon"),
+    hint("Échap", "revenir"),
 ];
 
 const CONFIRM_SEND: &[Hint] = &[hint("Entrée/y", "envoyer"), hint("Échap/n", "annuler")];
@@ -142,6 +147,7 @@ pub fn hints_for(context: KeyContext) -> &'static [Hint] {
         KeyContext::Creating => CREATING,
         KeyContext::Compose => COMPOSE,
         KeyContext::ConfirmClose => CONFIRM_CLOSE,
+        KeyContext::ConfirmDiscard => CONFIRM_DISCARD,
         KeyContext::ConfirmSend => CONFIRM_SEND,
         KeyContext::ResolveUncertain => RESOLVE_UNCERTAIN,
         KeyContext::Queue => QUEUE,
@@ -162,6 +168,7 @@ pub fn context_name(context: KeyContext) -> &'static str {
         KeyContext::Creating => "création du brouillon",
         KeyContext::Compose => "rédaction",
         KeyContext::ConfirmClose => "fermeture du brouillon",
+        KeyContext::ConfirmDiscard => "abandon du brouillon",
         KeyContext::ConfirmSend => "confirmation d'envoi",
         KeyContext::ResolveUncertain => "envoi incertain",
         KeyContext::Queue => "file d'envoi et d'actions",

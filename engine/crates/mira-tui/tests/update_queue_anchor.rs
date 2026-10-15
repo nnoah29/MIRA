@@ -61,7 +61,10 @@ fn selection_follows_the_action_when_an_earlier_entry_leaves() {
     let commands = press(&mut state, Intent::Queue(QueueIntent::Cancel));
     assert_eq!(commands, vec![change_command("B", cancel)]);
     let shown = state.status.message.clone().unwrap();
-    assert!(shown.contains("Envoi « Objet B » annulé"), "{shown}");
+    assert!(
+        shown.contains("Annulation demandée pour « Objet B »"),
+        "{shown}"
+    );
 }
 
 /// L'action sélectionnée a disparu : `x` et `r` n'annulent ni ne relancent rien d'autre, un message le dit.
@@ -76,4 +79,20 @@ fn vanished_selection_never_targets_another_action() {
     assert!(press(&mut state, Intent::Queue(QueueIntent::Retry)).is_empty());
     press(&mut state, Intent::MoveDown);
     assert!(state.queue.selected().is_some());
+}
+
+/// L'envoi n'est dit annulé qu'à la réponse du moteur ; un refus (envoi déjà parti) affiche l'erreur.
+#[test]
+fn send_is_called_cancelled_only_after_the_engine_agrees() {
+    let mut state = three_sends();
+    press(&mut state, Intent::Queue(QueueIntent::Cancel));
+    update(&mut state, queue_fixtures::change_reply("A", Ok(())));
+    let shown = state.status.message.clone().unwrap();
+    assert!(shown.contains("Envoi « Objet A » annulé"), "{shown}");
+    press(&mut state, Intent::MoveDown);
+    press(&mut state, Intent::Queue(QueueIntent::Cancel));
+    let refused = reader_fixtures::offline_error();
+    update(&mut state, queue_fixtures::change_reply("B", Err(refused)));
+    let shown = state.status.message.clone().unwrap();
+    assert!(!shown.contains("annulé"), "{shown}");
 }

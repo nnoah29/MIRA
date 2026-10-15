@@ -42,10 +42,14 @@ pub fn cancel(state: &mut AppState) -> Vec<Command> {
     }
     let action = entry.action.clone();
     let (request, done) = match entry.item {
-        QueueItem::Send { subject } => (
-            Request::Compose(ComposeRequest::CancelSend { action }),
-            format!("Envoi « {} » annulé", display_safe(&subject)),
-        ),
+        QueueItem::Send { subject } => {
+            let done = format!("Annulation demandée pour « {} »", display_safe(&subject));
+            state.queue.note_cancel(action.clone(), subject);
+            (
+                Request::Compose(ComposeRequest::CancelSend { action }),
+                done,
+            )
+        }
         QueueItem::Action { .. } => (
             Request::Queue(QueueRequest::CancelAction { action }),
             "Action annulée".to_string(),

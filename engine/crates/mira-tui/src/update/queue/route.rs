@@ -50,7 +50,6 @@ fn on_queue(state: &mut AppState, intent: QueueIntent) -> Vec<Command> {
 
 /// Déplace la sélection de la vue.
 fn step(state: &mut AppState, move_by: fn(&mut Selection, usize)) -> Vec<Command> {
-    let len = state.queue.entries().len();
-    move_by(&mut state.queue.selection, len);
+    state.queue.move_selection(move_by);
     Vec::new()
 }

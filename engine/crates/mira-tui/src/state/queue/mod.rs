@@ -1,10 +1,11 @@
 //! Vue « boîte d'envoi et file d'actions » d'un compte : fiches lues, sélection, lectures en cours.
 
+pub mod anchor;
 pub mod entries;
 pub mod loading;
 
 use mira_assembly::api::OutboxEntry;
-use mira_assembly::mira_vocabulary::{AccountId, PendingAction};
+use mira_assembly::mira_vocabulary::{AccountId, ActionId, PendingAction};
 
 pub use entries::{QueueEntry, QueueItem};
 pub use loading::QueueList;
@@ -19,6 +20,7 @@ pub struct QueueState {
     actions: Vec<PendingAction>,
     entries: Vec<QueueEntry>,
     pub selection: Selection,
+    anchor: Option<ActionId>,
     round: u64,
     waiting_outbox: bool,
     waiting_actions: bool,

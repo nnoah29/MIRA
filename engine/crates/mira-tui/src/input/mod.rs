@@ -1,5 +1,6 @@
 //! Touches du clavier → intentions, selon le contexte courant (spec §4.3) ; aucune I/O.
 
+pub mod account_form;
 pub mod compose;
 pub mod context;
 pub mod drafts;
@@ -42,6 +43,8 @@ pub fn intent_for(state: &AppState, key: KeyEvent) -> Option<Intent> {
         KeyContext::Confirm => popup::confirm_intent(key),
         KeyContext::MovePicker => popup::picker_intent(key),
         KeyContext::Help => popup::help_intent(key),
+        KeyContext::AccountForm => account_form::intent(key),
+        KeyContext::AccountFormConfirm => account_form::confirm_intent(key),
         KeyContext::Sidebar => in_pane(state, key, sidebar::intent),
         KeyContext::List | KeyContext::SearchResults => in_pane(state, key, list::intent),
         KeyContext::Reader => in_pane(state, key, reader::intent),
@@ -54,5 +57,7 @@ fn in_pane(
     key: KeyEvent,
     specific: fn(KeyEvent) -> Option<Intent>,
 ) -> Option<Intent> {
-    global::intent(state, key).or_else(|| specific(key))
+    global::intent(state, key)
+        .or_else(|| specific(key))
+        .or_else(|| account_form::open_intent(state, key))
 }

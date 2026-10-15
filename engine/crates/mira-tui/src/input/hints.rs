@@ -16,6 +16,7 @@ const fn hint(keys: &'static str, action: &'static str) -> Hint {
 
 const SIDEBAR: &[Hint] = &[
     hint("Entrée", "ouvrir"),
+    hint("n", "ajouter un compte"),
     hint("j/k", "boîte suivante/précédente"),
     hint("]/[", "compte suivant/précédent"),
     hint("g/G", "début/fin"),
@@ -141,6 +142,18 @@ const MOVE_PICKER: &[Hint] = &[
     hint("Échap", "annuler"),
 ];
 
+const ACCOUNT_FORM: &[Hint] = &[
+    hint("Entrée", "valider / champ suivant"),
+    hint("Tab/Maj+Tab", "champ suivant/précédent"),
+    hint("Ctrl+t", "chiffrement du serveur"),
+    hint("Échap", "fermer"),
+];
+
+const ACCOUNT_FORM_CONFIRM: &[Hint] = &[
+    hint("Entrée/y", "abandonner la saisie"),
+    hint("Échap/n", "continuer"),
+];
+
 const HELP: &[Hint] = &[hint("Échap/?/q", "fermer l'aide")];
 
 pub const GLOBAL: &[Hint] = &[
@@ -171,6 +184,8 @@ pub fn hints_for(context: KeyContext) -> &'static [Hint] {
         KeyContext::Confirm => CONFIRM,
         KeyContext::MovePicker => MOVE_PICKER,
         KeyContext::Help => HELP,
+        KeyContext::AccountForm => ACCOUNT_FORM,
+        KeyContext::AccountFormConfirm => ACCOUNT_FORM_CONFIRM,
     }
 }
 
@@ -194,5 +209,7 @@ pub fn context_name(context: KeyContext) -> &'static str {
         KeyContext::Confirm => "confirmation",
         KeyContext::MovePicker => "déplacement",
         KeyContext::Help => "aide",
+        KeyContext::AccountForm => "ajout de compte",
+        KeyContext::AccountFormConfirm => "fermeture du formulaire de compte",
     }
 }

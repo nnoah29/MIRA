@@ -18,6 +18,7 @@ pub fn dispatch_send(state: &mut AppState) -> Vec<Command> {
         return Vec::new();
     };
     compose.set_send_phase(SendPhase::Sending);
+    compose.set_send_failed(false);
     let draft = compose.draft().clone();
     state.status.message = Some("Envoi…".to_string());
     vec![Command::Execute {

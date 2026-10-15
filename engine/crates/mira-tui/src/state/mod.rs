@@ -22,6 +22,7 @@ pub mod search;
 pub mod search_edit;
 pub mod search_restore;
 pub mod selection;
+pub mod sent_subjects;
 pub mod status;
 pub mod view_change;
 
@@ -40,6 +41,7 @@ pub use reader::{ReaderContent, ReaderState};
 pub use refresh::RefreshState;
 pub use search::SearchState;
 pub use selection::Selection;
+pub use sent_subjects::SentSubjects;
 pub use status::StatusState;
 
 /// Source unique de vérité de l'interface.
@@ -59,6 +61,7 @@ pub struct AppState {
     pub search: SearchState,
     pub compose: ComposeSlot,
     pub queue: QueueState,
+    pub sent_subjects: SentSubjects,
     pub cancelled_drafts: Vec<IdempotencyKey>,
     pub refresh: RefreshState,
     pub key_prefix: String,
@@ -83,6 +86,7 @@ impl AppState {
             search: SearchState::default(),
             compose: ComposeSlot::default(),
             queue: QueueState::default(),
+            sent_subjects: SentSubjects::default(),
             cancelled_drafts: Vec::new(),
             refresh: RefreshState::default(),
             key_prefix: format!("tui-{nonce}"),

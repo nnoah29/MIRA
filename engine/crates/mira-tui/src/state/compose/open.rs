@@ -59,6 +59,7 @@ impl ComposeState {
             then_quit: false,
             had_html: draft.body_html.is_some(),
             send_phase: SendPhase::Idle,
+            send_failed: false,
         }
     }
 }

@@ -28,4 +28,5 @@ pub struct ComposeState {
     pub(super) then_quit: bool,
     pub(super) had_html: bool,
     pub(super) send_phase: SendPhase,
+    pub(super) send_failed: bool,
 }

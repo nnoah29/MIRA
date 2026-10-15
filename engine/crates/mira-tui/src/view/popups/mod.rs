@@ -2,9 +2,11 @@
 
 pub mod close_draft;
 pub mod confirm;
+pub mod confirm_send;
 pub mod help;
 pub mod move_target;
 pub mod target_label;
+pub mod uncertain;
 
 use ratatui::Frame;
 use ratatui::layout::Rect;
@@ -24,31 +26,41 @@ pub fn centered(area: Rect, width: u16, height: u16) -> Rect {
     }
 }
 
-/// Dessine la fenêtre ouverte, s'il y en a une.
+/// Dessine la fenêtre ouverte, s'il y en a une, centrée sur un fond effacé.
 pub fn render_popup(frame: &mut Frame, state: &AppState) {
+    let Some((width, height)) = popup_size(state) else {
+        return;
+    };
+    let area = centered(frame.area(), width, height);
+    frame.render_widget(Clear, area);
+    draw_popup(frame, area, state);
+}
+
+/// Taille voulue de la fenêtre ouverte (bordures comprises), ou rien si aucune n'est ouverte.
+fn popup_size(state: &AppState) -> Option<(u16, u16)> {
+    let rows = |count: usize| u16::try_from(count).unwrap_or(u16::MAX).saturating_add(2);
+    match &state.popup {
+        Popup::Closed => None,
+        Popup::ConfirmDelete { .. } => Some((64, 7)),
+        Popup::MovePicker(picker) => Some((64, rows(picker.targets().len()))),
+        Popup::ConfirmCloseDraft => Some((64, 6)),
+        Popup::ConfirmSend => Some((64, 10)),
+        Popup::ResolveUncertain { .. } => Some((64, 8)),
+        Popup::Help => Some((64, rows(help::help_lines(state).len()))),
+    }
+}
+
+/// Dessine le contenu de la fenêtre ouverte dans sa zone.
+fn draw_popup(frame: &mut Frame, area: Rect, state: &AppState) {
     match &state.popup {
         Popup::Closed => {}
-        Popup::ConfirmDelete { messages } => {
-            let area = centered(frame.area(), 64, 7);
-            frame.render_widget(Clear, area);
-            confirm::render_confirm(frame, area, messages);
+        Popup::ConfirmDelete { messages } => confirm::render_confirm(frame, area, messages),
+        Popup::MovePicker(picker) => move_target::render_move_target(frame, area, picker),
+        Popup::ConfirmCloseDraft => close_draft::render_close_draft(frame, area),
+        Popup::ConfirmSend => confirm_send::render_confirm_send(frame, area, state.compose.open()),
+        Popup::ResolveUncertain { subject, .. } => {
+            uncertain::render_uncertain(frame, area, subject)
         }
-        Popup::MovePicker(picker) => {
-            let rows = u16::try_from(picker.targets().len()).unwrap_or(u16::MAX);
-            let area = centered(frame.area(), 64, rows.saturating_add(2));
-            frame.render_widget(Clear, area);
-            move_target::render_move_target(frame, area, picker);
-        }
-        Popup::ConfirmCloseDraft => {
-            let area = centered(frame.area(), 64, 6);
-            frame.render_widget(Clear, area);
-            close_draft::render_close_draft(frame, area);
-        }
-        Popup::Help => {
-            let rows = u16::try_from(help::help_lines(state).len()).unwrap_or(u16::MAX);
-            let area = centered(frame.area(), 64, rows.saturating_add(2));
-            frame.render_widget(Clear, area);
-            help::render_help(frame, area, state);
-        }
+        Popup::Help => help::render_help(frame, area, state),
     }
 }

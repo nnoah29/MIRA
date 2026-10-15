@@ -7,6 +7,7 @@ use super::close::continue_close;
 use crate::commands::Command;
 use crate::state::AppState;
 use crate::update::accounts_reply::{report, unexpected};
+use crate::update::send_dispatch::continue_send;
 
 /// Prend acte de l'enregistrement du brouillon ouvert : succès, ou échec qui laisse tout à enregistrer.
 pub fn on_draft_saved(
@@ -24,7 +25,9 @@ pub fn on_draft_saved(
         Ok(Response::Write(WriteResponse::Draft(_))) => {
             compose.finish_save();
             state.status.message = Some("Brouillon enregistré".to_string());
-            continue_close(state)
+            let mut commands = continue_close(state);
+            commands.extend(continue_send(state));
+            commands
         }
         Ok(_) => {
             compose.fail_save();

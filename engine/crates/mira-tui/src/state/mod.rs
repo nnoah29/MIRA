@@ -15,6 +15,7 @@ pub mod messages_paging;
 pub mod messages_refresh;
 pub mod move_picker;
 pub mod popup;
+pub mod queue;
 pub mod reader;
 pub mod refresh;
 pub mod search;
@@ -34,6 +35,7 @@ pub use mailboxes::MailboxesState;
 pub use messages::MessagesState;
 pub use move_picker::MovePicker;
 pub use popup::Popup;
+pub use queue::QueueState;
 pub use reader::{ReaderContent, ReaderState};
 pub use refresh::RefreshState;
 pub use search::SearchState;
@@ -56,6 +58,7 @@ pub struct AppState {
     pub actions: ActionsState,
     pub search: SearchState,
     pub compose: ComposeSlot,
+    pub queue: QueueState,
     pub cancelled_drafts: Vec<IdempotencyKey>,
     pub refresh: RefreshState,
     pub key_prefix: String,
@@ -79,6 +82,7 @@ impl AppState {
             actions: ActionsState::default(),
             search: SearchState::default(),
             compose: ComposeSlot::default(),
+            queue: QueueState::default(),
             cancelled_drafts: Vec::new(),
             refresh: RefreshState::default(),
             key_prefix: format!("tui-{nonce}"),

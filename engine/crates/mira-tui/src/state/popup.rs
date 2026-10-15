@@ -1,6 +1,6 @@
 //! Fenêtre modale affichée au-dessus de l'écran principal.
 
-use mira_assembly::mira_vocabulary::MessageSummary;
+use mira_assembly::mira_vocabulary::{ActionId, MessageSummary};
 
 use super::move_picker::MovePicker;
 
@@ -15,6 +15,11 @@ pub enum Popup {
     MovePicker(MovePicker),
     Help,
     ConfirmCloseDraft,
+    ConfirmSend,
+    ResolveUncertain {
+        action: ActionId,
+        subject: String,
+    },
 }
 
 impl Popup {

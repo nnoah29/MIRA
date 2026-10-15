@@ -6,6 +6,7 @@ use mira_assembly::mira_vocabulary::{Event, EventKind};
 use super::account_switch::{list_mailboxes, selected_id};
 use super::event_reaction::{Reaction, reaction_of};
 use super::message_refresh::refresh_view;
+use super::queue::events::on_queue_event;
 use super::sync_status::refresh_status;
 use crate::commands::{Command, Tag};
 use crate::state::AppState;
@@ -21,7 +22,9 @@ pub fn on_event(state: &mut AppState, event: Event) -> Vec<Command> {
     if let EventKind::ActionFailed { reason, .. } = &event.kind {
         state.status.message = Some(display_safe(reason));
     }
-    reload(state, reaction)
+    let mut commands = reload(state, reaction);
+    commands.extend(on_queue_event(state, &event.kind));
+    commands
 }
 
 /// Vrai pour un événement du compte sélectionné ou sans compte.

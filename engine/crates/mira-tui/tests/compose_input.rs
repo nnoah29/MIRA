@@ -66,7 +66,7 @@ fn every_printable_key_is_text_while_editing() {
     }
 }
 
-/// Enregistrer, fermer, changer de champ, Entrée et déplacements ont leur sens, Ctrl+Entrée rien (envoi : tâche 11).
+/// Enregistrer, fermer, changer de champ, Entrée et déplacements ont leur sens, Ctrl+Entrée demande l'envoi.
 #[test]
 fn special_keys_have_their_meaning() {
     let table = [
@@ -91,7 +91,8 @@ fn special_keys_have_their_meaning() {
         assert_eq!(composing(event), Some(intent), "{event:?}");
     }
     let ctrl_enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::CONTROL);
-    assert_eq!(map(&open_reply(), ctrl_enter), None);
+    let send = Some(Intent::Compose(ComposeIntent::Send));
+    assert_eq!(map(&open_reply(), ctrl_enter), send);
 }
 
 /// Ctrl ou Alt avec un caractère ne s'insèrent pas ; AltGr (Ctrl+Alt) insère ; Maj+Tab recule.

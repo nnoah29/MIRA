@@ -3,6 +3,7 @@
 use mira_assembly::mira_vocabulary::{AccountId, DraftId, IdempotencyKey};
 
 use super::field::{FIELD_COUNT, Field};
+use super::sending::SendPhase;
 use super::text_buffer::TextBuffer;
 
 /// Tampon d'un champ, son texte au dernier enregistrement et le signalement d'une saisie invalide.
@@ -26,4 +27,5 @@ pub struct ComposeState {
     pub(super) close_after_save: bool,
     pub(super) then_quit: bool,
     pub(super) had_html: bool,
+    pub(super) send_phase: SendPhase,
 }

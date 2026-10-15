@@ -12,8 +12,10 @@ use super::engine_event::on_event;
 use super::intent::{Intent, on_intent};
 use super::mailboxes_reply::on_mailboxes;
 use super::messages_reply::on_messages;
+use super::queue_reply::{on_outbox, on_queue_actions, on_queue_change};
 use super::reader_reply::{on_action, on_attachments, on_body, on_thread};
 use super::search_reply::on_search;
+use super::send_reply::on_sent;
 use super::status_reply::{on_start_sync, on_status, on_sync_status};
 use crate::commands::{Command, Tag};
 use crate::state::AppState;
@@ -71,5 +73,11 @@ fn on_reply(state: &mut AppState, reply: Reply) -> Vec<Command> {
         Tag::DraftCreated(token) => on_draft_created(state, token, reply.result),
         Tag::DraftSaved(draft) => on_draft_saved(state, draft, reply.result),
         Tag::DraftDeleted(draft) => on_draft_deleted(state, draft, reply.result),
+        Tag::Sent { draft, key } => on_sent(state, draft, key, reply.result),
+        Tag::Outbox { account, round } => on_outbox(state, account, round, reply.result),
+        Tag::QueueActions { account, round } => {
+            on_queue_actions(state, account, round, reply.result)
+        }
+        Tag::QueueChange(action) => on_queue_change(state, action, reply.result),
     }
 }

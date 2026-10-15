@@ -7,6 +7,7 @@ pub mod hints;
 pub mod keys;
 pub mod list;
 pub mod popup;
+pub mod queue;
 pub mod reader;
 pub mod search;
 pub mod sidebar;
@@ -31,6 +32,9 @@ pub fn intent_for(state: &AppState, key: KeyEvent) -> Option<Intent> {
         KeyContext::Creating => compose::creating_intent(key),
         KeyContext::Compose => compose::intent(key),
         KeyContext::ConfirmClose => popup::close_draft_intent(key),
+        KeyContext::ConfirmSend => popup::confirm_intent(key),
+        KeyContext::ResolveUncertain => queue::uncertain_intent(key),
+        KeyContext::Queue => queue::intent(key),
         KeyContext::Confirm => popup::confirm_intent(key),
         KeyContext::MovePicker => popup::picker_intent(key),
         KeyContext::Help => popup::help_intent(key),

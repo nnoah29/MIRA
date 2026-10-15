@@ -4,6 +4,7 @@ use mira_assembly::mira_vocabulary::{AddressEntry, Draft};
 
 use super::addresses::format_addresses;
 use super::field::{FIELD_COUNT, Field};
+use super::sending::SendPhase;
 use super::state::{ComposeState, FieldBuffer};
 use super::text_buffer::TextBuffer;
 
@@ -57,6 +58,7 @@ impl ComposeState {
             close_after_save: false,
             then_quit: false,
             had_html: draft.body_html.is_some(),
+            send_phase: SendPhase::Idle,
         }
     }
 }

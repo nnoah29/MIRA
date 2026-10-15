@@ -3,6 +3,8 @@
 use super::compose::ComposeIntent;
 use super::compose::route::{route_creating, route_editing, route_idle};
 use super::intent_actions::on_message_intent;
+use super::queue::QueueIntent;
+use super::queue::route::route_open;
 use super::search_intent::SearchIntent;
 use super::{
     account_switch, help, navigation, pagination, panes, popup_intent, search_intent, sync_status,
@@ -35,6 +37,7 @@ pub enum Intent {
     Cancel,
     Search(SearchIntent),
     Compose(ComposeIntent),
+    Queue(QueueIntent),
     StartSync,
     Help,
 }
@@ -53,12 +56,13 @@ pub fn on_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
         | Intent::OpenMovePicker | Intent::Undo | Intent::Confirm | Intent::Cancel => on_message_intent(state, intent),
         Intent::Search(search) => search_intent::route_idle(state, search),
         Intent::Compose(compose) => route_idle(state, compose),
+        Intent::Queue(queue) => super::queue::route::route_idle(state, queue),
         Intent::StartSync => sync_status::start_sync(state),
         Intent::Help => help::open_help(state),
     }
 }
 
-/// Route l'intention vers la fenêtre, l'éditeur de brouillon ou la saisie de recherche ouverte, qui la reçoit avant tout.
+/// Route l'intention vers la fenêtre, l'éditeur, la vue « file » ou la saisie de recherche ouverte, qui la reçoit avant tout.
 fn route_modal(state: &mut AppState, intent: Intent) -> Option<Vec<Command>> {
     if state.compose.is_creating() {
         return Some(route_creating(state, intent));
@@ -68,6 +72,9 @@ fn route_modal(state: &mut AppState, intent: Intent) -> Option<Vec<Command>> {
     }
     if state.compose.open().is_some() {
         return Some(route_editing(state, intent));
+    }
+    if state.queue.is_open() {
+        return Some(route_open(state, intent));
     }
     if state.search.is_editing() {
         return Some(search_intent::route_editing(state, intent));
@@ -100,6 +107,7 @@ fn on_navigation_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
         | Intent::Cancel
         | Intent::Search(_)
         | Intent::Compose(_)
+        | Intent::Queue(_)
         | Intent::StartSync
         | Intent::Help => {}
     }

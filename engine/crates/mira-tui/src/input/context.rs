@@ -13,6 +13,9 @@ pub enum KeyContext {
     Creating,
     Compose,
     ConfirmClose,
+    ConfirmSend,
+    ResolveUncertain,
+    Queue,
     Confirm,
     MovePicker,
     Help,
@@ -28,15 +31,18 @@ pub fn pane_context(state: &AppState) -> KeyContext {
     }
 }
 
-/// Contexte qui reçoit le clavier : la fenêtre ouverte, sinon l'éditeur, sinon la saisie, sinon le panneau.
+/// Contexte qui reçoit le clavier : la fenêtre ouverte, sinon l'éditeur, la vue « file », la saisie, le panneau.
 pub fn context_of(state: &AppState) -> KeyContext {
     match &state.popup {
         Popup::ConfirmDelete { .. } => KeyContext::Confirm,
         Popup::MovePicker(_) => KeyContext::MovePicker,
         Popup::Help => KeyContext::Help,
         Popup::ConfirmCloseDraft => KeyContext::ConfirmClose,
+        Popup::ConfirmSend => KeyContext::ConfirmSend,
+        Popup::ResolveUncertain { .. } => KeyContext::ResolveUncertain,
         Popup::Closed if state.compose.is_creating() => KeyContext::Creating,
         Popup::Closed if state.compose.open().is_some() => KeyContext::Compose,
+        Popup::Closed if state.queue.is_open() => KeyContext::Queue,
         Popup::Closed if state.search.is_editing() => KeyContext::SearchInput,
         Popup::Closed => pane_context(state),
     }

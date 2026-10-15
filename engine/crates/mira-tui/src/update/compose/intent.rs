@@ -29,4 +29,5 @@ pub enum ComposeIntent {
     Close,
     SaveAndClose,
     Discard,
+    Send,
 }

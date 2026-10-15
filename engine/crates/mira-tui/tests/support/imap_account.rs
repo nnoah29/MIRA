@@ -70,4 +70,19 @@ impl TestWorld {
         world.account = add_test_account(&world.engine).await;
         world
     }
+
+    /// Monde avec un faux serveur IMAP prêt pour `USER` mais sans compte au moteur.
+    pub async fn with_empty_imap() -> Self {
+        let credentials = Credentials::default();
+        credentials.add_password(USER, PASSWORD);
+        let imap = FakeImapServer::start(FakeMailStore::new(), credentials, CapabilitySet::full())
+            .await
+            .unwrap();
+        let mut network = network_for(imap.port());
+        network.background_sync = mira_assembly::sync::BackgroundSync::On(
+            mira_assembly::sync::SupervisorConfig::default(),
+        );
+        let home = tempfile::tempdir().unwrap();
+        Self::open_in(home, network, Some(imap))
+    }
 }

@@ -43,8 +43,14 @@ fn printable_keys_are_text_in_the_form() {
         let typed = form_intent(AccountFormIntent::Edit(EditKey::Char(c)));
         assert_eq!(map(&state, key(c)), typed, "{c}");
     }
-    let alt_gr = KeyEvent::new(KeyCode::Char('@'), KeyModifiers::CONTROL | KeyModifiers::ALT);
-    assert_eq!(map(&state, alt_gr), form_intent(AccountFormIntent::Edit(EditKey::Char('@'))));
+    let alt_gr = KeyEvent::new(
+        KeyCode::Char('@'),
+        KeyModifiers::CONTROL | KeyModifiers::ALT,
+    );
+    assert_eq!(
+        map(&state, alt_gr),
+        form_intent(AccountFormIntent::Edit(EditKey::Char('@')))
+    );
     assert_eq!(map(&state, released('a')), None);
 }
 
@@ -59,7 +65,10 @@ fn navigation_keys_map_to_form_intents() {
         (code(KeyCode::Enter), AccountFormIntent::Enter),
         (code(KeyCode::Esc), AccountFormIntent::Close),
         (ctrl('t'), AccountFormIntent::CycleSecurity),
-        (code(KeyCode::Backspace), AccountFormIntent::Edit(EditKey::Backspace)),
+        (
+            code(KeyCode::Backspace),
+            AccountFormIntent::Edit(EditKey::Backspace),
+        ),
     ];
     for (event, expected) in table {
         assert_eq!(map(&state, event), form_intent(expected), "{event:?}");
@@ -75,9 +84,21 @@ fn close_confirmation_has_its_own_keys() {
     state.account_form.open();
     state.account_form.form_mut().unwrap().confirm_close = true;
     assert_eq!(context_of(&state), KeyContext::AccountFormConfirm);
-    assert_eq!(map(&state, key('y')), form_intent(AccountFormIntent::ConfirmClose));
-    assert_eq!(map(&state, code(KeyCode::Enter)), form_intent(AccountFormIntent::ConfirmClose));
-    assert_eq!(map(&state, key('n')), form_intent(AccountFormIntent::KeepEditing));
-    assert_eq!(map(&state, code(KeyCode::Esc)), form_intent(AccountFormIntent::KeepEditing));
+    assert_eq!(
+        map(&state, key('y')),
+        form_intent(AccountFormIntent::ConfirmClose)
+    );
+    assert_eq!(
+        map(&state, code(KeyCode::Enter)),
+        form_intent(AccountFormIntent::ConfirmClose)
+    );
+    assert_eq!(
+        map(&state, key('n')),
+        form_intent(AccountFormIntent::KeepEditing)
+    );
+    assert_eq!(
+        map(&state, code(KeyCode::Esc)),
+        form_intent(AccountFormIntent::KeepEditing)
+    );
     assert_eq!(map(&state, key('a')), None);
 }

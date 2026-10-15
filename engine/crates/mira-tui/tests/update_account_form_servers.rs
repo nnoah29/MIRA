@@ -72,7 +72,10 @@ fn invalid_server_fields_send_nothing() {
     fill_password_from_port(&mut state);
     assert!(hit(&mut state, KeyCode::Enter).is_empty());
     let message = state.account_form.form().unwrap().error.clone().unwrap();
-    assert!(message.contains("IMAP") && message.contains("port"), "{message}");
+    assert!(
+        message.contains("IMAP") && message.contains("port"),
+        "{message}"
+    );
 }
 
 /// Depuis le port IMAP, atteint le mot de passe et le saisit.

@@ -7,12 +7,12 @@ use mira_assembly::mira_vocabulary::MailboxRole;
 use mira_tui::state::AppState;
 use sidebar_fixtures::{account, mailbox, rendered_text};
 
-/// Sans compte, l'écran d'accueil invite à ajouter un compte avec `mira account add` (la touche n viendra à l'étape 3).
+/// Sans compte, l'écran d'accueil invite à ajouter un compte avec la touche n.
 #[test]
 fn no_accounts_shows_welcome_with_add_hint() {
     let text = rendered_text(&AppState::new(100, 30, 1));
     assert!(text.contains("ajouter un compte"));
-    assert!(text.contains("« mira account add »"), "{text}");
+    assert!(text.contains("n pour ajouter un compte"), "{text}");
     assert!(text.contains("Aucun compte"));
 }
 

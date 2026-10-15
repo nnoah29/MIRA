@@ -45,7 +45,15 @@ fn form_shows_the_provider_servers_and_methods() {
 fn fallback_provider_shows_prefilled_server_fields() {
     let state = ready_state(fallback_provider());
     let text = screen(&state, 100, 30);
-    for wanted in ["Serveur IMAP :", "imap.example.org", "Port IMAP :", "993", "Serveur SMTP :", "465", "TLS"] {
+    for wanted in [
+        "Serveur IMAP :",
+        "imap.example.org",
+        "Port IMAP :",
+        "993",
+        "Serveur SMTP :",
+        "465",
+        "TLS",
+    ] {
         assert!(text.contains(wanted), "{wanted} absent :\n{text}");
     }
 }
@@ -55,7 +63,10 @@ fn fallback_provider_shows_prefilled_server_fields() {
 fn oauth_only_provider_says_it_is_unavailable() {
     let state = ready_state(oauth_only_provider());
     let text = screen(&state, 100, 30);
-    assert!(text.contains("OAuth : non disponible dans cette version"), "{text}");
+    assert!(
+        text.contains("OAuth : non disponible dans cette version"),
+        "{text}"
+    );
     assert!(!text.contains("Mot de passe :"), "{text}");
 }
 
@@ -66,11 +77,20 @@ fn busy_and_error_lines_are_displayed() {
     type_text(&mut state, SECRET);
     let sent = hit(&mut state, KeyCode::Enter);
     let busy = screen(&state, 100, 30);
-    assert!(busy.contains("Test de la connexion et ajout du compte"), "{busy}");
+    assert!(
+        busy.contains("Test de la connexion et ajout du compte"),
+        "{busy}"
+    );
     update(&mut state, added_reply(token_of(&sent), Err(login_error())));
     let failed = screen(&state, 100, 30);
-    assert!(failed.contains("identifiants refusés par le serveur"), "{failed}");
-    assert!(failed.contains("saisissez de nouveau le mot de passe"), "{failed}");
+    assert!(
+        failed.contains("identifiants refusés par le serveur"),
+        "{failed}"
+    );
+    assert!(
+        failed.contains("saisissez de nouveau le mot de passe"),
+        "{failed}"
+    );
 }
 
 /// Avant toute préparation la fenêtre invite à saisir l'adresse et la confirmation de fermeture se lit.

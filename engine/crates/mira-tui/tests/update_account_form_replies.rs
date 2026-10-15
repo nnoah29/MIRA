@@ -27,7 +27,10 @@ fn connection_error_keeps_form_open_without_secret() {
     let form = state.account_form.form().unwrap();
     assert_eq!(form.phase, Phase::Ready);
     let message = form.error.clone().unwrap();
-    assert!(message.contains("identifiants refusés par le serveur"), "{message}");
+    assert!(
+        message.contains("identifiants refusés par le serveur"),
+        "{message}"
+    );
     assert_eq!(form.password.char_count(), 0);
     assert!(!format!("{state:?}{commands:?}").contains(SECRET));
 }
@@ -40,7 +43,10 @@ fn successful_add_closes_form_and_reloads_accounts() {
     let sent = hit(&mut state, KeyCode::Enter);
     let commands = update(&mut state, added_reply(token_of(&sent), Ok(account("a1"))));
     assert!(!state.account_form.is_open());
-    assert_eq!(state.status.message.as_deref(), Some("Compte ajouté : a1@example.org"));
+    assert_eq!(
+        state.status.message.as_deref(),
+        Some("Compte ajouté : a1@example.org")
+    );
     let reload = Command::Execute {
         tag: Tag::Accounts,
         request: Request::Account(AccountRequest::ListAccounts),
@@ -57,13 +63,23 @@ fn late_replies_are_ignored() {
     let token = token_of(&sent);
     update(&mut state, added_reply(token + 1, Ok(account("a1"))));
     assert!(state.account_form.is_open());
-    assert_eq!(state.account_form.form().unwrap().phase, Phase::Adding(token));
+    assert_eq!(
+        state.account_form.form().unwrap().phase,
+        Phase::Adding(token)
+    );
     hit(&mut state, KeyCode::Esc);
     hit(&mut state, KeyCode::Enter);
     assert!(!state.account_form.is_open());
     let commands = update(&mut state, added_reply(token, Ok(account("a1"))));
     assert!(commands.is_empty());
-    assert_eq!(state.status.message.as_deref().map(|m| m.contains("Compte ajouté")), Some(false));
+    assert_eq!(
+        state
+            .status
+            .message
+            .as_deref()
+            .map(|m| m.contains("Compte ajouté")),
+        Some(false)
+    );
 }
 
 /// Un échec de préparation garde le formulaire ouvert sur l'adresse, avec le message du moteur.

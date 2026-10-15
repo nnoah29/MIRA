@@ -39,24 +39,42 @@ fn listed(label: &str, entries: &[AddressEntry]) -> Option<String> {
     Some(line)
 }
 
-/// Lignes de la confirmation, chacune assez courte pour la fenêtre : rien n'est coupé sans être signalé.
-pub fn send_summary(compose: &ComposeState) -> Vec<String> {
+/// Lignes de la confirmation, chacune avec son rang de sacrifice (le plus grand disparaît d'abord sur un écran bas).
+fn ranked_summary(compose: &ComposeState, from: &str) -> Vec<(u8, String)> {
     let to = compose.recipients(Field::To);
     let cc = compose.recipients(Field::Cc);
     let bcc = compose.recipients(Field::Bcc);
     let total = to.len() + cc.len() + bcc.len();
-    let mut lines = vec![format!("Envoyer ce message à {total} destinataire(s) ?")];
-    lines.extend(listed(Field::To.label(), &to));
-    lines.extend(listed(Field::Cc.label(), &cc));
+    let mut lines = vec![(3, format!("Envoyer ce message à {total} destinataire(s) ?"))];
+    lines.push((4, format!("De : {}", ellipsize(from, ADDRESS_CHARS))));
+    lines.extend(listed(Field::To.label(), &to).map(|line| (5, line)));
+    lines.extend(listed(Field::Cc.label(), &cc).map(|line| (6, line)));
     if !bcc.is_empty() {
-        lines.push(format!(
-            "{} : {} destinataire(s)",
-            Field::Bcc.label(),
-            bcc.len()
-        ));
+        let label = Field::Bcc.label();
+        lines.push((7, format!("{label} : {} destinataire(s)", bcc.len())));
     }
     let subject = display_safe(&compose.text(Field::Subject));
-    lines.push(format!("Objet : {}", ellipsize(&subject, SUBJECT_CHARS)));
-    lines.push(KEYS.to_string());
+    lines.push((2, format!("Objet : {}", ellipsize(&subject, SUBJECT_CHARS))));
+    lines.push((1, KEYS.to_string()));
     lines
+}
+
+/// Toutes les lignes de la confirmation, chacune assez courte pour la fenêtre : rien n'est coupé sans être signalé.
+pub fn send_summary(compose: &ComposeState, from: &str) -> Vec<String> {
+    ranked_summary(compose, from)
+        .into_iter()
+        .map(|(_, line)| line)
+        .collect()
+}
+
+/// Lignes qui tiennent en `rows` : destinataires détaillés puis en-tête sacrifiés avant l'objet et les touches.
+pub fn fit_summary(compose: &ComposeState, from: &str, rows: usize) -> Vec<String> {
+    let mut lines = ranked_summary(compose, from);
+    while lines.len() > rows {
+        let Some(drop) = (0..lines.len()).max_by_key(|&index| lines[index].0) else {
+            break;
+        };
+        lines.remove(drop);
+    }
+    lines.into_iter().map(|(_, line)| line).collect()
 }

@@ -23,7 +23,8 @@ use crate::state::AppState;
 pub fn render(frame: &mut Frame, state: &AppState) {
     let areas = layout::split(frame.area(), state.focus);
     if let Some(compose) = state.compose.open() {
-        compose::render_compose(frame, layout::body(frame.area()), compose);
+        let from = compose::sender::sender_label(state);
+        compose::render_compose(frame, layout::body(frame.area()), compose, &from);
     } else if state.queue.is_open() {
         queue::render_queue(frame, layout::body(frame.area()), state);
     } else if state.accounts.is_empty() {

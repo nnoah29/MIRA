@@ -1,7 +1,7 @@
 //! Fenêtre verticale du corps : lignes visibles et première ligne qui garde le curseur à l'écran.
 
-/// Lignes du haut occupées par les champs d'en-tête (À, Cc, Cci, Objet).
-pub const HEADER_ROWS: u16 = 4;
+/// Lignes du haut occupées par l'expéditeur et les champs d'en-tête (De, À, Cc, Cci, Objet).
+pub const HEADER_ROWS: u16 = 5;
 
 /// Première ligne à afficher pour que le curseur reste dans les `rows` lignes visibles.
 pub fn visible_top(top: usize, cursor_line: usize, rows: usize) -> usize {

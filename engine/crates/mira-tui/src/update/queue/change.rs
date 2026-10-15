@@ -6,6 +6,7 @@ use mira_assembly::mira_vocabulary::{ActionId, ActionState};
 use crate::commands::{Command, Tag};
 use crate::state::queue::{QueueEntry, QueueItem};
 use crate::state::{AppState, Popup};
+use crate::view::safe_text::display_safe;
 
 /// Commande de modification de la file qui vise cette action.
 pub fn change(action: ActionId, request: Request) -> Vec<Command> {
@@ -17,7 +18,7 @@ pub fn change(action: ActionId, request: Request) -> Vec<Command> {
 
 /// `r` : relance une action échouée (un envoi garde sa clé et son action : pas de doublon).
 pub fn retry(state: &mut AppState) -> Vec<Command> {
-    let Some(entry) = state.queue.selected().cloned() else {
+    let Some(entry) = selected_entry(state) else {
         return Vec::new();
     };
     if entry.state != ActionState::Failed {
@@ -33,23 +34,30 @@ pub fn retry(state: &mut AppState) -> Vec<Command> {
 
 /// `x` : annule un envoi ou une action encore en attente.
 pub fn cancel(state: &mut AppState) -> Vec<Command> {
-    let Some(entry) = state.queue.selected().cloned() else {
+    let Some(entry) = selected_entry(state) else {
         return Vec::new();
     };
     if entry.state != ActionState::Pending {
         return say(state, "Seule une action en attente peut être annulée");
     }
     let action = entry.action.clone();
-    let request = match entry.item {
-        QueueItem::Send { .. } => Request::Compose(ComposeRequest::CancelSend { action }),
-        QueueItem::Action { .. } => Request::Queue(QueueRequest::CancelAction { action }),
+    let (request, done) = match entry.item {
+        QueueItem::Send { subject } => (
+            Request::Compose(ComposeRequest::CancelSend { action }),
+            format!("Envoi « {} » annulé", display_safe(&subject)),
+        ),
+        QueueItem::Action { .. } => (
+            Request::Queue(QueueRequest::CancelAction { action }),
+            "Action annulée".to_string(),
+        ),
     };
+    state.status.message = Some(done);
     change(entry.action, request)
 }
 
 /// `u` ou Entrée : ouvre la décision « renvoyer ou non » d'un envoi incertain ; jamais de renvoi sans elle.
 pub fn resolve(state: &mut AppState) -> Vec<Command> {
-    let Some(entry) = state.queue.selected().cloned() else {
+    let Some(entry) = selected_entry(state) else {
         return Vec::new();
     };
     let QueueEntry {
@@ -63,6 +71,15 @@ pub fn resolve(state: &mut AppState) -> Vec<Command> {
     };
     state.popup = Popup::ResolveUncertain { action, subject };
     Vec::new()
+}
+
+/// Fiche visée par la touche ; si l'action sélectionnée a disparu, le dit et ne vise rien d'autre.
+fn selected_entry(state: &mut AppState) -> Option<QueueEntry> {
+    let entry = state.queue.selected().cloned();
+    if entry.is_none() && !state.queue.entries().is_empty() {
+        state.status.message = Some("Cette action n'existe plus".to_string());
+    }
+    entry
 }
 
 /// Montre ce message dans la barre d'état, sans rien envoyer.

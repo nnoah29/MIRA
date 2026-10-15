@@ -49,7 +49,7 @@ impl QueueState {
             .and_then(|index| self.entries.get(index))
     }
 
-    /// Reconstruit les fiches depuis les deux lectures.
+    /// Reconstruit les fiches depuis les deux lectures, la sélection gardée sur la même action.
     fn rebuild(&mut self) {
         let sends = self.outbox.iter().map(|entry| QueueEntry {
             action: entry.action.clone(),
@@ -69,6 +69,6 @@ impl QueueState {
             last_error: action.last_error.clone(),
         });
         self.entries = sends.chain(others).collect();
-        self.selection.clamp_to(self.entries.len());
+        self.reanchor();
     }
 }

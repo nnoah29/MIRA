@@ -143,9 +143,29 @@ const MOVE_PICKER: &[Hint] = &[
 
 const HELP: &[Hint] = &[hint("Échap/?/q", "fermer l'aide")];
 
+const PALETTE: &[Hint] = &[
+    hint("Entrée", "exécuter"),
+    hint("Échap", "annuler"),
+    hint("Retour arrière", "effacer"),
+];
+
+const SETTINGS: &[Hint] = &[
+    hint("Tab/Maj+Tab", "page suivante/précédente"),
+    hint("j/k", "choisir"),
+    hint(":", "commandes"),
+    hint("Échap", "fermer"),
+];
+
+const SETTINGS_FORM: &[Hint] = &[
+    hint("Entrée", "valider"),
+    hint("Tab/Maj+Tab", "champ suivant/précédent"),
+    hint("Échap", "annuler"),
+];
+
 pub const GLOBAL: &[Hint] = &[
     hint("Tab/Maj+Tab", "changer de panneau"),
     hint("/", "recherche"),
+    hint(":", "commandes"),
     hint("Ctrl+r", "synchroniser"),
     hint("?", "aide"),
     hint("q", "quitter"),
@@ -171,6 +191,10 @@ pub fn hints_for(context: KeyContext) -> &'static [Hint] {
         KeyContext::Confirm => CONFIRM,
         KeyContext::MovePicker => MOVE_PICKER,
         KeyContext::Help => HELP,
+        KeyContext::Palette => PALETTE,
+        KeyContext::Settings => SETTINGS,
+        KeyContext::SettingsForm => SETTINGS_FORM,
+        KeyContext::SettingsConfirm => CONFIRM,
     }
 }
 
@@ -194,5 +218,9 @@ pub fn context_name(context: KeyContext) -> &'static str {
         KeyContext::Confirm => "confirmation",
         KeyContext::MovePicker => "déplacement",
         KeyContext::Help => "aide",
+        KeyContext::Palette => "palette de commandes",
+        KeyContext::Settings => "paramètres",
+        KeyContext::SettingsForm => "paramètres : saisie",
+        KeyContext::SettingsConfirm => "paramètres : confirmation",
     }
 }

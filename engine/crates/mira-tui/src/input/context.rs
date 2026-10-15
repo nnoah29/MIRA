@@ -1,5 +1,6 @@
 //! Contexte clavier : fenêtre ouverte, éditeur de brouillon, saisie de recherche ou panneau qui a le focus.
 
+use crate::state::settings::Dialog;
 use crate::state::{AppState, Pane, Popup};
 
 /// Ensemble de touches valables à un instant donné.
@@ -22,6 +23,10 @@ pub enum KeyContext {
     Confirm,
     MovePicker,
     Help,
+    Palette,
+    Settings,
+    SettingsForm,
+    SettingsConfirm,
 }
 
 /// Contexte du panneau qui a le focus, sans tenir compte d'une fenêtre ou d'une saisie ouverte.
@@ -45,11 +50,22 @@ pub fn context_of(state: &AppState) -> KeyContext {
         Popup::ConfirmSend => KeyContext::ConfirmSend,
         Popup::ResolveUncertain { .. } => KeyContext::ResolveUncertain,
         Popup::ConfirmDeleteDraft { .. } => KeyContext::ConfirmDeleteDraft,
+        Popup::Closed if state.palette.is_open() => KeyContext::Palette,
         Popup::Closed if state.compose.is_creating() => KeyContext::Creating,
         Popup::Closed if state.compose.open().is_some() => KeyContext::Compose,
         Popup::Closed if state.queue.is_open() => KeyContext::Queue,
         Popup::Closed if state.drafts.is_open() => KeyContext::Drafts,
+        Popup::Closed if state.settings.is_open() => settings_context(state),
         Popup::Closed if state.search.is_editing() => KeyContext::SearchInput,
         Popup::Closed => pane_context(state),
+    }
+}
+
+/// Contexte de la vue Paramètres : sa fenêtre ouverte (formulaire ou confirmation), sinon la page.
+fn settings_context(state: &AppState) -> KeyContext {
+    match state.settings.dialog {
+        Dialog::Form(_) => KeyContext::SettingsForm,
+        Dialog::Confirm(_) => KeyContext::SettingsConfirm,
+        Dialog::None => KeyContext::Settings,
     }
 }

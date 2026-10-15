@@ -15,6 +15,7 @@ pub mod messages_load;
 pub mod messages_paging;
 pub mod messages_refresh;
 pub mod move_picker;
+pub mod palette;
 pub mod popup;
 pub mod queue;
 pub mod reader;
@@ -23,6 +24,7 @@ pub mod search;
 pub mod search_edit;
 pub mod search_restore;
 pub mod selection;
+pub mod settings;
 pub mod sent_subjects;
 pub mod status;
 pub mod view_change;
@@ -37,12 +39,14 @@ pub use focus::Pane;
 pub use mailboxes::MailboxesState;
 pub use messages::MessagesState;
 pub use move_picker::MovePicker;
+pub use palette::PaletteState;
 pub use popup::Popup;
 pub use queue::QueueState;
 pub use reader::{ReaderContent, ReaderState};
 pub use refresh::RefreshState;
 pub use search::SearchState;
 pub use selection::Selection;
+pub use settings::SettingsState;
 pub use sent_subjects::SentSubjects;
 pub use status::StatusState;
 
@@ -69,6 +73,8 @@ pub struct AppState {
     pub refresh: RefreshState,
     pub key_prefix: String,
     pub key_counter: u64,
+    pub settings: SettingsState,
+    pub palette: PaletteState,
 }
 
 impl AppState {
@@ -95,6 +101,8 @@ impl AppState {
             refresh: RefreshState::default(),
             key_prefix: format!("tui-{nonce}"),
             key_counter: 0,
+            settings: SettingsState::default(),
+            palette: PaletteState::default(),
         }
     }
 }

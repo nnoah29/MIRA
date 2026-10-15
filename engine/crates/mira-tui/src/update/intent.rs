@@ -3,6 +3,8 @@
 use super::compose::ComposeIntent;
 use super::compose::route::{route_creating, route_editing, route_idle};
 use super::drafts::DraftsIntent;
+use super::palette::PaletteIntent;
+use super::settings::SettingsIntent;
 use super::intent_actions::on_message_intent;
 use super::queue::QueueIntent;
 use super::queue::route::route_open;
@@ -42,6 +44,8 @@ pub enum Intent {
     Drafts(DraftsIntent),
     StartSync,
     Help,
+    Palette(PaletteIntent),
+    Settings(SettingsIntent),
 }
 
 /// Route une intention vers son gestionnaire ; une fenêtre ouverte la reçoit en premier.
@@ -62,11 +66,16 @@ pub fn on_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
         Intent::Drafts(drafts) => super::drafts::route::route_idle(state, drafts),
         Intent::StartSync => sync_status::start_sync(state),
         Intent::Help => help::open_help(state),
+        Intent::Palette(palette) => super::palette::route::route_idle(state, palette),
+        Intent::Settings(settings) => super::settings::route::route_idle(state, settings),
     }
 }
 
 /// Route l'intention vers la fenêtre, l'éditeur, la vue « file », la vue « Brouillons » ou la saisie de recherche ouverte, qui la reçoit avant tout.
 fn route_modal(state: &mut AppState, intent: Intent) -> Option<Vec<Command>> {
+    if state.palette.is_open() {
+        return Some(super::palette::route::route_open(state, intent));
+    }
     if state.compose.is_creating() {
         return Some(route_creating(state, intent));
     }
@@ -81,6 +90,9 @@ fn route_modal(state: &mut AppState, intent: Intent) -> Option<Vec<Command>> {
     }
     if state.drafts.is_open() {
         return Some(super::drafts::route::route_open(state, intent));
+    }
+    if state.settings.is_open() {
+        return Some(super::settings::route::route_open(state, intent));
     }
     if state.search.is_editing() {
         return Some(search_intent::route_editing(state, intent));
@@ -105,7 +117,8 @@ fn on_navigation_intent(state: &mut AppState, intent: Intent) -> Vec<Command> {
         Intent::Quit => return panes::quit(state),
         Intent::Archive | Intent::Trash | Intent::DeletePermanently | Intent::ToggleFlag | Intent::ToggleRead
         | Intent::OpenMovePicker | Intent::Undo | Intent::Confirm | Intent::Cancel | Intent::Search(_)
-        | Intent::Compose(_) | Intent::Queue(_) | Intent::Drafts(_) | Intent::StartSync | Intent::Help => {}
+        | Intent::Compose(_) | Intent::Queue(_) | Intent::Drafts(_) | Intent::StartSync | Intent::Help
+        | Intent::Palette(_) | Intent::Settings(_) => {}
     }
     Vec::new()
 }

@@ -33,6 +33,16 @@ impl ComposeState {
         self.send_key.clone()
     }
 
+    /// Note (ou efface) l'échec du dernier envoi de ce brouillon.
+    pub fn set_send_failed(&mut self, failed: bool) {
+        self.send_failed = failed;
+    }
+
+    /// Vrai si le dernier envoi de ce brouillon a échoué et n'a pas été relancé.
+    pub fn send_failed(&self) -> bool {
+        self.send_failed
+    }
+
     /// Signale la saisie refusée de ce champ.
     pub fn flag(&mut self, field: Field) {
         self.fields[field.index()].flagged = true;

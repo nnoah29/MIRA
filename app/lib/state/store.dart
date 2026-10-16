@@ -692,6 +692,7 @@ class MailStore extends ChangeNotifier {
     }
     m.unread = false;
     _hydrate(m);
+    _prefetchAround(m);
     if (view == PaneView.assistant) {
       _scrollTick++;
       notifyListeners();
@@ -700,6 +701,18 @@ class MailStore extends ChangeNotifier {
     view = PaneView.read;
     _scrollTick++;
     notifyListeners();
+  }
+
+  /// Charge d'avance les deux conversations voisines pour que j/k soient instantanés.
+  void _prefetchAround(Mail m) {
+    final src = source;
+    if (src == null) return;
+    final l = visible();
+    final i = l.indexWhere((x) => x.id == m.id);
+    for (final j in [i + 1, i - 1]) {
+      if (i < 0 || j < 0 || j >= l.length) continue;
+      src.hydrate(l[j]).catchError((_) => false);
+    }
   }
 
   /// Charge corps et pièces jointes depuis le moteur, puis redessine.
@@ -797,6 +810,7 @@ class MailStore extends ChangeNotifier {
           x.blocked = p.blocked;
           x.inline = p.inline;
           x.hydrated = true;
+          x.loaded = p.loaded;
         }
       }
     }

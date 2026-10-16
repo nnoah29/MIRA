@@ -120,7 +120,11 @@ class EngineMailSource implements MailSource {
     for (final m in mail.msgs) {
       if (m.hydrated || m.ref == null) continue;
       m.hydrated = true;
-      changed |= await _hydrateMsg(m);
+      try {
+        changed |= await _hydrateMsg(m);
+      } finally {
+        m.loaded = true;
+      }
     }
     return changed;
   }

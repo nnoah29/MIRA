@@ -63,6 +63,9 @@ class Msg {
   /// Corps et pièces jointes déjà demandés au moteur.
   bool hydrated = false;
 
+  /// Chargement terminé (réussi ou non) : l'aperçu n'est plus un état d'attente.
+  bool loaded = false;
+
   /// HTML déjà assaini par le moteur (`null` : message en texte seul).
   String? html;
 
@@ -89,6 +92,7 @@ class Msg {
           hasAttachments: hasAttachments,
         )
         ..hydrated = hydrated
+        ..loaded = loaded
         ..html = html
         ..blocked = blocked
         ..inline = inline;

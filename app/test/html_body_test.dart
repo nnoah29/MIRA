@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mira/data/models.dart';
 import 'package:mira/state/store.dart';
 import 'package:mira/theme/app_theme.dart';
+import 'package:mira/ui/body_skeleton.dart';
 import 'package:mira/ui/html_body.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -40,6 +41,11 @@ Future<void> _show(WidgetTester tester, Msg m) async {
     ),
   );
   await tester.pump();
+  await tester.runAsync(
+    () => Future<void>.delayed(const Duration(milliseconds: 300)),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
 }
 
 void main() {
@@ -90,5 +96,37 @@ void main() {
   test('openLink refuse javascript: et file:', () async {
     expect(await openLink('javascript:alert(1)'), isFalse);
     expect(await openLink('file:///etc/passwd'), isFalse);
+  });
+
+  testWidgets('squelette pendant la construction, puis le HTML apparaît', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final store = MailStore(await SharedPreferences.getInstance());
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: store,
+        child: MaterialApp(
+          theme: buildTheme(true),
+          home: Scaffold(
+            body: MailHtml(
+              msg: _msg('<p>Bonjour tout le monde</p>'),
+              base: const TextStyle(),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.byType(BodySkeleton), findsOneWidget);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(BodySkeleton), findsNothing);
+    expect(
+      find.textContaining('Bonjour tout', findRichText: true),
+      findsOneWidget,
+    );
   });
 }

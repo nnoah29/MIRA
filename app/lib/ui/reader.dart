@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'body_skeleton.dart';
 import 'html_body.dart';
 
@@ -21,38 +23,57 @@ class Reader extends StatefulWidget {
 }
 
 class _ReaderState extends State<Reader> {
-  late Set<int> old;
-  String sig = '';
+  final List<String> deck = [];
+  Timer? _warm;
 
-  void _sync() {
-    final k = '${widget.mail.id}:${widget.mail.msgs.length}';
-    if (k != sig) {
-      sig = k;
-      old = {for (var i = 0; i < widget.mail.msgs.length - 1; i++) i};
+  /// Garde les dernières conversations montées hors écran : y revenir est instantané.
+  void _track() {
+    deck.remove(widget.mail.id);
+    deck.add(widget.mail.id);
+    while (deck.length > _deckSize) {
+      deck.removeAt(0);
     }
+  }
+
+  /// Monte hors écran, une à la fois et au calme, les voisins de la conversation affichée.
+  void _scheduleWarmUp(MailStore s) {
+    _warm?.cancel();
+    if (!widget.mail.msgs.every((x) => x.loaded || x.ref == null)) return;
+    _warm = Timer(const Duration(milliseconds: 450), () {
+      final l = s.visible();
+      final i = l.indexWhere((x) => x.id == widget.mail.id);
+      final next = [i + 1, i - 1]
+          .where((j) => i >= 0 && j >= 0 && j < l.length)
+          .map((j) => l[j])
+          .where((x) => !deck.contains(x.id));
+      if (next.isEmpty || !mounted) return;
+      setState(() {
+        if (deck.length >= _deckSize) deck.removeAt(0);
+        deck.insert(0, next.first.id);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _warm?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    _sync();
+    _track();
     final s = context.watch<MailStore>();
+    _scheduleWarmUp(s);
     final p = context.pal;
     final m = widget.mail;
     final w = MediaQuery.sizeOf(context).width;
     final narrow = w <= 1100, mobile = w <= 760;
     final hp = narrow ? 16.0 : 32.0;
-    final f = folderById(m.folder);
     // En CSS, les boutons icône rétrécissent (jusqu'à 18 px) quand la barre manque de place.
     final shrinkW = (38 - ((391 - (w - 2 * hp)).clamp(0, 1000)) / 2)
         .clamp(18, 38)
         .toDouble();
-
-    final chips = <Widget>[
-      for (final l in m.labels)
-        _Tag(label: t(labelDefs[l]!.n), dot: Color(labelDefs[l]!.c)),
-      if (m.flags.contains('needs')) _Tag(label: t('À répondre'), accent: true),
-      if (m.flags.contains('waiting')) _Tag(label: t('En attente')),
-    ];
 
     return Column(
       children: [
@@ -132,57 +153,7 @@ class _ReaderState extends State<Reader> {
           ),
         ),
         Expanded(
-          child: ScrollArea(
-            padding: EdgeInsets.fromLTRB(hp, 28, hp, 40),
-            child: SelectionArea(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Ico(f.icon, size: 14, color: p.dim),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Mono(
-                          '${t(f.n)}${m.msgs.length > 1 ? ' · ${tn(m.msgs.length, 'message', 'messages')}' : ''}',
-                        ),
-                      ),
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Text(
-                      m.subject.toUpperCase(),
-                      style: Fonts.display(
-                        size: narrow && mobile ? 28 : (narrow ? 28 : 38),
-                        height: 1.08,
-                        color: p.text,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Wrap(spacing: 6, runSpacing: 6, children: chips),
-                  ),
-                  for (var i = 0; i < m.msgs.length; i++)
-                    FadeSlideIn(
-                      delay: Duration(milliseconds: 60 * (i > 4 ? 4 : i)),
-                      from: const Offset(0, 12),
-                      child: _Thread(
-                        mail: m,
-                        msg: m.msgs[i],
-                        old: old.contains(i),
-                        toggle: () => setState(
-                          () => old.contains(i) ? old.remove(i) : old.add(i),
-                        ),
-                        narrow: narrow,
-                        mobile: mobile,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
+          child: _Deck(current: m, ids: deck),
         ),
       ],
     );
@@ -418,6 +389,166 @@ class _BodySwitch extends StatelessWidget {
       duration: const Duration(milliseconds: 160),
       switchInCurve: Curves.easeOut,
       child: child,
+    );
+  }
+}
+
+const _deckSize = 5;
+
+/// Pile de conversations : la courante est visible, les autres restent montées (et mises en page) hors écran.
+class _Deck extends StatelessWidget {
+  final Mail current;
+  final List<String> ids;
+  const _Deck({required this.current, required this.ids});
+
+  @override
+  Widget build(BuildContext context) {
+    final store = context.read<MailStore>();
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        for (final id in ids)
+          if (id == current.id || store.byId(id) != null)
+            Offstage(
+              key: ValueKey('deck-$id'),
+              offstage: id != current.id,
+              child: TickerMode(
+                enabled: id == current.id,
+                child: _DeckFade(
+                  active: id == current.id,
+                  child: _MailBody(
+                    key: ValueKey('body-$id'),
+                    mail: id == current.id ? current : store.byId(id)!,
+                  ),
+                ),
+              ),
+            ),
+      ],
+    );
+  }
+}
+
+/// Fondu court quand une conversation déjà prête repasse au premier plan.
+class _DeckFade extends StatefulWidget {
+  final bool active;
+  final Widget child;
+  const _DeckFade({required this.active, required this.child});
+
+  @override
+  State<_DeckFade> createState() => _DeckFadeState();
+}
+
+class _DeckFadeState extends State<_DeckFade>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 150),
+    value: 1,
+  );
+
+  @override
+  void didUpdateWidget(_DeckFade old) {
+    super.didUpdateWidget(old);
+    if (widget.active && !old.active) _c.forward(from: .4);
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      FadeTransition(opacity: _c, child: widget.child);
+}
+
+/// Contenu défilant d'une conversation (objet, messages repliables).
+class _MailBody extends StatefulWidget {
+  final Mail mail;
+  const _MailBody({super.key, required this.mail});
+
+  @override
+  State<_MailBody> createState() => _MailBodyState();
+}
+
+class _MailBodyState extends State<_MailBody> {
+  late Set<int> old;
+  String sig = '';
+
+  void _sync() {
+    final k = '${widget.mail.id}:${widget.mail.msgs.length}';
+    if (k != sig) {
+      sig = k;
+      old = {for (var i = 0; i < widget.mail.msgs.length - 1; i++) i};
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _sync();
+    final p = context.pal;
+    final m = widget.mail;
+    final w = MediaQuery.sizeOf(context).width;
+    final narrow = w <= 1100, mobile = w <= 760;
+    final hp = narrow ? 16.0 : 32.0;
+    final f = folderById(m.folder);
+    final chips = <Widget>[
+      for (final l in m.labels)
+        _Tag(label: t(labelDefs[l]!.n), dot: Color(labelDefs[l]!.c)),
+      if (m.flags.contains('needs')) _Tag(label: t('À répondre'), accent: true),
+      if (m.flags.contains('waiting')) _Tag(label: t('En attente')),
+    ];
+    return ScrollArea(
+      padding: EdgeInsets.fromLTRB(hp, 28, hp, 40),
+      child: SelectionArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Ico(f.icon, size: 14, color: p.dim),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Mono(
+                    '${t(f.n)}${m.msgs.length > 1 ? ' · ${tn(m.msgs.length, 'message', 'messages')}' : ''}',
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                m.subject.toUpperCase(),
+                style: Fonts.display(
+                  size: narrow && mobile ? 28 : (narrow ? 28 : 38),
+                  height: 1.08,
+                  color: p.text,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Wrap(spacing: 6, runSpacing: 6, children: chips),
+            ),
+            for (var i = 0; i < m.msgs.length; i++)
+              FadeSlideIn(
+                delay: Duration(milliseconds: 60 * (i > 4 ? 4 : i)),
+                from: const Offset(0, 12),
+                child: _Thread(
+                  mail: m,
+                  msg: m.msgs[i],
+                  old: old.contains(i),
+                  toggle: () => setState(
+                    () => old.contains(i) ? old.remove(i) : old.add(i),
+                  ),
+                  narrow: narrow,
+                  mobile: mobile,
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

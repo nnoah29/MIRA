@@ -256,7 +256,7 @@ class PaneView_ extends StatelessWidget {
       case PaneView.read:
         final m = s.byId(s.open);
         child = m != null
-            ? Reader(m, key: ValueKey(m.id))
+            ? Reader(m, key: const ValueKey('reader'))
             : const _Empty(key: ValueKey('empty'));
       case PaneView.empty:
         child = const _Empty(key: ValueKey('empty'));

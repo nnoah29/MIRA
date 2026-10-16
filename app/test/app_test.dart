@@ -341,4 +341,35 @@ void main() {
     expect(find.text('APPARENCE'), findsOneWidget);
     await teardown(tester, s);
   });
+
+  testWidgets(
+    'lecteur : les voisins sont montés hors écran, y aller est instantané',
+    (tester) async {
+      final s = await pumpApp(tester);
+      final l = s.visible();
+      final cur = s.open!;
+      final i = l.indexWhere((m) => m.id == cur);
+      final next = l[i + 1].id;
+      expect(find.byKey(ValueKey('body-$next')), findsNothing);
+      await tester.pump(const Duration(milliseconds: 600));
+      final warmed = find.byKey(ValueKey('body-$next'), skipOffstage: false);
+      expect(warmed, findsOneWidget);
+      final before = tester.element(warmed);
+      expect(
+        tester
+            .widget<Offstage>(
+              find.byKey(ValueKey('deck-$next'), skipOffstage: false),
+            )
+            .offstage,
+        isTrue,
+      );
+      s.openMail(next);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(
+        identical(tester.element(find.byKey(ValueKey('body-$next'))), before),
+        isTrue,
+      );
+      await teardown(tester, s);
+    },
+  );
 }

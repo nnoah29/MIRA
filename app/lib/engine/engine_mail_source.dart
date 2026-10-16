@@ -1,6 +1,9 @@
 import 'mail_source.dart';
 
 import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 
 import '../data/html_lite.dart';
 import '../data/models.dart';
@@ -115,50 +118,68 @@ class EngineMailSource implements MailSource {
   }
 
   @override
-  Future<bool> hydrate(Mail mail) async {
-    var changed = false;
-    for (final m in mail.msgs) {
-      if (m.hydrated || m.ref == null) continue;
+  Future<bool> hydrate(Mail mail, {VoidCallback? onProgress}) async {
+    final todo = [
+      for (final m in mail.msgs)
+        if (!m.hydrated && m.ref != null) m,
+    ];
+    for (final m in todo) {
       m.hydrated = true;
-      try {
-        changed |= await _hydrateMsg(m);
-      } finally {
-        m.loaded = true;
-      }
     }
-    return changed;
+    final results = await Future.wait([
+      for (final m in todo) _hydrateMsg(m, onProgress),
+    ]);
+    return results.any((changed) => changed);
   }
 
-  Future<bool> _hydrateMsg(Msg m) async {
-    final view = await _bodyView(m.ref!);
-    if (view == null) return false;
-    final data = (view['data'] as Map).cast<String, dynamic>();
+  /// Corps d'abord (affiché dès qu'il est prêt), pièces jointes et images incorporées ensuite.
+  Future<bool> _hydrateMsg(Msg m, VoidCallback? onProgress) async {
+    final clock = Stopwatch()..start();
     try {
-      await _loadSafeHtml(m);
-    } on EngineException {
-      m.html = null;
+      final view = await _bodyView(m.ref!);
+      if (view == null) return false;
+      final data = (view['data'] as Map).cast<String, dynamic>();
+      await _loadHtml(m);
+      final text = '${data['text']}'.trim();
+      if (text.isNotEmpty) {
+        m.body = _plain(text);
+      } else if (m.html != null) {
+        m.body = parseHtml(m.html!);
+      }
+    } finally {
+      m.loaded = true;
     }
-    final text = '${data['text']}'.trim();
-    if (text.isNotEmpty) {
-      m.body = _plain(text);
-    } else if (m.html != null) {
-      m.body = parseHtml(m.html!);
-    }
+    onProgress?.call();
+    _trace('corps ${m.ref}', clock);
     await _loadAttachments(m);
+    _trace('pièces jointes ${m.ref}', clock);
     return true;
   }
 
-  /// HTML d'origine (couleurs et structure gardées) ; le moteur ne dit que quelles ressources distantes restent bloquées.
-  Future<void> _loadSafeHtml(Msg m) async {
-    final raw = await client.call(
-      req('message', 'get_safe_html', {'message': m.ref}),
-    );
-    final safe = (raw['data'] as Map).cast<String, dynamic>();
-    m.blocked = [for (final b in (safe['blocked_resources'] as List)) '$b'];
-    final original = await client.originalHtml(m.ref!);
-    final html = original ?? '${safe['html']}';
-    m.html = html.trim().isEmpty ? null : inlineStyles(html);
+  void _trace(String what, Stopwatch clock) {
+    if (Platform.environment['MIRA_TRACE'] == '1') {
+      debugPrint('MIRA $what : ${clock.elapsedMilliseconds} ms');
+    }
   }
+
+  /// HTML d'origine (couleurs et structure gardées) ; le moteur ne dit que quelles ressources distantes restent bloquées.
+  Future<void> _loadHtml(Msg m) async {
+    try {
+      final parts = await Future.wait([
+        client.call(req('message', 'get_safe_html', {'message': m.ref})),
+        client.originalHtml(m.ref!),
+      ]);
+      final safe = ((parts[0] as Map<String, dynamic>)['data'] as Map)
+          .cast<String, dynamic>();
+      m.blocked = [for (final b in (safe['blocked_resources'] as List)) '$b'];
+      final html = (parts[1] as String?) ?? '${safe['html']}';
+      m.html = html.trim().isEmpty ? null : await compute(inlineStyles, html);
+    } on EngineException {
+      m.html = null;
+    }
+  }
+
+  Future<void> _loadSafeHtml(Msg m) => _loadHtml(m);
 
   Future<void> _loadAttachments(Msg m) async {
     final html = m.html ?? '';

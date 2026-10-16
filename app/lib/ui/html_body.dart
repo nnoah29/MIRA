@@ -12,6 +12,8 @@ import '../state/store.dart';
 import '../theme/app_theme.dart';
 import 'body_skeleton.dart';
 
+/// Au-delà, l'analyse du HTML part dans un isolat (le surcoût ne vaut que pour les gros courriels).
+const _asyncAbove = 30000;
 const _paper = Color(0xFFFFFFFF);
 const _ink = Color(0xFF1A1A1A);
 
@@ -65,10 +67,14 @@ class _MailHtmlState extends State<MailHtml> {
         : widget.base;
     _key = key;
     _ready = false;
+    final asyncBuild = msg.html!.length > _asyncAbove;
+    if (!asyncBuild) _markReady();
     return _body = HtmlWidget(
       msg.html!,
-      buildAsync: true,
-      onLoadingBuilder: (_, _, _) => _LoadMarker(onGone: _markReady),
+      buildAsync: asyncBuild,
+      onLoadingBuilder: asyncBuild
+          ? (_, _, _) => _LoadMarker(onGone: _markReady)
+          : null,
       textStyle: style,
       customWidgetBuilder: (e) =>
           e.localName == 'img' ? _image(e, remoteOk) : null,

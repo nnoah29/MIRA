@@ -716,18 +716,22 @@ class MailStore extends ChangeNotifier {
     }
   }
 
-  /// Conserve le corps déjà chargé des messages qui n'ont pas changé.
+  /// Conserve corps, HTML, images et état « lu » déjà connus des messages relus.
   void _keepLocalState(String id, List<Mail> fresh) {
     final old = {for (final m in _boxes[id] ?? <Mail>[]) m.id: m};
     for (final m in fresh) {
       final prev = old[m.id];
       if (prev == null) continue;
+      if (!prev.unread) m.unread = false;
       final byRef = {for (final x in prev.msgs) x.ref: x};
       for (final x in m.msgs) {
         final p = byRef[x.ref];
         if (p != null && p.hydrated) {
           x.body = p.body;
           x.att = p.att;
+          x.html = p.html;
+          x.blocked = p.blocked;
+          x.inline = p.inline;
           x.hydrated = true;
         }
       }

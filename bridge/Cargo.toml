@@ -1,0 +1,31 @@
+[package]
+name = "mira-bridge"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+publish = false
+description = "Pont FFI (flutter_rust_bridge) entre l'interface Flutter et le moteur MIRA"
+
+[lib]
+name = "mira_bridge"
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[workspace]
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+
+[dependencies]
+mira-assembly = { path = "../engine/crates/mira-assembly" }
+flutter_rust_bridge = "=2.11.1"
+serde_json = "1"
+tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "sync", "time"] }
+
+[dev-dependencies]
+mira-testkit = { path = "../engine/crates/mira-testkit" }
+tempfile = "3"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

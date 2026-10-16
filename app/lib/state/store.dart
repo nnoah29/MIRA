@@ -8,6 +8,7 @@ import '../data/format.dart';
 import '../data/html_lite.dart';
 import '../data/models.dart';
 import '../data/seed.dart';
+import '../engine/mail_source.dart';
 import '../theme/wall_source.dart';
 import '../theme/wall_theme.dart';
 import '../theme/app_theme.dart';
@@ -105,7 +106,11 @@ class ComposeInit {
 
 class MailStore extends ChangeNotifier {
   final SharedPreferences prefs;
-  MailStore(this.prefs, {bool watchWallpaper = false}) {
+
+  /// Données réelles du moteur (`null` : données fictives de démonstration).
+  final MailSource? source;
+  StreamSubscription<String>? _changeSub;
+  MailStore(this.prefs, {bool watchWallpaper = false, this.source}) {
     followWallpaper = prefs.getString('follow') != '0';
     lang = AppLang.fromCode(prefs.getString('lang'));
     appLang = lang;
@@ -136,8 +141,15 @@ class MailStore extends ChangeNotifier {
     } catch (_) {
       /* préférences illisibles : on ignore */
     }
-    accounts = [...defaultAccounts, ...extra];
+    final real = source?.accounts ?? [...defaultAccounts, ...extra];
+    accounts = real.isEmpty
+        ? [const Account('none', 'Aucun compte', '')]
+        : real;
     knownAccounts = accounts;
+    if (source != null) {
+      _boxes.addAll(source!.boxes);
+      _changeSub = source!.changes.listen(_reloadAccount);
+    }
     final saved = prefs.getString('account');
     unified = saved == 'all';
     activeId = accounts.any((a) => a.id == saved) ? saved! : accounts.first.id;
@@ -145,7 +157,7 @@ class MailStore extends ChangeNotifier {
       mails = _mergedBoxes();
       _useIdentity(active);
     } else {
-      mails = seedAccount(active);
+      mails = source != null ? (_boxes[active.id] ?? []) : seedAccount(active);
     }
     chat = [_welcome()];
   }
@@ -239,6 +251,7 @@ class MailStore extends ChangeNotifier {
 
   @override
   void dispose() {
+    _changeSub?.cancel();
     _wallSub?.cancel();
     for (final t in _timers) {
       t.cancel();
@@ -426,12 +439,18 @@ class MailStore extends ChangeNotifier {
 
   /// Démarrage (après le premier build, `narrow` est connu).
   void start() {
+    if (source != null && source!.accounts.isEmpty) {
+      toast(
+        'Aucun compte : ajoutes-en un avec « mira account add »',
+        err: true,
+      );
+    }
     if (!narrow) {
       final l = visible();
       if (l.isNotEmpty) openMail(l.first.id);
     }
     notifyListeners();
-    scheduleIncoming(rand(15000, 22000).round());
+    if (source == null) scheduleIncoming(rand(15000, 22000).round());
   }
 
   // ---- comptes ----
@@ -442,6 +461,7 @@ class MailStore extends ChangeNotifier {
 
   /// Crée (sans changer l'identité active) la boîte fictive d'un compte.
   List<Mail> _newBox(Account a) {
+    if (source != null) return _boxes[a.id] ?? [];
     final keepMe = me, keepId = currentAccountId;
     final l = seedAccount(a);
     me = keepMe;
@@ -643,6 +663,7 @@ class MailStore extends ChangeNotifier {
       return;
     }
     m.unread = false;
+    _hydrate(m);
     if (view == PaneView.assistant) {
       _scrollTick++;
       notifyListeners();
@@ -651,6 +672,55 @@ class MailStore extends ChangeNotifier {
     view = PaneView.read;
     _scrollTick++;
     notifyListeners();
+  }
+
+  /// Charge corps et pièces jointes depuis le moteur, puis redessine.
+  Future<void> _hydrate(Mail m) async {
+    final src = source;
+    if (src == null) return;
+    try {
+      if (await src.hydrate(m)) notifyListeners();
+    } catch (_) {
+      /* corps indisponible : l'aperçu reste affiché */
+    }
+  }
+
+  /// Relit la boîte d'un compte après un événement du moteur.
+  Future<void> _reloadAccount(String id) async {
+    final src = source;
+    final acc = accounts.where((a) => a.id == id).firstOrNull;
+    if (src == null || acc == null) return;
+    try {
+      final fresh = await src.reload(acc);
+      _keepLocalState(id, fresh);
+      _boxes[id] = fresh;
+      if (unified) {
+        mails = _mergedBoxes();
+      } else if (id == activeId) {
+        mails = fresh;
+      }
+      notifyListeners();
+    } catch (_) {
+      /* lecture impossible : on garde l'affichage actuel */
+    }
+  }
+
+  /// Conserve le corps déjà chargé des messages qui n'ont pas changé.
+  void _keepLocalState(String id, List<Mail> fresh) {
+    final old = {for (final m in _boxes[id] ?? <Mail>[]) m.id: m};
+    for (final m in fresh) {
+      final prev = old[m.id];
+      if (prev == null) continue;
+      final byRef = {for (final x in prev.msgs) x.ref: x};
+      for (final x in m.msgs) {
+        final p = byRef[x.ref];
+        if (p != null && p.hydrated) {
+          x.body = p.body;
+          x.att = p.att;
+          x.hydrated = true;
+        }
+      }
+    }
   }
 
   void closePane() {
@@ -1152,6 +1222,10 @@ class MailStore extends ChangeNotifier {
       toast('Ajoute au moins un destinataire', err: true);
       return;
     }
+    if (source != null) {
+      toast('Envoi réel pas encore branché sur le moteur', err: true);
+      return;
+    }
     cs.timer?.cancel();
     final blocks = [...cs.body.toBlocks(), ...?cs.quote];
     final init = ComposeInit(
@@ -1222,6 +1296,7 @@ class MailStore extends ChangeNotifier {
   }
 
   void autoReply(Mail sent, Mail? orig) {
+    if (source != null) return;
     if (!mails.contains(sent)) return;
     if (sent.to.isEmpty) return;
     final who = sent.to[0];

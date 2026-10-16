@@ -1,5 +1,6 @@
 /target/
 /engine/target/
+/bridge/target/
 /.claude/worktrees/
 __pycache__/
 *.pyc

@@ -1,14 +1,30 @@
-# MIRA — interface Flutter (données fictives pour l’instant)
+# MIRA — interface Flutter
 
 Portage fidèle du client mail HTML/CSS/JS (le prototype HTML/CSS/JS d’origine) : même design, mêmes
 fonctionnalités, mêmes **données fictives** (aucun backend, rien n'est envoyé nulle part).
+
+## Données réelles (moteur Rust par FFI)
+
+L'app lit comptes, boîtes et messages dans le moteur MIRA (`../bridge`, flutter_rust_bridge ; AG-45).
+**Lecture seule pour l'instant** : archiver, supprimer, étoile, lu/non lu restent locaux à l'écran,
+l'envoi est refusé, l'ajout de compte de l'interface est fictif (utiliser `mira account add` ou le TUI).
+
+```bash
+(cd ../bridge && cargo build --release)     # libmira_bridge.so
+flutter run -d linux                         # profil « default » ; MIRA_HOME=<dossier> pour un autre
+MIRA_DEMO=1 flutter run -d linux             # données fictives d'origine
+MIRA_HOME=$(mktemp -d) flutter test          # dont test/rust_bridge_test.dart (vrai moteur par FFI)
+```
+
+Le profil est verrouillé par le processus qui l'ouvre : fermer le TUI avant de lancer l'app.
+Si le moteur ne s'ouvre pas, l'app affiche les données de démonstration (message sur stderr).
 
 ## Lancer
 
 ```bash
 flutter pub get
 flutter run -d linux        # ou : -d chrome, -d <appareil Android>
-flutter test                # 40 tests (logique + parcours d'interface)
+flutter test                # logique, parcours d'interface, source moteur
 ```
 
 Les polices (Anton, Hanken Grotesk, JetBrains Mono) sont **embarquées** dans

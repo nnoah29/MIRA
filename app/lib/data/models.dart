@@ -53,13 +53,31 @@ class Msg {
   int date;
   List<Block> body;
   List<Attachment> att;
+
+  /// Identifiant du message dans le moteur (`null` : message local).
+  final String? ref;
+
+  /// Le moteur annonce des pièces jointes (liste lue à l'ouverture).
+  final bool hasAttachments;
+
+  /// Corps et pièces jointes déjà demandés au moteur.
+  bool hydrated = false;
   Msg({
     required this.from,
     required this.date,
     required this.body,
     List<Attachment>? att,
+    this.ref,
+    this.hasAttachments = false,
   }) : att = att ?? [];
-  Msg copy() => Msg(from: from, date: date, body: body, att: [...att]);
+  Msg copy() => Msg(
+    from: from,
+    date: date,
+    body: body,
+    att: [...att],
+    ref: ref,
+    hasAttachments: hasAttachments,
+  )..hydrated = hydrated;
 }
 
 class DraftMeta {

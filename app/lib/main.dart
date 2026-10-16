@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,6 +7,9 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'engine/engine_mail_source.dart';
+import 'engine/mail_source.dart';
+import 'engine/rust_engine_client.dart';
 import 'i18n/i18n.dart';
 import 'state/store.dart';
 import 'theme/app_theme.dart';
@@ -21,12 +26,25 @@ Future<void> main() async {
   await initializeDateFormatting('fr_FR');
   await initializeDateFormatting('en_US');
   final prefs = await SharedPreferences.getInstance();
+  final source = await openEngineSource();
   runApp(
     ChangeNotifierProvider(
-      create: (_) => MailStore(prefs, watchWallpaper: true),
+      create: (_) => MailStore(prefs, watchWallpaper: true, source: source),
       child: const MiraApp(),
     ),
   );
+}
+
+/// Ouvre le moteur Rust ; `MIRA_DEMO=1` ou une erreur d'ouverture donne les données de démonstration.
+Future<MailSource?> openEngineSource() async {
+  if (Platform.environment['MIRA_DEMO'] == '1') return null;
+  try {
+    final client = await RustEngineClient.open();
+    return await EngineMailSource.load(client);
+  } catch (e) {
+    stderr.writeln('MIRA : moteur indisponible, données de démonstration ($e)');
+    return null;
+  }
 }
 
 class MiraApp extends StatelessWidget {

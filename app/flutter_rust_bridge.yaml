@@ -1,0 +1,5 @@
+# Génération du pont : `flutter_rust_bridge_codegen generate` (voir docs/DECISIONS-AGENT.md, AG-FFI).
+rust_input: crate::api
+rust_root: ../bridge/
+dart_output: lib/src/rust
+dart_entrypoint_class_name: RustLib

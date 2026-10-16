@@ -13,6 +13,7 @@ import '../theme/wall_source.dart';
 import '../theme/wall_theme.dart';
 import '../theme/app_theme.dart';
 import 'assistant.dart';
+import 'image_policy.dart';
 import 'rich_controller.dart';
 import '../i18n/i18n.dart';
 
@@ -124,6 +125,7 @@ class MailStore extends ChangeNotifier {
         notifyListeners();
       });
     }
+    imagePolicy = ImagePolicy.decode(prefs.getString('imgPolicy'));
     theme = prefs.getString('theme') == 'light' ? 'light' : 'dark';
     accentHex = prefs.getString('accent');
     dense = prefs.getString('dense') == '1';
@@ -161,6 +163,32 @@ class MailStore extends ChangeNotifier {
     }
     chat = [_welcome()];
   }
+
+  // ---- images distantes ----
+  late ImagePolicy imagePolicy;
+
+  /// Décision pour les images distantes d'un expéditeur (règles, puis réglage général).
+  ImageAction imageActionFor(String email) => imagePolicy.decide(email);
+
+  void _saveImagePolicy(ImagePolicy p) {
+    imagePolicy = p;
+    prefs.setString('imgPolicy', p.encode());
+    notifyListeners();
+  }
+
+  void setImageDefault(ImageAction a) =>
+      _saveImagePolicy(imagePolicy.withFallback(a));
+
+  /// Ajoute (ou remplace) une règle ; `false` si la saisie n'est ni une adresse ni un domaine.
+  bool addImageRule(String input, ImageAction action) {
+    final m = normalizeMatch(input);
+    if (m == null) return false;
+    _saveImagePolicy(imagePolicy.withRule(ImageRule(m, action)));
+    return true;
+  }
+
+  void removeImageRule(String match) =>
+      _saveImagePolicy(imagePolicy.withoutRule(match));
 
   // ---- état ----
   late List<Mail> mails;
@@ -687,6 +715,12 @@ class MailStore extends ChangeNotifier {
 
   /// Affiche les images distantes d'un message (ou de son expéditeur), après accord de l'utilisateur.
   Future<void> allowRemote(Msg msg, {bool sender = false}) async {
+    if (sender) {
+      imagePolicy = imagePolicy.withRule(
+        ImageRule(msg.from.email.toLowerCase(), ImageAction.always),
+      );
+      prefs.setString('imgPolicy', imagePolicy.encode());
+    }
     try {
       if (await source?.allowRemote(msg, sender: sender) ?? false) {
         notifyListeners();

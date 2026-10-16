@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../data/models.dart';
 import '../i18n/i18n.dart';
+import '../state/image_policy.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 
@@ -39,6 +40,14 @@ class MailHtml extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.pal;
+    final action = context.select<MailStore, ImageAction>(
+      (st) => st.imageActionFor(msg.from.email),
+    );
+    final remoteOk = switch (action) {
+      ImageAction.always => true,
+      ImageAction.never => false,
+      ImageAction.ask => msg.blocked.isEmpty,
+    };
     final onPaper = imposesColors(msg.html!);
     final style = onPaper
         ? base.copyWith(color: _ink, fontSize: 14, height: 1.5)
@@ -46,14 +55,16 @@ class MailHtml extends StatelessWidget {
     final body = HtmlWidget(
       msg.html!,
       textStyle: style,
-      customWidgetBuilder: (e) => e.localName == 'img' ? _image(e) : null,
+      customWidgetBuilder: (e) =>
+          e.localName == 'img' ? _image(e, remoteOk) : null,
       customStylesBuilder: (e) => _styleOf(e, p, onPaper),
       onTapUrl: openLink,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (msg.blocked.isNotEmpty) _RemoteBanner(msg: msg),
+        if (msg.blocked.isNotEmpty && action == ImageAction.ask)
+          _RemoteBanner(msg: msg),
         if (onPaper)
           Container(
             padding: const EdgeInsets.all(16),
@@ -83,10 +94,10 @@ class MailHtml extends StatelessWidget {
     return null;
   }
 
-  Widget? _image(dom.Element e) {
+  Widget? _image(dom.Element e, bool remoteOk) {
     final src = (e.attributes['src'] ?? '').trim();
     final width = double.tryParse(e.attributes['width'] ?? '');
-    final image = _provider(src);
+    final image = _provider(src, remoteOk);
     if (image == null) return const SizedBox.shrink();
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: width ?? double.infinity),
@@ -98,7 +109,7 @@ class MailHtml extends StatelessWidget {
     );
   }
 
-  ImageProvider? _provider(String src) {
+  ImageProvider? _provider(String src, bool remoteOk) {
     final lower = src.toLowerCase();
     if (lower.startsWith('cid:')) {
       final bytes =
@@ -110,7 +121,7 @@ class MailHtml extends StatelessWidget {
       return data == null ? null : MemoryImage(data.contentAsBytes());
     }
     final remote = lower.startsWith('http://') || lower.startsWith('https://');
-    if (remote && msg.blocked.isEmpty) {
+    if (remote && remoteOk) {
       return NetworkImage(src);
     }
     return null;

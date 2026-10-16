@@ -1,0 +1,620 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../data/models.dart';
+import '../state/store.dart';
+import '../theme/app_theme.dart';
+import '../theme/icons.dart';
+import '../theme/wall_source.dart';
+import 'widgets.dart';
+import '../i18n/i18n.dart';
+
+/// Couleurs principales proposées (valeurs du thème sombre ; le thème clair en dérive).
+List<(String, String)> get accentPresets => <(String, String)>[
+  (t('Orange'), 'e8542b'),
+  (t('Rouge'), 'e5484d'),
+  (t('Rose'), 'e0457b'),
+  (t('Violet'), '8e6bf0'),
+  (t('Bleu'), '3b82f6'),
+  (t('Cyan'), '22b8cf'),
+  (t('Vert'), '2fb36d'),
+  (t('Jaune'), 'e5b100'),
+];
+
+List<String> get _tabs => [t('Apparence'), t('Messagerie'), t('Compte')];
+
+class SettingsPanel extends StatefulWidget {
+  const SettingsPanel({super.key});
+  @override
+  State<SettingsPanel> createState() => _SettingsPanelState();
+}
+
+class _SettingsPanelState extends State<SettingsPanel> {
+  int tab = 0;
+  late final TextEditingController sigCtl;
+
+  @override
+  void initState() {
+    super.initState();
+    sigCtl = TextEditingController(text: context.read<MailStore>().sig);
+  }
+
+  @override
+  void dispose() {
+    sigCtl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<MailStore>();
+    final p = context.pal;
+    final w = MediaQuery.sizeOf(context).width;
+    final narrow = w <= 1100;
+    final hp = narrow ? 16.0 : 32.0;
+
+    Widget seg(String k, List<(String, String)> opts, String cur) => Container(
+      decoration: BoxDecoration(border: Border.all(color: p.line)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < opts.length; i++)
+            Hov(
+              onTap: () => s.setSetting(k, opts[i].$1),
+              builder: (_, h) {
+                final on = cur == opts[i].$1;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 130),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: on ? p.accentSoft : null,
+                    border: i > 0
+                        ? Border(left: BorderSide(color: p.line))
+                        : null,
+                  ),
+                  child: Mono(
+                    opts[i].$2,
+                    ls: .12,
+                    color: on ? p.accent : (h ? p.text : p.muted),
+                    height: null,
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+
+    Widget head(String t, String d) => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          t,
+          style: Fonts.sans(size: 15, w: FontWeight.w500, color: p.text),
+        ),
+        Text(d, style: Fonts.sans(size: 13.5, color: p.dim)),
+      ],
+    );
+
+    Widget srow(String t, String d, Widget ctl, {bool last = false}) =>
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            border: last ? null : Border(bottom: BorderSide(color: p.lineSoft)),
+          ),
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            runSpacing: 12,
+            spacing: 24,
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: head(t, d),
+              ),
+              ctl,
+            ],
+          ),
+        );
+
+    Widget box(List<Widget> kids) => Container(
+      margin: const EdgeInsets.only(top: 24),
+      decoration: BoxDecoration(
+        color: p.surface,
+        border: Border.all(color: p.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: kids,
+      ),
+    );
+
+    final content = switch (tab) {
+      0 => box([
+        srow(
+          t('Langue de l’application'),
+          t(
+            'Choisis la langue de l’interface. Les messages fictifs restent en français.',
+          ),
+          Container(
+            decoration: BoxDecoration(border: Border.all(color: p.line)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final (i, l) in AppLang.values.indexed)
+                  Hov(
+                    onTap: () => s.setLang(l),
+                    builder: (_, h) {
+                      final on = s.lang == l;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 130),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: on ? p.accentSoft : null,
+                          border: i > 0
+                              ? Border(left: BorderSide(color: p.line))
+                              : null,
+                        ),
+                        child: Mono(
+                          l.label,
+                          ls: .12,
+                          color: on ? p.accent : (h ? p.text : p.muted),
+                          height: null,
+                        ),
+                      );
+                    },
+                  ),
+              ],
+            ),
+          ),
+        ),
+        if (wallSupported)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: p.lineSoft)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  runSpacing: 12,
+                  spacing: 24,
+                  children: [
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: 520),
+                      child: head(
+                        t('Couleurs du fond d’écran'),
+                        s.wallAvailable
+                            ? t(
+                                'Fond, texte et accent suivent ton fond d’écran en direct (ShellArie).',
+                              )
+                            : t(
+                                'Aucun fichier de couleurs trouvé (/tmp/qs_colors.json) : thème MIRA par défaut.',
+                              ),
+                      ),
+                    ),
+                    seg('follow', [
+                      ('1', t('Suivre')),
+                      ('0', t('Ignorer')),
+                    ], s.followWallpaper ? '1' : '0'),
+                  ],
+                ),
+                if (s.wallAvailable && s.followWallpaper) ...[
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      for (final (n, c) in [
+                        (t('Fond'), p.bg),
+                        (t('Surface'), p.surface2),
+                        (t('Texte'), p.text),
+                        (t('Accent'), p.accent),
+                      ])
+                        Padding(
+                          padding: const EdgeInsets.only(right: 14),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  color: c,
+                                  border: Border.all(color: p.line),
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Mono(n, size: 10.5, ls: .1, height: null),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        Opacity(
+          opacity: s.wallPal != null ? .4 : 1,
+          child: IgnorePointer(
+            ignoring: s.wallPal != null,
+            child: srow(
+              t('Thème'),
+              s.wallPal != null
+                  ? t(
+                      'Piloté par le fond d’écran (clair ou sombre selon sa luminosité).',
+                    )
+                  : t('Sombre ou clair, selon ton environnement.'),
+              seg('theme', [
+                ('dark', t('Sombre')),
+                ('light', t('Clair')),
+              ], s.theme),
+            ),
+          ),
+        ),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: p.lineSoft)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              head(
+                t('Couleur principale'),
+                t(
+                  'Remplace l’orange : boutons, accents, sélection et libellés actifs.',
+                ),
+              ),
+              SizedBox(height: 14),
+              _AccentPicker(),
+            ],
+          ),
+        ),
+        srow(
+          t('Densité de la liste'),
+          t('Compacte : plus de messages à l’écran.'),
+          seg('dense', [
+            ('0', t('Confortable')),
+            ('1', t('Compacte')),
+          ], s.dense ? '1' : '0'),
+        ),
+        srow(
+          t('Aperçu des messages'),
+          t('Affiche les deux premières lignes sous l’objet.'),
+          seg('snip', [
+            ('1', t('Afficher')),
+            ('0', t('Masquer')),
+          ], s.snip ? '1' : '0'),
+          last: true,
+        ),
+      ]),
+      1 => box([
+        srow(
+          t('Nouveaux messages simulés'),
+          t('Reçois de faux mails à intervalles réguliers pour la démo.'),
+          seg('live', [
+            ('1', t('Activé')),
+            ('0', t('Désactivé')),
+          ], s.live ? '1' : '0'),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              head(t('Signature'), t('Ajoutée à tes réponses et transferts.')),
+              const SizedBox(height: 12),
+              _SigField(ctl: sigCtl, onChanged: s.setSig),
+            ],
+          ),
+        ),
+      ]),
+      _ => box([
+        srow(me.name, me.email, const SizedBox.shrink()),
+        srow(
+          t('Démo'),
+          t('Remet tous les messages et réglages de départ.'),
+          Btn(
+            icon: 'reply',
+            label: t('Réinitialiser'),
+            onTap: () => s.setSetting('reset', '1'),
+          ),
+          last: true,
+        ),
+      ]),
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(hp, 24, hp, 12),
+          child: Row(
+            children: [
+              Text(
+                t('PARAMÈTRES'),
+                style: Fonts.display(size: 24, ls: .02, color: p.text),
+              ),
+              const Spacer(),
+              IBtn('x', tip: t('Fermer'), onTap: s.closePane),
+            ],
+          ),
+        ),
+        // Onglets
+        Container(
+          margin: EdgeInsets.symmetric(horizontal: hp),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: p.line)),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (var i = 0; i < _tabs.length; i++)
+                  Hov(
+                    onTap: () => setState(() => tab = i),
+                    builder: (_, h) {
+                      final on = tab == i;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 130),
+                        padding: const EdgeInsets.fromLTRB(2, 10, 2, 11),
+                        margin: const EdgeInsets.only(right: 28),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: on ? p.accent : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                        child: Mono(
+                          _tabs[i],
+                          ls: .14,
+                          color: on ? p.accent : (h ? p.text : p.muted),
+                          height: null,
+                        ),
+                      );
+                    },
+                  ),
+              ],
+            ),
+          ),
+        ),
+        Expanded(
+          child: ScrollArea(
+            padding: EdgeInsets.fromLTRB(hp, 0, hp, 40),
+            child: FadeSlideIn(
+              key: ValueKey(tab),
+              from: const Offset(0, 8),
+              duration: const Duration(milliseconds: 220),
+              child: content,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Pastilles de couleurs + champ hexadécimal pour une couleur personnalisée.
+class _AccentPicker extends StatefulWidget {
+  const _AccentPicker();
+  @override
+  State<_AccentPicker> createState() => _AccentPickerState();
+}
+
+class _AccentPickerState extends State<_AccentPicker> {
+  late final TextEditingController hex;
+
+  @override
+  void initState() {
+    super.initState();
+    hex = TextEditingController(
+      text: context.read<MailStore>().accentHex ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    hex.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<MailStore>();
+    final p = context.pal;
+    final auto = s.wallPal != null;
+    final cur = s.accentHex ?? (auto ? 'auto' : accentPresets.first.$2);
+    final isPreset = cur == 'auto' || accentPresets.any((e) => e.$2 == cur);
+    final typed = hex.text.trim().replaceAll('#', '');
+    final bad =
+        typed.isNotEmpty && !RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(typed);
+
+    return Wrap(
+      spacing: 10,
+      runSpacing: 12,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        if (auto)
+          Hov(
+            tip: t('Fond d’écran'),
+            onTap: () {
+              hex.text = '';
+              s.setAccent(null);
+            },
+            builder: (_, hover) {
+              final c = s.wallPal!.accent;
+              final on = cur == 'auto';
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 130),
+                width: 34,
+                height: 34,
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: on ? p.text : (hover ? p.dim : p.line),
+                  ),
+                ),
+                child: Container(
+                  color: c,
+                  alignment: Alignment.center,
+                  child: Ico(
+                    'spark',
+                    size: 14,
+                    stroke: 2,
+                    color: c.computeLuminance() > .45
+                        ? const Color(0xFF1b1b1b)
+                        : Colors.white,
+                  ),
+                ),
+              );
+            },
+          ),
+        for (final (name, h) in accentPresets)
+          Hov(
+            tip: name,
+            onTap: () {
+              final stock = h == accentPresets.first.$2 && !auto;
+              hex.text = stock ? '' : h;
+              s.setAccent(stock ? null : h);
+            },
+            builder: (_, hover) {
+              final c = Color(0xFF000000 | int.parse(h, radix: 16));
+              final on = cur == h;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 130),
+                width: 34,
+                height: 34,
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: on ? p.text : (hover ? p.dim : p.line),
+                  ),
+                ),
+                child: Container(
+                  color: c,
+                  alignment: Alignment.center,
+                  child: on
+                      ? Ico(
+                          'check',
+                          size: 14,
+                          stroke: 2.6,
+                          color: c.computeLuminance() > .45
+                              ? const Color(0xFF1b1b1b)
+                              : Colors.white,
+                        )
+                      : null,
+                ),
+              );
+            },
+          ),
+        const SizedBox(width: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: p.bg,
+            border: Border.all(
+              color: bad ? p.accent : (!isPreset ? p.text : p.line),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!isPreset)
+                Container(
+                  width: 14,
+                  height: 14,
+                  margin: const EdgeInsets.only(right: 8),
+                  color: s.accentColor,
+                ),
+              Text('#', style: Fonts.mono(size: 13, color: p.dim, ls: 0)),
+              SizedBox(
+                width: 104,
+                child: TextField(
+                  controller: hex,
+                  maxLength: 7,
+                  onChanged: (v) {
+                    final t = v.trim().replaceAll('#', '');
+                    if (RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(t)) s.setAccent(t);
+                    setState(() {});
+                  },
+                  cursorColor: p.accent,
+                  cursorWidth: 1,
+                  style: Fonts.mono(size: 13, color: p.text, ls: 0),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    counterText: '',
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.only(left: 2),
+                    hintText: t('personnalisée'),
+                    hintStyle: Fonts.mono(size: 11, color: p.dim, ls: 0),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SigField extends StatefulWidget {
+  final TextEditingController ctl;
+  final ValueChanged<String> onChanged;
+  const _SigField({required this.ctl, required this.onChanged});
+  @override
+  State<_SigField> createState() => _SigFieldState();
+}
+
+class _SigFieldState extends State<_SigField> {
+  final fn = FocusNode();
+  @override
+  void initState() {
+    super.initState();
+    fn.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    fn.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.pal;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: p.bg,
+        border: Border.all(color: fn.hasFocus ? p.accent : p.line),
+      ),
+      child: TextField(
+        controller: widget.ctl,
+        focusNode: fn,
+        minLines: 3,
+        maxLines: 6,
+        onChanged: widget.onChanged,
+        cursorColor: p.accent,
+        cursorWidth: 1,
+        style: Fonts.sans(size: 15, color: p.text),
+        decoration: const InputDecoration(
+          isDense: true,
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ),
+    );
+  }
+}

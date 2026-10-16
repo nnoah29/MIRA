@@ -85,15 +85,16 @@ class _MailHtmlState extends State<MailHtml> {
 
   /// Le HTML apparaît en fondu au-dessus d'un squelette, et la hauteur s'anime.
   Widget _faded(Widget body) => AnimatedSize(
-    duration: const Duration(milliseconds: 180),
-    curve: Curves.easeOutCubic,
+    duration: const Duration(milliseconds: 260),
+    curve: Curves.easeInOutCubic,
     alignment: Alignment.topCenter,
     child: Stack(
       clipBehavior: Clip.hardEdge,
       children: [
         AnimatedOpacity(
           opacity: _ready ? 1 : 0,
-          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeInOut,
+          duration: const Duration(milliseconds: 320),
           child: body,
         ),
         if (!_ready)
@@ -114,23 +115,23 @@ class _MailHtmlState extends State<MailHtml> {
       ImageAction.ask => msg.blocked.isEmpty,
     };
     final onPaper = imposesColors(msg.html!);
-    final body = _faded(_htmlBody(p, remoteOk, onPaper));
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (msg.blocked.isNotEmpty && action == ImageAction.ask)
-          _RemoteBanner(msg: msg),
-        if (onPaper)
-          Container(
+    final html = _htmlBody(p, remoteOk, onPaper);
+    final card = onPaper
+        ? Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: _paper,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: body,
+            child: html,
           )
-        else
-          body,
+        : html;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (msg.blocked.isNotEmpty && action == ImageAction.ask)
+          _RemoteBanner(msg: msg),
+        _faded(card),
       ],
     );
   }

@@ -129,4 +129,42 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'la carte blanche entre aussi dans le fondu (pas d\u2019apparition brusque)',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final store = MailStore(await SharedPreferences.getInstance());
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: store,
+          child: MaterialApp(
+            theme: buildTheme(true),
+            home: Scaffold(
+              body: MailHtml(
+                msg: _msg('<p style="color:#000">Clair</p>'),
+                base: const TextStyle(),
+              ),
+            ),
+          ),
+        ),
+      );
+      final fade = find.ancestor(
+        of: find.byWidgetPredicate(
+          (w) =>
+              w is Container &&
+              (w.decoration as BoxDecoration?)?.color ==
+                  const Color(0xFFFFFFFF),
+        ),
+        matching: find.byType(AnimatedOpacity),
+      );
+      expect(tester.widget<AnimatedOpacity>(fade.first).opacity, 0);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(tester.widget<AnimatedOpacity>(fade.first).opacity, 1);
+    },
+  );
 }

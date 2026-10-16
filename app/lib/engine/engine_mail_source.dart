@@ -14,6 +14,10 @@ import 'mappers.dart';
 class EngineMailSource implements MailSource {
   final EngineClient client;
   final int pageSize;
+
+  /// Délai de calme avant de relire une boîte après un événement.
+  final Duration debounce;
+  final Map<String, Timer> _pending = {};
   @override
   final List<Account> accounts;
   @override
@@ -21,18 +25,25 @@ class EngineMailSource implements MailSource {
   final StreamController<String> _changes = StreamController.broadcast();
   StreamSubscription<Map<String, dynamic>>? _events;
 
-  EngineMailSource._(this.client, this.pageSize, this.accounts, this.boxes);
+  EngineMailSource._(
+    this.client,
+    this.pageSize,
+    this.debounce,
+    this.accounts,
+    this.boxes,
+  );
 
   /// Lit les comptes puis la première page de chaque boîte affichée.
   static Future<EngineMailSource> load(
     EngineClient client, {
     int pageSize = 200,
+    Duration debounce = const Duration(milliseconds: 800),
   }) async {
     final raw = await client.call(req('account', 'list_accounts'));
     final list = [
       for (final a in (raw['data'] as List)) accountOf((a as Map).cast()),
     ];
-    final source = EngineMailSource._(client, pageSize, list, {});
+    final source = EngineMailSource._(client, pageSize, debounce, list, {});
     for (final a in list) {
       source.boxes[a.id] = await source.reload(a);
     }
@@ -47,10 +58,17 @@ class EngineMailSource implements MailSource {
     _events = client.events().listen((e) {
       final kind = (e['kind'] as Map?)?.cast<String, dynamic>() ?? const {};
       final account = kind['account'];
-      if (account is String && _isChange('${kind['type']}')) {
-        _changes.add(account);
-      }
+      if (account is String && _isChange('${kind['type']}')) _schedule(account);
     }, onError: (_) {});
+  }
+
+  /// Regroupe les rafales d'événements d'un compte en une seule notification.
+  void _schedule(String account) {
+    _pending[account]?.cancel();
+    _pending[account] = Timer(debounce, () {
+      _pending.remove(account);
+      if (!_changes.isClosed) _changes.add(account);
+    });
   }
 
   static bool _isChange(String type) => const {
@@ -58,8 +76,6 @@ class EngineMailSource implements MailSource {
     'new_message_received',
     'message_updated',
     'message_deleted',
-    'mailbox_counters_updated',
-    'body_available',
   }.contains(type);
 
   @override
@@ -192,7 +208,10 @@ class EngineMailSource implements MailSource {
 
   /// Arrête l'écoute des événements.
   Future<void> dispose() async {
-    await _events?.cancel();
+    for (final t in _pending.values) {
+      t.cancel();
+    }
+    unawaited(_events?.cancel() ?? Future<void>.value());
     await _changes.close();
   }
 }

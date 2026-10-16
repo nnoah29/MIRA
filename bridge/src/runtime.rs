@@ -3,7 +3,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use mira_assembly::api::{Engine, EngineConfig, Request};
+use mira_assembly::api::{Engine, EngineConfig, EventRequest, Request, Response};
 use mira_assembly::mira_vocabulary::{CONTRACT_VERSION, EventFilter, EventSeq};
 use serde_json::{Value, to_value};
 
@@ -43,11 +43,37 @@ pub async fn execute(request_json: &str) -> String {
     }
 }
 
-/// Envoie chaque événement (JSON) à `emit` depuis le numéro `after` ; s'arrête quand `emit` rend `false`.
+/// Numéro du dernier événement déjà enregistré (`None` si le journal est vide).
+async fn latest_seq(engine: &Engine) -> Option<EventSeq> {
+    let mut cursor: Option<EventSeq> = None;
+    loop {
+        let filter = EventFilter {
+            after: cursor,
+            ..EventFilter::default()
+        };
+        let request = Request::Event(EventRequest::GetEvents { filter, limit: 500 });
+        let Ok(Response::Events(page)) = engine.execute(request).await else {
+            return cursor;
+        };
+        let Some(last) = page.last() else {
+            return cursor;
+        };
+        cursor = Some(last.seq);
+        if page.len() < 500 {
+            return cursor;
+        }
+    }
+}
+
+/// Envoie chaque événement (JSON) à `emit` ; sans `after`, seuls les événements futurs sont livrés (pas de rejeu du journal).
 pub async fn pump_events(after: Option<u64>, mut emit: impl FnMut(String) -> bool) {
     let Some(engine) = current() else { return };
+    let start = match after {
+        Some(seq) => Some(EventSeq(seq)),
+        None => latest_seq(&engine).await,
+    };
     let filter = EventFilter {
-        after: after.map(EventSeq),
+        after: start,
         ..EventFilter::default()
     };
     let mut subscription = engine.subscribe(filter);

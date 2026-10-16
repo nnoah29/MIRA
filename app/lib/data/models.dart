@@ -62,6 +62,15 @@ class Msg {
 
   /// Corps et pièces jointes déjà demandés au moteur.
   bool hydrated = false;
+
+  /// HTML déjà assaini par le moteur (`null` : message en texte seul).
+  String? html;
+
+  /// Ressources distantes retirées par le moteur tant que l'utilisateur ne les autorise pas.
+  List<String> blocked = const [];
+
+  /// Images incorporées (`cid:`), par identifiant de contenu, lues dans les pièces jointes.
+  Map<String, Uint8List> inline = {};
   Msg({
     required this.from,
     required this.date,
@@ -70,14 +79,19 @@ class Msg {
     this.ref,
     this.hasAttachments = false,
   }) : att = att ?? [];
-  Msg copy() => Msg(
-    from: from,
-    date: date,
-    body: body,
-    att: [...att],
-    ref: ref,
-    hasAttachments: hasAttachments,
-  )..hydrated = hydrated;
+  Msg copy() =>
+      Msg(
+          from: from,
+          date: date,
+          body: body,
+          att: [...att],
+          ref: ref,
+          hasAttachments: hasAttachments,
+        )
+        ..hydrated = hydrated
+        ..html = html
+        ..blocked = blocked
+        ..inline = inline;
 }
 
 class DraftMeta {

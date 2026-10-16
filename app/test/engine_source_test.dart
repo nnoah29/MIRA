@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mira/engine/engine_client.dart';
 import 'package:mira/engine/engine_mail_source.dart';
@@ -7,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class FakeEngine implements EngineClient {
   final calls = <String>[];
   final bodyFails = <String>{};
+  bool allowed = false;
 
   Map<String, dynamic> _msg(
     String id,
@@ -89,21 +92,42 @@ class FakeEngine implements EngineClient {
           'data': {'text': 'Téléchargé', 'html_available': false},
         };
       case 'message.get_safe_html':
+        const table = '<table><tr><td>Bonjour <b>Alice</b></td></tr></table>';
         return {
           'type': 'safe_html',
           'data': {
-            'html': '<p>Bonjour <strong>Alice</strong></p>',
-            'blocked_resources': [],
+            'html': allowed
+                ? '$table<img src="cid:logo@x"><img src="https://x.test/a.png">'
+                : '$table<img src="cid:logo@x">',
+            'blocked_resources': allowed ? [] : ['https://x.test/a.png'],
           },
+        };
+      case 'message.allow_remote_content':
+        allowed = true;
+        return {'type': 'done'};
+      case 'message.save_attachment':
+        File(r['destination'] as String).writeAsBytesSync([1, 2, 3]);
+        return {
+          'type': 'operation',
+          'data': {'id': 'op1'},
         };
       case 'message.list_attachments':
         return {
           'type': 'attachments',
           'data': [
             {
+              'id': 'a1',
               'filename': 'devis.pdf',
               'mime_type': 'application/pdf',
               'size': 2048,
+            },
+            {
+              'id': 'a2',
+              'filename': 'logo.png',
+              'mime_type': 'image/png',
+              'size': 3,
+              'content_id': '<logo@x>',
+              'inline': true,
             },
           ],
         };
@@ -158,9 +182,23 @@ void main() {
     final conv = src.boxes['acc1']!.firstWhere((m) => m.msgs.length == 2);
     expect(await src.hydrate(conv), isTrue);
     expect(conv.msgs[0].body.length, 2);
+    expect(conv.msgs[1].html, contains('<table>'));
+    expect(conv.msgs[1].blocked, ['https://x.test/a.png']);
+    expect(conv.msgs[1].inline['logo@x'], [1, 2, 3]);
     expect(conv.msgs[1].att.single.n, 'devis.pdf');
     expect(conv.msgs[1].att.single.t, 'PDF');
     expect(await src.hydrate(conv), isFalse);
+  });
+
+  test('autoriser le contenu distant recharge un HTML complet', () async {
+    final fake = FakeEngine();
+    final src = await EngineMailSource.load(fake);
+    final conv = src.boxes['acc1']!.firstWhere((m) => m.msgs.length == 2);
+    await src.hydrate(conv);
+    await src.allowRemote(conv.msgs[1]);
+    expect(conv.msgs[1].blocked, isEmpty);
+    expect(conv.msgs[1].html, contains('https://x.test/a.png'));
+    expect(fake.calls, contains('message.allow_remote_content'));
   });
 
   test('corps absent hors ligne : demande explicite au serveur', () async {

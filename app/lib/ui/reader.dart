@@ -1,3 +1,5 @@
+import 'html_body.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -331,11 +333,20 @@ class _Thread extends StatelessWidget {
                   if (!old) ...[
                     Padding(
                       padding: EdgeInsets.fromLTRB(bodyLeft, 2, 24, 24),
-                      child: blocksView(
-                        msg.body,
-                        Fonts.sans(size: 16, color: p.body, height: 1.75),
-                        p,
-                      ),
+                      child: msg.html != null
+                          ? MailHtml(
+                              msg: msg,
+                              base: Fonts.sans(
+                                size: 16,
+                                color: p.body,
+                                height: 1.75,
+                              ),
+                            )
+                          : blocksView(
+                              msg.body,
+                              Fonts.sans(size: 16, color: p.body, height: 1.75),
+                              p,
+                            ),
                     ),
                     if (msg.att.isNotEmpty)
                       Padding(

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../data/models.dart';
 
 /// Origine des données affichées : comptes, boîtes chargées, et enrichissement d'un message.
@@ -9,7 +11,7 @@ abstract class MailSource {
   Map<String, List<Mail>> get boxes;
 
   /// Charge corps et pièces jointes d'une conversation ; rend `true` si elle a changé.
-  Future<bool> hydrate(Mail mail);
+  Future<bool> hydrate(Mail mail, {VoidCallback? onProgress});
 
   /// Autorise le contenu distant d'un message (ou de son expéditeur) puis recharge son HTML.
   Future<bool> allowRemote(Msg msg, {bool sender = false});

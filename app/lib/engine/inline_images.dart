@@ -27,17 +27,18 @@ Future<Map<String, Uint8List>> loadInlineImages(
   Set<String> wanted,
   List<Map<String, dynamic>> attachments,
 ) async {
-  final out = <String, Uint8List>{};
-  for (final a in attachments) {
-    final cid = cidOf(a);
-    if (cid == null || !wanted.contains(cid) || out.length >= _maxInline) {
-      continue;
-    }
-    if (((a['size'] as num?) ?? 0) > _maxBytes) continue;
-    final bytes = await _fetch(client, '${a['id']}');
-    if (bytes != null) out[cid] = bytes;
-  }
-  return out;
+  final wantedNow = [
+    for (final a in attachments)
+      if (cidOf(a) case final cid? when wanted.contains(cid))
+        if (((a['size'] as num?) ?? 0) <= _maxBytes) a,
+  ].take(_maxInline).toList();
+  final bytes = await Future.wait([
+    for (final a in wantedNow) _fetch(client, '${a['id']}'),
+  ]);
+  return {
+    for (final (i, a) in wantedNow.indexed)
+      if (bytes[i] != null) cidOf(a)!: bytes[i]!,
+  };
 }
 
 Future<Uint8List?> _fetch(EngineClient client, String id) async {
@@ -50,9 +51,9 @@ Future<Uint8List?> _fetch(EngineClient client, String id) async {
         'destination': file.path,
       }),
     );
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 500; i++) {
       if (file.existsSync()) return await file.readAsBytes();
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
     }
     return null;
   } on EngineException {

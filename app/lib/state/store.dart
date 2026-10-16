@@ -478,6 +478,7 @@ class MailStore extends ChangeNotifier {
       if (l.isNotEmpty) openMail(l.first.id);
     }
     notifyListeners();
+    unawaited(_prefetchTop());
     if (source == null) scheduleIncoming(rand(15000, 22000).round());
   }
 
@@ -703,6 +704,19 @@ class MailStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Charge d'avance, une par une, les premières conversations de la liste (le réseau n'attend pas l'ouverture).
+  Future<void> _prefetchTop([int count = 8]) async {
+    final src = source;
+    if (src == null) return;
+    for (final m in visible().take(count).toList()) {
+      try {
+        await src.hydrate(m);
+      } catch (_) {
+        continue;
+      }
+    }
+  }
+
   /// Charge d'avance les deux conversations voisines pour que j/k soient instantanés.
   void _prefetchAround(Mail m) {
     final src = source;
@@ -720,7 +734,9 @@ class MailStore extends ChangeNotifier {
     final src = source;
     if (src == null) return;
     try {
-      if (await src.hydrate(m)) notifyListeners();
+      if (await src.hydrate(m, onProgress: notifyListeners)) {
+        notifyListeners();
+      }
     } catch (_) {
       /* corps indisponible : l'aperçu reste affiché */
     }

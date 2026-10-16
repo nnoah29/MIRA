@@ -303,4 +303,21 @@ void main() {
       store.dispose();
     },
   );
+
+  test(
+    'le corps est annoncé avant les pièces jointes et images incorporées',
+    () async {
+      final src = await EngineMailSource.load(FakeEngine());
+      final conv = src.boxes['acc1']!.firstWhere((m) => m.msgs.length == 2);
+      final seen = <String>[];
+      await src.hydrate(
+        conv,
+        onProgress: () => seen.add(
+          'loaded=${conv.msgs[1].loaded} att=${conv.msgs[1].att.length}',
+        ),
+      );
+      expect(seen, contains('loaded=true att=0'));
+      expect(conv.msgs[1].att, isNotEmpty);
+    },
+  );
 }

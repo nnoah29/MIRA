@@ -44,6 +44,11 @@ class RustEngineClient implements EngineClient {
       .map((line) => jsonDecode(line) as Map<String, dynamic>);
 
   @override
+  Future<String?> originalHtml(String messageId) async =>
+      openEnvelope(await ffi.getOriginalHtml(message: messageId))['html']
+          as String?;
+
+  @override
   Future<void> close() async {
     openEnvelope(await ffi.closeEngine());
   }

@@ -28,6 +28,11 @@ pub async fn watch_events(after: Option<u64>, sink: StreamSink<String>) {
     runtime::pump_events(after, move |line| sink.add(line).is_ok()).await
 }
 
+/// HTML d'origine d'un message, tel que reçu (sans assainissement) : `{html}` ou `{html: null}`.
+pub async fn get_original_html(message: String) -> String {
+    crate::original_html::fetch(&message).await
+}
+
 /// Ferme le moteur et libère le verrou du profil.
 pub async fn close_engine() -> String {
     runtime::close().await

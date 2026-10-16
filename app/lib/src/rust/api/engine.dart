@@ -23,6 +23,10 @@ Future<String> execute({required String requestJson}) =>
 Stream<String> watchEvents({BigInt? after}) =>
     RustLib.instance.api.crateApiEngineWatchEvents(after: after);
 
+/// HTML d'origine d'un message, tel que reçu (sans assainissement) : `{html}` ou `{html: null}`.
+Future<String> getOriginalHtml({required String message}) =>
+    RustLib.instance.api.crateApiEngineGetOriginalHtml(message: message);
+
 /// Ferme le moteur et libère le verrou du profil.
 Future<String> closeEngine() =>
     RustLib.instance.api.crateApiEngineCloseEngine();

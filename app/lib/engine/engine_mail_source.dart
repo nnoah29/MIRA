@@ -4,6 +4,7 @@ import 'dart:async';
 
 import '../data/html_lite.dart';
 import '../data/models.dart';
+import 'css_inliner.dart';
 import 'inline_images.dart';
 import 'engine_client.dart';
 import 'mail_builder.dart';
@@ -112,7 +113,11 @@ class EngineMailSource implements MailSource {
     final view = await _bodyView(m.ref!);
     if (view == null) return false;
     final data = (view['data'] as Map).cast<String, dynamic>();
-    if (data['html_available'] == true) await _loadSafeHtml(m);
+    try {
+      await _loadSafeHtml(m);
+    } on EngineException {
+      m.html = null;
+    }
     final text = '${data['text']}'.trim();
     if (text.isNotEmpty) {
       m.body = _plain(text);
@@ -123,14 +128,16 @@ class EngineMailSource implements MailSource {
     return true;
   }
 
+  /// HTML d'origine (couleurs et structure gardées) ; le moteur ne dit que quelles ressources distantes restent bloquées.
   Future<void> _loadSafeHtml(Msg m) async {
     final raw = await client.call(
       req('message', 'get_safe_html', {'message': m.ref}),
     );
     final safe = (raw['data'] as Map).cast<String, dynamic>();
-    final html = '${safe['html']}';
-    m.html = html.trim().isEmpty ? null : html;
     m.blocked = [for (final b in (safe['blocked_resources'] as List)) '$b'];
+    final original = await client.originalHtml(m.ref!);
+    final html = original ?? '${safe['html']}';
+    m.html = html.trim().isEmpty ? null : inlineStyles(html);
   }
 
   Future<void> _loadAttachments(Msg m) async {

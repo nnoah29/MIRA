@@ -37,7 +37,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.11.1";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1045311253;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1840673172;
 
 // Section: executor
 
@@ -139,6 +139,44 @@ fn wire__crate__api__engine__execute_impl(
                     (move || async move {
                         let output_ok = Result::<_, ()>::Ok(
                             crate::api::engine::execute(api_request_json).await,
+                        )?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__engine__get_original_html_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "get_original_html",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_message = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let output_ok = Result::<_, ()>::Ok(
+                            crate::api::engine::get_original_html(api_message).await,
                         )?;
                         Ok(output_ok)
                     })()
@@ -322,8 +360,9 @@ fn pde_ffi_dispatcher_primary_impl(
     match func_id {
         1 => wire__crate__api__engine__close_engine_impl(port, ptr, rust_vec_len, data_len),
         3 => wire__crate__api__engine__execute_impl(port, ptr, rust_vec_len, data_len),
-        4 => wire__crate__api__engine__open_engine_impl(port, ptr, rust_vec_len, data_len),
-        5 => wire__crate__api__engine__watch_events_impl(port, ptr, rust_vec_len, data_len),
+        4 => wire__crate__api__engine__get_original_html_impl(port, ptr, rust_vec_len, data_len),
+        5 => wire__crate__api__engine__open_engine_impl(port, ptr, rust_vec_len, data_len),
+        6 => wire__crate__api__engine__watch_events_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }

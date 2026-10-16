@@ -202,6 +202,7 @@ async fn the_bridge_serves_real_engine_values_as_json() {
     assert!(!page.to_string().contains(PASSWORD));
     let rich = items.iter().find(|m| m["subject"] == "Riche").unwrap();
     check_rich_message(&rich["id"]).await;
+    check_original_html(rich, first).await;
     assert!(runtime::close().await.contains("\"ok\":true"));
 }
 
@@ -211,6 +212,22 @@ async fn the_bridge_reports_errors_as_envelopes() {
     let closed: Value = serde_json::from_str(&runtime::execute("{}").await).unwrap();
     assert_eq!(closed["ok"], false);
     assert_eq!(closed["contract_version"]["major"], 1);
+}
+
+/// Le HTML d'origine garde tout (aucun assainissement) et un texte seul n'en donne pas.
+async fn check_original_html(rich: &Value, plain: &Value) {
+    let original: Value = serde_json::from_str(
+        &mira_bridge::original_html::fetch(rich["id"].as_str().unwrap()).await,
+    )
+    .unwrap();
+    let html = original["data"]["html"].as_str().unwrap();
+    assert!(html.contains("<table>") && html.contains("cid:logo@x"));
+    assert!(html.contains("https://tracker.example/p.png"));
+    let none: Value = serde_json::from_str(
+        &mira_bridge::original_html::fetch(plain["id"].as_str().unwrap()).await,
+    )
+    .unwrap();
+    assert!(none["data"]["html"].is_null());
 }
 
 /// HTML assaini (cid gardé, image distante retirée et signalée) et image incorporée enregistrable.

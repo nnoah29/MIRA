@@ -11,6 +11,9 @@ abstract class MailSource {
   /// Charge corps et pièces jointes d'une conversation ; rend `true` si elle a changé.
   Future<bool> hydrate(Mail mail);
 
+  /// Autorise le contenu distant d'un message (ou de son expéditeur) puis recharge son HTML.
+  Future<bool> allowRemote(Msg msg, {bool sender = false});
+
   /// Relit les boîtes du compte depuis le moteur.
   Future<List<Mail>> reload(Account account);
 

@@ -34,6 +34,22 @@ fn raw_mail(subject: &str, body: &str) -> Vec<u8> {
     .into_bytes()
 }
 
+/// Message HTML avec une image incorporée (`cid:`) et une image distante.
+fn html_mail() -> Vec<u8> {
+    format!(
+        "From: Bob <bob@example.org>\r\nTo: {USER}\r\nSubject: Riche\r\n\
+         Date: Mon, 01 Jan 2024 11:00:00 +0000\r\nMessage-ID: <riche@example.org>\r\n\
+         MIME-Version: 1.0\r\nContent-Type: multipart/related; boundary=\"B\"\r\n\r\n\
+         --B\r\nContent-Type: text/html; charset=utf-8\r\n\r\n\
+         <table><tr><td>Bonjour</td></tr></table><img src=\"cid:logo@x\">\
+         <img src=\"https://tracker.example/p.png\">\r\n\
+         --B\r\nContent-Type: image/png\r\nContent-ID: <logo@x>\r\n\
+         Content-Disposition: inline; filename=\"logo.png\"\r\n\
+         Content-Transfer-Encoding: base64\r\n\r\niVBORw0KGgo=\r\n--B--\r\n"
+    )
+    .into_bytes()
+}
+
 /// Configuration de test : tout sous un dossier jetable, le domaine `bridge.test` vise le faux serveur.
 fn config(home: &std::path::Path, port: u16) -> EngineConfig {
     let endpoint = |port| ServerEndpoint {
@@ -99,7 +115,7 @@ async fn wait_inbox(account: &str) -> (String, Value) {
         let boxes = send(&request).await;
         let inbox = boxes["data"]["data"].as_array().and_then(|list| {
             list.iter()
-                .find(|b| b["role"] == "inbox" && b["total"].as_u64() > Some(0))
+                .find(|b| b["role"] == "inbox" && b["total"].as_u64() >= Some(3))
         });
         if let Some(inbox) = inbox {
             let id = inbox["id"].as_str().unwrap().to_string();
@@ -107,7 +123,8 @@ async fn wait_inbox(account: &str) -> (String, Value) {
         }
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
-    panic!("réception jamais synchronisée");
+    let last = send(&request).await;
+    panic!("réception jamais synchronisée : {last}");
 }
 
 /// Envoie une requête déjà en JSON.
@@ -138,6 +155,7 @@ async fn start() -> (tempfile::TempDir, FakeImapServer) {
         &raw_mail("Bonjour", "Texte du premier."),
         &[],
     );
+    store.deliver(USER, "INBOX", &html_mail(), &[]);
     store.deliver(
         USER,
         "INBOX",
@@ -170,7 +188,7 @@ async fn the_bridge_serves_real_engine_values_as_json() {
         .map(|m| m["subject"].as_str().unwrap())
         .collect();
     subjects.sort();
-    assert_eq!(subjects, ["Bonjour", "Second"]);
+    assert_eq!(subjects, ["Bonjour", "Riche", "Second"]);
     let first = items.iter().find(|m| m["subject"] == "Bonjour").unwrap();
     assert_eq!(first["from"][0]["address"], "bob@example.org");
     assert_eq!(first["flags"]["seen"], false);
@@ -182,6 +200,8 @@ async fn the_bridge_serves_real_engine_values_as_json() {
             .contains("Texte du premier.")
     );
     assert!(!page.to_string().contains(PASSWORD));
+    let rich = items.iter().find(|m| m["subject"] == "Riche").unwrap();
+    check_rich_message(&rich["id"]).await;
     assert!(runtime::close().await.contains("\"ok\":true"));
 }
 
@@ -191,4 +211,38 @@ async fn the_bridge_reports_errors_as_envelopes() {
     let closed: Value = serde_json::from_str(&runtime::execute("{}").await).unwrap();
     assert_eq!(closed["ok"], false);
     assert_eq!(closed["contract_version"]["major"], 1);
+}
+
+/// HTML assaini (cid gardé, image distante retirée et signalée) et image incorporée enregistrable.
+async fn check_rich_message(id: &Value) {
+    let html =
+        send(&json!({"domain": "message", "request": {"op": "get_safe_html", "message": id}}))
+            .await;
+    let safe = &html["data"]["data"];
+    assert!(safe["html"].as_str().unwrap().contains("cid:logo@x"));
+    assert!(!safe["html"].as_str().unwrap().contains("tracker.example"));
+    assert_eq!(
+        safe["blocked_resources"][0],
+        "https://tracker.example/p.png"
+    );
+    let list =
+        send(&json!({"domain": "message", "request": {"op": "list_attachments", "message": id}}))
+            .await;
+    let logo = &list["data"]["data"][0];
+    assert_eq!(logo["content_id"], "logo@x");
+    let dir = tempfile::tempdir().unwrap();
+    let target = dir.path().join("logo.png");
+    let saved = send(
+        &json!({"domain": "message", "request": {"op": "save_attachment",
+        "attachment": logo["id"], "destination": target.to_str().unwrap()}}),
+    )
+    .await;
+    assert_eq!(saved["ok"], true, "{saved}");
+    for _ in 0..100 {
+        if target.exists() {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    panic!("image incorporée jamais enregistrée");
 }

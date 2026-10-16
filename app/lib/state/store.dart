@@ -685,6 +685,17 @@ class MailStore extends ChangeNotifier {
     }
   }
 
+  /// Affiche les images distantes d'un message (ou de son expéditeur), après accord de l'utilisateur.
+  Future<void> allowRemote(Msg msg, {bool sender = false}) async {
+    try {
+      if (await source?.allowRemote(msg, sender: sender) ?? false) {
+        notifyListeners();
+      }
+    } catch (_) {
+      toast('Impossible d’autoriser le contenu distant', err: true);
+    }
+  }
+
   /// Relit la boîte d'un compte après un événement du moteur.
   Future<void> _reloadAccount(String id) async {
     final src = source;

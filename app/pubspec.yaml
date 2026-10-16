@@ -43,6 +43,8 @@ dependencies:
   intl: ^0.20.3
   file_picker: ^13.1.0
   flutter_rust_bridge: 2.11.1
+  flutter_widget_from_html_core: ^0.17.4
+  html: ^0.15.7
 
 dev_dependencies:
   flutter_test:

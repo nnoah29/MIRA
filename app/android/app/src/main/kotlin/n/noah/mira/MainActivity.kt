@@ -1,4 +1,4 @@
-package africa.epitech.mira
+package n.noah.mira
 
 import io.flutter.embedding.android.FlutterActivity
 

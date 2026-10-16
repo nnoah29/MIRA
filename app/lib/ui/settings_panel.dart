@@ -6,6 +6,7 @@ import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
 import '../theme/wall_source.dart';
+import 'image_rules_section.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
 
@@ -298,14 +299,17 @@ class _SettingsPanelState extends State<SettingsPanel> {
         ),
       ]),
       1 => box([
-        srow(
-          t('Nouveaux messages simulés'),
-          t('Reçois de faux mails à intervalles réguliers pour la démo.'),
-          seg('live', [
-            ('1', t('Activé')),
-            ('0', t('Désactivé')),
-          ], s.live ? '1' : '0'),
-        ),
+        if (s.source == null)
+          srow(
+            t('Nouveaux messages simulés'),
+            t('Reçois de faux mails à intervalles réguliers pour la démo.'),
+            seg('live', [
+              ('1', t('Activé')),
+              ('0', t('Désactivé')),
+            ], s.live ? '1' : '0'),
+          ),
+        const ImageRulesSection(),
+        Divider(height: 1, color: p.lineSoft),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
           child: Column(

@@ -708,7 +708,9 @@ void showAccountPop(BuildContext anchor) {
               label: t('Ajouter un compte'),
               onTap: () {
                 close();
-                showAddAccountDialog(anchor);
+                s.source != null
+                    ? s.openAddAccount()
+                    : showAddAccountDialog(anchor);
               },
             ),
           ],

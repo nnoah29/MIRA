@@ -10,6 +10,7 @@ L'app lit comptes, boîtes et messages dans le moteur MIRA (`../bridge`, flutter
 l'envoi est refusé, l'ajout de compte de l'interface est fictif (utiliser `mira account add` ou le TUI).
 
 ```bash
+make run                                      # (à la racine) pont + flutter run en profile ; make help pour le reste
 (cd ../bridge && cargo build --release)     # libmira_bridge.so
 flutter run -d linux                         # profil « default » ; MIRA_HOME=<dossier> pour un autre
 MIRA_DEMO=1 flutter run -d linux             # données fictives d'origine

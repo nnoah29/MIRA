@@ -31,6 +31,7 @@ const _paths = <String, String>{
   'minus': '<path d="M5 12h14"/>',
   'download': '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>',
   'plus': '<path d="M12 5v14M5 12h14"/>',
+  'eye': '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   'bot': '<rect x="4" y="8" width="16" height="12"/><path d="M12 4v4M9 13v2M15 13v2"/>',
   'spark': '<path d="M12 3l2 6 6 3-6 3-2 6-2-6-6-3 6-3z"/>',
   'img':

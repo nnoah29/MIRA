@@ -10,6 +10,7 @@ import 'composer.dart';
 import 'mail_list.dart';
 import 'overlays.dart';
 import 'reader.dart';
+import 'add_account_panel.dart';
 import 'settings_panel.dart';
 import 'sidebar.dart';
 import 'widgets.dart';
@@ -84,7 +85,8 @@ class _ShellState extends State<Shell> {
       }
       if (s.open != null ||
           s.view == PaneView.assistant ||
-          s.view == PaneView.settings) {
+          s.view == PaneView.settings ||
+          s.view == PaneView.addAccount) {
         s.closePane();
         return true;
       }
@@ -253,6 +255,8 @@ class PaneView_ extends StatelessWidget {
         child = const AssistantPanel(key: ValueKey('assistant'));
       case PaneView.settings:
         child = const SettingsPanel(key: ValueKey('settings'));
+      case PaneView.addAccount:
+        child = const AddAccountPanel(key: ValueKey('add-account'));
       case PaneView.read:
         final m = s.byId(s.open);
         child = m != null

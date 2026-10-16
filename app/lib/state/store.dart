@@ -17,7 +17,7 @@ import 'image_policy.dart';
 import 'rich_controller.dart';
 import '../i18n/i18n.dart';
 
-enum PaneView { empty, read, compose, assistant, settings }
+enum PaneView { empty, read, compose, assistant, settings, addAccount }
 
 class ToastItem {
   final int id;
@@ -838,7 +838,10 @@ class MailStore extends ChangeNotifier {
       return;
     }
     if (view == PaneView.read || view == PaneView.empty) open = null;
-    view = (view == PaneView.assistant || view == PaneView.settings)
+    view =
+        (view == PaneView.assistant ||
+            view == PaneView.settings ||
+            view == PaneView.addAccount)
         ? ((open != null && byId(open) != null && !narrow)
               ? PaneView.read
               : PaneView.empty)
@@ -854,6 +857,23 @@ class MailStore extends ChangeNotifier {
 
   void toggleAssistant() =>
       view == PaneView.assistant ? closePane() : showView(PaneView.assistant);
+
+  /// Ouvre le panneau d'ajout de compte (moteur réel) ou la fenêtre fictive (démonstration).
+  void openAddAccount() => showView(PaneView.addAccount);
+
+  /// Prend en compte un compte que le moteur vient d'ajouter : liste relue, bascule dessus.
+  Future<void> accountAdded(String id) async {
+    final src = source;
+    if (src == null) return;
+    await src.refreshAccounts();
+    accounts = src.accounts.isEmpty ? accounts : src.accounts;
+    knownAccounts = accounts;
+    for (final a in accounts) {
+      _boxes.putIfAbsent(a.id, () => src.boxes[a.id] ?? []);
+    }
+    switchAccount(id);
+  }
+
   void toggleSettings() =>
       view == PaneView.settings ? closePane() : showView(PaneView.settings);
 

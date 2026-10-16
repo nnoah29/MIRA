@@ -32,10 +32,45 @@ Future<bool> openLink(String url) async {
 }
 
 /// Corps HTML d'un message : tableaux, images incorporées, images distantes si autorisées.
-class MailHtml extends StatelessWidget {
+class MailHtml extends StatefulWidget {
   final Msg msg;
   final TextStyle base;
   const MailHtml({super.key, required this.msg, required this.base});
+
+  @override
+  State<MailHtml> createState() => _MailHtmlState();
+}
+
+class _MailHtmlState extends State<MailHtml> {
+  Object? _key;
+  Widget? _body;
+
+  Msg get msg => widget.msg;
+
+  /// Construit l'arbre HTML seulement si son contenu ou son contexte a changé (coûteux).
+  Widget _htmlBody(Pal p, bool remoteOk, bool onPaper) {
+    final key = Object.hash(
+      msg.html,
+      remoteOk,
+      onPaper,
+      p.accent,
+      msg.inline.length,
+      widget.base.color,
+    );
+    if (key == _key && _body != null) return _body!;
+    final style = onPaper
+        ? widget.base.copyWith(color: _ink, fontSize: 14, height: 1.5)
+        : widget.base;
+    _key = key;
+    return _body = HtmlWidget(
+      msg.html!,
+      textStyle: style,
+      customWidgetBuilder: (e) =>
+          e.localName == 'img' ? _image(e, remoteOk) : null,
+      customStylesBuilder: (e) => _styleOf(e, p, onPaper),
+      onTapUrl: openLink,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,17 +84,7 @@ class MailHtml extends StatelessWidget {
       ImageAction.ask => msg.blocked.isEmpty,
     };
     final onPaper = imposesColors(msg.html!);
-    final style = onPaper
-        ? base.copyWith(color: _ink, fontSize: 14, height: 1.5)
-        : base;
-    final body = HtmlWidget(
-      msg.html!,
-      textStyle: style,
-      customWidgetBuilder: (e) =>
-          e.localName == 'img' ? _image(e, remoteOk) : null,
-      customStylesBuilder: (e) => _styleOf(e, p, onPaper),
-      onTapUrl: openLink,
-    );
+    final body = _htmlBody(p, remoteOk, onPaper);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

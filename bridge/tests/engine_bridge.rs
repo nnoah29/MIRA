@@ -203,6 +203,7 @@ async fn the_bridge_serves_real_engine_values_as_json() {
     let rich = items.iter().find(|m| m["subject"] == "Riche").unwrap();
     check_rich_message(&rich["id"]).await;
     check_original_html(rich, first).await;
+    check_no_event_replay().await;
     assert!(runtime::close().await.contains("\"ok\":true"));
 }
 
@@ -212,6 +213,29 @@ async fn the_bridge_reports_errors_as_envelopes() {
     let closed: Value = serde_json::from_str(&runtime::execute("{}").await).unwrap();
     assert_eq!(closed["ok"], false);
     assert_eq!(closed["contract_version"]["major"], 1);
+}
+
+/// Sans numéro de départ, le journal passé n'est pas rejoué ; avec 0, il l'est.
+async fn check_no_event_replay() {
+    let collect = |after: Option<u64>| async move {
+        let seen = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let counter = std::sync::Arc::clone(&seen);
+        let pump = runtime::pump_events(after, move |_| {
+            counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            true
+        });
+        let _ = tokio::time::timeout(Duration::from_millis(600), pump).await;
+        seen.load(std::sync::atomic::Ordering::Relaxed)
+    };
+    assert_eq!(
+        collect(None).await,
+        0,
+        "le journal passé ne doit pas être rejoué"
+    );
+    assert!(
+        collect(Some(0)).await > 0,
+        "depuis 0, le journal est rejoué"
+    );
 }
 
 /// Le HTML d'origine garde tout (aucun assainissement) et un texte seul n'en donne pas.

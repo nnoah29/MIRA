@@ -11,6 +11,7 @@ class FakeEngine implements EngineClient {
   final calls = <String>[];
   final bodyFails = <String>{};
   bool allowed = false;
+  bool extra = false;
   final feed = StreamController<Map<String, dynamic>>.broadcast();
 
   Map<String, dynamic> _msg(
@@ -140,6 +141,7 @@ class FakeEngine implements EngineClient {
   Map<String, dynamic> _list(String mailbox) {
     final items = switch (mailbox) {
       'mb-inbox' => [
+        if (extra) _msg('m9', 'Nouveau', date: 4000),
         _msg('m1', 'Premier', thread: 't1', seen: false, date: 1000),
         _msg('m2', 'Re: Premier', thread: 't1', date: 2000, attachments: true),
         _msg('m3', 'Seul', date: 3000),
@@ -233,12 +235,16 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final fake = FakeEngine();
-    final src = await EngineMailSource.load(fake);
+    final src = await EngineMailSource.load(
+      fake,
+      debounce: const Duration(milliseconds: 20),
+    );
     final store = MailStore(prefs, source: src);
     final conv = store.mails.firstWhere((m) => m.msgs.length == 2);
     store.openMail(conv.id);
     await Future<void>.delayed(const Duration(milliseconds: 300));
     expect(conv.msgs[1].html, isNotNull);
+    fake.extra = true;
     fake.feed.add({
       'kind': {'type': 'sync_finished', 'account': 'acc1'},
     });
@@ -248,6 +254,35 @@ void main() {
     expect(fresh.msgs[1].html, contains('Rouge'));
     expect(fresh.msgs[1].inline, isNotEmpty);
     expect(fresh.unread, isFalse);
+    store.dispose();
+  });
+
+  test('une rafale d\u2019événements ne provoque qu\u2019une relecture, sans redessin si rien ne change', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final fake = FakeEngine();
+    final src = await EngineMailSource.load(
+      fake,
+      debounce: const Duration(milliseconds: 50),
+    );
+    final store = MailStore(prefs, source: src);
+    var redraws = 0;
+    store.addListener(() => redraws++);
+    final before = fake.calls
+        .where((c) => c == 'mailbox.list_mailboxes')
+        .length;
+    for (var i = 0; i < 200; i++) {
+      fake.feed.add({
+        'kind': {'type': 'sync_finished', 'account': 'acc1'},
+      });
+      fake.feed.add({
+        'kind': {'type': 'body_available', 'account': 'acc1'},
+      });
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    final reads = fake.calls.where((c) => c == 'mailbox.list_mailboxes').length;
+    expect(reads - before, 1);
+    expect(redraws, 0);
     store.dispose();
   });
 }

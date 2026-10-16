@@ -732,12 +732,28 @@ class MailStore extends ChangeNotifier {
 
   /// Relit la boîte d'un compte après un événement du moteur.
   Future<void> _reloadAccount(String id) async {
+    if (!_reloading.add(id)) {
+      _reloadAgain.add(id);
+      return;
+    }
+    try {
+      await _reloadOnce(id);
+    } finally {
+      _reloading.remove(id);
+      if (_reloadAgain.remove(id)) _reloadAccount(id);
+    }
+  }
+
+  final Set<String> _reloading = {}, _reloadAgain = {};
+
+  Future<void> _reloadOnce(String id) async {
     final src = source;
     final acc = accounts.where((a) => a.id == id).firstOrNull;
     if (src == null || acc == null) return;
     try {
       final fresh = await src.reload(acc);
       _keepLocalState(id, fresh);
+      if (_signature(fresh) == _signature(_boxes[id] ?? const [])) return;
       _boxes[id] = fresh;
       if (unified) {
         mails = _mergedBoxes();
@@ -749,6 +765,20 @@ class MailStore extends ChangeNotifier {
       /* lecture impossible : on garde l'affichage actuel */
     }
   }
+
+  /// Empreinte de ce que la liste affiche : identique avant et après = rien à redessiner.
+  int _signature(List<Mail> l) => Object.hashAll([
+    for (final m in l)
+      Object.hash(
+        m.id,
+        m.date,
+        m.unread,
+        m.starred,
+        m.folder,
+        m.subject,
+        m.msgs.length,
+      ),
+  ]);
 
   /// Conserve corps, HTML, images et état « lu » déjà connus des messages relus.
   void _keepLocalState(String id, List<Mail> fresh) {

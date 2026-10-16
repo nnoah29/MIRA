@@ -28,9 +28,12 @@ class RustEngineClient implements EngineClient {
   RustEngineClient._();
 
   /// Charge la bibliothèque, vérifie le contrat et ouvre le profil.
-  static Future<RustEngineClient> open({String profile = 'default'}) async {
+  static Future<RustEngineClient> open({
+    String profile = 'default',
+    int? pollSecs,
+  }) async {
     await RustLib.init(externalLibrary: openBridgeLibrary());
-    openEnvelope(await ffi.openEngine(profile: profile));
+    openEnvelope(await ffi.openEngine(profile: profile, pollSecs: pollSecs));
     return RustEngineClient._();
   }
 

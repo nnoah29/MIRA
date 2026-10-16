@@ -22,13 +22,14 @@ class Shell extends StatefulWidget {
   State<Shell> createState() => _ShellState();
 }
 
-class _ShellState extends State<Shell> {
+class _ShellState extends State<Shell> with WidgetsBindingObserver {
   late final MailStore store = context.read<MailStore>();
 
   @override
   void initState() {
     super.initState();
     HardwareKeyboard.instance.addHandler(_onKey);
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       store.narrow = MediaQuery.sizeOf(context).width <= 1100;
       store.start();
@@ -38,7 +39,13 @@ class _ShellState extends State<Shell> {
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_onKey);
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) store.refreshNow(quiet: true);
   }
 
   bool _editing() {
@@ -54,6 +61,12 @@ class _ShellState extends State<Shell> {
     final k = e.logicalKey;
     final kb = HardwareKeyboard.instance;
     final ctrl = kb.isControlPressed || kb.isMetaPressed;
+
+    if (k == LogicalKeyboardKey.f5 ||
+        (ctrl && k == LogicalKeyboardKey.keyR && !_editing())) {
+      s.refreshNow();
+      return true;
+    }
 
     if (k == LogicalKeyboardKey.escape) {
       if (s.showHelp) {

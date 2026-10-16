@@ -105,6 +105,8 @@ class FakeEngine implements EngineClient {
             'blocked_resources': allowed ? [] : ['https://x.test/a.png'],
           },
         };
+      case 'sync.start_sync':
+        return {'type': 'done'};
       case 'message.allow_remote_content':
         allowed = true;
         return {'type': 'done'};
@@ -318,6 +320,28 @@ void main() {
       );
       expect(seen, contains('loaded=true att=0'));
       expect(conv.msgs[1].att, isNotEmpty);
+    },
+  );
+
+  test(
+    'Actualiser demande une synchro de tous les comptes, sans rafale',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final fake = FakeEngine();
+      final src = await EngineMailSource.load(fake);
+      final store = MailStore(prefs, source: src);
+      await store.refreshNow();
+      final sync = fake.calls.where((c) => c == 'sync.start_sync').length;
+      expect(sync, 1);
+      expect(store.syncing, isFalse);
+      await store.refreshNow(quiet: true);
+      expect(
+        fake.calls.where((c) => c == 'sync.start_sync').length,
+        1,
+        reason: 'le retour de focus ne relance pas avant 30 s',
+      );
+      store.dispose();
     },
   );
 }

@@ -26,7 +26,7 @@ Future<void> main() async {
   await initializeDateFormatting('fr_FR');
   await initializeDateFormatting('en_US');
   final prefs = await SharedPreferences.getInstance();
-  final source = await openEngineSource();
+  final source = await openEngineSource(prefs);
   runApp(
     ChangeNotifierProvider(
       create: (_) => MailStore(prefs, watchWallpaper: true, source: source),
@@ -36,10 +36,12 @@ Future<void> main() async {
 }
 
 /// Ouvre le moteur Rust ; `MIRA_DEMO=1` ou une erreur d'ouverture donne les données de démonstration.
-Future<MailSource?> openEngineSource() async {
+Future<MailSource?> openEngineSource(SharedPreferences prefs) async {
   if (Platform.environment['MIRA_DEMO'] == '1') return null;
   try {
-    final client = await RustEngineClient.open();
+    final client = await RustEngineClient.open(
+      pollSecs: int.tryParse(prefs.getString('poll') ?? ''),
+    );
     return await EngineMailSource.load(client);
   } catch (e) {
     stderr.writeln('MIRA : moteur indisponible, données de démonstration ($e)');

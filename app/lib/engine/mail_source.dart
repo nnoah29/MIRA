@@ -20,6 +20,9 @@ abstract class MailSource {
   /// Ajout de comptes par le moteur (`null` : données de démonstration).
   AccountSetup? get setup;
 
+  /// Demande au moteur de synchroniser tous les comptes tout de suite.
+  Future<void> syncNow();
+
   /// Relit la liste des comptes ; rend les comptes apparus depuis la dernière lecture.
   Future<List<Account>> refreshAccounts();
 

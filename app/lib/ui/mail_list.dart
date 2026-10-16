@@ -76,6 +76,15 @@ class MailsColumn extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (s.source != null) ...[
+                  IBtn(
+                    'refresh',
+                    on: s.syncing,
+                    tip: t('Actualiser (F5)'),
+                    onTap: s.refreshNow,
+                  ),
+                  const SizedBox(width: 6),
+                ],
                 Builder(
                   builder: (ctx) => IBtn(
                     'filter',

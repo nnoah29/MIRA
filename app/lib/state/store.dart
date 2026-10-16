@@ -164,6 +164,33 @@ class MailStore extends ChangeNotifier {
     chat = [_welcome()];
   }
 
+  // ---- synchronisation ----
+  bool syncing = false;
+  DateTime? _lastRefresh;
+
+  /// Demande une synchronisation immédiate et relit la boîte active ; `quiet` : sans message, au plus toutes les 30 s.
+  Future<void> refreshNow({bool quiet = false}) async {
+    final src = source;
+    final now = DateTime.now();
+    if (src == null || syncing) return;
+    final last = _lastRefresh;
+    if (quiet && last != null && now.difference(last).inSeconds < 30) return;
+    _lastRefresh = now;
+    syncing = true;
+    notifyListeners();
+    try {
+      unawaited(_reloadAccount(activeId));
+      await src.syncNow();
+      if (!quiet) toast('Synchronisation lancée');
+    } catch (_) {
+      if (!quiet) toast('Synchronisation impossible', err: true);
+    } finally {
+      await Future<void>.delayed(const Duration(milliseconds: 1200));
+      syncing = false;
+      notifyListeners();
+    }
+  }
+
   // ---- images distantes ----
   late ImagePolicy imagePolicy;
 
@@ -400,6 +427,8 @@ class MailStore extends ChangeNotifier {
       case 'follow':
         followWallpaper = v == '1';
         prefs.setString('follow', v);
+      case 'poll':
+        prefs.setString('poll', v);
       case 'live':
         live = v == '1';
         prefs.setString('live', v);

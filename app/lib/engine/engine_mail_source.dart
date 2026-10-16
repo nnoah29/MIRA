@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 
 import '../data/html_lite.dart';
 import '../data/models.dart';
+import 'account_setup.dart';
 import 'css_inliner.dart';
 import 'inline_images.dart';
 import 'engine_client.dart';
@@ -22,7 +23,7 @@ class EngineMailSource implements MailSource {
   final Duration debounce;
   final Map<String, Timer> _pending = {};
   @override
-  final List<Account> accounts;
+  List<Account> accounts;
   @override
   final Map<String, List<Mail>> boxes;
   final StreamController<String> _changes = StreamController.broadcast();
@@ -52,6 +53,24 @@ class EngineMailSource implements MailSource {
     }
     source._listen();
     return source;
+  }
+
+  @override
+  AccountSetup get setup => AccountSetup(client);
+
+  @override
+  Future<List<Account>> refreshAccounts() async {
+    final raw = await client.call(req('account', 'list_accounts'));
+    final fresh = [
+      for (final a in (raw['data'] as List)) accountOf((a as Map).cast()),
+    ];
+    final known = {for (final a in accounts) a.id};
+    final added = fresh.where((a) => !known.contains(a.id)).toList();
+    accounts = fresh;
+    for (final a in added) {
+      boxes[a.id] = await reload(a);
+    }
+    return added;
   }
 
   @override

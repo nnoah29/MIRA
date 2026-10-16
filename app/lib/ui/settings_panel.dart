@@ -324,6 +324,18 @@ class _SettingsPanelState extends State<SettingsPanel> {
       ]),
       _ => box([
         srow(me.name, me.email, const SizedBox.shrink()),
+        if (s.source != null)
+          srow(
+            t('Ajouter un compte'),
+            t('Gmail, Outlook, Yahoo ou n’importe quel serveur IMAP / SMTP.'),
+            Btn(
+              key: const ValueKey('settings-add-account'),
+              icon: 'plus',
+              label: t('Ajouter'),
+              go: true,
+              onTap: s.openAddAccount,
+            ),
+          ),
         srow(
           t('Démo'),
           t('Remet tous les messages et réglages de départ.'),

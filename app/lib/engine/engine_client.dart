@@ -18,6 +18,9 @@ abstract class EngineClient {
   /// Événements du moteur (objets `Event`) à partir d'un numéro.
   Stream<Map<String, dynamic>> events({int? after});
 
+  /// HTML d'origine d'un message, tel que reçu (`null` : pas de partie HTML).
+  Future<String?> originalHtml(String messageId);
+
   /// Ferme le moteur.
   Future<void> close();
 }

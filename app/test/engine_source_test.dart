@@ -155,6 +155,11 @@ class FakeEngine implements EngineClient {
   Stream<Map<String, dynamic>> events({int? after}) => const Stream.empty();
 
   @override
+  Future<String?> originalHtml(String messageId) async =>
+      '<html><head><style>.t{color:#ff0000}</style></head>'
+      '<body><p class="t">Rouge</p><img src="cid:logo@x"></body></html>';
+
+  @override
   Future<void> close() async {}
 }
 
@@ -182,7 +187,8 @@ void main() {
     final conv = src.boxes['acc1']!.firstWhere((m) => m.msgs.length == 2);
     expect(await src.hydrate(conv), isTrue);
     expect(conv.msgs[0].body.length, 2);
-    expect(conv.msgs[1].html, contains('<table>'));
+    expect(conv.msgs[1].html, contains('color:#ff0000'));
+    expect(conv.msgs[1].html, contains('Rouge'));
     expect(conv.msgs[1].blocked, ['https://x.test/a.png']);
     expect(conv.msgs[1].inline['logo@x'], [1, 2, 3]);
     expect(conv.msgs[1].att.single.n, 'devis.pdf');
@@ -197,7 +203,6 @@ void main() {
     await src.hydrate(conv);
     await src.allowRemote(conv.msgs[1]);
     expect(conv.msgs[1].blocked, isEmpty);
-    expect(conv.msgs[1].html, contains('https://x.test/a.png'));
     expect(fake.calls, contains('message.allow_remote_content'));
   });
 

@@ -1498,7 +1498,9 @@ dependencies = [
 name = "mira-bridge"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "flutter_rust_bridge",
+ "mail-parser",
  "mira-assembly",
  "mira-testkit",
  "serde_json",

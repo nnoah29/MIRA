@@ -109,7 +109,8 @@ class MailHtml extends StatelessWidget {
       final data = Uri.tryParse(src)?.data;
       return data == null ? null : MemoryImage(data.contentAsBytes());
     }
-    if (lower.startsWith('http://') || lower.startsWith('https://')) {
+    final remote = lower.startsWith('http://') || lower.startsWith('https://');
+    if (remote && msg.blocked.isEmpty) {
       return NetworkImage(src);
     }
     return null;

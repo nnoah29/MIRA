@@ -10,6 +10,7 @@ import '../i18n/i18n.dart';
 import '../state/image_policy.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
+import 'body_skeleton.dart';
 
 const _paper = Color(0xFFFFFFFF);
 const _ink = Color(0xFF1A1A1A);
@@ -44,6 +45,7 @@ class MailHtml extends StatefulWidget {
 class _MailHtmlState extends State<MailHtml> {
   Object? _key;
   Widget? _body;
+  bool _ready = false;
 
   Msg get msg => widget.msg;
 
@@ -62,8 +64,11 @@ class _MailHtmlState extends State<MailHtml> {
         ? widget.base.copyWith(color: _ink, fontSize: 14, height: 1.5)
         : widget.base;
     _key = key;
+    _ready = false;
     return _body = HtmlWidget(
       msg.html!,
+      buildAsync: true,
+      onLoadingBuilder: (_, _, _) => _LoadMarker(onGone: _markReady),
       textStyle: style,
       customWidgetBuilder: (e) =>
           e.localName == 'img' ? _image(e, remoteOk) : null,
@@ -71,6 +76,31 @@ class _MailHtmlState extends State<MailHtml> {
       onTapUrl: openLink,
     );
   }
+
+  void _markReady() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _ready = true);
+    });
+  }
+
+  /// Le HTML apparaît en fondu au-dessus d'un squelette, et la hauteur s'anime.
+  Widget _faded(Widget body) => AnimatedSize(
+    duration: const Duration(milliseconds: 180),
+    curve: Curves.easeOutCubic,
+    alignment: Alignment.topCenter,
+    child: Stack(
+      clipBehavior: Clip.hardEdge,
+      children: [
+        AnimatedOpacity(
+          opacity: _ready ? 1 : 0,
+          duration: const Duration(milliseconds: 160),
+          child: body,
+        ),
+        if (!_ready)
+          const Positioned(top: 0, left: 0, right: 0, child: BodySkeleton()),
+      ],
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +114,7 @@ class _MailHtmlState extends State<MailHtml> {
       ImageAction.ask => msg.blocked.isEmpty,
     };
     final onPaper = imposesColors(msg.html!);
-    final body = _htmlBody(p, remoteOk, onPaper);
+    final body = _faded(_htmlBody(p, remoteOk, onPaper));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -193,4 +223,24 @@ class _RemoteBanner extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Signale à son parent qu'il a disparu (le HTML est construit) ; occupe la place du squelette.
+class _LoadMarker extends StatefulWidget {
+  final VoidCallback onGone;
+  const _LoadMarker({required this.onGone});
+
+  @override
+  State<_LoadMarker> createState() => _LoadMarkerState();
+}
+
+class _LoadMarkerState extends State<_LoadMarker> {
+  @override
+  void dispose() {
+    widget.onGone();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox(height: 96);
 }

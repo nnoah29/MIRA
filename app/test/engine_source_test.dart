@@ -285,4 +285,22 @@ void main() {
     expect(redraws, 0);
     store.dispose();
   });
+
+  test(
+    'ouvrir un message charge aussi ses voisins (j/k instantanés)',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final fake = FakeEngine();
+      final src = await EngineMailSource.load(fake);
+      final store = MailStore(prefs, source: src);
+      final l = store.visible();
+      expect(l.length, greaterThan(1));
+      store.openMail(l.first.id);
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(l.first.msgs.every((m) => m.loaded), isTrue);
+      expect(l[1].msgs.every((m) => m.loaded), isTrue);
+      store.dispose();
+    },
+  );
 }

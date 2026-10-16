@@ -1,3 +1,4 @@
+import 'body_skeleton.dart';
 import 'html_body.dart';
 
 import 'package:flutter/material.dart';
@@ -327,20 +328,7 @@ class _Thread extends StatelessWidget {
                   if (!old) ...[
                     Padding(
                       padding: EdgeInsets.fromLTRB(bodyLeft, 2, 24, 24),
-                      child: msg.html != null
-                          ? MailHtml(
-                              msg: msg,
-                              base: Fonts.sans(
-                                size: 16,
-                                color: p.body,
-                                height: 1.75,
-                              ),
-                            )
-                          : blocksView(
-                              msg.body,
-                              Fonts.sans(size: 16, color: p.body, height: 1.75),
-                              p,
-                            ),
+                      child: _BodySwitch(msg: msg, p: p),
                     ),
                     if (msg.att.isNotEmpty)
                       Padding(
@@ -403,6 +391,33 @@ class _Thread extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Corps d'un message : squelette pendant le chargement, puis fondu vers le texte ou le HTML.
+class _BodySwitch extends StatelessWidget {
+  final Msg msg;
+  final Pal p;
+  const _BodySwitch({required this.msg, required this.p});
+
+  @override
+  Widget build(BuildContext context) {
+    final real = context.read<MailStore>().source != null && msg.ref != null;
+    final loading = real && !msg.loaded;
+    final base = Fonts.sans(size: 16, color: p.body, height: 1.75);
+    final child = loading
+        ? const BodySkeleton(key: ValueKey('loading'))
+        : msg.html != null
+        ? MailHtml(key: ValueKey('html-${msg.ref}'), msg: msg, base: base)
+        : KeyedSubtree(
+            key: ValueKey('text-${msg.ref}'),
+            child: blocksView(msg.body, base, p),
+          );
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 160),
+      switchInCurve: Curves.easeOut,
+      child: child,
     );
   }
 }

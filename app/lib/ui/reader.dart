@@ -148,17 +148,14 @@ class _ReaderState extends State<Reader> {
                       ),
                     ],
                   ),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 900),
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: Text(
-                        m.subject.toUpperCase(),
-                        style: Fonts.display(
-                          size: narrow && mobile ? 28 : (narrow ? 28 : 38),
-                          height: 1.08,
-                          color: p.text,
-                        ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Text(
+                      m.subject.toUpperCase(),
+                      style: Fonts.display(
+                        size: narrow && mobile ? 28 : (narrow ? 28 : 38),
+                        height: 1.08,
+                        color: p.text,
                       ),
                     ),
                   ),
@@ -170,18 +167,15 @@ class _ReaderState extends State<Reader> {
                     FadeSlideIn(
                       delay: Duration(milliseconds: 60 * (i > 4 ? 4 : i)),
                       from: const Offset(0, 12),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 920),
-                        child: _Thread(
-                          mail: m,
-                          msg: m.msgs[i],
-                          old: old.contains(i),
-                          toggle: () => setState(
-                            () => old.contains(i) ? old.remove(i) : old.add(i),
-                          ),
-                          narrow: narrow,
-                          mobile: mobile,
+                      child: _Thread(
+                        mail: m,
+                        msg: m.msgs[i],
+                        old: old.contains(i),
+                        toggle: () => setState(
+                          () => old.contains(i) ? old.remove(i) : old.add(i),
                         ),
+                        narrow: narrow,
+                        mobile: mobile,
                       ),
                     ),
                 ],

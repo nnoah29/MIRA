@@ -903,6 +903,35 @@ class MailStore extends ChangeNotifier {
     switchAccount(id);
   }
 
+  /// Reprend la liste des comptes après une modification (nom, suppression…) sans quitter les réglages.
+  Future<void> accountsChanged() async {
+    final src = source;
+    if (src == null) return;
+    await src.refreshAccounts();
+    final keepView = view;
+    final ids = {for (final a in src.accounts) a.id};
+    _boxes.removeWhere((id, _) => !ids.contains(id));
+    accounts = src.accounts.isEmpty
+        ? [const Account('none', 'Aucun compte', '')]
+        : src.accounts;
+    knownAccounts = accounts;
+    for (final a in accounts) {
+      _boxes.putIfAbsent(a.id, () => src.boxes[a.id] ?? []);
+    }
+    if (!accounts.any((a) => a.id == activeId)) {
+      unified = false;
+      activeId = accounts.first.id;
+      mails = _boxes[activeId] ?? [];
+      _resetView();
+      view = keepView;
+    } else if (unified) {
+      mails = _mergedBoxes();
+    }
+    _useIdentity(active);
+    prefs.setString('account', unified ? 'all' : activeId);
+    notifyListeners();
+  }
+
   void toggleSettings() =>
       view == PaneView.settings ? closePane() : showView(PaneView.settings);
 

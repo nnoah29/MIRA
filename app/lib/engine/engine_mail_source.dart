@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 
 import '../data/html_lite.dart';
 import '../data/models.dart';
+import 'account_admin.dart';
 import 'account_setup.dart';
 import 'css_inliner.dart';
 import 'inline_images.dart';
@@ -59,6 +60,9 @@ class EngineMailSource implements MailSource {
   AccountSetup get setup => AccountSetup(client);
 
   @override
+  AccountAdmin get admin => AccountAdmin(client);
+
+  @override
   Future<void> syncNow() async {
     await client.call(
       req('sync', 'start_sync', {
@@ -76,6 +80,8 @@ class EngineMailSource implements MailSource {
     final known = {for (final a in accounts) a.id};
     final added = fresh.where((a) => !known.contains(a.id)).toList();
     accounts = fresh;
+    final ids = {for (final a in fresh) a.id};
+    boxes.removeWhere((id, _) => !ids.contains(id));
     for (final a in added) {
       boxes[a.id] = await reload(a);
     }

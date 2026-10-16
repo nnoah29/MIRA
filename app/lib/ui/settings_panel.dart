@@ -6,6 +6,7 @@ import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
 import '../theme/wall_source.dart';
+import 'accounts_settings.dart';
 import 'image_rules_section.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
@@ -22,7 +23,7 @@ List<(String, String)> get accentPresets => <(String, String)>[
   (t('Jaune'), 'e5b100'),
 ];
 
-List<String> get _tabs => [t('Apparence'), t('Messagerie'), t('Compte')];
+List<String> get _tabs => [t('Apparence'), t('Messagerie'), t('Comptes')];
 
 class SettingsPanel extends StatefulWidget {
   const SettingsPanel({super.key});
@@ -336,20 +337,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
           ),
         ),
       ]),
+      _ when s.source != null => box([const AccountsSettings()]),
       _ => box([
         srow(me.name, me.email, const SizedBox.shrink()),
-        if (s.source != null)
-          srow(
-            t('Ajouter un compte'),
-            t('Gmail, Outlook, Yahoo ou n’importe quel serveur IMAP / SMTP.'),
-            Btn(
-              key: const ValueKey('settings-add-account'),
-              icon: 'plus',
-              label: t('Ajouter'),
-              go: true,
-              onTap: s.openAddAccount,
-            ),
-          ),
         srow(
           t('Démo'),
           t('Remet tous les messages et réglages de départ.'),

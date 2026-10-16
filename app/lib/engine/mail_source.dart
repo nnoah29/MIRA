@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../data/models.dart';
+import 'account_admin.dart';
 import 'account_setup.dart';
 
 /// Origine des données affichées : comptes, boîtes chargées, et enrichissement d'un message.
@@ -22,6 +23,9 @@ abstract class MailSource {
 
   /// Demande au moteur de synchroniser tous les comptes tout de suite.
   Future<void> syncNow();
+
+  /// Gestion des comptes et identités (`null` : données de démonstration).
+  AccountAdmin? get admin;
 
   /// Relit la liste des comptes ; rend les comptes apparus depuis la dernière lecture.
   Future<List<Account>> refreshAccounts();

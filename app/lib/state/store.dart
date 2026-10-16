@@ -1,0 +1,1362 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../data/format.dart';
+import '../data/html_lite.dart';
+import '../data/models.dart';
+import '../data/seed.dart';
+import '../theme/wall_source.dart';
+import '../theme/wall_theme.dart';
+import '../theme/app_theme.dart';
+import 'assistant.dart';
+import 'rich_controller.dart';
+import '../i18n/i18n.dart';
+
+enum PaneView { empty, read, compose, assistant, settings }
+
+class ToastItem {
+  final int id;
+  final String msg;
+  final String? label;
+  final VoidCallback? cb;
+  final bool err;
+  bool out = false;
+  ToastItem(this.id, this.msg, this.label, this.cb, this.err);
+}
+
+class ChatMsg {
+  final String role; // 'me' | 'ai'
+  bool done;
+  String shown;
+  String text;
+  List<String>? draft;
+  List<String>? refs;
+  ChatMsg({
+    required this.role,
+    this.done = true,
+    this.shown = '',
+    required this.text,
+    this.draft,
+    this.refs,
+  });
+}
+
+class ComposeState {
+  String? id;
+  String? replyTo;
+  String mode;
+  List<Person> to, cc, bcc;
+  List<Attachment> atts;
+  String from;
+  final TextEditingController subject = TextEditingController();
+  final RichController body = RichController();
+  final FocusNode toFocus = FocusNode();
+  final FocusNode bodyFocus = FocusNode();
+  List<Block>? quote;
+  bool dirty = false;
+  Timer? timer;
+  bool showBcc;
+  String saved = '';
+  bool center = false;
+  int shake = 0;
+  ComposeState({
+    this.id,
+    this.replyTo,
+    this.mode = 'new',
+    required this.to,
+    required this.cc,
+    required this.bcc,
+    required this.atts,
+    required this.from,
+    this.quote,
+  }) : showBcc = bcc.isNotEmpty;
+}
+
+/// Paramètres d'ouverture d'une rédaction.
+class ComposeInit {
+  final String? id, replyTo, from;
+  final String mode;
+  final List<Person> to, cc, bcc;
+  final String subject;
+  final List<Attachment> atts;
+  final String? text;
+  final List<int>? flags;
+  final List<Block>? blocks;
+  final List<Block>? quote;
+  const ComposeInit({
+    this.id,
+    this.replyTo,
+    this.from,
+    this.mode = 'new',
+    this.to = const [],
+    this.cc = const [],
+    this.bcc = const [],
+    this.subject = '',
+    this.atts = const [],
+    this.text,
+    this.flags,
+    this.blocks,
+    this.quote,
+  });
+}
+
+class MailStore extends ChangeNotifier {
+  final SharedPreferences prefs;
+  MailStore(this.prefs, {bool watchWallpaper = false}) {
+    followWallpaper = prefs.getString('follow') != '0';
+    lang = AppLang.fromCode(prefs.getString('lang'));
+    appLang = lang;
+    if (watchWallpaper && wallSupported) {
+      _wallSub = watchWallSeed().listen((seed) {
+        if (seed == null) {
+          _wall = null;
+        } else {
+          _wall = palFromSeed(seed);
+        }
+        notifyListeners();
+      });
+    }
+    theme = prefs.getString('theme') == 'light' ? 'light' : 'dark';
+    accentHex = prefs.getString('accent');
+    dense = prefs.getString('dense') == '1';
+    snip = prefs.getString('snip') != '0';
+    live = prefs.getString('live') != '0';
+    sig = prefs.getString('sig') ?? 'Cordialement,\nNoah';
+    final extra = <Account>[];
+    try {
+      final raw = prefs.getString('accounts');
+      if (raw != null) {
+        for (final j in jsonDecode(raw) as List) {
+          extra.add(Account.fromJson(j as Map<String, dynamic>));
+        }
+      }
+    } catch (_) {
+      /* préférences illisibles : on ignore */
+    }
+    accounts = [...defaultAccounts, ...extra];
+    knownAccounts = accounts;
+    final saved = prefs.getString('account');
+    unified = saved == 'all';
+    activeId = accounts.any((a) => a.id == saved) ? saved! : accounts.first.id;
+    if (unified) {
+      mails = _mergedBoxes();
+      _useIdentity(active);
+    } else {
+      mails = seedAccount(active);
+    }
+    chat = [_welcome()];
+  }
+
+  // ---- état ----
+  late List<Mail> mails;
+  late List<Account> accounts;
+  late String activeId;
+
+  /// « Toutes les boîtes » : les messages de tous les comptes dans une seule vue.
+  bool unified = false;
+  final Map<String, List<Mail>> _boxes = {};
+  Account get active => accounts.firstWhere((a) => a.id == activeId);
+  String folder = 'inbox';
+  String? label;
+  String pill = 'all';
+  String q = '';
+  String sort = 'new';
+  final Set<String> sel = <String>{};
+  String? open;
+  PaneView view = PaneView.empty;
+  late String theme;
+
+  /// Langue de l'interface.
+  late AppLang lang;
+
+  /// Suivre les couleurs du fond d'écran (ShellArie) quand elles sont disponibles.
+  late bool followWallpaper;
+  StreamSubscription<WallSeed?>? _wallSub;
+  ({Pal pal, bool dark})? _wall;
+
+  /// Palette issue du fond d'écran, ou `null` si désactivée / indisponible.
+  Pal? get wallPal => followWallpaper ? _wall?.pal : null;
+  bool get wallDark => _wall?.dark ?? true;
+  bool get wallAvailable => _wall != null;
+
+  @visibleForTesting
+  void debugSetWallSeed(WallSeed? seed) {
+    _wall = seed == null ? null : palFromSeed(seed);
+    notifyListeners();
+  }
+
+  /// Thème sombre effectif (celui du fond d'écran quand il est suivi).
+  bool get isDark => wallPal != null ? wallDark : theme != 'light';
+
+  /// Couleur principale choisie (hex `rrggbb`), ou `null` pour l'orange d'origine.
+  String? accentHex;
+  Color? get accentColor {
+    final h = accentHex;
+    if (h == null || !RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(h)) return null;
+    return Color(0xFF000000 | int.parse(h, radix: 16));
+  }
+
+  late bool dense, snip, live;
+  late String sig;
+  late List<ChatMsg> chat;
+  bool busy = false;
+  ComposeState? c;
+  String? freshId;
+  bool navOpen = false;
+  bool showHelp = false;
+  bool narrow = false;
+  final TextEditingController searchCtl = TextEditingController();
+  final FocusNode searchFocus = FocusNode();
+  final List<ToastItem> toasts = [];
+  final List<Timer> _timers = [];
+  int _toastId = 0;
+  int incIdx = 0;
+  int _scrollTick = 0;
+  int get scrollTick => _scrollTick;
+
+  static ChatMsg _welcome() => ChatMsg(
+    role: 'ai',
+    done: true,
+    text: t(
+      'Salut Noah ! Je peux **résumer** un mail, **rédiger** une réponse, **trier** ce qui est urgent ou **retrouver** un message. Sélectionne un mail dans la liste pour que je m’en serve comme contexte.',
+    ),
+  );
+
+  void refresh() => notifyListeners();
+
+  Timer _after(int ms, VoidCallback f) {
+    late Timer t;
+    t = Timer(Duration(milliseconds: ms), () {
+      _timers.remove(t);
+      f();
+    });
+    _timers.add(t);
+    return t;
+  }
+
+  @override
+  void dispose() {
+    _wallSub?.cancel();
+    for (final t in _timers) {
+      t.cancel();
+    }
+    super.dispose();
+  }
+
+  // ---- sélecteurs ----
+  Mail? byId(String? id) {
+    if (id == null) return null;
+    for (final m in mails) {
+      if (m.id == id) return m;
+    }
+    return null;
+  }
+
+  bool hidden(Mail m) => m.folder == 'trash' || m.folder == 'spam';
+  int nonRead(Iterable<Mail> l) => l.where((m) => m.unread).length;
+
+  List<Mail> scope() {
+    if (label != null) {
+      return mails
+          .where((m) => m.labels.contains(label) && !hidden(m))
+          .toList();
+    }
+    if (folder == 'starred') {
+      return mails.where((m) => m.starred && !hidden(m)).toList();
+    }
+    return mails.where((m) => m.folder == folder).toList();
+  }
+
+  List<Mail> visible() {
+    var l = scope();
+    if (pill != 'all') l = l.where((m) => m.flags.contains(pill)).toList();
+    final qq = q.trim().toLowerCase();
+    if (qq.isNotEmpty) {
+      l = l
+          .where(
+            (m) =>
+                ('${m.subject} ${m.from.name} ${m.from.email} ${plainMsgs(m.msgs)}')
+                    .toLowerCase()
+                    .contains(qq),
+          )
+          .toList();
+    }
+    l.sort(switch (sort) {
+      'old' => (Mail a, Mail b) => a.date - b.date,
+      'unread' => (Mail a, Mail b) {
+        final u = (b.unread ? 1 : 0) - (a.unread ? 1 : 0);
+        return u != 0 ? u : b.date - a.date;
+      },
+      _ => (Mail a, Mail b) => b.date - a.date,
+    });
+    return l;
+  }
+
+  List<String> targets() {
+    if (sel.isNotEmpty) return sel.where((id) => byId(id) != null).toList();
+    if (open != null && byId(open) != null) return [open!];
+    return [];
+  }
+
+  int navCount(String id) {
+    switch (id) {
+      case 'inbox':
+        return nonRead(mails.where((m) => m.folder == 'inbox'));
+      case 'starred':
+        return mails.where((m) => m.starred && !hidden(m)).length;
+      case 'drafts':
+        return mails.where((m) => m.folder == 'drafts').length;
+      case 'spam':
+        return nonRead(mails.where((m) => m.folder == 'spam'));
+      case 'snoozed':
+        return mails.where((m) => m.folder == 'snoozed').length;
+    }
+    return 0;
+  }
+
+  int get needsCount => mails
+      .where((m) => m.folder == 'inbox' && m.flags.contains('needs'))
+      .length;
+
+  // ---- toasts ----
+  void toast(String msg, {String? label, VoidCallback? cb, bool err = false}) {
+    final t = ToastItem(++_toastId, msg, label, cb, err);
+    toasts.add(t);
+    while (toasts.length > 3) {
+      toasts.removeAt(0);
+    }
+    _after(label != null ? 6500 : 3200, () => killToast(t));
+    notifyListeners();
+  }
+
+  void killToast(ToastItem t) {
+    if (t.out || !toasts.contains(t)) return;
+    t.out = true;
+    notifyListeners();
+    _after(260, () {
+      toasts.remove(t);
+      notifyListeners();
+    });
+  }
+
+  void hint() => toast('Sélectionne d’abord un message', err: true);
+
+  // ---- préférences ----
+  void setSetting(String k, String v) {
+    switch (k) {
+      case 'theme':
+        theme = v;
+        prefs.setString('theme', v);
+      case 'dense':
+        dense = v == '1';
+        prefs.setString('dense', v);
+      case 'snip':
+        snip = v == '1';
+        prefs.setString('snip', v);
+      case 'follow':
+        followWallpaper = v == '1';
+        prefs.setString('follow', v);
+      case 'live':
+        live = v == '1';
+        prefs.setString('live', v);
+        if (live) scheduleIncoming(rand(8000, 14000).round());
+      case 'reset':
+        resetDemo();
+        return;
+    }
+    notifyListeners();
+  }
+
+  /// Change la couleur principale (`null` : retour à l'orange d'origine).
+  void setAccent(String? hex) {
+    accentHex = hex?.toLowerCase();
+    if (accentHex == null) {
+      prefs.remove('accent');
+    } else {
+      prefs.setString('accent', accentHex!);
+    }
+    notifyListeners();
+  }
+
+  void setLang(AppLang l) {
+    if (l == lang) return;
+    lang = l;
+    appLang = l;
+    prefs.setString('lang', l.code);
+    notifyListeners();
+  }
+
+  void setSig(String s) {
+    sig = s;
+    prefs.setString('sig', s);
+  }
+
+  void resetDemo() {
+    for (final t in _timers) {
+      t.cancel();
+    }
+    _timers.clear();
+    toasts.clear();
+    _boxes.clear();
+    if (unified) {
+      mails = _mergedBoxes();
+    } else {
+      mails = seedAccount(active);
+    }
+    _useIdentity(active);
+    folder = 'inbox';
+    label = null;
+    pill = 'all';
+    q = '';
+    searchCtl.clear();
+    sort = 'new';
+    sel.clear();
+    open = null;
+    view = PaneView.empty;
+    c = null;
+    chat = [_welcome()];
+    busy = false;
+    incIdx = 0;
+    freshId = null;
+    start();
+  }
+
+  /// Démarrage (après le premier build, `narrow` est connu).
+  void start() {
+    if (!narrow) {
+      final l = visible();
+      if (l.isNotEmpty) openMail(l.first.id);
+    }
+    notifyListeners();
+    scheduleIncoming(rand(15000, 22000).round());
+  }
+
+  // ---- comptes ----
+  void _useIdentity(Account a) {
+    me = Person(a.name, a.email);
+    currentAccountId = a.id;
+  }
+
+  /// Crée (sans changer l'identité active) la boîte fictive d'un compte.
+  List<Mail> _newBox(Account a) {
+    final keepMe = me, keepId = currentAccountId;
+    final l = seedAccount(a);
+    me = keepMe;
+    currentAccountId = keepId;
+    return l;
+  }
+
+  /// Range les messages affichés dans leurs boîtes respectives.
+  void _stash() {
+    if (unified) {
+      for (final a in accounts) {
+        final l = mails.where((m) => m.account == a.id).toList();
+        if (l.isNotEmpty || _boxes.containsKey(a.id)) _boxes[a.id] = l;
+      }
+    } else {
+      _boxes[activeId] = mails;
+    }
+  }
+
+  List<Mail> _mergedBoxes() {
+    for (final a in accounts) {
+      _boxes.putIfAbsent(a.id, () => _newBox(a));
+    }
+    return [for (final a in accounts) ...?_boxes[a.id]];
+  }
+
+  void _resetView() {
+    folder = 'inbox';
+    label = null;
+    pill = 'all';
+    q = '';
+    searchCtl.clear();
+    sel.clear();
+    open = null;
+    view = PaneView.empty;
+    navOpen = false;
+    chat = [_welcome()];
+    busy = false;
+  }
+
+  void switchAccount(String id) {
+    if (!accounts.any((a) => a.id == id) || (!unified && id == activeId)) {
+      return;
+    }
+    if (c != null) closeCompose(true);
+    _stash();
+    unified = false;
+    activeId = id;
+    mails = _boxes[id] ?? _newBoxFor(active);
+    _useIdentity(active);
+    prefs.setString('account', id);
+    _resetView();
+    notifyListeners();
+    toast(t('Compte actif : {0}', [active.email]));
+  }
+
+  List<Mail> _newBoxFor(Account a) => _boxes[a.id] = _newBox(a);
+
+  /// Affiche la boîte unifiée (tous les comptes).
+  void showAllAccounts() {
+    if (unified) return;
+    if (c != null) closeCompose(true);
+    _stash();
+    unified = true;
+    mails = _mergedBoxes();
+    prefs.setString('account', 'all');
+    _resetView();
+    notifyListeners();
+    toast('Toutes les boîtes');
+  }
+
+  /// Adresse d'expédition d'un compte (par défaut : le compte actif).
+  Person senderFor(String email) {
+    final a = accountByEmail(email);
+    return a == null ? me : Person(a.name, a.email);
+  }
+
+  /// Ajoute un compte (fictif) et bascule dessus. Renvoie `false` si l'adresse est déjà connectée.
+  bool addAccount(String name, String email) {
+    final em = email.trim().toLowerCase();
+    if (accounts.any((a) => a.email.toLowerCase() == em)) return false;
+    final nm = name.trim().isEmpty ? em.split('@').first : name.trim();
+    final a = Account('x${DateTime.now().microsecondsSinceEpoch}', nm, em);
+    accounts = [...accounts, a];
+    knownAccounts = accounts;
+    final custom = accounts
+        .where((x) => !defaultAccounts.any((d) => d.id == x.id))
+        .map((x) => x.toJson())
+        .toList();
+    prefs.setString('accounts', jsonEncode(custom));
+    switchAccount(a.id);
+    return true;
+  }
+
+  // ---- navigation ----
+  void toggleTheme() {
+    theme = theme == 'light' ? 'dark' : 'light';
+    prefs.setString('theme', theme);
+    notifyListeners();
+  }
+
+  void selectFolder(String id) {
+    navOpen = false;
+    folder = id;
+    label = null;
+    _afterNav();
+  }
+
+  void selectLabel(String k) {
+    navOpen = false;
+    label = k;
+    folder = 'inbox';
+    _afterNav();
+  }
+
+  void _afterNav() {
+    pill = 'all';
+    sel.clear();
+    if (view != PaneView.compose && !visible().any((m) => m.id == open)) {
+      open = null;
+      view = PaneView.empty;
+    }
+    notifyListeners();
+  }
+
+  void setPill(String p) {
+    pill = p;
+    notifyListeners();
+  }
+
+  void setSort(String s) {
+    sort = s;
+    notifyListeners();
+  }
+
+  void setQuery(String v) {
+    q = v;
+    notifyListeners();
+  }
+
+  void clearQuery() {
+    q = '';
+    searchCtl.clear();
+    notifyListeners();
+    searchFocus.requestFocus();
+  }
+
+  void toggleNav() {
+    navOpen = !navOpen;
+    notifyListeners();
+  }
+
+  void closeNav() {
+    if (!navOpen) return;
+    navOpen = false;
+    notifyListeners();
+  }
+
+  void openHelp() {
+    showHelp = true;
+    notifyListeners();
+  }
+
+  void closeHelp() {
+    showHelp = false;
+    notifyListeners();
+  }
+
+  void openMail(String id) {
+    final m = byId(id);
+    if (m == null) return;
+    if (c != null) closeCompose(true);
+    open = id;
+    if (m.folder == 'drafts') {
+      final d = m.draft;
+      List<Block> bl = m.msgs[0].body;
+      List<Block>? quote;
+      if (bl.isNotEmpty && bl.last is Quote) {
+        quote = [bl.last];
+        bl = bl.sublist(0, bl.length - 1);
+      }
+      openCompose(
+        ComposeInit(
+          id: m.id,
+          mode: 'draft',
+          to: m.to,
+          cc: m.cc,
+          subject: m.subject == '(sans objet)' ? '' : m.subject,
+          blocks: d?.rawText == null ? bl : null,
+          text: d?.rawText,
+          flags: d?.rawFlags,
+          quote: quote,
+          atts: m.msgs[0].att,
+          from: d?.from,
+          bcc: d?.bcc ?? const [],
+          replyTo: d?.replyTo,
+        ),
+      );
+      return;
+    }
+    m.unread = false;
+    if (view == PaneView.assistant) {
+      _scrollTick++;
+      notifyListeners();
+      return;
+    }
+    view = PaneView.read;
+    _scrollTick++;
+    notifyListeners();
+  }
+
+  void closePane() {
+    if (c != null) {
+      closeCompose(true);
+      return;
+    }
+    if (view == PaneView.read || view == PaneView.empty) open = null;
+    view = (view == PaneView.assistant || view == PaneView.settings)
+        ? ((open != null && byId(open) != null && !narrow)
+              ? PaneView.read
+              : PaneView.empty)
+        : PaneView.empty;
+    notifyListeners();
+  }
+
+  void showView(PaneView v) {
+    if (c != null) closeCompose(true);
+    view = v;
+    notifyListeners();
+  }
+
+  void toggleAssistant() =>
+      view == PaneView.assistant ? closePane() : showView(PaneView.assistant);
+  void toggleSettings() =>
+      view == PaneView.settings ? closePane() : showView(PaneView.settings);
+
+  void reveal(Mail m) {
+    q = '';
+    searchCtl.clear();
+    pill = 'all';
+    if (!visible().contains(m) || !scope().contains(m)) {
+      label = null;
+      folder = m.folder;
+    }
+    notifyListeners();
+  }
+
+  // ---- actions sur les messages ----
+  void _afterChange(int prevOpenIdx) {
+    sel.removeWhere((id) => byId(id) == null);
+    if (open != null && !visible().any((m) => m.id == open)) {
+      final l = visible();
+      final n = l.isEmpty ? null : l[prevOpenIdx.clamp(0, l.length - 1)];
+      final free = view == PaneView.read || view == PaneView.empty;
+      if (n != null && !narrow && free) {
+        openMail(n.id);
+        return;
+      }
+      if (free) {
+        open = null;
+        view = PaneView.empty;
+      } else if (view != PaneView.compose) {
+        open = null;
+      }
+    }
+    notifyListeners();
+  }
+
+  void moveTo(List<String> ids, String to, String verb, [String? verbPl]) {
+    final idx = visible().indexWhere((m) => m.id == open);
+    final prev = ids.map((id) {
+      final m = byId(id)!;
+      return (m, m.folder, m.snooze);
+    }).toList();
+    for (final (m, _, _) in prev) {
+      m.folder = to;
+      m.snooze = null;
+    }
+    sel.clear();
+    _afterChange(idx);
+    toast(
+      '${tn(ids.length, 'message', 'messages')} ${t(ids.length > 1 ? (verbPl ?? verb) : verb)}',
+      label: t('Annuler'),
+      cb: () {
+        for (final (m, f, s) in prev) {
+          m.folder = f;
+          if (s != null) m.snooze = s;
+        }
+        notifyListeners();
+      },
+    );
+  }
+
+  void removeForever(List<String> ids) {
+    final idx = visible().indexWhere((m) => m.id == open);
+    final gone = ids.map(byId).whereType<Mail>().toList();
+    mails = mails.where((m) => !ids.contains(m.id)).toList();
+    sel.clear();
+    _afterChange(idx);
+    toast(
+      '${tn(gone.length, 'message', 'messages')} ${t(gone.length > 1 ? 'supprimés définitivement' : 'supprimé définitivement')}',
+      label: t('Annuler'),
+      cb: () {
+        mails.addAll(gone);
+        notifyListeners();
+      },
+    );
+  }
+
+  void snoozeTo(List<String> ids, String lbl, int ms) {
+    final idx = visible().indexWhere((m) => m.id == open);
+    final prev = ids.map((id) {
+      final m = byId(id)!;
+      return (m, m.folder);
+    }).toList();
+    for (final (m, _) in prev) {
+      m.folder = 'snoozed';
+      m.snooze = lbl;
+    }
+    sel.clear();
+    _afterChange(idx);
+    toast(
+      t('Reporté · {0}', [t(lbl)]),
+      label: t('Annuler'),
+      cb: () {
+        for (final (m, f) in prev) {
+          m.folder = f;
+          m.snooze = null;
+        }
+        notifyListeners();
+      },
+    );
+    if (ms > 0) {
+      _after(ms, () {
+        for (final id in ids) {
+          final m = byId(id);
+          if (m != null && m.folder == 'snoozed') {
+            m.folder = 'inbox';
+            m.unread = true;
+            m.date = nowMs();
+            m.snooze = null;
+          }
+        }
+        notifyListeners();
+        final first = byId(ids.first);
+        toast(
+          t('Rappel : {0}', [
+            first != null ? first.subject : t('message reporté'),
+          ]),
+          label: t('Ouvrir'),
+          cb: () {
+            final m = byId(ids.first);
+            if (m != null) {
+              reveal(m);
+              openMail(m.id);
+            }
+          },
+        );
+      });
+    }
+  }
+
+  void snooze(String v) {
+    final ids = targets();
+    if (ids.isEmpty) return hint();
+    switch (v) {
+      case '1m':
+        snoozeTo(ids, 'dans 1 minute (démo)', 60000);
+      case '1h':
+        snoozeTo(ids, 'dans 1 heure', 0);
+      case 'tom':
+        snoozeTo(ids, 'demain 08:00', 0);
+      default:
+        snoozeTo(ids, 'lundi 08:00', 0);
+    }
+  }
+
+  void archive() {
+    final ids = targets();
+    if (ids.isEmpty) return hint();
+    final back = ids.every((id) => byId(id)!.folder == 'archive');
+    moveTo(
+      ids,
+      back ? 'inbox' : 'archive',
+      back ? 'déplacé dans la réception' : 'archivé',
+      back ? 'déplacés dans la réception' : 'archivés',
+    );
+  }
+
+  void spam() {
+    final ids = targets();
+    if (ids.isEmpty) return hint();
+    final back = ids.every((id) => byId(id)!.folder == 'spam');
+    moveTo(
+      ids,
+      back ? 'inbox' : 'spam',
+      back ? 'déplacé dans la réception' : 'signalé comme spam',
+      back ? 'déplacés dans la réception' : 'signalés comme spam',
+    );
+  }
+
+  void trash() {
+    final ids = targets();
+    if (ids.isEmpty) return hint();
+    if (ids.every((id) => byId(id)!.folder == 'trash')) {
+      return removeForever(ids);
+    }
+    moveTo(ids, 'trash', 'mis à la corbeille');
+  }
+
+  void toggleRead() {
+    final ids = targets();
+    if (ids.isEmpty) return hint();
+    final ms = ids.map((i) => byId(i)!).toList();
+    final allRead = ms.every((m) => !m.unread);
+    for (final m in ms) {
+      m.unread = allRead;
+    }
+    sel.clear();
+    notifyListeners();
+    toast(
+      '${tn(ms.length, 'message', 'messages')} ${t(allRead ? (ms.length > 1 ? 'marqués comme non lus' : 'marqué comme non lu') : (ms.length > 1 ? 'marqués comme lus' : 'marqué comme lu'))}',
+    );
+  }
+
+  void toggleLabel(String k) {
+    final ids = targets();
+    if (ids.isEmpty) return hint();
+    final ms = ids.map((i) => byId(i)!).toList();
+    final all = ms.every((m) => m.labels.contains(k));
+    for (final m in ms) {
+      m.labels = all
+          ? m.labels.where((x) => x != k).toList()
+          : {...m.labels, k}.toList();
+    }
+    notifyListeners();
+    toast(
+      t(all ? 'Libellé « {0} » retiré' : 'Libellé « {0} » ajouté', [
+        t(labelDefs[k]!.n),
+      ]),
+    );
+  }
+
+  void toggleStar([String? id]) {
+    final m = byId(id ?? open);
+    if (m == null) return;
+    m.starred = !m.starred;
+    notifyListeners();
+  }
+
+  void toggleSel(String id) {
+    sel.contains(id) ? sel.remove(id) : sel.add(id);
+    notifyListeners();
+  }
+
+  void selAll() {
+    final vis = visible();
+    final all = vis.isNotEmpty && vis.every((m) => sel.contains(m.id));
+    for (final m in vis) {
+      all ? sel.remove(m.id) : sel.add(m.id);
+    }
+    notifyListeners();
+  }
+
+  void selNone() {
+    sel.clear();
+    notifyListeners();
+  }
+
+  void readAllVisible() {
+    final l = visible();
+    for (final m in l) {
+      m.unread = false;
+    }
+    notifyListeners();
+    toast(
+      '${tn(l.length, 'message', 'messages')} ${t(l.length > 1 ? 'marqués comme lus' : 'marqué comme lu')}',
+    );
+  }
+
+  void emptyFolder() => removeForever(scope().map((m) => m.id).toList());
+
+  void download(String n) {
+    toast(t('Téléchargement de {0}…', [n]));
+    _after(1200, () => toast(t('{0} téléchargé', [n])));
+  }
+
+  void step(int d) {
+    final l = visible();
+    if (l.isEmpty) return;
+    final i = l.indexWhere((m) => m.id == open);
+    final n = l[(i + d).clamp(0, l.length - 1)];
+    if (n.id != open) openMail(n.id);
+  }
+
+  // ---- rédaction ----
+  String sigText() => sig;
+
+  List<Block> quoteOf(Mail m) {
+    final x = m.msgs.last;
+    return [
+      Quote([
+        Para([
+          Span(t('Le {0}, {1} a écrit :', [fullDate(x.date), x.from.name])),
+          const Span('\n'),
+        ], loose: true),
+        ...x.body,
+      ]),
+    ];
+  }
+
+  void replyTo(String mode, {String intro = ''}) {
+    final m = byId(open);
+    if (m == null || m.folder == 'drafts') return hint();
+    final last = m.msgs.last;
+    if (mode == 'fwd') {
+      final tmp = RichController();
+      tmp.loadBlocks(last.body);
+      final head =
+          '\n${t('---------- Message transféré ----------')}\n${t('De : {0} <{1}>', [last.from.name, last.from.email])}\n${t('Objet : {0}', [m.subject])}\n\n';
+      openCompose(
+        ComposeInit(
+          from: accountById(m.account)?.email,
+          mode: mode,
+          replyTo: m.id,
+          to: const [],
+          subject: 'Fwd: ${stripRe(m.subject)}',
+          atts: last.att.toList(),
+          text: head + tmp.text,
+          flags: [...RichController.gapFlags(head), ...tmp.flags],
+        ),
+      );
+      return;
+    }
+    final other = isMine(last.from.email) ? m.to[0] : last.from;
+    final to = [other];
+    var cc = <Person>[];
+    if (mode == 'all') {
+      final everyone = [
+        ...m.to,
+        ...m.cc,
+        last.from,
+      ].where((p) => !isMine(p.email) && p.email != other.email).toList();
+      final seen = <String>{};
+      cc = everyone.where((p) => seen.add(p.email)).toList();
+    }
+    final txt = (intro.isEmpty ? '\n\n' : '$intro\n\n') + sig;
+    openCompose(
+      ComposeInit(
+        from: accountById(m.account)?.email,
+        mode: mode,
+        replyTo: m.id,
+        to: to,
+        cc: cc,
+        subject: 'Re: ${stripRe(m.subject)}',
+        text: txt,
+        flags: RichController.gapFlags(txt),
+        quote: quoteOf(m),
+      ),
+    );
+  }
+
+  void openCompose(ComposeInit i) {
+    if (c != null) {
+      saveDraft();
+      c!.timer?.cancel();
+    }
+    final cs = ComposeState(
+      id: i.id,
+      replyTo: i.replyTo,
+      mode: i.mode,
+      to: [...i.to],
+      cc: [...i.cc],
+      bcc: [...i.bcc],
+      atts: [...i.atts],
+      from: i.from ?? me.email,
+      quote: i.quote,
+    );
+    cs.subject.text = i.subject;
+    if (i.blocks != null) {
+      cs.body.loadBlocks(i.blocks!);
+    } else {
+      cs.body.setContent(
+        i.text ?? '',
+        i.flags ?? List<int>.filled((i.text ?? '').length, 0),
+      );
+    }
+    cs.body.addListener(() {});
+    c = cs;
+    view = PaneView.compose;
+    if (cs.id != null) cs.saved = t('Brouillon enregistré');
+    notifyListeners();
+  }
+
+  void touch() {
+    final cs = c;
+    if (cs == null) return;
+    cs.dirty = true;
+    cs.saved = t('Enregistrement…');
+    cs.timer?.cancel();
+    cs.timer = Timer(const Duration(milliseconds: 1200), () {
+      if (identical(c, cs) && saveDraft()) {
+        cs.saved = t('Brouillon enregistré · {0}', [hhmm(nowMs())]);
+        notifyListeners();
+      }
+    });
+    notifyListeners();
+  }
+
+  bool saveDraft() {
+    final cs = c;
+    if (cs == null || !cs.dirty) return false;
+    final subject = cs.subject.text;
+    final blocks = cs.body.toBlocks();
+    final plainTxt = cs.body.text.trim();
+    final empty =
+        cs.to.isEmpty &&
+        cs.cc.isEmpty &&
+        subject.trim().isEmpty &&
+        plainTxt.isEmpty &&
+        cs.atts.isEmpty;
+    var d = byId(cs.id);
+    if (empty) {
+      if (d != null) {
+        mails = mails.where((x) => x != d).toList();
+        cs.id = null;
+        notifyListeners();
+      }
+      return false;
+    }
+    if (d == null) {
+      d = Mail(
+        id: 'd${nextUid()}',
+        folder: 'drafts',
+        from: senderFor(cs.from),
+        to: [],
+        subject: '',
+        date: 0,
+        msgs: [Msg(from: senderFor(cs.from), date: 0, body: [])],
+      );
+      mails.add(d);
+      cs.id = d.id;
+    }
+    d
+      ..account = accountByEmail(cs.from)?.id ?? d.account
+      ..from = senderFor(cs.from)
+      ..to = [...cs.to]
+      ..cc = [...cs.cc]
+      ..subject = subject.trim().isEmpty ? '(sans objet)' : subject.trim()
+      ..date = nowMs()
+      ..draft = DraftMeta(
+        from: cs.from,
+        bcc: [...cs.bcc],
+        replyTo: cs.replyTo,
+        mode: cs.mode,
+        rawText: cs.body.text,
+        rawFlags: List<int>.from(cs.body.flags),
+      );
+    d.msgs[0] = Msg(
+      from: senderFor(cs.from),
+      date: nowMs(),
+      body: [...blocks, ...?cs.quote],
+      att: [...cs.atts],
+    );
+    notifyListeners();
+    return true;
+  }
+
+  void _leaveCompose() {
+    final m = byId(open);
+    if (m != null && m.folder != 'drafts') {
+      view = PaneView.read;
+    } else {
+      view = PaneView.empty;
+      open = null;
+    }
+  }
+
+  void closeCompose([bool save = true]) {
+    final cs = c;
+    if (cs == null) return;
+    cs.timer?.cancel();
+    final saved = save ? saveDraft() : false;
+    c = null;
+    _leaveCompose();
+    notifyListeners();
+    if (saved) toast(t('Brouillon enregistré'));
+  }
+
+  void discard() {
+    final cs = c;
+    if (cs == null) return;
+    cs.timer?.cancel();
+    final had = byId(cs.id);
+    if (had != null) mails = mails.where((x) => x != had).toList();
+    c = null;
+    _leaveCompose();
+    notifyListeners();
+    toast(had != null ? t('Brouillon supprimé') : t('Message abandonné'));
+  }
+
+  void send([String? sched]) {
+    final cs = c;
+    if (cs == null) return;
+    if (cs.to.isEmpty) {
+      cs.shake++;
+      notifyListeners();
+      toast('Ajoute au moins un destinataire', err: true);
+      return;
+    }
+    cs.timer?.cancel();
+    final blocks = [...cs.body.toBlocks(), ...?cs.quote];
+    final init = ComposeInit(
+      mode: cs.mode,
+      replyTo: cs.replyTo,
+      to: [...cs.to],
+      cc: [...cs.cc],
+      bcc: [...cs.bcc],
+      subject: cs.subject.text,
+      text: cs.body.text,
+      flags: List<int>.from(cs.body.flags),
+      quote: cs.quote,
+      atts: [...cs.atts],
+      from: cs.from,
+    );
+    final subj = cs.subject.text.trim().isEmpty
+        ? '(sans objet)'
+        : cs.subject.text.trim();
+    final orig = byId(cs.replyTo);
+    final rmsg = Msg(
+      from: senderFor(cs.from),
+      date: nowMs(),
+      body: blocks,
+      att: [...cs.atts],
+    );
+    final sent = Mail(
+      id: 'm${nextUid()}',
+      folder: 'sent',
+      account: accountByEmail(cs.from)?.id,
+      from: senderFor(cs.from),
+      to: [...cs.to],
+      cc: [...cs.cc],
+      subject: subj,
+      date: nowMs(),
+      sched: sched,
+      msgs: [rmsg],
+    );
+    if (cs.id != null) mails = mails.where((m) => m.id != cs.id).toList();
+    mails.add(sent);
+    List<String>? flagsBackup;
+    if (orig != null) {
+      flagsBackup = [...orig.flags];
+      orig.msgs.add(rmsg.copy());
+      orig.flags = orig.flags.where((f) => f != 'needs').toList();
+      if (!orig.flags.contains('waiting')) orig.flags.add('waiting');
+    }
+    c = null;
+    _leaveCompose();
+    notifyListeners();
+    final timer = sched != null
+        ? null
+        : _after(rand(7000, 11000).round(), () => autoReply(sent, orig));
+    toast(
+      sched != null
+          ? t('Message programmé · {0}', [t(sched)])
+          : t('Message envoyé'),
+      label: t('Annuler'),
+      cb: () {
+        timer?.cancel();
+        mails = mails.where((x) => x.id != sent.id).toList();
+        if (orig != null) {
+          orig.msgs.removeLast();
+          orig.flags = flagsBackup!;
+        }
+        openCompose(init);
+      },
+    );
+  }
+
+  void autoReply(Mail sent, Mail? orig) {
+    if (!mails.contains(sent)) return;
+    if (sent.to.isEmpty) return;
+    final who = sent.to[0];
+    if (isMine(who.email)) return;
+    final html = pick(replies);
+    if (orig != null && mails.contains(orig)) {
+      orig.msgs.add(Msg(from: who, date: nowMs(), body: parseHtml(html)));
+      orig.unread = true;
+      orig.date = nowMs();
+      if (!hidden(orig)) orig.folder = 'inbox';
+      orig.flags = {
+        ...orig.flags.where((f) => f != 'waiting'),
+        'needs',
+      }.toList();
+      _notify(orig, who);
+    } else {
+      final m = mk(
+        'inbox',
+        who,
+        RegExp(r'^re\s*:', caseSensitive: false).hasMatch(sent.subject)
+            ? sent.subject
+            : 'Re: ${sent.subject}',
+        0,
+        html,
+        unread: true,
+        flags: ['needs'],
+        to: [sent.from],
+      );
+      m.account = sent.account;
+      mails.add(m);
+      _notify(m, who);
+    }
+  }
+
+  void _notify(Mail m, Person who) {
+    if (view == PaneView.read && open == m.id) m.unread = false;
+    freshId = m.id;
+    _after(700, () {
+      if (freshId == m.id) freshId = null;
+    });
+    notifyListeners();
+    toast(
+      t('Nouveau message de {0}', [who.name]),
+      label: t('Ouvrir'),
+      cb: () {
+        reveal(m);
+        openMail(m.id);
+      },
+    );
+  }
+
+  void scheduleIncoming([int? first]) {
+    _after(first ?? rand(35000, 60000).round(), () {
+      if (!live) return;
+      if (incIdx < incoming.length) {
+        final d = incoming[incIdx++];
+        final m = mk(
+          'inbox',
+          d.from,
+          d.subject,
+          0,
+          d.html,
+          unread: true,
+          labels: d.labels,
+          flags: d.flags,
+          atts: d.atts,
+        );
+        mails.add(m);
+        _notify(m, d.from);
+        scheduleIncoming();
+      }
+    });
+  }
+
+  // ---- assistant ----
+  void clearChat() {
+    chat = chat.take(1).toList();
+    notifyListeners();
+  }
+
+  void sendChat(String text) {
+    final t = text.trim();
+    if (t.isEmpty || busy) return;
+    chat.add(ChatMsg(role: 'me', text: t));
+    final ans = answerTo(this, t);
+    final msg = ChatMsg(
+      role: 'ai',
+      done: false,
+      text: ans.text,
+      draft: ans.draft,
+      refs: ans.refs,
+    );
+    chat.add(msg);
+    busy = true;
+    notifyListeners();
+    var i = 0;
+    void tick() {
+      i = (i + rand(2, 5).round()).clamp(0, msg.text.length);
+      msg.shown = msg.text.substring(0, i);
+      if (i >= msg.text.length) {
+        msg.done = true;
+        busy = false;
+      }
+      notifyListeners();
+      if (!msg.done) _after(22, tick);
+    }
+
+    _after(rand(500, 900).round(), tick);
+  }
+
+  void scheduleCleanup(List<String> ids) =>
+      _after(1800, () => moveTo(ids, 'archive', 'archivé', 'archivés'));
+
+  void useDraft(int i) {
+    final msg = chat[i];
+    final m = byId(open);
+    if (msg.draft == null || m == null) return hint();
+    view = PaneView.read;
+    notifyListeners();
+    replyTo('reply', intro: msg.draft!.join('\n\n'));
+  }
+
+  void openRef(String id) {
+    final m = byId(id);
+    if (m == null) return;
+    view = PaneView.read;
+    reveal(m);
+    openMail(m.id);
+  }
+
+  void openCtx() {
+    final m = byId(open);
+    if (m != null) {
+      view = PaneView.read;
+      notifyListeners();
+    }
+  }
+}

@@ -1,4 +1,4 @@
-# MIRA — point d'entrée unique : moteur Rust, CLI, TUI, pont FFI et application Flutter.
+q# MIRA — point d'entrée unique : moteur Rust, CLI, TUI, pont FFI et application Flutter.
 # `make` ou `make help` liste les cibles. Variables : MODE, BUILD_MODE, MIRA_HOME, DEVICE, JOBS, FRB_CODEGEN.
 
 SHELL        := /bin/bash
@@ -113,7 +113,7 @@ app-analyze: ## Analyse statique Dart
 	cd $(APP) && flutter analyze
 
 app-test: bridge ## Tests de l'application (dont le moteur réel par FFI, sur un profil jetable)
-	cd $(APP) && MIRA_HOME=$$(mktemp -d) flutter test
+	cd $(APP) && MIRA_HOME=$$(mktemp -d) flutter test -j 2
 
 ##@ Entretien
 .PHONY: setup clean clean-app clean-all

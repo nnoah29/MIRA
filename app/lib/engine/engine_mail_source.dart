@@ -41,7 +41,7 @@ class EngineMailSource implements MailSource {
   static Future<EngineMailSource> load(
     EngineClient client, {
     int pageSize = 200,
-    Duration debounce = const Duration(milliseconds: 800),
+    Duration debounce = const Duration(milliseconds: 150),
   }) async {
     final raw = await client.call(req('account', 'list_accounts'));
     final list = [
@@ -57,6 +57,15 @@ class EngineMailSource implements MailSource {
 
   @override
   AccountSetup get setup => AccountSetup(client);
+
+  @override
+  Future<void> syncNow() async {
+    await client.call(
+      req('sync', 'start_sync', {
+        'scope': {'type': 'all'},
+      }),
+    );
+  }
 
   @override
   Future<List<Account>> refreshAccounts() async {

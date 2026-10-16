@@ -469,6 +469,7 @@ class HelpModal extends StatelessWidget {
       ('x', t('Sélectionner')),
       ('/', t('Rechercher')),
       (t('Ctrl + Entrée'), t('Envoyer le message')),
+      if (s.source != null) ('F5 / Ctrl + R', t('Actualiser maintenant')),
       (t('Échap'), t('Fermer')),
     ];
     final w = MediaQuery.sizeOf(context).width;

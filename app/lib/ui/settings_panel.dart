@@ -308,6 +308,20 @@ class _SettingsPanelState extends State<SettingsPanel> {
               ('0', t('Désactivé')),
             ], s.live ? '1' : '0'),
           ),
+        if (s.source != null)
+          srow(
+            t('Fréquence de relevé'),
+            t(
+              'Nouveaux messages de la Réception : instantané (IDLE). Les autres changements sont relevés à cette fréquence ; appliqué au prochain lancement. Plus court = plus de trafic, certains fournisseurs peuvent limiter le compte.',
+            ),
+            seg('poll', [
+              ('', t('Auto')),
+              ('30', '30 s'),
+              ('60', '1 min'),
+              ('120', '2 min'),
+              ('300', '5 min'),
+            ], s.prefs.getString('poll') ?? ''),
+          ),
         const ImageRulesSection(),
         Divider(height: 1, color: p.lineSoft),
         Padding(

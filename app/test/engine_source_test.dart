@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +11,7 @@ class FakeEngine implements EngineClient {
   final calls = <String>[];
   final bodyFails = <String>{};
   bool allowed = false;
+  final feed = StreamController<Map<String, dynamic>>.broadcast();
 
   Map<String, dynamic> _msg(
     String id,
@@ -152,7 +154,7 @@ class FakeEngine implements EngineClient {
   }
 
   @override
-  Stream<Map<String, dynamic>> events({int? after}) => const Stream.empty();
+  Stream<Map<String, dynamic>> events({int? after}) => feed.stream;
 
   @override
   Future<String?> originalHtml(String messageId) async =>
@@ -224,6 +226,28 @@ void main() {
     expect(store.mails.length, 3);
     expect(store.visible().map((m) => m.subject), contains('Seul'));
     store.send();
+    store.dispose();
+  });
+
+  test('un rechargement de la boîte garde le HTML déjà chargé', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final fake = FakeEngine();
+    final src = await EngineMailSource.load(fake);
+    final store = MailStore(prefs, source: src);
+    final conv = store.mails.firstWhere((m) => m.msgs.length == 2);
+    store.openMail(conv.id);
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    expect(conv.msgs[1].html, isNotNull);
+    fake.feed.add({
+      'kind': {'type': 'sync_finished', 'account': 'acc1'},
+    });
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    final fresh = store.mails.firstWhere((m) => m.msgs.length == 2);
+    expect(identical(fresh, conv), isFalse);
+    expect(fresh.msgs[1].html, contains('Rouge'));
+    expect(fresh.msgs[1].inline, isNotEmpty);
+    expect(fresh.unread, isFalse);
     store.dispose();
   });
 }

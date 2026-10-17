@@ -1,0 +1,155 @@
+#!/usr/bin/env python3
+"""Garde-fou d'architecture (5.3, 5.7, invariants 1 à 3).
+
+Vérifie, à partir de `cargo metadata` et des sources :
+  A1  mira-vocabulary ne dépend (en normal) que de serde et thiserror ;
+  A2  un provider ne dépend (en normal) que de mira-vocabulary, et d'aucun autre crate mira-* en dev ;
+  A3  mira-core ne dépend d'aucun provider, ni de l'assemblage, ni du CLI (même en dev) ;
+  A4  mira-assembly ne dépend pas du CLI ; mira-cli et mira-tui ne dépendent ni du cœur ni d'un provider directement ;
+  A5  mira-testkit ne dépend d'aucun crate mira-* (boîte noire) ;
+  A6  aucun nom de provider ni de fournisseur dans les sources de mira-core (invariant 1) ;
+  A7  aucun chargement dynamique (libloading, dlopen) dans le workspace (D-02) ;
+  A8  chaque bibliothèque externe n'est utilisée que dans son module d'encapsulation du cœur (invariant 5, annexe H) ;
+  A9  aucune notion d'écran ou de widget dans le cœur (invariant 4).
+
+Usage : check-architecture <dossier-du-workspace>
+"""
+import json
+import os
+import re
+import subprocess
+import sys
+
+VOCAB_ALLOWED = {"serde", "thiserror"}
+PROVIDER_NAMES = re.compile(r"gmail|googlemail|google|outlook|hotmail|office365|microsoft|yahoo|(?<![a-z])ymail|rocketmail|icloud", re.I)
+DYNAMIC_LOADING = {"libloading", "dlopen", "dlopen2", "libc-dlopen"}
+ENCAPSULATED = {
+    "rusqlite": ("storage",),
+    "zstd": ("storage",),
+    "mail_parser": ("mime",),
+    "async_imap": ("imap",),
+    "lettre": ("smtp",),
+    "mail_builder": ("smtp", "send"),
+    "reqwest": ("auth",),
+    "keyring": ("ports",),
+    "ammonia": ("html",),
+    "uuid": ("ports",),
+}
+SCREEN_WORDS = re.compile(r"\b(screen|widget|écran|fenêtre)\b", re.I)
+
+
+def load_metadata(workspace):
+    out = subprocess.run(
+        ["cargo", "metadata", "--format-version", "1", "--no-deps", "--offline"],
+        cwd=workspace, capture_output=True, text=True,
+    )
+    if out.returncode != 0:
+        out = subprocess.run(["cargo", "metadata", "--format-version", "1", "--no-deps"],
+                             cwd=workspace, capture_output=True, text=True, check=True)
+    return json.loads(out.stdout)
+
+
+def deps_of(package, kinds):
+    return {d["name"] for d in package["dependencies"] if (d["kind"] or "normal") in kinds}
+
+
+def check_packages(packages):
+    errors = []
+    by_name = {p["name"]: p for p in packages}
+    for name, pkg in by_name.items():
+        normal = deps_of(pkg, {"normal", "build"})
+        every = deps_of(pkg, {"normal", "build", "dev"})
+        mira_every = {d for d in every if d.startswith("mira-")}
+        for bad in every & DYNAMIC_LOADING:
+            errors.append(f"A7 {name} dépend de {bad} (chargement dynamique interdit, D-02)")
+        if name == "mira-vocabulary":
+            for bad in normal - VOCAB_ALLOWED:
+                errors.append(f"A1 mira-vocabulary dépend de {bad} (seuls serde et thiserror)")
+            for bad in mira_every:
+                errors.append(f"A1 mira-vocabulary dépend de {bad}")
+        elif name.startswith("mira-provider-"):
+            for bad in normal - {"mira-vocabulary"}:
+                errors.append(f"A2 {name} dépend de {bad} (seul mira-vocabulary)")
+            for bad in mira_every - {"mira-vocabulary"}:
+                errors.append(f"A2 {name} dépend de {bad}")
+        elif name == "mira-core":
+            for bad in mira_every:
+                if bad.startswith("mira-provider-") or bad in ("mira-assembly", "mira-cli", "mira-tui"):
+                    errors.append(f"A3 mira-core dépend de {bad}")
+        elif name == "mira-assembly":
+            for client in ("mira-cli", "mira-tui"):
+                if client in every:
+                    errors.append(f"A4 mira-assembly dépend de {client}")
+        elif name == "mira-cli":
+            for bad in normal:
+                if bad == "mira-core" or bad.startswith("mira-provider-"):
+                    errors.append(f"A4 mira-cli dépend directement de {bad} (passer par mira-assembly)")
+        elif name == "mira-tui":
+            for bad in normal:
+                if bad == "mira-core" or bad.startswith("mira-provider-"):
+                    errors.append(f"A4 mira-tui dépend directement de {bad} (passer par mira-assembly)")
+        elif name == "mira-testkit":
+            for bad in {d for d in normal if d.startswith("mira-")}:
+                errors.append(f"A5 mira-testkit dépend de {bad}")
+    for required in ("mira-vocabulary", "mira-core", "mira-assembly", "mira-cli", "mira-tui"):
+        if required not in by_name:
+            errors.append(f"A0 crate attendu absent : {required}")
+    return errors
+
+
+def check_core_sources(workspace):
+    errors = []
+    core = os.path.join(workspace, "crates", "mira-core")
+    for root, dirs, files in os.walk(core):
+        dirs[:] = [d for d in dirs if d != "target"]
+        for f in files:
+            if not f.endswith(".rs"):
+                continue
+            path = os.path.join(root, f)
+            with open(path, encoding="utf-8") as fh:
+                for no, line in enumerate(fh, 1):
+                    m = PROVIDER_NAMES.search(line)
+                    if m:
+                        errors.append(f"A6 {path}:{no}: nom de fournisseur « {m.group(0)} » dans le cœur")
+    return errors
+
+
+def core_module_of(path, core_src):
+    rel = os.path.relpath(path, core_src)
+    return rel.split(os.sep)[0].removesuffix(".rs")
+
+
+def check_encapsulation(workspace):
+    errors = []
+    core_src = os.path.join(workspace, "crates", "mira-core", "src")
+    for root, dirs, files in os.walk(core_src):
+        for f in files:
+            if not f.endswith(".rs"):
+                continue
+            path = os.path.join(root, f)
+            module = core_module_of(path, core_src)
+            text = open(path, encoding="utf-8").read()
+            for crate, allowed in ENCAPSULATED.items():
+                if module not in allowed and re.search(r"\b" + crate + r"::", text):
+                    errors.append(f"A8 {path}: `{crate}` utilisé hors de son module ({', '.join(allowed)})")
+            for no, line in enumerate(text.splitlines(), 1):
+                if SCREEN_WORDS.search(line):
+                    errors.append(f"A9 {path}:{no}: notion d'écran dans le cœur")
+    return errors
+
+
+def main(argv):
+    if len(argv) != 2:
+        print(__doc__)
+        return 2
+    workspace = argv[1]
+    meta = load_metadata(workspace)
+    errors = check_packages(meta["packages"]) + check_core_sources(workspace) + check_encapsulation(workspace)
+    for e in errors:
+        print(e)
+    print(f"check-architecture : {len(meta['packages'])} crates, {len(errors)} violation(s)")
+    return 1 if errors else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

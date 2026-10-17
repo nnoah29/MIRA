@@ -1,0 +1,1420 @@
+{
+  "contract": "1.0",
+  "requests": {
+    "account.add_account": {
+      "domain": "account",
+      "request": {
+        "credential": {
+          "type": "password",
+          "value": "x"
+        },
+        "draft": {
+          "address": "a@b.c",
+          "auth": "password",
+          "display_name": "n",
+          "provider": null,
+          "servers": null
+        },
+        "idempotency_key": "k",
+        "op": "add_account"
+      }
+    },
+    "account.delete_account": {
+      "domain": "account",
+      "request": {
+        "account": "a",
+        "op": "delete_account"
+      }
+    },
+    "account.list_accounts": {
+      "domain": "account",
+      "request": {
+        "op": "list_accounts"
+      }
+    },
+    "account.pause_account": {
+      "domain": "account",
+      "request": {
+        "account": "a",
+        "op": "pause_account"
+      }
+    },
+    "account.prepare_account": {
+      "domain": "account",
+      "request": {
+        "address": "a@b.c",
+        "op": "prepare_account",
+        "provider": null
+      }
+    },
+    "account.resume_account": {
+      "domain": "account",
+      "request": {
+        "account": "a",
+        "op": "resume_account"
+      }
+    },
+    "account.test_connection": {
+      "domain": "account",
+      "request": {
+        "credential": {
+          "type": "password",
+          "value": "x"
+        },
+        "draft": {
+          "address": "a@b.c",
+          "auth": "password",
+          "display_name": "n",
+          "provider": null,
+          "servers": null
+        },
+        "op": "test_connection"
+      }
+    },
+    "account.update_account": {
+      "domain": "account",
+      "request": {
+        "account": "a",
+        "changes": {
+          "display_name": null,
+          "servers": null,
+          "synced_mailboxes": null,
+          "window_days": null
+        },
+        "op": "update_account"
+      }
+    },
+    "action.apply_action": {
+      "domain": "action",
+      "request": {
+        "idempotency_key": "key-1",
+        "kind": {
+          "read": true,
+          "type": "mark_read"
+        },
+        "op": "apply_action",
+        "targets": {
+          "messages": [
+            "message-1"
+          ],
+          "type": "messages"
+        }
+      }
+    },
+    "action.apply_action.2": {
+      "domain": "action",
+      "request": {
+        "idempotency_key": "key-1",
+        "kind": {
+          "type": "archive"
+        },
+        "op": "apply_action",
+        "targets": {
+          "query": {
+            "filters": {
+              "flagged_only": false,
+              "from_contains": null,
+              "has_attachments": false,
+              "since": null,
+              "unread_only": false,
+              "until": null
+            },
+            "page": {
+              "cursor": null,
+              "limit": 50
+            },
+            "view": {
+              "type": "standard",
+              "view": "unread"
+            }
+          },
+          "type": "query"
+        }
+      }
+    },
+    "action.create_mailbox": {
+      "domain": "action",
+      "request": {
+        "account": "account-1",
+        "idempotency_key": "key-1",
+        "name": "Factures",
+        "op": "create_mailbox",
+        "parent": null
+      }
+    },
+    "action.delete_mailbox": {
+      "domain": "action",
+      "request": {
+        "idempotency_key": "key-1",
+        "mailbox": "mailbox-1",
+        "op": "delete_mailbox"
+      }
+    },
+    "action.empty_mailbox": {
+      "domain": "action",
+      "request": {
+        "idempotency_key": "key-1",
+        "mailbox": "mailbox-1",
+        "op": "empty_mailbox"
+      }
+    },
+    "action.rename_mailbox": {
+      "domain": "action",
+      "request": {
+        "idempotency_key": "key-1",
+        "mailbox": "mailbox-1",
+        "name": "Archives 2026",
+        "op": "rename_mailbox"
+      }
+    },
+    "action.undo_action": {
+      "domain": "action",
+      "request": {
+        "action": "action-1",
+        "op": "undo_action"
+      }
+    },
+    "auth.cancel_oauth": {
+      "domain": "auth",
+      "request": {
+        "flow": "f",
+        "op": "cancel_oauth"
+      }
+    },
+    "auth.complete_oauth": {
+      "domain": "auth",
+      "request": {
+        "flow": "f",
+        "op": "complete_oauth"
+      }
+    },
+    "auth.reauthenticate": {
+      "domain": "auth",
+      "request": {
+        "account": "a",
+        "op": "reauthenticate"
+      }
+    },
+    "auth.start_oauth": {
+      "domain": "auth",
+      "request": {
+        "address": "a@b.c",
+        "op": "start_oauth",
+        "provider": null
+      }
+    },
+    "auth.store_app_password": {
+      "domain": "auth",
+      "request": {
+        "account": "a",
+        "op": "store_app_password",
+        "password": "x"
+      }
+    },
+    "compose.attach_file": {
+      "domain": "compose",
+      "request": {
+        "draft": "draft-1",
+        "op": "attach_file",
+        "path": "/tmp/note.txt"
+      }
+    },
+    "compose.cancel_send": {
+      "domain": "compose",
+      "request": {
+        "action": "action-1",
+        "op": "cancel_send"
+      }
+    },
+    "compose.create_draft": {
+      "domain": "compose",
+      "request": {
+        "account": "account-1",
+        "identity": "identity-1",
+        "mode": {
+          "type": "new"
+        },
+        "op": "create_draft"
+      }
+    },
+    "compose.create_draft.2": {
+      "domain": "compose",
+      "request": {
+        "account": "account-1",
+        "identity": "identity-1",
+        "mode": {
+          "message": "message-1",
+          "type": "reply"
+        },
+        "op": "create_draft"
+      }
+    },
+    "compose.create_draft.3": {
+      "domain": "compose",
+      "request": {
+        "account": "account-1",
+        "identity": "identity-1",
+        "mode": {
+          "message": "message-1",
+          "type": "reply_all"
+        },
+        "op": "create_draft"
+      }
+    },
+    "compose.create_draft.4": {
+      "domain": "compose",
+      "request": {
+        "account": "account-1",
+        "identity": "identity-1",
+        "mode": {
+          "message": "message-1",
+          "type": "forward"
+        },
+        "op": "create_draft"
+      }
+    },
+    "compose.delete_draft": {
+      "domain": "compose",
+      "request": {
+        "draft": "draft-1",
+        "op": "delete_draft"
+      }
+    },
+    "compose.get_draft": {
+      "domain": "compose",
+      "request": {
+        "draft": "draft-1",
+        "op": "get_draft"
+      }
+    },
+    "compose.list_drafts": {
+      "domain": "compose",
+      "request": {
+        "account": "account-1",
+        "op": "list_drafts"
+      }
+    },
+    "compose.list_outbox": {
+      "domain": "compose",
+      "request": {
+        "account": "account-1",
+        "op": "list_outbox"
+      }
+    },
+    "compose.remove_attachment": {
+      "domain": "compose",
+      "request": {
+        "draft": "draft-1",
+        "op": "remove_attachment",
+        "position": 0
+      }
+    },
+    "compose.resolve_uncertain_send": {
+      "domain": "compose",
+      "request": {
+        "action": "action-1",
+        "op": "resolve_uncertain_send",
+        "resend": false
+      }
+    },
+    "compose.send_draft": {
+      "domain": "compose",
+      "request": {
+        "at": 1700000010000,
+        "draft": "draft-1",
+        "idempotency_key": "key-1",
+        "op": "send_draft"
+      }
+    },
+    "compose.update_draft": {
+      "domain": "compose",
+      "request": {
+        "changes": {
+          "bcc": null,
+          "body_html": null,
+          "body_text": null,
+          "cc": null,
+          "identity": null,
+          "subject": "Nouveau sujet",
+          "to": null
+        },
+        "draft": "draft-1",
+        "op": "update_draft"
+      }
+    },
+    "engine.get_contract_info": {
+      "domain": "engine",
+      "request": {
+        "op": "get_contract_info"
+      }
+    },
+    "engine.get_status": {
+      "domain": "engine",
+      "request": {
+        "op": "get_status"
+      }
+    },
+    "event.get_events": {
+      "domain": "event",
+      "request": {
+        "filter": {
+          "accounts": [],
+          "after": null,
+          "categories": []
+        },
+        "limit": 10,
+        "op": "get_events"
+      }
+    },
+    "identity.add_identity": {
+      "domain": "identity",
+      "request": {
+        "account": "a",
+        "address": "a@b.c",
+        "display_name": "n",
+        "is_default": false,
+        "op": "add_identity",
+        "signature": null
+      }
+    },
+    "identity.list_identities": {
+      "domain": "identity",
+      "request": {
+        "account": "a",
+        "op": "list_identities"
+      }
+    },
+    "identity.set_default_identity": {
+      "domain": "identity",
+      "request": {
+        "identity": "i",
+        "op": "set_default_identity"
+      }
+    },
+    "identity.update_identity": {
+      "domain": "identity",
+      "request": {
+        "display_name": null,
+        "identity": "i",
+        "op": "update_identity",
+        "signature": null
+      }
+    },
+    "mailbox.list_mailboxes": {
+      "domain": "mailbox",
+      "request": {
+        "account": "a",
+        "op": "list_mailboxes"
+      }
+    },
+    "mailbox.set_synced_mailboxes": {
+      "domain": "mailbox",
+      "request": {
+        "account": "a",
+        "mailboxes": [
+          "m1",
+          "m2"
+        ],
+        "op": "set_synced_mailboxes"
+      }
+    },
+    "maintenance.check_integrity": {
+      "domain": "maintenance",
+      "request": {
+        "op": "check_integrity"
+      }
+    },
+    "maintenance.export_diagnostic": {
+      "domain": "maintenance",
+      "request": {
+        "destination": "/tmp/diagnostic.json",
+        "op": "export_diagnostic"
+      }
+    },
+    "maintenance.export_profile": {
+      "domain": "maintenance",
+      "request": {
+        "destination": "/tmp/profile.json",
+        "op": "export_profile"
+      }
+    },
+    "maintenance.get_storage_stats": {
+      "domain": "maintenance",
+      "request": {
+        "op": "get_storage_stats"
+      }
+    },
+    "maintenance.purge_attachment_cache": {
+      "domain": "maintenance",
+      "request": {
+        "op": "purge_attachment_cache"
+      }
+    },
+    "maintenance.rebuild_search_index": {
+      "domain": "maintenance",
+      "request": {
+        "op": "rebuild_search_index"
+      }
+    },
+    "message.allow_remote_content": {
+      "domain": "message",
+      "request": {
+        "op": "allow_remote_content",
+        "scope": {
+          "address": "a@b.c",
+          "type": "sender"
+        }
+      }
+    },
+    "message.fetch_message_body": {
+      "domain": "message",
+      "request": {
+        "message": "x",
+        "op": "fetch_message_body"
+      }
+    },
+    "message.get_message": {
+      "domain": "message",
+      "request": {
+        "message": "x",
+        "op": "get_message"
+      }
+    },
+    "message.get_message_body": {
+      "domain": "message",
+      "request": {
+        "message": "x",
+        "op": "get_message_body"
+      }
+    },
+    "message.get_raw_source": {
+      "domain": "message",
+      "request": {
+        "message": "x",
+        "op": "get_raw_source"
+      }
+    },
+    "message.get_safe_html": {
+      "domain": "message",
+      "request": {
+        "message": "x",
+        "op": "get_safe_html"
+      }
+    },
+    "message.list_attachments": {
+      "domain": "message",
+      "request": {
+        "message": "x",
+        "op": "list_attachments"
+      }
+    },
+    "message.list_messages": {
+      "domain": "message",
+      "request": {
+        "filters": {
+          "flagged_only": false,
+          "from_contains": null,
+          "has_attachments": false,
+          "since": null,
+          "unread_only": false,
+          "until": null
+        },
+        "op": "list_messages",
+        "page": {
+          "cursor": null,
+          "limit": 50
+        },
+        "view": {
+          "mailbox": "m",
+          "type": "mailbox"
+        }
+      }
+    },
+    "message.save_attachment": {
+      "domain": "message",
+      "request": {
+        "attachment": "t",
+        "destination": "/tmp/out.bin",
+        "op": "save_attachment"
+      }
+    },
+    "operation.cancel_operation": {
+      "domain": "operation",
+      "request": {
+        "op": "cancel_operation",
+        "operation": "o"
+      }
+    },
+    "operation.get_operation": {
+      "domain": "operation",
+      "request": {
+        "op": "get_operation",
+        "operation": "o"
+      }
+    },
+    "provider.detect_provider": {
+      "domain": "provider",
+      "request": {
+        "address": "a@b.c",
+        "op": "detect_provider"
+      }
+    },
+    "provider.list_providers": {
+      "domain": "provider",
+      "request": {
+        "op": "list_providers"
+      }
+    },
+    "queue.cancel_action": {
+      "domain": "queue",
+      "request": {
+        "action": "action-1",
+        "op": "cancel_action"
+      }
+    },
+    "queue.list_actions": {
+      "domain": "queue",
+      "request": {
+        "account": "account-1",
+        "op": "list_actions",
+        "states": [
+          "pending",
+          "failed"
+        ]
+      }
+    },
+    "queue.retry_action": {
+      "domain": "queue",
+      "request": {
+        "action": "action-1",
+        "op": "retry_action"
+      }
+    },
+    "search.get_server_search_result": {
+      "domain": "search",
+      "request": {
+        "op": "get_server_search_result",
+        "operation": "o"
+      }
+    },
+    "search.search": {
+      "domain": "search",
+      "request": {
+        "filters": {
+          "common": {
+            "flagged_only": false,
+            "from_contains": null,
+            "has_attachments": false,
+            "since": null,
+            "unread_only": false,
+            "until": null
+          },
+          "mailbox": null,
+          "to_contains": null
+        },
+        "op": "search",
+        "page": {
+          "cursor": null,
+          "limit": 50
+        },
+        "query": "facture"
+      }
+    },
+    "search.search_server": {
+      "domain": "search",
+      "request": {
+        "account": "a",
+        "op": "search_server",
+        "query": "facture"
+      }
+    },
+    "sync.extend_window": {
+      "domain": "sync",
+      "request": {
+        "days": 90,
+        "mailbox": "mailbox-1",
+        "op": "extend_window"
+      }
+    },
+    "sync.get_sync_status": {
+      "domain": "sync",
+      "request": {
+        "op": "get_sync_status"
+      }
+    },
+    "sync.pause_sync": {
+      "domain": "sync",
+      "request": {
+        "account": "account-1",
+        "op": "pause_sync"
+      }
+    },
+    "sync.resync_mailbox": {
+      "domain": "sync",
+      "request": {
+        "mailbox": "mailbox-1",
+        "op": "resync_mailbox"
+      }
+    },
+    "sync.start_sync": {
+      "domain": "sync",
+      "request": {
+        "op": "start_sync",
+        "scope": {
+          "type": "all"
+        }
+      }
+    },
+    "sync.start_sync.2": {
+      "domain": "sync",
+      "request": {
+        "op": "start_sync",
+        "scope": {
+          "account": "account-1",
+          "type": "account"
+        }
+      }
+    },
+    "sync.start_sync.3": {
+      "domain": "sync",
+      "request": {
+        "op": "start_sync",
+        "scope": {
+          "mailbox": "mailbox-1",
+          "type": "mailbox"
+        }
+      }
+    },
+    "thread.get_thread": {
+      "domain": "thread",
+      "request": {
+        "op": "get_thread",
+        "thread": "t"
+      }
+    },
+    "thread.list_threads": {
+      "domain": "thread",
+      "request": {
+        "mailbox": "m",
+        "op": "list_threads",
+        "page": {
+          "cursor": null,
+          "limit": 20
+        }
+      }
+    }
+  },
+  "responses": {
+    "account": {
+      "data": {
+        "address": "alice@example.org",
+        "auth": "app_password",
+        "created_at": 1000,
+        "display_name": "Alice",
+        "id": "a",
+        "profile": "default",
+        "provider": "fake",
+        "servers": {
+          "imap": {
+            "host": "imap.example.org",
+            "port": 993,
+            "security": "tls"
+          },
+          "smtp": {
+            "host": "smtp.example.org",
+            "port": 465,
+            "security": "tls"
+          }
+        },
+        "state": {
+          "type": "connected"
+        },
+        "sync": {
+          "prefetch_bodies": 50,
+          "synced_mailboxes": null,
+          "window_days": 90
+        }
+      },
+      "type": "account"
+    },
+    "account_preparation": {
+      "data": {
+        "provider": {
+          "auth_methods": [
+            {
+              "type": "password"
+            }
+          ],
+          "display_name": "Fake folders",
+          "domains": [
+            "b.c"
+          ],
+          "id": "p",
+          "limits": {
+            "max_connections": 3,
+            "min_poll_interval_secs": 300
+          },
+          "quirks": {
+            "archive": "move_to_archive_mailbox",
+            "extra_fetch_attributes": [],
+            "mailbox_model": "folders",
+            "server_saves_sent_copy": false,
+            "unreliable_extensions": []
+          }
+        },
+        "servers": {
+          "imap": {
+            "host": "imap.b.c",
+            "port": 993,
+            "security": "tls"
+          },
+          "smtp": {
+            "host": "smtp.b.c",
+            "port": 465,
+            "security": "tls"
+          }
+        }
+      },
+      "type": "account_preparation"
+    },
+    "accounts": {
+      "data": [
+        {
+          "address": "alice@example.org",
+          "auth": "app_password",
+          "created_at": 1000,
+          "display_name": "Alice",
+          "id": "a",
+          "profile": "default",
+          "provider": "fake",
+          "servers": {
+            "imap": {
+              "host": "imap.example.org",
+              "port": 993,
+              "security": "tls"
+            },
+            "smtp": {
+              "host": "smtp.example.org",
+              "port": 465,
+              "security": "tls"
+            }
+          },
+          "state": {
+            "type": "connected"
+          },
+          "sync": {
+            "prefetch_bodies": 50,
+            "synced_mailboxes": null,
+            "window_days": 90
+          }
+        }
+      ],
+      "type": "accounts"
+    },
+    "attachments": {
+      "data": [
+        {
+          "cache": "not_downloaded",
+          "content_id": null,
+          "filename": "a.txt",
+          "id": "t",
+          "inline": false,
+          "message": "m",
+          "mime_type": "text/plain",
+          "size": 3
+        }
+      ],
+      "type": "attachments"
+    },
+    "contract_info": {
+      "data": {
+        "engine_capabilities": [
+          "imap"
+        ],
+        "version": {
+          "major": 1,
+          "minor": 0
+        }
+      },
+      "type": "contract_info"
+    },
+    "done": {
+      "type": "done"
+    },
+    "events": {
+      "data": [
+        {
+          "at": 1,
+          "kind": {
+            "type": "engine_started"
+          },
+          "seq": 1
+        }
+      ],
+      "type": "events"
+    },
+    "exported": {
+      "data": {
+        "bytes": 120,
+        "path": "/tmp/profile.json"
+      },
+      "type": "exported"
+    },
+    "identities": {
+      "data": [
+        {
+          "account": "a",
+          "address": "i@example.org",
+          "display_name": "Identité i",
+          "id": "i",
+          "is_default": true,
+          "signature": "-- \nAlice"
+        }
+      ],
+      "type": "identities"
+    },
+    "identity": {
+      "data": {
+        "account": "a",
+        "address": "i@example.org",
+        "display_name": "Identité i",
+        "id": "i",
+        "is_default": true,
+        "signature": "-- \nAlice"
+      },
+      "type": "identity"
+    },
+    "integrity": {
+      "data": {
+        "ok": true
+      },
+      "type": "integrity"
+    },
+    "mailboxes": {
+      "data": [
+        {
+          "account": "a",
+          "delimiter": "/",
+          "display_name": "INBOX",
+          "id": "b",
+          "marker": null,
+          "name": "INBOX",
+          "parent": null,
+          "role": "inbox",
+          "sync_enabled": true,
+          "total": 0,
+          "unread": 0
+        }
+      ],
+      "type": "mailboxes"
+    },
+    "message": {
+      "data": {
+        "account": "a",
+        "bcc": [],
+        "cc": [],
+        "content": "headers_only",
+        "date": 5000,
+        "flags": {
+          "answered": false,
+          "flagged": false,
+          "forwarded": false,
+          "seen": false
+        },
+        "from": [
+          {
+            "address": "bob@example.org",
+            "name": "Bob"
+          }
+        ],
+        "has_attachments": false,
+        "id": "m",
+        "in_reply_to": null,
+        "internal_date": 5100,
+        "mailboxes": [],
+        "message_id_header": "<m@example.org>",
+        "preview": "Aperçu m",
+        "references": [
+          "<root@example.org>"
+        ],
+        "reply_to": [],
+        "size": 1234,
+        "subject": "Sujet m",
+        "thread": null,
+        "to": [
+          {
+            "address": "alice@example.org",
+            "name": "Alice"
+          }
+        ],
+        "unsubscribe": null
+      },
+      "type": "message"
+    },
+    "message_body": {
+      "data": {
+        "html_available": true,
+        "text": "texte"
+      },
+      "type": "message_body"
+    },
+    "messages": {
+      "data": {
+        "items": [
+          {
+            "account": "a",
+            "bcc": [],
+            "cc": [],
+            "content": "headers_only",
+            "date": 5000,
+            "flags": {
+              "answered": false,
+              "flagged": false,
+              "forwarded": false,
+              "seen": false
+            },
+            "from": [
+              {
+                "address": "bob@example.org",
+                "name": "Bob"
+              }
+            ],
+            "has_attachments": false,
+            "id": "m",
+            "in_reply_to": null,
+            "internal_date": 5100,
+            "mailboxes": [],
+            "message_id_header": "<m@example.org>",
+            "preview": "Aperçu m",
+            "references": [
+              "<root@example.org>"
+            ],
+            "reply_to": [],
+            "size": 1234,
+            "subject": "Sujet m",
+            "thread": null,
+            "to": [
+              {
+                "address": "alice@example.org",
+                "name": "Alice"
+              }
+            ],
+            "unsubscribe": null
+          }
+        ],
+        "next_cursor": "c"
+      },
+      "type": "messages"
+    },
+    "oauth_started": {
+      "data": {
+        "authorize_url": "http://127.0.0.1:1/authorize",
+        "flow": "f"
+      },
+      "type": "oauth_started"
+    },
+    "operation": {
+      "data": {
+        "id": "o",
+        "kind": "fetch_message_body",
+        "status": {
+          "done": 1,
+          "total": 2,
+          "type": "running"
+        }
+      },
+      "type": "operation"
+    },
+    "provider": {
+      "data": {
+        "auth_methods": [
+          {
+            "type": "password"
+          }
+        ],
+        "display_name": "Fake folders",
+        "domains": [
+          "b.c"
+        ],
+        "id": "p",
+        "limits": {
+          "max_connections": 3,
+          "min_poll_interval_secs": 300
+        },
+        "quirks": {
+          "archive": "move_to_archive_mailbox",
+          "extra_fetch_attributes": [],
+          "mailbox_model": "folders",
+          "server_saves_sent_copy": false,
+          "unreliable_extensions": []
+        }
+      },
+      "type": "provider"
+    },
+    "providers": {
+      "data": [
+        {
+          "auth_methods": [
+            {
+              "type": "password"
+            }
+          ],
+          "display_name": "Fake folders",
+          "domains": [
+            "b.c"
+          ],
+          "id": "p",
+          "limits": {
+            "max_connections": 3,
+            "min_poll_interval_secs": 300
+          },
+          "quirks": {
+            "archive": "move_to_archive_mailbox",
+            "extra_fetch_attributes": [],
+            "mailbox_model": "folders",
+            "server_saves_sent_copy": false,
+            "unreliable_extensions": []
+          }
+        }
+      ],
+      "type": "providers"
+    },
+    "raw_source": {
+      "data": {
+        "content_base64": "YWJj",
+        "size": 3
+      },
+      "type": "raw_source"
+    },
+    "safe_html": {
+      "data": {
+        "blocked_resources": [
+          "https://t.example/p.gif"
+        ],
+        "html": "<p>x</p>"
+      },
+      "type": "safe_html"
+    },
+    "server_search": {
+      "data": {
+        "hits": [
+          {
+            "mailbox": "b",
+            "message": null,
+            "uid": 7
+          }
+        ],
+        "truncated": false
+      },
+      "type": "server_search"
+    },
+    "status": {
+      "data": {
+        "accounts": [
+          {
+            "account": {
+              "address": "alice@example.org",
+              "auth": "app_password",
+              "created_at": 1000,
+              "display_name": "Alice",
+              "id": "a",
+              "profile": "default",
+              "provider": "fake",
+              "servers": {
+                "imap": {
+                  "host": "imap.example.org",
+                  "port": 993,
+                  "security": "tls"
+                },
+                "smtp": {
+                  "host": "smtp.example.org",
+                  "port": 465,
+                  "security": "tls"
+                }
+              },
+              "state": {
+                "type": "connected"
+              },
+              "sync": {
+                "prefetch_bodies": 50,
+                "synced_mailboxes": null,
+                "window_days": 90
+              }
+            },
+            "pending_actions": 2
+          }
+        ],
+        "data_directory": "/data",
+        "profile": "default"
+      },
+      "type": "status"
+    },
+    "storage_stats": {
+      "data": {
+        "appearances": 2,
+        "attachments": 1,
+        "attachments_cached": 0,
+        "compressed_bytes": 8,
+        "mailboxes": 1,
+        "messages": 2,
+        "raw_bytes": 10,
+        "raw_sources": 1,
+        "threads": 1
+      },
+      "type": "storage_stats"
+    },
+    "sync.paused": {
+      "data": {
+        "data": {
+          "account": "account-1",
+          "last_error": null,
+          "last_synced_at": 1700000000000,
+          "mailboxes_in_progress": [
+            "mailbox-1"
+          ],
+          "pending_actions": 2,
+          "state": {
+            "type": "connected"
+          },
+          "syncing": true
+        },
+        "type": "paused"
+      },
+      "type": "sync"
+    },
+    "sync.status": {
+      "data": {
+        "data": [
+          {
+            "account": "account-1",
+            "last_error": null,
+            "last_synced_at": 1700000000000,
+            "mailboxes_in_progress": [
+              "mailbox-1"
+            ],
+            "pending_actions": 2,
+            "state": {
+              "type": "connected"
+            },
+            "syncing": true
+          }
+        ],
+        "type": "status"
+      },
+      "type": "sync"
+    },
+    "thread": {
+      "data": {
+        "messages": [
+          {
+            "account": "a",
+            "bcc": [],
+            "cc": [],
+            "content": "headers_only",
+            "date": 5000,
+            "flags": {
+              "answered": false,
+              "flagged": false,
+              "forwarded": false,
+              "seen": false
+            },
+            "from": [
+              {
+                "address": "bob@example.org",
+                "name": "Bob"
+              }
+            ],
+            "has_attachments": false,
+            "id": "m",
+            "in_reply_to": null,
+            "internal_date": 5100,
+            "mailboxes": [],
+            "message_id_header": "<m@example.org>",
+            "preview": "Aperçu m",
+            "references": [
+              "<root@example.org>"
+            ],
+            "reply_to": [],
+            "size": 1234,
+            "subject": "Sujet m",
+            "thread": null,
+            "to": [
+              {
+                "address": "alice@example.org",
+                "name": "Alice"
+              }
+            ],
+            "unsubscribe": null
+          }
+        ],
+        "thread": {
+          "account": "a",
+          "id": "t",
+          "last_date": 5,
+          "message_count": 1,
+          "participants": [
+            {
+              "address": "a@b.c",
+              "name": null
+            }
+          ],
+          "subject": "Sujet",
+          "unread_count": 1
+        }
+      },
+      "type": "thread"
+    },
+    "threads": {
+      "data": {
+        "items": [
+          {
+            "account": "a",
+            "id": "t",
+            "last_date": 5,
+            "message_count": 1,
+            "participants": [
+              {
+                "address": "a@b.c",
+                "name": null
+              }
+            ],
+            "subject": "Sujet",
+            "unread_count": 1
+          }
+        ],
+        "next_cursor": null
+      },
+      "type": "threads"
+    },
+    "write.action": {
+      "data": {
+        "data": "action-1",
+        "type": "action"
+      },
+      "type": "write"
+    },
+    "write.actions": {
+      "data": {
+        "data": [
+          "action-1",
+          "action-2"
+        ],
+        "type": "actions"
+      },
+      "type": "write"
+    },
+    "write.draft": {
+      "data": {
+        "data": {
+          "account": "account-1",
+          "attachments": [
+            {
+              "filename": "note.txt",
+              "mime_type": "text/plain",
+              "size": 12
+            }
+          ],
+          "bcc": [],
+          "body_html": null,
+          "body_text": "Corps",
+          "cc": [],
+          "id": "draft-1",
+          "identity": "identity-1",
+          "in_reply_to": "message-1",
+          "state": {
+            "at": 1700000010000,
+            "type": "scheduled"
+          },
+          "subject": "Bonjour",
+          "to": [
+            {
+              "address": "bob@example.org",
+              "name": "Bob"
+            }
+          ],
+          "updated_at": 1700000000000
+        },
+        "type": "draft"
+      },
+      "type": "write"
+    },
+    "write.drafts": {
+      "data": {
+        "data": [
+          {
+            "account": "account-1",
+            "attachments": [
+              {
+                "filename": "note.txt",
+                "mime_type": "text/plain",
+                "size": 12
+              }
+            ],
+            "bcc": [],
+            "body_html": null,
+            "body_text": "Corps",
+            "cc": [],
+            "id": "draft-1",
+            "identity": "identity-1",
+            "in_reply_to": "message-1",
+            "state": {
+              "at": 1700000010000,
+              "type": "scheduled"
+            },
+            "subject": "Bonjour",
+            "to": [
+              {
+                "address": "bob@example.org",
+                "name": "Bob"
+              }
+            ],
+            "updated_at": 1700000000000
+          }
+        ],
+        "type": "drafts"
+      },
+      "type": "write"
+    },
+    "write.outbox": {
+      "data": {
+        "data": [
+          {
+            "action": "action-1",
+            "draft": "draft-1",
+            "last_error": null,
+            "scheduled_for": 1700000010000,
+            "state": "uncertain",
+            "subject": "Bonjour"
+          }
+        ],
+        "type": "outbox"
+      },
+      "type": "write"
+    },
+    "write.queued_actions": {
+      "data": {
+        "data": [
+          {
+            "account": "account-1",
+            "attempts": 0,
+            "created_at": 1700000000000,
+            "id": "action-1",
+            "idempotency_key": "key-1",
+            "kind": {
+              "read": true,
+              "type": "mark_read"
+            },
+            "last_error": null,
+            "not_before": 1700000005000,
+            "state": "pending",
+            "targets": [
+              "message-1"
+            ]
+          }
+        ],
+        "type": "queued_actions"
+      },
+      "type": "write"
+    }
+  }
+}

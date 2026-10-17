@@ -1,0 +1,14 @@
+[package]
+name = "mira-provider-outlook"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Provider outlook de MIRA : description pure, sans entrée-sortie"
+
+[lints]
+workspace = true
+
+[dependencies]
+mira-vocabulary.workspace = true

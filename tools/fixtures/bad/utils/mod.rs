@@ -1,0 +1,1 @@
+//! Dossier fourre-tout interdit.

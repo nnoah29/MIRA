@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Motifs interdits hors tests (§2 règle 6, §8 critère 6) : unwrap, expect, panic!, todo!, unimplemented!, dbg!, unsafe, TODO non référencé.
+# Est « test » : tout fichier sous un dossier tests/, ou nommé tests.rs / tests_*.rs, et tout le crate mira-testkit est exclu des TODO seulement.
+set -uo pipefail
+root="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$root/engine/crates"
+mapfile -t files < <(find . -name '*.rs' -not -path '*/target/*' -not -path '*/tests/*' -not -name 'tests.rs' -not -name 'tests_*.rs' | sort)
+fail=0
+if ((${#files[@]})); then
+    if grep -nE '\.unwrap\(\)|\.expect\(|\bpanic!\(|\btodo!\(|\bunimplemented!\(|\bdbg!\(|\bunsafe\b' "${files[@]}"; then
+        echo "check-forbidden-patterns : unwrap/expect/panic!/todo!/unimplemented!/dbg!/unsafe interdits hors tests"; fail=1
+    fi
+fi
+if grep -rnE 'TODO|FIXME|XXX' --include='*.rs' . | grep -vE 'BLOQUÉ-|AG-[0-9]+'; then
+    echo "check-forbidden-patterns : TODO non référencé (citer BLOQUÉ-<id> ou AG-<n>)"; fail=1
+fi
+if grep -rnE '^(<<<<<<<|>>>>>>>)( |$)' --include='*.rs' --include='*.toml' --include='*.sql' .; then
+    echo "check-forbidden-patterns : marqueur de conflit git oublié"; fail=1
+fi
+grep -rqE 'libloading|dlopen' --include='Cargo.toml' . && { echo "check-forbidden-patterns : chargement dynamique interdit (D-02)"; fail=1; }
+[[ $fail -eq 0 ]] && echo "check-forbidden-patterns : OK"
+exit $fail

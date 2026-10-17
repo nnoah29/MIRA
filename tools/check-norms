@@ -1,0 +1,264 @@
+#!/usr/bin/env python3
+"""Vérifie les normes de codage du §11 sur les sources Rust du moteur.
+
+Règles contrôlées (voir CLAUDE.md et docs/ETAT/DECISIONS-DE-DEPART.md, décision 37) :
+  N1  une fonction avec corps fait au plus 30 lignes (de la ligne `fn` à l'accolade fermante) ;
+  N2  un fichier contient au plus 6 fonctions avec corps ;
+  N4  aucun commentaire (`//`, `/* */`, doc comprise) dans le corps d'une fonction ;
+  N5  chaque fonction avec corps est précédée d'exactement une ligne `///` ;
+  N3  noms de fichiers ou dossiers fourre-tout interdits (utils, helpers, common, misc).
+
+Usage : check-norms <dossier-ou-fichier>...   (code de sortie 1 en cas de violation)
+Le code généré est exempté : fichier commençant par `// @generated` ou chemin contenant `/generated/`.
+"""
+import os
+import sys
+
+MAX_FN_LINES = 30
+MAX_FNS_PER_FILE = 6
+FORBIDDEN_NAMES = {"utils", "helpers", "common", "misc"}
+QUALIFIERS = {"pub", "crate", "super", "self", "in", "async", "const", "unsafe", "extern", "default", "(", ")"}
+
+
+class Tok:
+    __slots__ = ("kind", "text", "line", "end_line")
+
+    def __init__(self, kind, text, line, end_line):
+        self.kind, self.text, self.line, self.end_line = kind, text, line, end_line
+
+
+def lex(src):
+    toks, i, line, n = [], 0, 1, len(src)
+
+    def add(kind, start, end, start_line):
+        toks.append(Tok(kind, src[start:end], start_line, start_line + src.count("\n", start, end)))
+
+    while i < n:
+        c = src[i]
+        if c == "\n":
+            line += 1
+            i += 1
+        elif c.isspace():
+            i += 1
+        elif src.startswith("//", i):
+            j = src.find("\n", i)
+            j = n if j == -1 else j
+            add("comment", i, j, line)
+            i = j
+        elif src.startswith("/*", i):
+            depth, j = 1, i + 2
+            while j < n and depth:
+                if src.startswith("/*", j):
+                    depth, j = depth + 1, j + 2
+                elif src.startswith("*/", j):
+                    depth, j = depth - 1, j + 2
+                else:
+                    j += 1
+            add("comment", i, j, line)
+            line += src.count("\n", i, j)
+            i = j
+        elif c == '"':
+            j = skip_string(src, i + 1)
+            add("str", i, j, line)
+            line += src.count("\n", i, j)
+            i = j
+        elif c == "'":
+            j = skip_quote(src, i)
+            add("char", i, j, line)
+            i = j
+        elif c.isalpha() or c == "_":
+            j = i
+            while j < n and (src[j].isalnum() or src[j] == "_"):
+                j += 1
+            word = src[i:j]
+            if word in ("r", "br", "cr") and j < n and src[j] in '#"':
+                k = j
+                while k < n and src[k] == "#":
+                    k += 1
+                if k < n and src[k] == '"':
+                    hashes = k - j
+                    end = src.find('"' + "#" * hashes, k + 1)
+                    end = n if end == -1 else end + 1 + hashes
+                    add("str", i, end, line)
+                    line += src.count("\n", i, end)
+                    i = end
+                    continue
+            if word in ("b", "c") and j < n and src[j] == '"':
+                end = skip_string(src, j + 1)
+                add("str", i, end, line)
+                line += src.count("\n", i, end)
+                i = end
+                continue
+            add("ident", i, j, line)
+            i = j
+        elif c.isdigit():
+            j = i
+            while j < n and (src[j].isalnum() or src[j] in "_."):
+                if src[j] == "." and (j + 1 >= n or not src[j + 1].isdigit()):
+                    break
+                j += 1
+            add("num", i, j, line)
+            i = j
+        else:
+            add("punct", i, i + 1, line)
+            i += 1
+    return toks
+
+
+def skip_string(src, j):
+    n = len(src)
+    while j < n:
+        if src[j] == "\\":
+            j += 2
+        elif src[j] == '"':
+            return j + 1
+        else:
+            j += 1
+    return n
+
+
+def skip_quote(src, i):
+    n = len(src)
+    if i + 1 < n and src[i + 1] == "\\":
+        j = i + 2
+        while j < n and src[j] != "'":
+            j += 1
+        return j + 1
+    if i + 2 < n and src[i + 2] == "'":
+        return i + 3
+    j = i + 1
+    while j < n and (src[j].isalnum() or src[j] == "_"):
+        j += 1
+    return j
+
+
+def find_functions(toks):
+    """Retourne (index du jeton fn, nom, index accolade ouvrante, index accolade fermante) pour chaque fn avec corps."""
+    code = [k for k, t in enumerate(toks) if t.kind != "comment"]
+    pos = {k: p for p, k in enumerate(code)}
+    found = []
+    for p, k in enumerate(code):
+        t = toks[k]
+        if t.kind != "ident" or t.text != "fn":
+            continue
+        if p + 1 >= len(code) or toks[code[p + 1]].kind != "ident":
+            continue
+        depth, q = 0, p + 2
+        while q < len(code):
+            tt = toks[code[q]]
+            if tt.kind == "punct" and tt.text in "([":
+                depth += 1
+            elif tt.kind == "punct" and tt.text in ")]":
+                depth -= 1
+            elif depth == 0 and tt.kind == "punct" and tt.text in "{;":
+                break
+            q += 1
+        if q >= len(code) or toks[code[q]].text == ";":
+            continue
+        open_k = code[q]
+        braces, r = 0, q
+        while r < len(code):
+            tt = toks[code[r]]
+            if tt.kind == "punct" and tt.text == "{":
+                braces += 1
+            elif tt.kind == "punct" and tt.text == "}":
+                braces -= 1
+                if braces == 0:
+                    break
+            r += 1
+        close_k = code[min(r, len(code) - 1)]
+        found.append((k, toks[code[p + 1]].text, open_k, close_k))
+    return found, pos
+
+
+def doc_before(toks, fn_k):
+    """Compte les lignes `///` qui précèdent la fonction (attributs et qualificatifs ignorés)."""
+    k = fn_k - 1
+    while k >= 0:
+        t = toks[k]
+        if t.kind == "ident" and t.text in QUALIFIERS or t.kind == "punct" and t.text in "()" or t.kind == "str":
+            k -= 1
+            continue
+        if t.kind == "punct" and t.text == "]":
+            depth = 0
+            while k >= 0:
+                tt = toks[k]
+                if tt.kind == "punct" and tt.text == "]":
+                    depth += 1
+                elif tt.kind == "punct" and tt.text == "[":
+                    depth -= 1
+                    if depth == 0:
+                        break
+                k -= 1
+            k -= 1
+            if k >= 0 and toks[k].kind == "punct" and toks[k].text == "!":
+                k -= 1
+            if k >= 0 and toks[k].kind == "punct" and toks[k].text == "#":
+                k -= 1
+                continue
+            return 0
+        break
+    count = 0
+    while k >= 0 and toks[k].kind == "comment" and toks[k].text.startswith("///") and not toks[k].text.startswith("////"):
+        count += 1
+        k -= 1
+    return count
+
+
+def check_file(path):
+    errors = []
+    parts = os.path.normpath(path).split(os.sep)
+    stems = [os.path.splitext(p)[0] for p in parts]
+    for s in stems:
+        if s in FORBIDDEN_NAMES:
+            errors.append(f"{path}: N3 nom fourre-tout interdit « {s} »")
+    with open(path, encoding="utf-8") as f:
+        src = f.read()
+    if src.startswith("// @generated") or "/generated/" in path.replace(os.sep, "/"):
+        return errors
+    toks = lex(src)
+    functions, _ = find_functions(toks)
+    if len(functions) > MAX_FNS_PER_FILE:
+        errors.append(f"{path}: N2 {len(functions)} fonctions (max {MAX_FNS_PER_FILE})")
+    for fn_k, name, open_k, close_k in functions:
+        start, end = toks[fn_k].line, toks[close_k].end_line
+        length = end - start + 1
+        if length > MAX_FN_LINES:
+            errors.append(f"{path}:{start}: N1 fonction `{name}` de {length} lignes (max {MAX_FN_LINES})")
+        for t in toks[open_k:close_k]:
+            if t.kind == "comment":
+                errors.append(f"{path}:{t.line}: N4 commentaire dans le corps de `{name}`")
+        docs = doc_before(toks, fn_k)
+        if docs != 1:
+            errors.append(f"{path}:{start}: N5 `{name}` doit avoir exactement une ligne `///` (trouvé {docs})")
+    return errors
+
+
+def rust_files(target):
+    if os.path.isfile(target):
+        yield target
+        return
+    for root, dirs, files in os.walk(target):
+        dirs[:] = [d for d in dirs if d not in ("target", ".git")]
+        for name in sorted(files):
+            if name.endswith(".rs"):
+                yield os.path.join(root, name)
+
+
+def main(argv):
+    if len(argv) < 2:
+        print(__doc__)
+        return 2
+    errors, count = [], 0
+    for target in argv[1:]:
+        for path in rust_files(target):
+            count += 1
+            errors.extend(check_file(path))
+    for e in errors:
+        print(e)
+    print(f"check-norms : {count} fichiers, {len(errors)} violation(s)")
+    return 1 if errors else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

@@ -210,7 +210,28 @@ Account? accountByEmail(String email) {
 }
 
 /// Cette adresse est-elle l'une des miennes (n'importe quel compte) ?
-bool isMine(String email) => accountByEmail(email) != null;
+bool isMine(String email) {
+  final e = email.toLowerCase();
+  return accountByEmail(email) != null ||
+      knownSenders.any((s) => s.email.toLowerCase() == e);
+}
+
+/// Adresse sous laquelle on peut écrire (identité d'un compte) : nom, signature et compte d'envoi.
+class Sender {
+  final String email, name, accountId;
+  final String? signature;
+  final bool isDefault;
+  const Sender(
+    this.email,
+    this.name,
+    this.accountId, {
+    this.signature,
+    this.isDefault = false,
+  });
+}
+
+/// Identités d'envoi connues (tenues à jour par le store).
+List<Sender> knownSenders = [];
 
 /// Identité du compte actif (change quand on bascule de compte).
 Person me = Person(defaultAccounts[0].name, defaultAccounts[0].email);

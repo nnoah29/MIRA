@@ -86,7 +86,41 @@ class AdminEngine implements EngineClient {
           },
         };
       case 'mailbox.list_mailboxes':
-        return {'type': 'mailboxes', 'data': []};
+        return {
+          'type': 'mailboxes',
+          'data': r['account'] == 'a1'
+              ? [
+                  {'id': 'mb-sent', 'role': 'sent'},
+                ]
+              : [],
+        };
+      case 'message.list_messages':
+        return {
+          'type': 'messages',
+          'data': {
+            'items': [
+              {
+                'id': 'm1',
+                'account': 'a1',
+                'thread': null,
+                'from': [
+                  {'name': 'Alice', 'address': 'hello@ex.org'},
+                ],
+                'to': [
+                  {'name': 'Bob', 'address': 'bob@x.org'},
+                ],
+                'cc': [],
+                'subject': 'Envoyé',
+                'date': 1000,
+                'internal_date': 1000,
+                'flags': {'seen': true, 'flagged': false},
+                'preview': 'p',
+                'has_attachments': false,
+              },
+            ],
+            'next_cursor': null,
+          },
+        };
       case 'account.update_account':
         final a = _find('${r['account']}');
         final ch = r['changes'] as Map<String, dynamic>;
@@ -309,5 +343,19 @@ void main() {
     expect(add['display_name'], 'Nouveau');
     expect(add['is_default'], true);
     expect(find.text('nouveau@ex.org'), findsOneWidget);
+  });
+
+  testWidgets('adresse détectée dans les messages envoyés : ajout en un clic', (
+    tester,
+  ) async {
+    final (_, engine) = await _pump(tester);
+    expect(find.byKey(const ValueKey('hint-hello@ex.org')), findsOneWidget);
+    await _tap(tester, 'hint-hello@ex.org');
+    final add = engine.last('identity.add_identity')!;
+    expect(add['address'], 'hello@ex.org');
+    expect(add['account'], 'a1');
+    expect(add['display_name'], 'Alice');
+    expect(add['is_default'], false);
+    await _settle(tester);
   });
 }

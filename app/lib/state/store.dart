@@ -149,6 +149,7 @@ class MailStore extends ChangeNotifier {
         : real;
     knownAccounts = accounts;
     if (source != null) {
+      _applyIdentities();
       _boxes.addAll(source!.boxes);
       _changeSub = source!.changes.listen(_reloadAccount);
     }
@@ -593,8 +594,85 @@ class MailStore extends ChangeNotifier {
 
   /// Adresse d'expédition d'un compte (par défaut : le compte actif).
   Person senderFor(String email) {
+    final e = email.toLowerCase();
+    final id = knownSenders
+        .where((x) => x.email.toLowerCase() == e)
+        .firstOrNull;
+    if (id != null) return Person(id.name, id.email);
     final a = accountByEmail(email);
     return a == null ? me : Person(a.name, a.email);
+  }
+
+  // ---- identités d'envoi ----
+  void _applyIdentities() {
+    final src = source;
+    if (src == null) return;
+    knownSenders = [
+      for (final e in src.identities.entries)
+        for (final i in e.value)
+          Sender(
+            i.address,
+            i.displayName,
+            e.key,
+            signature: i.signature,
+            isDefault: i.isDefault,
+          ),
+    ];
+  }
+
+  /// Relit les identités du moteur (après ajout, modification ou changement par défaut).
+  Future<void> identitiesChanged() async {
+    final src = source;
+    if (src == null) return;
+    await src.refreshIdentities();
+    _applyIdentities();
+    notifyListeners();
+  }
+
+  /// Messages déjà chargés d'un compte.
+  List<Mail> mailsOf(String accountId) => _boxes[accountId] ?? const [];
+
+  /// Adresses d'envoi proposées dans le composeur : identités, puis comptes sans identité ; compte actif d'abord.
+  List<Sender> senderChoices() {
+    final out = [...knownSenders];
+    for (final a in accounts) {
+      if (a.email.isNotEmpty &&
+          !out.any((x) => x.email.toLowerCase() == a.email.toLowerCase())) {
+        out.add(Sender(a.email, a.name, a.id));
+      }
+    }
+    out.sort((x, y) {
+      final ax = x.accountId == activeId ? 0 : 1;
+      final ay = y.accountId == activeId ? 0 : 1;
+      if (ax != ay) return ax.compareTo(ay);
+      return (y.isDefault ? 1 : 0).compareTo(x.isDefault ? 1 : 0);
+    });
+    return out;
+  }
+
+  /// Adresse d'envoi pour écrire ou répondre : celle à laquelle le message a été reçu, sinon l'identité par défaut du compte.
+  String fromFor([Mail? original]) {
+    final accId = original?.account ?? activeId;
+    final mine = senderChoices().where((x) => x.accountId == accId).toList();
+    if (original != null) {
+      final got = {
+        for (final p in [...original.to, ...original.cc]) p.email.toLowerCase(),
+      };
+      final hit = mine.where((x) => got.contains(x.email.toLowerCase()));
+      if (hit.isNotEmpty) return hit.first.email;
+    }
+    final def = mine.where((x) => x.isDefault).firstOrNull ?? mine.firstOrNull;
+    return def?.email ?? accountById(accId)?.email ?? me.email;
+  }
+
+  /// Signature à utiliser pour cette adresse : celle de l'identité, sinon la signature générale.
+  String signatureFor(String email) {
+    final e = email.toLowerCase();
+    final own = knownSenders
+        .where((x) => x.email.toLowerCase() == e)
+        .firstOrNull
+        ?.signature;
+    return own == null || own.trim().isEmpty ? sig : own;
   }
 
   /// Ajoute un compte (fictif) et bascule dessus. Renvoie `false` si l'adresse est déjà connectée.
@@ -1221,7 +1299,7 @@ class MailStore extends ChangeNotifier {
           '\n${t('---------- Message transféré ----------')}\n${t('De : {0} <{1}>', [last.from.name, last.from.email])}\n${t('Objet : {0}', [m.subject])}\n\n';
       openCompose(
         ComposeInit(
-          from: accountById(m.account)?.email,
+          from: fromFor(m),
           mode: mode,
           replyTo: m.id,
           to: const [],
@@ -1245,10 +1323,11 @@ class MailStore extends ChangeNotifier {
       final seen = <String>{};
       cc = everyone.where((p) => seen.add(p.email)).toList();
     }
-    final txt = (intro.isEmpty ? '\n\n' : '$intro\n\n') + sig;
+    final txt =
+        (intro.isEmpty ? '\n\n' : '$intro\n\n') + signatureFor(fromFor(m));
     openCompose(
       ComposeInit(
-        from: accountById(m.account)?.email,
+        from: fromFor(m),
         mode: mode,
         replyTo: m.id,
         to: to,
@@ -1274,7 +1353,7 @@ class MailStore extends ChangeNotifier {
       cc: [...i.cc],
       bcc: [...i.bcc],
       atts: [...i.atts],
-      from: i.from ?? me.email,
+      from: i.from ?? fromFor(),
       quote: i.quote,
     );
     cs.subject.text = i.subject;

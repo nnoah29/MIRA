@@ -27,6 +27,12 @@ abstract class MailSource {
   /// Gestion des comptes et identités (`null` : données de démonstration).
   AccountAdmin? get admin;
 
+  /// Identités d'envoi par compte.
+  Map<String, List<IdentityDetail>> get identities;
+
+  /// Relit les identités de tous les comptes.
+  Future<void> refreshIdentities();
+
   /// Relit la liste des comptes ; rend les comptes apparus depuis la dernière lecture.
   Future<List<Account>> refreshAccounts();
 

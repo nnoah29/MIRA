@@ -52,8 +52,28 @@ class EngineMailSource implements MailSource {
     for (final a in list) {
       source.boxes[a.id] = await source.reload(a);
     }
+    await source.refreshIdentities();
     source._listen();
     return source;
+  }
+
+  @override
+  final Map<String, List<IdentityDetail>> identities = {};
+
+  @override
+  Future<void> refreshIdentities() async {
+    final admin = AccountAdmin(client);
+    final fresh = <String, List<IdentityDetail>>{};
+    for (final a in accounts) {
+      try {
+        fresh[a.id] = await admin.identities(a.id);
+      } on EngineException {
+        fresh[a.id] = identities[a.id] ?? const [];
+      }
+    }
+    identities
+      ..clear()
+      ..addAll(fresh);
   }
 
   @override
@@ -85,6 +105,7 @@ class EngineMailSource implements MailSource {
     for (final a in added) {
       boxes[a.id] = await reload(a);
     }
+    await refreshIdentities();
     return added;
   }
 

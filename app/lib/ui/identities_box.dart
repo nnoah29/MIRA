@@ -3,7 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../engine/account_admin.dart';
+
+import 'package:provider/provider.dart';
+
 import '../engine/engine_client.dart';
+import '../state/alias_hints.dart';
+import '../state/store.dart';
 import '../i18n/i18n.dart';
 import '../theme/app_theme.dart';
 import 'account_form_widgets.dart';
@@ -63,6 +68,7 @@ class _IdentitiesBoxState extends State<IdentitiesBox> {
     try {
       await job();
       await load();
+      if (mounted) await context.read<MailStore>().identitiesChanged();
     } catch (e) {
       if (mounted) setState(() => error = _msg(e));
     } finally {
@@ -91,6 +97,82 @@ class _IdentitiesBoxState extends State<IdentitiesBox> {
     newSignature.clear();
     newDefault = false;
   });
+
+  /// Adresses vues dans les messages déjà synchronisés, proposées en un clic.
+  Widget _hints(Pal p, List<IdentityDetail> list) {
+    final known = {
+      widget.account.address.toLowerCase(),
+      for (final i in list) i.address.toLowerCase(),
+    };
+    final hints = aliasHints(
+      context.read<MailStore>().mailsOf(widget.account.id),
+      known,
+    );
+    if (hints.isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: p.accentSoft,
+        border: Border.all(color: p.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            t('Adresses détectées dans tes messages'),
+            style: Fonts.sans(size: 14, w: FontWeight.w500, color: p.text),
+          ),
+          Text(
+            t(
+              'Le courrier ne liste pas tes alias : MIRA les devine des messages envoyés et reçus. Un alias doit aussi être déclaré chez ton fournisseur pour que l’envoi sous cette adresse soit accepté.',
+            ),
+            style: Fonts.sans(size: 13, color: p.dim),
+          ),
+          const SizedBox(height: 10),
+          for (final h in hints)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      h.address,
+                      style: Fonts.sans(size: 14.5, color: p.text),
+                    ),
+                  ),
+                  Mono(
+                    [
+                      if (h.sentAs > 0) t('expéditeur ×{0}', ['${h.sentAs}']),
+                      if (h.receivedAt > 0)
+                        t('destinataire ×{0}', ['${h.receivedAt}']),
+                    ].join(' · '),
+                    size: 10.5,
+                    color: p.muted,
+                    height: null,
+                  ),
+                  const SizedBox(width: 10),
+                  Btn(
+                    key: ValueKey('hint-${h.address}'),
+                    icon: 'plus',
+                    label: t('Ajouter'),
+                    onTap: busy
+                        ? null
+                        : () => _run(
+                            () => widget.admin.addIdentity(
+                              accountId: widget.account.id,
+                              address: h.address,
+                              displayName: widget.account.displayName,
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,6 +218,7 @@ class _IdentitiesBoxState extends State<IdentitiesBox> {
                 style: Fonts.sans(size: 13.5, color: p.dim),
               ),
           ],
+          if (list != null) _hints(p, list),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(14),

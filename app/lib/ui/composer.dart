@@ -252,14 +252,16 @@ class _ComposerState extends State<Composer> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          for (final e in s.accounts.map((a) => a.email))
+                          for (final e in s.senderChoices())
                             PopItem(
                               leading: const SizedBox.shrink(),
-                              label: e,
-                              on: e == c.from,
+                              label: e.name.isEmpty || e.name == e.email
+                                  ? e.email
+                                  : '${e.name} <${e.email}>',
+                              on: e.email == c.from,
                               onTap: () {
                                 close();
-                                c.from = e;
+                                c.from = e.email;
                                 s.touch();
                               },
                             ),

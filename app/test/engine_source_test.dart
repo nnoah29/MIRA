@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mira/data/models.dart';
 import 'package:mira/engine/engine_client.dart';
 import 'package:mira/engine/engine_mail_source.dart';
 import 'package:mira/state/store.dart';
@@ -104,6 +105,28 @@ class FakeEngine implements EngineClient {
                 : '$table<img src="cid:logo@x">',
             'blocked_resources': allowed ? [] : ['https://x.test/a.png'],
           },
+        };
+      case 'identity.list_identities':
+        return {
+          'type': 'identities',
+          'data': [
+            {
+              'id': 'i1',
+              'account': 'acc1',
+              'address': 'alice@example.org',
+              'display_name': 'Alice',
+              'signature': null,
+              'is_default': false,
+            },
+            {
+              'id': 'i2',
+              'account': 'acc1',
+              'address': 'iam@perso.com',
+              'display_name': 'Alice Pro',
+              'signature': 'Alice, Pro',
+              'is_default': true,
+            },
+          ],
         };
       case 'sync.start_sync':
         return {'type': 'done'};
@@ -344,4 +367,28 @@ void main() {
       store.dispose();
     },
   );
+
+  test('les identités alimentent le composeur : défaut, adresse de réception, signature', () async {
+    SharedPreferences.setMockInitialValues({'sig': 'Signature générale'});
+    final prefs = await SharedPreferences.getInstance();
+    final src = await EngineMailSource.load(FakeEngine());
+    final store = MailStore(prefs, source: src);
+    final choices = store.senderChoices().map((s) => s.email).toList();
+    expect(choices.first, 'iam@perso.com');
+    expect(choices, contains('alice@example.org'));
+    expect(store.fromFor(), 'iam@perso.com');
+    final viaMain = store.mails.first
+      ..to = [const Person('Alice', 'alice@example.org')];
+    expect(store.fromFor(viaMain), 'alice@example.org');
+    final viaAlias = store.mails.last
+      ..to = [const Person('Alice Pro', 'iam@perso.com')];
+    expect(store.fromFor(viaAlias), 'iam@perso.com');
+    expect(store.signatureFor('iam@perso.com'), 'Alice, Pro');
+    expect(store.signatureFor('alice@example.org'), 'Signature générale');
+    expect(isMine('IAM@perso.com'), isTrue);
+    store.openCompose(const ComposeInit());
+    expect(store.c!.from, 'iam@perso.com');
+    store.dispose();
+    knownSenders = [];
+  });
 }

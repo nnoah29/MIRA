@@ -77,85 +77,160 @@ class _ReaderState extends State<Reader> {
 
     return Column(
       children: [
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: hp, vertical: 14),
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: p.lineSoft)),
-          ),
-          child: LayoutBuilder(
-            builder: (context, box) => SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const NeverScrollableScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minWidth: box.maxWidth),
-                child: IntrinsicWidth(
-                  child: Row(
-                    children: [
-                      Btn(
-                        icon: 'reply',
-                        label: t('Répondre'),
-                        go: true,
-                        padding: mobile
-                            ? const EdgeInsets.symmetric(horizontal: 14)
-                            : null,
-                        tip: t('Répondre (r)'),
-                        onTap: () => s.replyTo('reply'),
-                      ),
-                      const SizedBox(width: 8),
-                      Btn(
-                        icon: 'reply',
-                        label: t('Tous'),
-                        iconOnly: mobile,
-                        width: shrinkW,
-                        padding: mobile ? EdgeInsets.zero : null,
-                        tip: t('Répondre à tous (a)'),
-                        onTap: () => s.replyTo('all'),
-                      ),
-                      const SizedBox(width: 8),
-                      Btn(
-                        icon: 'fwd',
-                        label: t('Transférer'),
-                        iconOnly: mobile,
-                        width: shrinkW,
-                        padding: mobile ? EdgeInsets.zero : null,
-                        tip: t('Transférer (f)'),
-                        onTap: () => s.replyTo('fwd'),
-                      ),
-                      const Spacer(),
-                      IBtn(
-                        'star',
-                        on: m.starred,
-                        filled: m.starred,
-                        tip: t('Favori (s)'),
-                        onTap: () => s.toggleStar(),
-                      ),
-                      const SizedBox(width: 8),
-                      IBtn(
-                        'archive',
-                        tip: m.folder == 'archive'
-                            ? t('Désarchiver')
-                            : t('Archiver (e)'),
-                        onTap: s.archive,
-                      ),
-                      const SizedBox(width: 8),
-                      IBtn(
-                        'warn',
-                        tip: m.folder == 'spam' ? t('Pas du spam') : t('Spam'),
-                        onTap: s.spam,
-                      ),
-                      const SizedBox(width: 8),
-                      IBtn('trash', tip: t('Supprimer (#)'), onTap: s.trash),
-                    ],
+        if (m.outbox != null)
+          _OutboxBar(m, hp)
+        else
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: hp, vertical: 14),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: p.lineSoft)),
+            ),
+            child: LayoutBuilder(
+              builder: (context, box) => SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const NeverScrollableScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: box.maxWidth),
+                  child: IntrinsicWidth(
+                    child: Row(
+                      children: [
+                        Btn(
+                          icon: 'reply',
+                          label: t('Répondre'),
+                          go: true,
+                          padding: mobile
+                              ? const EdgeInsets.symmetric(horizontal: 14)
+                              : null,
+                          tip: t('Répondre (r)'),
+                          onTap: () => s.replyTo('reply'),
+                        ),
+                        const SizedBox(width: 8),
+                        Btn(
+                          icon: 'reply',
+                          label: t('Tous'),
+                          iconOnly: mobile,
+                          width: shrinkW,
+                          padding: mobile ? EdgeInsets.zero : null,
+                          tip: t('Répondre à tous (a)'),
+                          onTap: () => s.replyTo('all'),
+                        ),
+                        const SizedBox(width: 8),
+                        Btn(
+                          icon: 'fwd',
+                          label: t('Transférer'),
+                          iconOnly: mobile,
+                          width: shrinkW,
+                          padding: mobile ? EdgeInsets.zero : null,
+                          tip: t('Transférer (f)'),
+                          onTap: () => s.replyTo('fwd'),
+                        ),
+                        const Spacer(),
+                        IBtn(
+                          'star',
+                          on: m.starred,
+                          filled: m.starred,
+                          tip: t('Favori (s)'),
+                          onTap: () => s.toggleStar(),
+                        ),
+                        const SizedBox(width: 8),
+                        IBtn(
+                          'archive',
+                          tip: m.folder == 'archive'
+                              ? t('Désarchiver')
+                              : t('Archiver (e)'),
+                          onTap: s.archive,
+                        ),
+                        const SizedBox(width: 8),
+                        IBtn(
+                          'warn',
+                          tip: m.folder == 'spam'
+                              ? t('Pas du spam')
+                              : t('Spam'),
+                          onTap: s.spam,
+                        ),
+                        const SizedBox(width: 8),
+                        IBtn('trash', tip: t('Supprimer (#)'), onTap: s.trash),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
         Expanded(
           child: _Deck(current: m, ids: deck),
         ),
       ],
+    );
+  }
+}
+
+/// Barre d'un envoi de la boîte d'envoi : où il en est, et ce qu'on peut en faire.
+class _OutboxBar extends StatelessWidget {
+  final Mail mail;
+  final double hp;
+  const _OutboxBar(this.mail, this.hp);
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.read<MailStore>();
+    final p = context.pal;
+    final o = mail.outbox!;
+    final text = switch (o.state) {
+      'failed' => t('L’envoi a échoué : {0}', [
+        o.error ?? t('erreur inconnue'),
+      ]),
+      'uncertain' => t(
+        'Le résultat de l’envoi est incertain : le message est peut-être parti.',
+      ),
+      _ => t('Départ prévu à {0}.', [hhmm(o.at)]),
+    };
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: hp, vertical: 14),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: p.lineSoft)),
+      ),
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Text(text, style: Fonts.sans(size: 14, color: p.text)),
+          ),
+          if (o.waiting)
+            Btn(
+              key: const ValueKey('outbox-cancel'),
+              icon: 'x',
+              label: t('Annuler l’envoi'),
+              onTap: () => s.cancelOutbox(mail),
+            ),
+          if (o.state == 'failed')
+            Btn(
+              key: const ValueKey('outbox-retry'),
+              icon: 'refresh',
+              label: t('Réessayer'),
+              go: true,
+              onTap: () => s.retryOutbox(mail),
+            ),
+          if (o.state == 'uncertain') ...[
+            Btn(
+              key: const ValueKey('outbox-resend'),
+              icon: 'send',
+              label: t('Renvoyer'),
+              go: true,
+              onTap: () => s.resolveOutbox(mail, resend: true),
+            ),
+            Btn(
+              key: const ValueKey('outbox-sent'),
+              icon: 'check',
+              label: t('Ne pas renvoyer'),
+              onTap: () => s.resolveOutbox(mail, resend: false),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

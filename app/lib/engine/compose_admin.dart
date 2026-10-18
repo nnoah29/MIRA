@@ -13,6 +13,7 @@ class EngineDraft {
 
   /// Seuls les brouillons en édition sont des brouillons ; les autres sont déjà partis ou programmés.
   final bool editing;
+  final String state;
   const EngineDraft({
     required this.id,
     required this.account,
@@ -27,6 +28,7 @@ class EngineDraft {
     required this.attachments,
     required this.updatedAt,
     required this.editing,
+    required this.state,
   });
 
   static List<Person> _people(Object? raw) => [
@@ -60,6 +62,7 @@ class EngineDraft {
     ],
     updatedAt: (j['updated_at'] as num?)?.toInt() ?? 0,
     editing: ((j['state'] as Map?)?['type'] ?? 'editing') == 'editing',
+    state: '${(j['state'] as Map?)?['type'] ?? 'editing'}',
   );
 }
 
@@ -145,7 +148,7 @@ class ComposeAdmin {
   Future<void> delete(String draft) =>
       client.call(req('compose', 'delete_draft', {'draft': draft}));
 
-  /// Brouillons d'un compte, plus récents d'abord.
+  /// Brouillons d'un compte (tous états), plus récents d'abord.
   Future<List<EngineDraft>> list(String account) async {
     final raw = await client.call(
       req('compose', 'list_drafts', {'account': account}),
@@ -154,6 +157,42 @@ class ComposeAdmin {
     return [for (final d in items) EngineDraft.fromJson((d as Map).cast())]
       ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
   }
+
+  /// Envois du compte qui n'ont pas encore abouti (programmés, en cours, échoués, incertains).
+  Future<List<OutboxInfo>> outbox(String account) async {
+    final raw = await client.call(
+      req('compose', 'list_outbox', {'account': account}),
+    );
+    final items = ((raw['data'] as Map)['data'] as List);
+    return [
+      for (final e in items)
+        if ({
+          'pending',
+          'in_progress',
+          'failed',
+          'uncertain',
+        }.contains('${(e as Map)['state']}'))
+          OutboxInfo(
+            action: '${e['action']}',
+            draft: '${e['draft']}',
+            state: '${e['state']}',
+            at: (e['scheduled_for'] as num?)?.toInt() ?? 0,
+            subject: '${e['subject'] ?? ''}',
+            error: e['last_error'] as String?,
+          ),
+    ];
+  }
+
+  Future<void> retry(String action) =>
+      client.call(req('queue', 'retry_action', {'action': action}));
+
+  /// Tranche un envoi incertain : le renvoyer ou le tenir pour parti.
+  Future<void> resolve(String action, {required bool resend}) => client.call(
+    req('compose', 'resolve_uncertain_send', {
+      'action': action,
+      'resend': resend,
+    }),
+  );
 
   /// Met l'envoi en file (après le délai d'annulation, ou à `at` en millisecondes) ; rend l'action.
   Future<String> send(String draft, {int? at}) async {

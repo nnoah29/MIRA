@@ -150,7 +150,7 @@ class _AttachmentViewerState extends State<AttachmentViewer> {
             icon: 'download',
             label: t('Télécharger'),
             iconOnly: narrow,
-            onTap: () => s.download(a.n),
+            onTap: () => s.download(a),
           ),
           const SizedBox(width: 6),
           IBtn(
@@ -170,7 +170,7 @@ class _AttachmentViewerState extends State<AttachmentViewer> {
       AttKind.text => _Fetched(a, _TextBody.new),
       AttKind.pdf when realPdf => _Fetched(a, _PdfBody.new),
       AttKind.pdf => _PaperBody(documentPages(a), zoom),
-      AttKind.other => _Unavailable(a, () => s.download(a.n)),
+      AttKind.other => _Unavailable(a, () => s.download(a)),
     };
 
     return SafeArea(
@@ -266,7 +266,7 @@ class _FetchedState extends State<_Fetched> {
         }
         final bytes = snap.data;
         if (bytes == null) {
-          return _Unavailable(a, () => ctx.read<MailStore>().download(a.n));
+          return _Unavailable(a, () => ctx.read<MailStore>().download(a));
         }
         return widget.builder(
           Attachment(a.n, a.t, a.s, bytes: bytes, path: a.path, id: a.id),

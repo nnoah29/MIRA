@@ -10,6 +10,7 @@ import 'accounts_settings.dart';
 import 'contacts_settings.dart';
 import 'image_rules_section.dart';
 import 'maintenance_settings.dart';
+import 'notification_settings.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
 
@@ -28,6 +29,7 @@ List<(String, String)> get accentPresets => <(String, String)>[
 List<String> _tabs(bool engine) => [
   t('Apparence'),
   t('Messagerie'),
+  t('Notifications'),
   t('Comptes'),
   t('Contacts'),
   if (engine) t('Stockage'),
@@ -142,7 +144,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
       ),
     );
 
-    if (s.wantsAddAccount && s.source != null) tab = 2;
+    if (s.wantsAddAccount && s.source != null) tab = 3;
     final content = switch (tab) {
       0 => box([
         srow(
@@ -340,8 +342,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
           ),
         ),
       ]),
-      3 => box([const ContactsSettings()]),
-      4 when s.source != null => box([const MaintenanceSettings()]),
+      2 => box([const NotificationSettings()]),
+      4 => box([const ContactsSettings()]),
+      5 when s.source != null => box([const MaintenanceSettings()]),
       _ when s.source != null => box([const AccountsSettings()]),
       _ => box([
         srow(me.name, me.email, const SizedBox.shrink()),

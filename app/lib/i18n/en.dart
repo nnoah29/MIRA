@@ -117,6 +117,34 @@ const Map<String, String> enStrings = {
   'Départ prévu à {0}.': 'Scheduled to leave at {0}.',
   'Annuler l’envoi': 'Cancel sending',
   'Réessayer': 'Retry',
+  'Notifications': 'Notifications',
+  'Contenu': 'Content',
+  'Expéditeur et objet, ou seulement « Nouveau message » pour garder tes mails discrets à l’écran.': 'Sender and subject, or just “New message” to keep your mail private on screen.',
+  'Expéditeur et objet': 'Sender and subject',
+  'Discret': 'Private',
+  'Son': 'Sound',
+  'Joue le son de nouveau message du système.':
+      'Plays the system new-message sound.',
+  'Quand MIRA est au premier plan': 'When MIRA is in front',
+  'Notifier aussi quand tu as déjà la fenêtre de MIRA sous les yeux.':
+      'Notify even when the MIRA window is already in front of you.',
+  'Ne pas déranger': 'Do not disturb',
+  'Aucune notification pendant ces heures ; les messages arrivent quand même.':
+      'No notifications during these hours; mail still arrives.',
+  'Jamais': 'Never',
+  'Choisis les comptes dont les nouveaux messages sont notifiés.':
+      'Choose which accounts notify you of new mail.',
+  'Nouveaux messages': 'New mail',
+  'Une notification du bureau à l’arrivée d’un message en Réception. Un clic l’ouvre dans MIRA.': 'A desktop notification when mail arrives in your Inbox. Click it to open the message in MIRA.',
+  'Essayer': 'Try it',
+  'Affiche une notification pour vérifier qu’elles apparaissent bien.':
+      'Shows a notification to check that they appear.',
+  'Envoyer une notification de test': 'Send a test notification',
+  'Notifications indisponibles sur ce système':
+      'Notifications are not available on this system',
+  'Les notifications fonctionnent.': 'Notifications are working.',
+  '{0} nouveaux messages': '{0} new messages',
+  'MIRA': 'MIRA',
   'Retirer le filtre': 'Remove filter',
   'Afficher seulement': 'Show only',
   'Avec pièces jointes': 'With attachments',

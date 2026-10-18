@@ -25,6 +25,7 @@ import 'contacts.dart';
 import 'folder_map.dart';
 import 'image_policy.dart';
 import 'rich_controller.dart';
+import 'mail_notifier.dart';
 import 'unsubscribe.dart';
 import '../i18n/i18n.dart';
 
@@ -1165,7 +1166,13 @@ class MailStore extends ChangeNotifier {
       _applySnoozes(fresh);
       _keepLocalState(id, fresh);
       if (_signature(fresh) == _signature(_boxes[id] ?? const [])) return;
+      final arrived = newArrivals(
+        _boxes[id],
+        fresh,
+        DateTime.now().millisecondsSinceEpoch,
+      );
       _boxes[id] = fresh;
+      unawaited(_announce(acc, arrived));
       _rememberContacts();
       unawaited(_refreshDeep());
       if (unified) {
@@ -1770,6 +1777,98 @@ class MailStore extends ChangeNotifier {
   }
 
   final unsubscriber = Unsubscriber();
+
+  // ---- notifications du bureau ----
+
+  late final notifySettings = NotifySettings(prefs);
+
+  /// Service de notifications du système (`null` : aucune, comme dans les tests).
+  SystemNotifications? notifications;
+
+  /// La fenêtre de MIRA est au premier plan (tenu à jour par l'application).
+  bool appFocused = true;
+
+  /// Branche le service de notifications ; un clic ouvre le message notifié.
+  Future<void> useNotifications(SystemNotifications n) async {
+    notifications = n;
+    try {
+      await n.init(openNotified);
+    } catch (_) {
+      notifications = null;
+    }
+  }
+
+  /// Ouvre un message depuis sa notification : compte, Réception, puis le message.
+  void openNotified(String id) {
+    final account = id.split('/').first;
+    if (!unified && account != activeId) switchAccount(account);
+    if (folder != 'inbox' || label != null) selectFolder('inbox');
+    if (byId(id) != null) openMail(id);
+  }
+
+  /// Annonce les nouveaux messages d'un compte, selon les réglages ; plus de trois : une seule notification.
+  Future<void> _announce(Account acc, List<Mail> arrived) async {
+    final n = notifications;
+    final cfg = notifySettings;
+    if (n == null || arrived.isEmpty || !cfg.enabled) return;
+    if (cfg.muted.contains(acc.id)) return;
+    if (appFocused && !cfg.whenFocused) return;
+    if (cfg.isQuiet(DateTime.now().hour)) return;
+    try {
+      if (arrived.length > 3) {
+        await n.show(
+          acc.id.hashCode & 0x7fffffff,
+          t('{0} nouveaux messages', [arrived.length]),
+          acc.email,
+          payload: arrived.first.id,
+          sound: cfg.sound,
+        );
+        return;
+      }
+      for (final m in arrived) {
+        await n.show(
+          m.id.hashCode & 0x7fffffff,
+          cfg.preview ? shown(m.from) : t('Nouveau message'),
+          cfg.preview ? m.subject : acc.email,
+          payload: m.id,
+          sound: cfg.sound,
+        );
+      }
+    } catch (_) {
+      /* service de notifications indisponible : rien à afficher */
+    }
+  }
+
+  /// Change un réglage de notification et redessine.
+  void setNotify(String key, String value) {
+    prefs.setString(key, value);
+    notifyListeners();
+  }
+
+  /// Coupe ou rétablit les notifications d'un compte.
+  void muteAccount(String account, bool mute) {
+    notifySettings.setMuted(account, mute);
+    notifyListeners();
+  }
+
+  /// Affiche une notification d'essai, même au premier plan.
+  Future<void> testNotification() async {
+    final n = notifications;
+    if (n == null) {
+      toast(t('Notifications indisponibles sur ce système'), err: true);
+      return;
+    }
+    try {
+      await n.show(
+        0,
+        t('MIRA'),
+        t('Les notifications fonctionnent.'),
+        sound: notifySettings.sound,
+      );
+    } catch (_) {
+      toast(t('Notifications indisponibles sur ce système'), err: true);
+    }
+  }
 
   /// Lit la source brute du dernier message de la conversation (`null` : indisponible).
   Future<String?> originalOf(Mail m) async {

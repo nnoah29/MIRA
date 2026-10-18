@@ -28,6 +28,7 @@ void main() {
     expect(st.messages, 0);
     expect(await source.maintenance.checkIntegrity(), isTrue);
     expect(await source.admin.syncStatus(), isEmpty);
+    expect(await source.filtered('aucun', 'starred', unread: true), isEmpty);
     await source.dispose();
     await client.close();
   }, skip: skip);

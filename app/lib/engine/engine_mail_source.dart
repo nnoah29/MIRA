@@ -465,23 +465,78 @@ class EngineMailSource implements MailSource {
     String mailbox,
     String account,
   ) async {
+    final data = await _list({
+      'type': 'mailbox',
+      'mailbox': mailbox,
+    }, pageSize * (_depth[account] ?? 1));
+    if (data['next_cursor'] != null) _more.add(account);
+    return _items(data);
+  }
+
+  /// Une page de `list_messages` sur cette vue, avec ces filtres.
+  Future<Map> _list(
+    Map<String, dynamic> view,
+    int limit, {
+    bool unread = false,
+    bool attachments = false,
+  }) async {
     final raw = await client.call(
       req('message', 'list_messages', {
-        'view': {'type': 'mailbox', 'mailbox': mailbox},
+        'view': view,
         'filters': {
-          'unread_only': false,
+          'unread_only': unread,
           'flagged_only': false,
-          'has_attachments': false,
+          'has_attachments': attachments,
           'from_contains': null,
           'since': null,
           'until': null,
         },
-        'page': {'cursor': null, 'limit': pageSize * (_depth[account] ?? 1)},
+        'page': {'cursor': null, 'limit': limit},
       }),
     );
-    if ((raw['data'] as Map)['next_cursor'] != null) _more.add(account);
-    final items = (raw['data'] as Map)['items'] as List;
-    return [for (final m in items) (m as Map).cast<String, dynamic>()];
+    return raw['data'] as Map;
+  }
+
+  static List<Map<String, dynamic>> _items(Map data) => [
+    for (final m in data['items'] as List) (m as Map).cast<String, dynamic>(),
+  ];
+
+  /// Plafond des messages lus pour un filtre : assez pour une boîte chargée, borné pour rester rapide.
+  static const filterLimit = 1000;
+
+  @override
+  Future<List<Mail>> filtered(
+    String account,
+    String folder, {
+    bool unread = false,
+    bool attachments = false,
+  }) async {
+    if (folder == 'starred') {
+      final data = await _list(
+        {'type': 'standard', 'view': 'flagged'},
+        filterLimit,
+        unread: unread,
+        attachments: attachments,
+      );
+      return _mailsOfHits([
+        for (final m in _items(data))
+          if (m['account'] == account) m,
+      ]);
+    }
+    final box = mailboxOf(account, folder);
+    if (box == null) return const [];
+    final data = await _list(
+      {'type': 'mailbox', 'mailbox': box},
+      filterLimit,
+      unread: unread,
+      attachments: attachments,
+    );
+    return mailsOfFolder(
+      folder,
+      account,
+      _items(data),
+      labelIds: labels.keys.toSet(),
+    );
   }
 
   static const _searchOrder = [

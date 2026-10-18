@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class FakeEngine implements EngineClient {
   final calls = <String>[];
   final queueAsked = <Map<String, dynamic>>[];
+  final filteredAsked = <Map<String, dynamic>>[];
   final bodyFails = <String>{};
   bool allowed = false;
   bool extra = false;
@@ -114,7 +115,24 @@ class FakeEngine implements EngineClient {
       case 'message.list_messages':
         final limit = ((r['page'] as Map)['limit'] as num).toInt();
         limits.add(limit);
-        if (many && (r['view'] as Map)['mailbox'] == 'mb-inbox') {
+        final view = r['view'] as Map;
+        final filters = r['filters'] as Map;
+        if (view['type'] == 'standard' || filters['unread_only'] == true) {
+          filteredAsked.add(r);
+          final deep = view['type'] == 'standard'
+              ? (_msg('fl1', 'Vieux favori', date: 3)
+                  ..['flags'] = {'seen': true, 'flagged': true}
+                  ..['mailboxes'] = ['mb-archive'])
+              : _msg('nr1', 'Vieux non lu', seen: false, date: 5);
+          return {
+            'type': 'messages',
+            'data': {
+              'items': [deep],
+              'next_cursor': null,
+            },
+          };
+        }
+        if (many && view['mailbox'] == 'mb-inbox') {
           final all = [
             for (var i = 0; i < 5; i++) _msg('p$i', 'Ancien $i', date: 900 - i),
           ];
@@ -516,6 +534,60 @@ class FakeEngine implements EngineClient {
 }
 
 void main() {
+  group('filtres sur toute la boîte', () {
+    Future<(MailStore, FakeEngine)> start() async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final fake = FakeEngine();
+      return (
+        MailStore(prefs, source: await EngineMailSource.load(fake)),
+        fake,
+      );
+    }
+
+    Future<void> settle() =>
+        Future<void>.delayed(const Duration(milliseconds: 20));
+
+    test(
+      'Non lus : le moteur trouve un non lu hors des pages chargées',
+      () async {
+        final (store, fake) = await start();
+        store.setOnly('unread');
+        await settle();
+        final asked = fake.filteredAsked.single;
+        expect(asked['view'], {'type': 'mailbox', 'mailbox': 'mb-inbox'});
+        expect((asked['filters'] as Map)['unread_only'], isTrue);
+        final shown = store.visible();
+        expect(shown.every((m) => m.unread), isTrue);
+        final old = shown.firstWhere((m) => m.subject == 'Vieux non lu');
+        expect(store.byId(old.id), same(old));
+        store.setOnly('unread');
+        expect(store.only, isNull);
+        store.dispose();
+      },
+    );
+
+    test(
+      'Favoris : la vue « flagged » du moteur complète les pages chargées',
+      () async {
+        final (store, fake) = await start();
+        store.selectFolder('starred');
+        await settle();
+        expect(fake.filteredAsked.single['view'], {
+          'type': 'standard',
+          'view': 'flagged',
+        });
+        expect(store.visible().map((m) => m.subject), contains('Vieux favori'));
+        store.selectFolder('inbox');
+        expect(
+          store.visible().map((m) => m.subject),
+          isNot(contains('Vieux favori')),
+        );
+        store.dispose();
+      },
+    );
+  });
+
   test('état de synchro par compte lu dans le moteur', () async {
     final admin = (await EngineMailSource.load(FakeEngine())).admin;
     final st = (await admin.syncStatus())['acc1']!;

@@ -107,6 +107,40 @@ class MailsColumn extends StatelessWidget {
               spacing: 6,
               runSpacing: 6,
               children: [
+                if (s.only != null)
+                  Hov(
+                    key: const ValueKey('only-chip'),
+                    onTap: () => s.setOnly(s.only),
+                    tip: t('Retirer le filtre'),
+                    builder: (_, h) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 11,
+                        vertical: 6.25,
+                      ),
+                      decoration: BoxDecoration(
+                        color: p.accentSoft,
+                        border: Border.all(color: p.accent),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            s.only == 'unread'
+                                ? t('Non lus')
+                                : t('Avec pièces jointes'),
+                            style: Fonts.mono(
+                              size: 11,
+                              color: p.accent,
+                              ls: 0,
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Ico('x', size: 11, color: h ? p.text : p.accent),
+                        ],
+                      ),
+                    ),
+                  ),
                 for (final (k, n) in pills)
                   Hov(
                     onTap: () => s.setPill(k),

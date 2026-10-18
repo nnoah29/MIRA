@@ -191,6 +191,7 @@ class EngineMailSource implements MailSource {
       for (final b in (raw['data'] as List)) (b as Map).cast<String, dynamic>(),
     ];
     final found = _labelsOf(account, boxes);
+    _more.remove(account.id);
     _folderBoxes.removeWhere((k, _) => k.startsWith('${account.id}/'));
     for (final b in boxes) {
       final folder = folderForRole('${b['role']}');
@@ -209,12 +210,12 @@ class EngineMailSource implements MailSource {
     for (final box in ordered) {
       final folder = _folderOf(box);
       if (folder == null) continue;
-      final msgs = await _summaries('${box['id']}');
+      final msgs = await _summaries('${box['id']}', account.id);
       byFolder
           .putIfAbsent(folder, () => [])
           .addAll(msgs.where((m) => seen.add('${m['id']}')));
     }
-    await _addLabelOnly(byFolder, boxes, found, seen);
+    await _addLabelOnly(byFolder, boxes, found, seen, account.id);
     final all = await _allDrafts(account);
     final mine = [
       for (final d in all)
@@ -332,10 +333,11 @@ class EngineMailSource implements MailSource {
     List<Map<String, dynamic>> boxes,
     Map<String, LabelDef> labelBoxes,
     Set<String> seen,
+    String account,
   ) async {
     for (final box in boxes) {
       if (!labelBoxes.containsKey('${box['id']}')) continue;
-      final msgs = await _summaries('${box['id']}');
+      final msgs = await _summaries('${box['id']}', account);
       final fresh = msgs.where((m) => seen.add('${m['id']}')).toList();
       byFolder.putIfAbsent('archive', () => []).addAll(fresh);
     }
@@ -380,7 +382,21 @@ class EngineMailSource implements MailSource {
     return shown.isEmpty ? '${box['name'] ?? box['id']}' : shown;
   }
 
-  Future<List<Map<String, dynamic>>> _summaries(String mailbox) async {
+  /// Profondeur de lecture par compte : nombre de pages de `pageSize` messages lues par boîte.
+  final Map<String, int> _depth = {};
+  final Set<String> _more = {};
+
+  @override
+  bool hasMore(String account) => _more.contains(account);
+
+  @override
+  void readDeeper(String account) =>
+      _depth[account] = (_depth[account] ?? 1) + 1;
+
+  Future<List<Map<String, dynamic>>> _summaries(
+    String mailbox,
+    String account,
+  ) async {
     final raw = await client.call(
       req('message', 'list_messages', {
         'view': {'type': 'mailbox', 'mailbox': mailbox},
@@ -392,9 +408,10 @@ class EngineMailSource implements MailSource {
           'since': null,
           'until': null,
         },
-        'page': {'cursor': null, 'limit': pageSize},
+        'page': {'cursor': null, 'limit': pageSize * (_depth[account] ?? 1)},
       }),
     );
+    if ((raw['data'] as Map)['next_cursor'] != null) _more.add(account);
     final items = (raw['data'] as Map)['items'] as List;
     return [for (final m in items) (m as Map).cast<String, dynamic>()];
   }

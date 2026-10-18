@@ -381,8 +381,33 @@ class _MailListViewState extends State<MailListView> {
               ],
             ),
           if (s.source != null && s.q.trim().length >= 2)
-            const SliverToBoxAdapter(child: _ServerSearchRow()),
+            const SliverToBoxAdapter(child: _ServerSearchRow())
+          else if (s.q.trim().isEmpty && s.moreAvailable)
+            const SliverToBoxAdapter(child: _LoadMoreRow()),
         ],
+      ),
+    );
+  }
+}
+
+/// Pied de liste : charger les messages plus anciens.
+class _LoadMoreRow extends StatelessWidget {
+  const _LoadMoreRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<MailStore>();
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Center(
+        child: Btn(
+          key: const ValueKey('load-more'),
+          icon: 'chev',
+          label: s.loadingMore
+              ? t('Chargement…')
+              : t('Afficher les messages plus anciens'),
+          onTap: s.loadingMore ? null : s.loadMore,
+        ),
       ),
     );
   }

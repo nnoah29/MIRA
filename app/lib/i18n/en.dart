@@ -98,6 +98,7 @@ const Map<String, String> enStrings = {
   'Nom enregistré': 'Name saved',
   '{0} messages': '{0} messages',
   'Chargement…': 'Loading…',
+  'Afficher les messages plus anciens': 'Show older messages',
   'Chercher aussi sur le serveur': 'Also search on the server',
   'Recherche sur le serveur…': 'Searching on the server…',
   'Recherche sur le serveur impossible.': 'Server search failed.',

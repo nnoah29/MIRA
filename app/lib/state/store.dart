@@ -362,6 +362,39 @@ class MailStore extends ChangeNotifier {
     return null;
   }
 
+  // ---- messages plus anciens ----
+  bool loadingMore = false;
+
+  /// Comptes de la vue courante ayant des messages plus anciens non chargés.
+  List<String> _deeper() {
+    final src = source;
+    if (src == null) return const [];
+    return [
+      for (final a in accounts)
+        if ((unified || a.id == activeId) && src.hasMore(a.id)) a.id,
+    ];
+  }
+
+  bool get moreAvailable => _deeper().isNotEmpty;
+
+  /// Charge une page de plus par boîte pour les comptes de la vue.
+  Future<void> loadMore() async {
+    final src = source;
+    final ids = _deeper();
+    if (src == null || ids.isEmpty || loadingMore) return;
+    loadingMore = true;
+    notifyListeners();
+    try {
+      for (final id in ids) {
+        src.readDeeper(id);
+        await _reloadOnce(id);
+      }
+    } finally {
+      loadingMore = false;
+      notifyListeners();
+    }
+  }
+
   // ---- recherche dans l'index du moteur ----
   List<Mail> _hits = const [];
   String _hitsFor = '';

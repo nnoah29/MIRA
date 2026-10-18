@@ -68,6 +68,9 @@ abstract class MailSource {
   /// Boîte du serveur qui tient le rôle de ce dossier pour ce compte (`null` : inconnue).
   String? mailboxOf(String account, String folder);
 
+  /// Nombre de non lus exact du dossier selon le moteur (`null` : inconnu).
+  int? unreadOf(String account, String folder);
+
   /// Vrai si ce compte a des messages plus anciens que ceux chargés.
   bool hasMore(String account);
 

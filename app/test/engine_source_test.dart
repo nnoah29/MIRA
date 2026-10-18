@@ -97,7 +97,7 @@ class FakeEngine implements EngineClient {
         return {
           'type': 'mailboxes',
           'data': [
-            {'id': 'mb-inbox', 'role': 'inbox'},
+            {'id': 'mb-inbox', 'role': 'inbox', 'unread': 4321},
             {'id': 'mb-junk', 'role': 'junk'},
             {'id': 'mb-drafts', 'role': 'drafts'},
             {'id': 'mb-archive', 'role': 'archive'},
@@ -411,6 +411,19 @@ class FakeEngine implements EngineClient {
 }
 
 void main() {
+  test(
+    'le compteur de non lus vient du moteur, pas des messages chargés',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final src = await EngineMailSource.load(FakeEngine());
+      expect(src.unreadOf('acc1', 'inbox'), 4321);
+      final store = MailStore(prefs, source: src);
+      expect(store.navCount('inbox'), 4321);
+      store.dispose();
+    },
+  );
+
   test('les comptes et boîtes viennent du moteur, par dossier', () async {
     final src = await EngineMailSource.load(FakeEngine());
     expect(src.accounts.single.email, 'alice@example.org');

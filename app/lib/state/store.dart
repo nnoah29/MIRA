@@ -539,10 +539,22 @@ class MailStore extends ChangeNotifier {
     return [];
   }
 
+  int _unreadIn(String folder) {
+    final local = nonRead(mails.where((m) => m.folder == folder));
+    final src = source;
+    if (src == null) return local;
+    var exact = 0;
+    for (final a in accounts) {
+      if (!unified && a.id != activeId) continue;
+      exact += src.unreadOf(a.id, folder) ?? 0;
+    }
+    return exact > local ? exact : local;
+  }
+
   int navCount(String id) {
     switch (id) {
       case 'inbox':
-        return nonRead(mails.where((m) => m.folder == 'inbox'));
+        return _unreadIn('inbox');
       case 'starred':
         return mails.where((m) => m.starred && !hidden(m)).length;
       case 'drafts':
@@ -550,7 +562,7 @@ class MailStore extends ChangeNotifier {
       case 'outbox':
         return mails.where((m) => m.folder == 'outbox').length;
       case 'spam':
-        return nonRead(mails.where((m) => m.folder == 'spam'));
+        return _unreadIn('spam');
       case 'snoozed':
         return mails.where((m) => m.folder == 'snoozed').length;
     }

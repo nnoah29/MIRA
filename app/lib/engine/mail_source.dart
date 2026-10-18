@@ -5,6 +5,7 @@ import 'account_admin.dart';
 import 'account_setup.dart';
 import 'compose_admin.dart';
 import 'label_admin.dart';
+import 'message_actions.dart';
 
 /// Origine des données affichées : comptes, boîtes chargées, et enrichissement d'un message.
 abstract class MailSource {
@@ -52,6 +53,12 @@ abstract class MailSource {
 
   /// Contenu d'une pièce jointe du moteur (`null` : illisible ou sans identifiant).
   Future<Uint8List?> attachmentBytes(Attachment a);
+
+  /// Actions sur les messages (`null` : démonstration).
+  MessageActions? get messageActions;
+
+  /// Boîte du serveur qui tient le rôle de ce dossier pour ce compte (`null` : inconnue).
+  String? mailboxOf(String account, String folder);
 
   /// Brouillons et envois (`null` : démonstration).
   ComposeAdmin? get composer;

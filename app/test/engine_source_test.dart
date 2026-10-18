@@ -17,6 +17,8 @@ class FakeEngine implements EngineClient {
   bool second = false;
   bool labelOnly = false;
   bool serverCopy = false;
+  bool failActions = false;
+  String outboxState = 'pending';
   final actions = <Map<String, dynamic>>[];
   final composed = <Map<String, dynamic>>[];
   final drafts = <String, Map<String, dynamic>>{};
@@ -161,6 +163,9 @@ class FakeEngine implements EngineClient {
           'action.create_mailbox' ||
           'action.rename_mailbox' ||
           'action.delete_mailbox':
+        if (failActions) {
+          throw const EngineException('internal.bug', 'refusé');
+        }
         actions.add({'op': r['op'], ...r});
         return {
           'type': 'write',
@@ -218,6 +223,24 @@ class FakeEngine implements EngineClient {
         composed.add({'op': r['op'], ...r});
         drafts[r['draft']]!['state'] = {'type': 'sending'};
         return _write('action', 'send1');
+      case 'compose.list_outbox':
+        return _write('outbox', [
+          for (final d in drafts.values)
+            if ((d['state'] as Map)['type'] != 'editing')
+              {
+                'action': 'send1',
+                'draft': d['id'],
+                'state': outboxState,
+                'scheduled_for': 9000,
+                'subject': d['subject'],
+                'last_error': outboxState == 'failed'
+                    ? 'serveur injoignable'
+                    : null,
+              },
+        ]);
+      case 'queue.retry_action' || 'compose.resolve_uncertain_send':
+        composed.add({'op': r['op'], ...r});
+        return {'type': 'done'};
       case 'compose.cancel_send':
         composed.add({'op': r['op'], ...r});
         for (final d in drafts.values) {
@@ -616,6 +639,211 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     expect(fake.actions.last['kind']['type'], 'remove_from_mailbox');
     store.dispose();
+  });
+
+  test(
+    'télécharger enregistre le contenu de la pièce jointe du moteur',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final store = MailStore(
+        prefs,
+        source: await EngineMailSource.load(FakeEngine()),
+      );
+      String? name;
+      List<int>? saved;
+      store.saveFile = (n, b) async {
+        name = n;
+        saved = b;
+        return Uri.file('/tmp/$n');
+      };
+      await store.download(
+        const Attachment('devis.pdf', 'PDF', '2 Ko', id: 'a1'),
+      );
+      expect(name, 'devis.pdf');
+      expect(saved, [1, 2, 3]);
+      expect(store.toasts.last.err, isFalse);
+      store.saveFile = (_, _) async => null;
+      await store.download(
+        const Attachment('devis.pdf', 'PDF', '2 Ko', id: 'a1'),
+      );
+      store.saveFile = (_, _) => throw StateError('refusé');
+      await store.download(
+        const Attachment('devis.pdf', 'PDF', '2 Ko', id: 'a1'),
+      );
+      expect(store.toasts.last.err, isTrue);
+      store.dispose();
+    },
+  );
+
+  group('boîte d\'envoi', () {
+    Future<(MailStore, FakeEngine)> sent({String? sched}) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final fake = FakeEngine();
+      final store = MailStore(prefs, source: await EngineMailSource.load(fake));
+      store.openCompose(
+        const ComposeInit(
+          to: [Person('Bob', 'bob@example.org')],
+          subject: 'Programmé',
+          text: 'Bonjour',
+          from: 'alice@example.org',
+        ),
+      );
+      await store.send(sched);
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      return (store, fake);
+    }
+
+    test('un envoi programmé apparaît dans la boîte d\'envoi', () async {
+      final (store, _) = await sent(sched: 'demain 08:00');
+      final m = store.mails.singleWhere((x) => x.folder == 'outbox');
+      expect(m.id, 'outbox:dr1');
+      expect(m.subject, 'Programmé');
+      expect(m.outbox!.waiting, isTrue);
+      expect(store.navCount('outbox'), 1);
+      expect(store.targets(), isEmpty);
+      store.dispose();
+    });
+
+    test(
+      'un envoi immédiat n\'est pas montré en double pendant le délai',
+      () async {
+        final (store, _) = await sent();
+        expect(store.mails.where((x) => x.folder == 'outbox'), isEmpty);
+        expect(store.mails.where((x) => x.folder == 'sent'), isNotEmpty);
+        store.dispose();
+      },
+    );
+
+    test('annuler un envoi le ramène dans les brouillons', () async {
+      final (store, fake) = await sent(sched: 'demain 08:00');
+      await store.cancelOutbox(
+        store.mails.singleWhere((x) => x.folder == 'outbox'),
+      );
+      expect(fake.composed.last['op'], 'cancel_send');
+      expect(store.mails.where((x) => x.folder == 'outbox'), isEmpty);
+      expect(store.mails.where((x) => x.folder == 'drafts'), isNotEmpty);
+      store.dispose();
+    });
+
+    test('un envoi échoué se relance, un envoi incertain se tranche', () async {
+      final (store, fake) = await sent(sched: 'demain 08:00');
+      fake.outboxState = 'failed';
+      await store.source!.reload(store.accounts.single);
+      await store.retryOutbox(
+        (await store.source!.reload(store.accounts.single))
+            .singleWhere((x) => x.folder == 'outbox'),
+      );
+      expect(fake.composed.last['op'], 'retry_action');
+      fake.outboxState = 'uncertain';
+      final uncertain = (await store.source!.reload(store.accounts.single))
+          .singleWhere((x) => x.folder == 'outbox');
+      expect(uncertain.outbox!.state, 'uncertain');
+      await store.resolveOutbox(uncertain, resend: true);
+      expect(fake.composed.last['resend'], isTrue);
+      store.dispose();
+    });
+  });
+
+  group('actions sur les messages', () {
+    Future<(MailStore, FakeEngine, Mail)> start() async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final fake = FakeEngine();
+      final store = MailStore(prefs, source: await EngineMailSource.load(fake));
+      final conv = store.mails.firstWhere((m) => m.msgs.length == 2);
+      return (store, fake, conv);
+    }
+
+    Future<void> settle() =>
+        Future<void>.delayed(const Duration(milliseconds: 20));
+
+    test(
+      'archiver envoie archive, annuler déplace vers la réception',
+      () async {
+        final (store, fake, conv) = await start();
+        store.sel.add(conv.id);
+        store.archive();
+        await settle();
+        expect(fake.actions.last['kind'], {'type': 'archive'});
+        expect(fake.actions.last['targets']['messages'], ['m1', 'm2']);
+        store.toasts.last.cb!();
+        await settle();
+        expect(fake.actions.last['kind'], {'type': 'move', 'to': 'mb-inbox'});
+        expect(conv.folder, 'inbox');
+        store.dispose();
+      },
+    );
+
+    test('corbeille et spam passent par le moteur', () async {
+      final (store, fake, conv) = await start();
+      store.sel.add(conv.id);
+      store.trash();
+      await settle();
+      expect(fake.actions.last['kind'], {'type': 'trash'});
+      store.sel.add(conv.id);
+      store.spam();
+      await settle();
+      expect(fake.actions.last['kind'], {'type': 'mark_spam', 'spam': true});
+      store.sel.add(conv.id);
+      store.spam();
+      await settle();
+      expect(fake.actions.last['kind'], {'type': 'mark_spam', 'spam': false});
+      store.dispose();
+    });
+
+    test('favori et lu/non lu passent par le moteur', () async {
+      final (store, fake, conv) = await start();
+      store.toggleStar(conv.id);
+      await settle();
+      expect(fake.actions.last['kind'], {
+        'type': 'mark_flagged',
+        'flagged': true,
+      });
+      store.sel.add(conv.id);
+      store.toggleRead();
+      await settle();
+      expect(fake.actions.last['kind']['type'], 'mark_read');
+      store.dispose();
+    });
+
+    test('ouvrir un message non lu le marque lu sur le serveur', () async {
+      final (store, fake, conv) = await start();
+      expect(conv.unread, isTrue);
+      store.openMail(conv.id);
+      await settle();
+      expect(fake.actions.last['kind'], {'type': 'mark_read', 'read': true});
+      store.dispose();
+    });
+
+    test(
+      'la suppression définitive attend la fin du délai d\'annulation',
+      () async {
+        final (store, fake, conv) = await start();
+        conv.folder = 'trash';
+        store.sel.add(conv.id);
+        store.trash();
+        await settle();
+        expect(fake.actions, isEmpty);
+        store.toasts.last.cb!();
+        await settle();
+        expect(fake.actions, isEmpty);
+        expect(store.mails, contains(conv));
+        store.dispose();
+      },
+    );
+
+    test('une action refusée relit le compte et prévient', () async {
+      final (store, fake, conv) = await start();
+      fake.failActions = true;
+      store.toggleStar(conv.id);
+      await settle();
+      expect(store.toasts.any((t) => t.err), isTrue);
+      final again = store.mails.firstWhere((m) => m.msgs.length == 2);
+      expect(again.starred, isFalse);
+      store.dispose();
+    });
   });
 
   test('créer, renommer, supprimer un libellé passe par le moteur', () async {

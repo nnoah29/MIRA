@@ -121,6 +121,25 @@ class DraftMeta {
   });
 }
 
+/// État d'un envoi dans la boîte d'envoi du moteur.
+class OutboxInfo {
+  final String action, draft, state, subject;
+  final String? error;
+
+  /// Instant prévu pour le départ, en millisecondes.
+  final int at;
+  const OutboxInfo({
+    required this.action,
+    required this.draft,
+    required this.state,
+    required this.at,
+    this.subject = '',
+    this.error,
+  });
+
+  bool get waiting => state == 'pending' || state == 'in_progress';
+}
+
 class Mail {
   String id;
   String folder;
@@ -137,6 +156,9 @@ class Mail {
   String? sched;
   List<Msg> msgs;
   DraftMeta? draft;
+
+  /// Envoi en attente, en cours, échoué ou incertain (`null` : message ordinaire).
+  OutboxInfo? outbox;
 
   /// Compte auquel appartient ce message.
   String account;
@@ -156,6 +178,7 @@ class Mail {
     this.sched,
     required this.msgs,
     this.draft,
+    this.outbox,
     String? account,
   }) : account = account ?? currentAccountId,
        labels = labels ?? [],
@@ -261,6 +284,7 @@ const folderDefs = <FolderDef>[
   FolderDef('snoozed', 'Reportés', 'clock'),
   FolderDef('sent', 'Envoyés', 'send'),
   FolderDef('drafts', 'Brouillons', 'file'),
+  FolderDef('outbox', 'Boîte d’envoi', 'outbox'),
   FolderDef('archive', 'Archives', 'archive'),
   FolderDef('spam', 'Spam', 'warn'),
   FolderDef('trash', 'Corbeille', 'trash'),

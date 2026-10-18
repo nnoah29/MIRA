@@ -14,6 +14,7 @@ import 'compose_admin.dart';
 import 'css_inliner.dart';
 import 'inline_images.dart';
 import 'label_admin.dart';
+import 'message_actions.dart';
 import 'engine_client.dart';
 import 'mail_builder.dart';
 import 'mappers.dart';
@@ -104,6 +105,15 @@ class EngineMailSource implements MailSource {
   @override
   ComposeAdmin get composer => ComposeAdmin(client);
 
+  @override
+  MessageActions get messageActions => MessageActions(client);
+
+  final Map<String, String> _folderBoxes = {};
+
+  @override
+  String? mailboxOf(String account, String folder) =>
+      _folderBoxes['$account/$folder'];
+
   final Map<String, Uint8List> _attachments = {};
 
   @override
@@ -180,6 +190,11 @@ class EngineMailSource implements MailSource {
       for (final b in (raw['data'] as List)) (b as Map).cast<String, dynamic>(),
     ];
     final found = _labelsOf(account, boxes);
+    _folderBoxes.removeWhere((k, _) => k.startsWith('${account.id}/'));
+    for (final b in boxes) {
+      final folder = folderForRole('${b['role']}');
+      if (folder != null) _folderBoxes['${account.id}/$folder'] = '${b['id']}';
+    }
     final byFolder = <String, List<Map<String, dynamic>>>{};
     final seen = <String>{};
     final ordered = [
@@ -195,8 +210,13 @@ class EngineMailSource implements MailSource {
           .addAll(msgs.where((m) => seen.add('${m['id']}')));
     }
     await _addLabelOnly(byFolder, boxes, found, seen);
-    final mine = await _drafts(account);
+    final all = await _allDrafts(account);
+    final mine = [
+      for (final d in all)
+        if (d.editing) d,
+    ];
     _dropDraftCopies(byFolder, mine);
+    final outgoing = await _outbox(account, all);
     return [
       for (final e in byFolder.entries)
         ...mailsOfFolder(
@@ -206,20 +226,58 @@ class EngineMailSource implements MailSource {
           labelIds: found.keys.toSet(),
         ),
       ...mine.map((d) => _draftMail(account, d)),
+      ...outgoing,
     ];
   }
 
-  /// Brouillons en cours d'écriture, gardés par le moteur ; une lecture ratée n'efface rien.
-  Future<List<EngineDraft>> _drafts(Account account) async {
+  /// Tous les brouillons du moteur, y compris ceux programmés ou en cours d'envoi ; une lecture ratée n'efface rien.
+  Future<List<EngineDraft>> _allDrafts(Account account) async {
     try {
-      final list = await composer.list(account.id);
+      return await composer.list(account.id);
+    } on EngineException {
+      return const [];
+    }
+  }
+
+  /// Envois pas encore partis ou en difficulté, présentés comme des messages de la boîte d'envoi.
+  Future<List<Mail>> _outbox(Account account, List<EngineDraft> drafts) async {
+    try {
+      final byId = {for (final d in drafts) d.id: d};
       return [
-        for (final d in list)
-          if (d.editing) d,
+        for (final o in await composer.outbox(account.id))
+          _outboxMail(account, o, byId[o.draft]),
       ];
     } on EngineException {
       return const [];
     }
+  }
+
+  Mail _outboxMail(Account account, OutboxInfo o, EngineDraft? d) {
+    final mail = d == null
+        ? Mail(
+            id: 'outbox:${o.draft}',
+            folder: 'outbox',
+            account: account.id,
+            from: Person(account.name, account.email),
+            to: [],
+            subject: o.subject,
+            date: o.at,
+            msgs: [
+              Msg(
+                from: Person(account.name, account.email),
+                date: o.at,
+                body: [],
+              ),
+            ],
+          )
+        : _draftMail(account, d);
+    mail
+      ..id = 'outbox:${o.draft}'
+      ..folder = 'outbox'
+      ..date = o.at
+      ..draft = null
+      ..outbox = o;
+    return mail;
   }
 
   /// Le serveur garde une copie de chaque brouillon (même Message-ID) : on ne montre que le brouillon du moteur.

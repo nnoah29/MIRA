@@ -142,18 +142,21 @@ class Sidebar extends StatelessWidget {
               children: [
                 _NavTitle(t('Ma boîte')),
                 for (final f in folderDefs)
-                  _NavItem(
-                    on: s.label == null && s.folder == f.id,
-                    onTap: () => s.selectFolder(f.id),
-                    leading: Ico(
-                      f.icon,
-                      color: s.label == null && s.folder == f.id
-                          ? p.accent
-                          : null,
+                  if (f.id != 'outbox' ||
+                      s.navCount('outbox') > 0 ||
+                      (s.label == null && s.folder == 'outbox'))
+                    _NavItem(
+                      on: s.label == null && s.folder == f.id,
+                      onTap: () => s.selectFolder(f.id),
+                      leading: Ico(
+                        f.icon,
+                        color: s.label == null && s.folder == f.id
+                            ? p.accent
+                            : null,
+                      ),
+                      label: t(f.n),
+                      count: s.navCount(f.id),
                     ),
-                    label: t(f.n),
-                    count: s.navCount(f.id),
-                  ),
                 _NavTitle(t('Libellés')),
                 for (final e in s.labelDefs.entries)
                   _NavItem(

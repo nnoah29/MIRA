@@ -29,6 +29,7 @@ const _paths = <String, String>{
   'gear': '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
   'help': '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 .5c0 1.5-2.5 2-2.5 3.5M12 17v.5"/>',
   'minus': '<path d="M5 12h14"/>',
+  'outbox': '<path d="M4 14v5h16v-5M12 15V4M8 8l4-4 4 4"/>',
   'download': '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>',
   'plus': '<path d="M12 5v14M5 12h14"/>',
   'refresh': '<path d="M20 11a8 8 0 00-14.5-4M4 4v4h4"/><path d="M4 13a8 8 0 0014.5 4M20 20v-4h-4"/>',

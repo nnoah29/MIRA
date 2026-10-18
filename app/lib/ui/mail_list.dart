@@ -415,7 +415,8 @@ class MailRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<MailStore>();
     final p = context.pal;
-    final out = m.folder == 'sent' || m.folder == 'drafts';
+    final out =
+        m.folder == 'sent' || m.folder == 'drafts' || m.folder == 'outbox';
     final who = out
         ? t('À : {0}', [
             m.to.isEmpty
@@ -433,7 +434,14 @@ class MailRow extends StatelessWidget {
     final snipText = plainOf(last.body);
     final snip = snipText.length > 170 ? snipText.substring(0, 170) : snipText;
     String? tag;
-    if (m.folder == 'drafts') {
+    final o = m.outbox;
+    if (o != null) {
+      tag = switch (o.state) {
+        'failed' => t('Échec de l’envoi'),
+        'uncertain' => t('Envoi incertain'),
+        _ => t('Départ à {0}', [hhmm(o.at)]),
+      };
+    } else if (m.folder == 'drafts') {
       tag = t('Brouillon');
     } else if (m.folder == 'snoozed') {
       tag = t('Reporté · {0}', [t(m.snooze ?? '')]);

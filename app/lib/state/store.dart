@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show Uint8List;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,6 +14,7 @@ import '../engine/blocks_html.dart';
 import '../engine/compose_admin.dart';
 import '../engine/engine_client.dart';
 import '../engine/label_admin.dart';
+import '../engine/message_actions.dart';
 import '../engine/mail_source.dart';
 import '../theme/wall_source.dart';
 import '../theme/wall_theme.dart';
@@ -342,6 +345,7 @@ class MailStore extends ChangeNotifier {
     for (final t in _timers) {
       t.cancel();
     }
+    c?.timer?.cancel();
     super.dispose();
   }
 
@@ -395,8 +399,9 @@ class MailStore extends ChangeNotifier {
   }
 
   List<String> targets() {
-    if (sel.isNotEmpty) return sel.where((id) => byId(id) != null).toList();
-    if (open != null && byId(open) != null) return [open!];
+    bool actionable(String id) => byId(id) != null && byId(id)!.outbox == null;
+    if (sel.isNotEmpty) return sel.where(actionable).toList();
+    if (open != null && actionable(open!)) return [open!];
     return [];
   }
 
@@ -408,6 +413,8 @@ class MailStore extends ChangeNotifier {
         return mails.where((m) => m.starred && !hidden(m)).length;
       case 'drafts':
         return mails.where((m) => m.folder == 'drafts').length;
+      case 'outbox':
+        return mails.where((m) => m.folder == 'outbox').length;
       case 'spam':
         return nonRead(mails.where((m) => m.folder == 'spam'));
       case 'snoozed':
@@ -831,7 +838,10 @@ class MailStore extends ChangeNotifier {
       );
       return;
     }
-    m.unread = false;
+    if (m.unread) {
+      m.unread = false;
+      _syncAction([m], (a) => a.read(true));
+    }
     _hydrate(m);
     _prefetchAround(m);
     if (view == PaneView.assistant) {
@@ -1098,6 +1108,7 @@ class MailStore extends ChangeNotifier {
     }
     sel.clear();
     _afterChange(idx);
+    _pushMoves([for (final (m, f, _) in prev) (m, f, to)]);
     toast(
       '${tn(ids.length, 'message', 'messages')} ${t(ids.length > 1 ? (verbPl ?? verb) : verb)}',
       label: t('Annuler'),
@@ -1107,6 +1118,7 @@ class MailStore extends ChangeNotifier {
           if (s != null) m.snooze = s;
         }
         notifyListeners();
+        _pushMoves([for (final (m, f, _) in prev) (m, to, f)]);
       },
     );
   }
@@ -1117,10 +1129,14 @@ class MailStore extends ChangeNotifier {
     mails = mails.where((m) => !ids.contains(m.id)).toList();
     sel.clear();
     _afterChange(idx);
+    final pending = _after(6500, () {
+      _syncAction(gone, (a) => a.deleteForever);
+    });
     toast(
       '${tn(gone.length, 'message', 'messages')} ${t(gone.length > 1 ? 'supprimés définitivement' : 'supprimé définitivement')}',
       label: t('Annuler'),
       cb: () {
+        pending.cancel();
         mails.addAll(gone);
         notifyListeners();
       },
@@ -1238,6 +1254,7 @@ class MailStore extends ChangeNotifier {
     }
     sel.clear();
     notifyListeners();
+    _syncAction(ms, (a) => a.read(!allRead));
     toast(
       '${tn(ms.length, 'message', 'messages')} ${t(allRead ? (ms.length > 1 ? 'marqués comme non lus' : 'marqué comme non lu') : (ms.length > 1 ? 'marqués comme lus' : 'marqué comme lu'))}',
     );
@@ -1383,6 +1400,7 @@ class MailStore extends ChangeNotifier {
     if (m == null) return;
     m.starred = !m.starred;
     notifyListeners();
+    _syncAction([m], (a) => a.flag(m.starred));
   }
 
   void toggleSel(String id) {
@@ -1406,10 +1424,12 @@ class MailStore extends ChangeNotifier {
 
   void readAllVisible() {
     final l = visible();
+    final unread = l.where((m) => m.unread).toList();
     for (final m in l) {
       m.unread = false;
     }
     notifyListeners();
+    _syncAction(unread, (a) => a.read(true));
     toast(
       '${tn(l.length, 'message', 'messages')} ${t(l.length > 1 ? 'marqués comme lus' : 'marqué comme lu')}',
     );
@@ -1417,9 +1437,29 @@ class MailStore extends ChangeNotifier {
 
   void emptyFolder() => removeForever(scope().map((m) => m.id).toList());
 
-  void download(String n) {
-    toast(t('Téléchargement de {0}…', [n]));
-    _after(1200, () => toast(t('{0} téléchargé', [n])));
+  /// Enregistre un fichier à l'endroit choisi par l'utilisateur (remplaçable dans les tests).
+  Future<Uri?> Function(String name, Uint8List bytes) saveFile = (
+    name,
+    bytes,
+  ) => FilePicker.saveFile(fileName: name, bytes: bytes);
+
+  /// Télécharge une pièce jointe : contenu lu dans le moteur, puis enregistré où l'utilisateur le choisit.
+  Future<void> download(Attachment a) async {
+    final src = source;
+    final known = a.bytes != null || a.id != null;
+    if (src == null || !known) {
+      toast(t('Téléchargement de {0}…', [a.n]));
+      _after(1200, () => toast(t('{0} téléchargé', [a.n])));
+      return;
+    }
+    try {
+      final bytes = a.bytes ?? await src.attachmentBytes(a);
+      if (bytes == null) throw const EngineException('unavailable', '');
+      final saved = await saveFile(a.n, bytes);
+      if (saved != null) toast(t('{0} téléchargé', [a.n]));
+    } catch (_) {
+      toast(t('Téléchargement impossible'), err: true);
+    }
   }
 
   void step(int d) {
@@ -1653,6 +1693,105 @@ class MailStore extends ChangeNotifier {
       cs.sigText = next;
     }
     touch();
+  }
+
+  // ---- actions sur les messages, envoyées au moteur ----
+
+  /// Applique l'action au moteur ; si elle échoue, relit les comptes touchés pour retrouver l'état réel.
+  Future<void> _syncAction(
+    List<Mail> ms,
+    Map<String, dynamic> Function(MessageActions a) kind,
+  ) async {
+    final actions = source?.messageActions;
+    if (actions == null || ms.isEmpty) return;
+    try {
+      await actions.run(ms, kind(actions));
+    } catch (_) {
+      toast(t('Action non appliquée sur le serveur'), err: true);
+      for (final id in {for (final m in ms) m.account}) {
+        await _reloadOnce(id);
+      }
+    }
+  }
+
+  /// Action du moteur pour passer un message d'un dossier à un autre (`null` : rien à faire côté serveur).
+  Map<String, dynamic>? _moveKind(
+    MessageActions a,
+    Mail m,
+    String from,
+    String to,
+  ) {
+    if (to == 'archive') return a.archive;
+    if (to == 'trash') return a.trash;
+    if (to == 'spam') return a.spam(true);
+    if (from == 'spam' && to == 'inbox') return a.spam(false);
+    final box = source?.mailboxOf(m.account, to);
+    return box == null ? null : a.move(box);
+  }
+
+  /// Répercute des changements de dossier au moteur, un appel par type d'action.
+  void _pushMoves(List<(Mail, String, String)> moves) {
+    final actions = source?.messageActions;
+    if (actions == null) return;
+    final groups = <String, (Map<String, dynamic>, List<Mail>)>{};
+    for (final (m, from, to) in moves) {
+      final kind = _moveKind(actions, m, from, to);
+      if (kind == null) continue;
+      groups.putIfAbsent('${m.account}|$kind', () => (kind, [])).$2.add(m);
+    }
+    for (final (kind, ms) in groups.values) {
+      _syncAction(ms, (_) => kind);
+    }
+  }
+
+  // ---- boîte d'envoi ----
+
+  /// Exécute une opération sur un envoi de la boîte d'envoi, puis relit le compte.
+  Future<void> _outboxOp(
+    Mail m,
+    Future<void> Function() op,
+    String done,
+  ) async {
+    try {
+      await op();
+      toast(t(done));
+    } catch (_) {
+      toast(t('Action impossible sur cet envoi'), err: true);
+    }
+    await _reloadOnce(m.account);
+    if (byId(m.id) == null) {
+      open = null;
+      view = PaneView.empty;
+      notifyListeners();
+    }
+  }
+
+  /// Annule un envoi en attente : le message redevient un brouillon.
+  Future<void> cancelOutbox(Mail m) {
+    final o = m.outbox;
+    final admin = source?.composer;
+    if (o == null || admin == null) return Future.value();
+    return _outboxOp(m, () => admin.cancelSend(o.action), 'Envoi annulé');
+  }
+
+  /// Relance un envoi échoué.
+  Future<void> retryOutbox(Mail m) {
+    final o = m.outbox;
+    final admin = source?.composer;
+    if (o == null || admin == null) return Future.value();
+    return _outboxOp(m, () => admin.retry(o.action), 'Nouvel essai lancé');
+  }
+
+  /// Envoi incertain : le renvoyer, ou le tenir pour parti.
+  Future<void> resolveOutbox(Mail m, {required bool resend}) {
+    final o = m.outbox;
+    final admin = source?.composer;
+    if (o == null || admin == null) return Future.value();
+    return _outboxOp(
+      m,
+      () => admin.resolve(o.action, resend: resend),
+      resend ? 'Message renvoyé' : 'Message tenu pour envoyé',
+    );
   }
 
   // ---- contacts ----
@@ -1982,13 +2121,14 @@ class MailStore extends ChangeNotifier {
       ],
     );
     final at = sched == null ? nowMs() : scheduledMs(sched);
-    _outgoing[draft] = (shown, at + 120000);
-    mails = [...mails.where((m) => m != local), shown];
+    if (sched == null) _outgoing[draft] = (shown, at + 120000);
+    mails = [...mails.where((m) => m != local), if (sched == null) shown];
     if (!unified) _boxes[account] = mails;
     _rememberContacts();
     c = null;
     _leaveCompose();
     notifyListeners();
+    unawaited(_reloadOnce(account));
     toast(
       sched != null
           ? t('Message programmé · {0}', [t(sched)])
@@ -2032,7 +2172,12 @@ class MailStore extends ChangeNotifier {
         keep.add(m);
       }
     }
-    return keep.isEmpty ? fresh : [...fresh, ...keep];
+    final immediate = {
+      for (final e in _outgoing.entries)
+        if (e.value.$1.sched == null) 'outbox:${e.key}',
+    };
+    final shown = fresh.where((m) => !immediate.contains(m.id)).toList();
+    return keep.isEmpty ? shown : [...shown, ...keep];
   }
 
   Future<void> _cancelSend(String action, String draft) async {

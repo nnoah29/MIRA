@@ -24,6 +24,10 @@ void main() {
     expect((info['data'] as Map)['version'], {'major': 1, 'minor': 0});
     final source = await EngineMailSource.load(client);
     expect(source.accounts, isEmpty);
+    final st = await source.maintenance.stats();
+    expect(st.messages, 0);
+    expect(await source.maintenance.checkIntegrity(), isTrue);
+    expect(await source.admin.syncStatus(), isEmpty);
     await source.dispose();
     await client.close();
   }, skip: skip);

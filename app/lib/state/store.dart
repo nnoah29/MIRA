@@ -367,6 +367,52 @@ class MailStore extends ChangeNotifier {
   String _hitsFor = '';
   Timer? _searchTimer;
 
+  /// Recherche sur le serveur en cours, et son bilan une fois finie (`null` : pas lancée pour cette requête).
+  bool serverSearching = false;
+  String? serverNote;
+
+  /// Étend la recherche au serveur : trouve aussi des messages dont le corps n'est pas téléchargé.
+  Future<void> searchServer() async {
+    final src = source;
+    final asked = q;
+    if (src == null || asked.trim().length < 2 || serverSearching) return;
+    serverSearching = true;
+    serverNote = null;
+    notifyListeners();
+    try {
+      final r = await src.searchServer(asked.trim());
+      if (q != asked) return;
+      final have = {for (final m in _hits) m.id};
+      final loaded = {
+        for (final l in _boxes.values)
+          for (final m in l) m.id: m,
+      };
+      _hits = [
+        ..._hits,
+        for (final m in r.found)
+          if (!have.contains(m.id)) loaded[m.id] ?? m,
+      ];
+      _hitsFor = asked;
+      serverNote = _serverNoteOf(r);
+    } catch (_) {
+      if (q == asked) serverNote = t('Recherche sur le serveur impossible.');
+    } finally {
+      serverSearching = false;
+      notifyListeners();
+    }
+  }
+
+  String _serverNoteOf(ServerSearch r) {
+    final parts = [
+      if (r.unsynced > 0)
+        t('{0} message(s) du serveur ne sont pas synchronisés.', [r.unsynced]),
+      if (r.truncated) t('Résultats limités aux plus récents.'),
+    ];
+    return parts.isEmpty
+        ? t('Recherche sur le serveur terminée.')
+        : parts.join(' ');
+  }
+
   /// Lance la recherche du moteur après une courte pause de frappe ; l'affichage local sert en attendant.
   void _scheduleSearch(String v) {
     _searchTimer?.cancel();
@@ -821,6 +867,7 @@ class MailStore extends ChangeNotifier {
 
   void setQuery(String v) {
     q = v;
+    serverNote = null;
     _scheduleSearch(v);
     notifyListeners();
   }

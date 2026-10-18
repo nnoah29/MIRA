@@ -243,6 +243,44 @@ class FakeEngine implements EngineClient {
             'next_cursor': null,
           },
         };
+      case 'search.search_server':
+        searches.add('server:${r['query']}');
+        return {
+          'type': 'operation',
+          'data': {
+            'id': 'op-s',
+            'kind': 'search_server',
+            'status': {'type': 'running', 'done': 0, 'total': 1},
+          },
+        };
+      case 'operation.get_operation':
+        return {
+          'type': 'operation',
+          'data': {
+            'id': 'op-s',
+            'kind': 'search_server',
+            'status': {'type': 'finished'},
+          },
+        };
+      case 'search.get_server_search_result':
+        return {
+          'type': 'server_search',
+          'data': {
+            'hits': [
+              {'mailbox': 'mb-archive', 'uid': 5, 'message': 'm60'},
+              {'mailbox': 'mb-archive', 'uid': 6, 'message': null},
+            ],
+            'truncated': false,
+          },
+        };
+      case 'message.get_message':
+        return {
+          'type': 'message',
+          'data': {
+            ..._msg('m60', 'Corps ancien', date: 50),
+            'mailboxes': ['mb-archive'],
+          },
+        };
       case 'compose.list_outbox':
         return _write('outbox', [
           for (final d in drafts.values)
@@ -756,6 +794,23 @@ void main() {
       expect(store.visible().every((m) => m.folder == store.folder), isTrue);
       store.dispose();
     });
+
+    test(
+      'chercher sur le serveur ajoute les messages connus et compte les autres',
+      () async {
+        final (store, fake) = await start();
+        store.setQuery('contrat');
+        await wait();
+        await store.searchServer();
+        expect(fake.searches, contains('server:contrat'));
+        expect(store.visible().map((m) => m.subject), contains('Corps ancien'));
+        expect(store.serverNote, contains('1'));
+        expect(store.serverSearching, isFalse);
+        store.setQuery('autre');
+        expect(store.serverNote, isNull);
+        store.dispose();
+      },
+    );
 
     test('un résultat trouvé par le moteur peut être ouvert', () async {
       final (store, _) = await start();

@@ -441,6 +441,10 @@ class EngineMailSource implements MailSource {
       for (final m in ((raw['data'] as Map)['items'] as List))
         (m as Map).cast<String, dynamic>(),
     ];
+    return _mailsOfHits(items);
+  }
+
+  List<Mail> _mailsOfHits(List<Map<String, dynamic>> items) {
     final groups = <String, List<Map<String, dynamic>>>{};
     for (final m in items) {
       groups.putIfAbsent('${m['account']}|${_folderOfHit(m)}', () => []).add(m);
@@ -455,6 +459,72 @@ class EngineMailSource implements MailSource {
           labelIds: labelIds,
         ),
     ];
+  }
+
+  @override
+  Future<ServerSearch> searchServer(String query) async {
+    final results = await Future.wait([
+      for (final a in accounts) _serverHits(a.id, query),
+    ]);
+    final ids = <String>{};
+    var unsynced = 0;
+    var truncated = false;
+    for (final r in results) {
+      truncated = truncated || r.$3;
+      unsynced += r.$2;
+      ids.addAll(r.$1);
+    }
+    final summaries = [for (final id in ids.take(pageSize)) await _summary(id)]
+        .whereType<Map<String, dynamic>>()
+        .toList();
+    return ServerSearch(_mailsOfHits(summaries), unsynced, truncated);
+  }
+
+  /// Une recherche serveur pour un compte : (identifiants locaux trouvés, nombre non synchronisés, tronqué).
+  Future<(List<String>, int, bool)> _serverHits(
+    String account,
+    String query,
+  ) async {
+    final start = await client.call(
+      req('search', 'search_server', {'account': account, 'query': query}),
+    );
+    final op = '${((start['data'] as Map)['id'])}';
+    for (var i = 0; i < 200; i++) {
+      final info = await client.call(
+        req('operation', 'get_operation', {'operation': op}),
+      );
+      final status = ((info['data'] as Map)['status'] as Map)['type'];
+      if (status == 'finished') break;
+      if (status != 'running') return (const <String>[], 0, false);
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+    }
+    final raw = await client.call(
+      req('search', 'get_server_search_result', {'operation': op}),
+    );
+    final data = (raw['data'] as Map).cast<String, dynamic>();
+    final hits = [
+      for (final h in (data['hits'] as List))
+        (h as Map).cast<String, dynamic>(),
+    ];
+    return (
+      [
+        for (final h in hits)
+          if (h['message'] != null) '${h['message']}',
+      ],
+      hits.where((h) => h['message'] == null).length,
+      data['truncated'] == true,
+    );
+  }
+
+  Future<Map<String, dynamic>?> _summary(String id) async {
+    try {
+      final raw = await client.call(
+        req('message', 'get_message', {'message': id}),
+      );
+      return (raw['data'] as Map).cast<String, dynamic>();
+    } on EngineException {
+      return null;
+    }
   }
 
   @override

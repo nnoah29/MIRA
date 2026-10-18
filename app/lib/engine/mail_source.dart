@@ -7,6 +7,14 @@ import 'compose_admin.dart';
 import 'label_admin.dart';
 import 'message_actions.dart';
 
+/// Résultat d'une recherche sur le serveur : messages déjà connus du moteur, et nombre de ceux qu'il n'a pas synchronisés.
+class ServerSearch {
+  final List<Mail> found;
+  final int unsynced;
+  final bool truncated;
+  const ServerSearch(this.found, this.unsynced, this.truncated);
+}
+
 /// Origine des données affichées : comptes, boîtes chargées, et enrichissement d'un message.
 abstract class MailSource {
   /// Comptes de l'utilisateur (au moins un).
@@ -62,6 +70,9 @@ abstract class MailSource {
 
   /// Recherche plein texte dans tout l'index local du moteur (tous comptes, toute l'ancienneté).
   Future<List<Mail>> search(String query);
+
+  /// Cherche aussi sur le serveur (corps non téléchargés compris) ; plus lent que la recherche locale.
+  Future<ServerSearch> searchServer(String query);
 
   /// Brouillons et envois (`null` : démonstration).
   ComposeAdmin? get composer;

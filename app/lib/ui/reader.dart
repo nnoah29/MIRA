@@ -141,6 +141,14 @@ class _ReaderState extends State<Reader> {
                           onTap: s.archive,
                         ),
                         const SizedBox(width: 8),
+                        if (s.unsubFor(m) != null) ...[
+                          IBtn(
+                            'x',
+                            tip: t('Se désabonner'),
+                            onTap: () => s.unsubscribe(m),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
                         IBtn(
                           'warn',
                           tip: m.folder == 'spam'

@@ -62,5 +62,17 @@ Msg msgOf(Map<String, dynamic> m) {
     ],
     ref: '${m['id']}',
     hasAttachments: m['has_attachments'] == true,
+    unsub: _unsubOf(m['unsubscribe']),
+  );
+}
+
+Unsub? _unsubOf(Object? raw) {
+  if (raw is! Map) return null;
+  final url = raw['https_url'], mailto = raw['mailto'];
+  if (url is! String && mailto is! String) return null;
+  return Unsub(
+    url: url is String ? url : null,
+    mailto: mailto is String ? mailto : null,
+    oneClick: raw['one_click'] == true,
   );
 }

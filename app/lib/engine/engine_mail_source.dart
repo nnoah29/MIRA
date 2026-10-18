@@ -5,12 +5,14 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
+import '../data/format.dart';
 import '../data/html_lite.dart';
 import '../data/models.dart';
 import 'account_admin.dart';
 import 'account_setup.dart';
 import 'css_inliner.dart';
 import 'inline_images.dart';
+import 'label_admin.dart';
 import 'engine_client.dart';
 import 'mail_builder.dart';
 import 'mappers.dart';
@@ -36,6 +38,7 @@ class EngineMailSource implements MailSource {
     this.debounce,
     this.accounts,
     this.boxes,
+    this.folderMap,
   );
 
   /// Lit les comptes puis la première page de chaque boîte affichée.
@@ -43,12 +46,15 @@ class EngineMailSource implements MailSource {
     EngineClient client, {
     int pageSize = 200,
     Duration debounce = const Duration(milliseconds: 150),
+    Map<String, String> folderMap = const {},
   }) async {
     final raw = await client.call(req('account', 'list_accounts'));
     final list = [
       for (final a in (raw['data'] as List)) accountOf((a as Map).cast()),
     ];
-    final source = EngineMailSource._(client, pageSize, debounce, list, {});
+    final source = EngineMailSource._(client, pageSize, debounce, list, {}, {
+      ...folderMap,
+    });
     for (final a in list) {
       source.boxes[a.id] = await source.reload(a);
     }
@@ -81,6 +87,18 @@ class EngineMailSource implements MailSource {
 
   @override
   AccountAdmin get admin => AccountAdmin(client);
+
+  @override
+  final Map<String, LabelDef> labels = {};
+
+  @override
+  final Map<String, LabelDef> mappable = {};
+
+  @override
+  final Map<String, String> folderMap;
+
+  @override
+  LabelAdmin get labelAdmin => LabelAdmin(client);
 
   @override
   Future<void> syncNow() async {
@@ -141,16 +159,88 @@ class EngineMailSource implements MailSource {
     final raw = await client.call(
       req('mailbox', 'list_mailboxes', {'account': account.id}),
     );
-    final out = <Mail>[];
+    final boxes = <Map<String, dynamic>>[
+      for (final b in (raw['data'] as List)) (b as Map).cast<String, dynamic>(),
+    ];
+    final found = _labelsOf(account, boxes);
+    final byFolder = <String, List<Map<String, dynamic>>>{};
     final seen = <String>{};
-    for (final box in (raw['data'] as List).cast<Map>()) {
-      final folder = folderForRole('${box['role']}');
+    final ordered = [
+      ...boxes.where((b) => !folderMap.containsKey('${b['id']}')),
+      ...boxes.where((b) => folderMap.containsKey('${b['id']}')),
+    ];
+    for (final box in ordered) {
+      final folder = _folderOf(box);
       if (folder == null) continue;
       final msgs = await _summaries('${box['id']}');
-      final fresh = msgs.where((m) => seen.add('${m['id']}')).toList();
-      out.addAll(mailsOfFolder(folder, account.id, fresh));
+      byFolder
+          .putIfAbsent(folder, () => [])
+          .addAll(msgs.where((m) => seen.add('${m['id']}')));
     }
-    return out;
+    await _addLabelOnly(byFolder, boxes, found, seen);
+    return [
+      for (final e in byFolder.entries)
+        ...mailsOfFolder(
+          e.key,
+          account.id,
+          e.value,
+          labelIds: found.keys.toSet(),
+        ),
+    ];
+  }
+
+  /// Messages présents seulement dans des libellés (ni réception, ni envoyés…) : classés dans Archive.
+  Future<void> _addLabelOnly(
+    Map<String, List<Map<String, dynamic>>> byFolder,
+    List<Map<String, dynamic>> boxes,
+    Map<String, LabelDef> labelBoxes,
+    Set<String> seen,
+  ) async {
+    for (final box in boxes) {
+      if (!labelBoxes.containsKey('${box['id']}')) continue;
+      final msgs = await _summaries('${box['id']}');
+      final fresh = msgs.where((m) => seen.add('${m['id']}')).toList();
+      byFolder.putIfAbsent('archive', () => []).addAll(fresh);
+    }
+  }
+
+  /// Dossier d'une boîte : rattachement choisi par l'utilisateur, sinon son rôle.
+  String? _folderOf(Map<String, dynamic> box) =>
+      folderMap['${box['id']}'] ?? folderForRole('${box['role']}');
+
+  static bool _mappable(Map<String, dynamic> box) =>
+      const {'other', 'all', 'flagged'}.contains('${box['role']}');
+
+  /// Libellés du compte (boîtes « autre » non rattachées) ; remplace ceux déjà connus pour ce compte.
+  Map<String, LabelDef> _labelsOf(
+    Account account,
+    List<Map<String, dynamic>> boxes,
+  ) {
+    final all = {
+      for (final b in boxes)
+        if (_mappable(b))
+          '${b['id']}': LabelDef(
+            _labelName(b),
+            colorOf('${b['id']}'),
+            account: account.id,
+            system: '${b['role']}' != 'other',
+          ),
+    };
+    final found = {
+      for (final b in boxes)
+        if ('${b['role']}' == 'other' && !folderMap.containsKey('${b['id']}'))
+          '${b['id']}': all['${b['id']}']!,
+    };
+    mappable.removeWhere((_, d) => d.account == account.id);
+    mappable.addAll(all);
+    labels.removeWhere((_, d) => d.account == account.id);
+    labels.addAll(found);
+    return found;
+  }
+
+  static String _labelName(Map<String, dynamic> box) {
+    final shown = '${box['display_name'] ?? ''}'.trim();
+    return shown.isEmpty ? '${box['name'] ?? box['id']}' : shown;
   }
 
   Future<List<Map<String, dynamic>>> _summaries(String mailbox) async {

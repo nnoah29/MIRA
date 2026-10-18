@@ -8,11 +8,14 @@ import '../data/format.dart';
 import '../data/html_lite.dart';
 import '../data/models.dart';
 import '../data/seed.dart';
+import '../engine/engine_client.dart';
+import '../engine/label_admin.dart';
 import '../engine/mail_source.dart';
 import '../theme/wall_source.dart';
 import '../theme/wall_theme.dart';
 import '../theme/app_theme.dart';
 import 'assistant.dart';
+import 'folder_map.dart';
 import 'image_policy.dart';
 import 'rich_controller.dart';
 import '../i18n/i18n.dart';
@@ -913,6 +916,7 @@ class MailStore extends ChangeNotifier {
         m.folder,
         m.subject,
         m.msgs.length,
+        Object.hashAll(m.labels),
       ),
   ]);
 
@@ -965,8 +969,14 @@ class MailStore extends ChangeNotifier {
   void toggleAssistant() =>
       view == PaneView.assistant ? closePane() : showView(PaneView.assistant);
 
-  /// Ouvre le panneau d'ajout de compte (moteur réel) ou la fenêtre fictive (démonstration).
-  void openAddAccount() => showView(PaneView.addAccount);
+  /// Demande Réglages › Comptes avec l'onglet d'ajout ouvert ; consommé par l'écran des comptes.
+  bool wantsAddAccount = false;
+
+  /// Ouvre l'ajout de compte : onglet « Ajouter » des réglages des comptes (moteur réel).
+  void openAddAccount() {
+    wantsAddAccount = true;
+    showView(PaneView.settings);
+  }
 
   /// Prend en compte un compte que le moteur vient d'ajouter : liste relue, bascule dessus.
   Future<void> accountAdded(String id) async {
@@ -1202,10 +1212,54 @@ class MailStore extends ChangeNotifier {
     );
   }
 
+  /// Libellés connus (moteur, ou démonstration) ; ceux du compte actif en vue simple.
+  Map<String, LabelDef> get labelDefs {
+    final all = source?.labels ?? seedLabelDefs;
+    if (source == null || unified) return all;
+    return {
+      for (final e in all.entries)
+        if (e.value.account == activeId) e.key: e.value,
+    };
+  }
+
+  /// Libellé d'identifiant donné (`null` : supprimé ou d'un autre compte).
+  LabelDef? labelDef(String k) => (source?.labels ?? seedLabelDefs)[k];
+
+  /// Nom affiché d'un libellé ; en vue unifiée, suivi du compte (« Factures · Perso »).
+  String labelTitle(String k) {
+    final def = labelDef(k);
+    if (def == null) return '';
+    final owner = accounts.where((a) => a.id == def.account).firstOrNull;
+    if (!unified || accounts.length < 2 || owner == null) return t(def.n);
+    return '${t(def.n)} · ${owner.name.isEmpty ? owner.email : owner.name}';
+  }
+
+  /// Libellés proposés pour la sélection : ceux des comptes des conversations choisies.
+  Map<String, LabelDef> labelsForTargets() {
+    final all = source?.labels ?? seedLabelDefs;
+    if (source == null) return all;
+    final accs = {for (final i in targets()) byId(i)?.account};
+    return {
+      for (final e in all.entries)
+        if (accs.isEmpty || accs.contains(e.value.account)) e.key: e.value,
+    };
+  }
+
   void toggleLabel(String k) {
     final ids = targets();
     if (ids.isEmpty) return hint();
-    final ms = ids.map((i) => byId(i)!).toList();
+    final all0 = ids.map((i) => byId(i)!).toList();
+    final def = labelDef(k);
+    if (def == null) return;
+    final admin = source?.labelAdmin;
+    final ms = admin == null
+        ? all0
+        : all0.where((m) => m.account == def.account).toList();
+    final skipped = all0.length - ms.length;
+    if (ms.isEmpty) {
+      toast('Libellé d’un autre compte : rien à modifier', err: true);
+      return;
+    }
     final all = ms.every((m) => m.labels.contains(k));
     for (final m in ms) {
       m.labels = all
@@ -1213,11 +1267,84 @@ class MailStore extends ChangeNotifier {
           : {...m.labels, k}.toList();
     }
     notifyListeners();
+    final done = t(all ? 'Libellé « {0} » retiré' : 'Libellé « {0} » ajouté', [
+      labelTitle(k),
+    ]);
     toast(
-      t(all ? 'Libellé « {0} » retiré' : 'Libellé « {0} » ajouté', [
-        t(labelDefs[k]!.n),
-      ]),
+      skipped == 0
+          ? done
+          : '$done · ${t('{0} d’un autre compte ignorée(s)', [skipped])}',
     );
+    if (admin != null) _pushLabel(admin, ms, k, !all);
+  }
+
+  /// Envoie la pose du libellé au moteur ; en cas d'échec, rétablit l'état précédent.
+  Future<void> _pushLabel(
+    LabelAdmin admin,
+    List<Mail> ms,
+    String k,
+    bool on,
+  ) async {
+    try {
+      for (final m in ms) {
+        await admin.setOn(m, k, on);
+      }
+    } catch (e) {
+      for (final m in ms) {
+        m.labels = on
+            ? m.labels.where((x) => x != k).toList()
+            : {...m.labels, k}.toList();
+      }
+      toast('Libellé non modifié', err: true);
+      notifyListeners();
+    }
+  }
+
+  /// Rattache une boîte du serveur à un dossier de l'interface (`null` : redevient un libellé).
+  Future<void> mapFolder(String mailboxId, String? folder) async {
+    final src = source;
+    final account = src?.mappable[mailboxId]?.account;
+    if (src == null || account == null) return;
+    if (folder == null) {
+      src.folderMap.remove(mailboxId);
+    } else {
+      src.folderMap[mailboxId] = folder;
+    }
+    await prefs.setString('folderMap', encodeFolderMap(src.folderMap));
+    if (label == mailboxId) selectFolder('inbox');
+    await _reloadAccount(account);
+    notifyListeners();
+  }
+
+  /// Crée un libellé sur un compte du moteur ; rend `false` si le nom est refusé.
+  Future<bool> createLabel(String account, String name) =>
+      _labelOp(() => source!.labelAdmin!.create(account, name.trim()), account);
+
+  /// Renomme un libellé du moteur.
+  Future<bool> renameLabel(String key, String name) => _labelOp(
+    () => source!.labelAdmin!.rename(key, name.trim()),
+    labelDef(key)?.account,
+  );
+
+  /// Supprime un libellé du moteur ; si on le consultait, retour à la réception.
+  Future<bool> deleteLabel(String key) async {
+    final account = labelDef(key)?.account;
+    final ok = await _labelOp(() => source!.labelAdmin!.delete(key), account);
+    if (ok && label == key) selectFolder('inbox');
+    return ok;
+  }
+
+  Future<bool> _labelOp(Future<void> Function() job, String? account) async {
+    if (source?.labelAdmin == null || account == null) return false;
+    try {
+      await job();
+    } catch (e) {
+      toast(e is EngineException ? e.message : 'Libellé refusé', err: true);
+      return false;
+    }
+    await _reloadAccount(account);
+    notifyListeners();
+    return true;
   }
 
   void toggleStar([String? id]) {

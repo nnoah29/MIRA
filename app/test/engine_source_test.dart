@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mira/data/models.dart';
 import 'package:mira/engine/engine_client.dart';
 import 'package:mira/engine/engine_mail_source.dart';
+import 'package:mira/state/folder_map.dart';
 import 'package:mira/state/store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,6 +14,9 @@ class FakeEngine implements EngineClient {
   final bodyFails = <String>{};
   bool allowed = false;
   bool extra = false;
+  bool second = false;
+  bool labelOnly = false;
+  final actions = <Map<String, dynamic>>[];
   final feed = StreamController<Map<String, dynamic>>.broadcast();
 
   Map<String, dynamic> _msg(
@@ -63,15 +67,36 @@ class FakeEngine implements EngineClient {
               'display_name': 'Alice',
               'address': 'alice@example.org',
             },
+            if (second)
+              {'id': 'acc2', 'display_name': 'Pro', 'address': 'alice@pro.org'},
           ],
         };
       case 'mailbox.list_mailboxes':
+        if (r['account'] == 'acc2') {
+          return {
+            'type': 'mailboxes',
+            'data': [
+              {'id': 'mb2-inbox', 'role': 'inbox'},
+              {
+                'id': 'mb2-other',
+                'role': 'other',
+                'name': 'Factures',
+                'display_name': 'Factures',
+              },
+            ],
+          };
+        }
         return {
           'type': 'mailboxes',
           'data': [
             {'id': 'mb-inbox', 'role': 'inbox'},
             {'id': 'mb-junk', 'role': 'junk'},
-            {'id': 'mb-other', 'role': 'other'},
+            {
+              'id': 'mb-other',
+              'role': 'other',
+              'name': 'Factures',
+              'display_name': 'Factures',
+            },
           ],
         };
       case 'message.list_messages':
@@ -128,6 +153,15 @@ class FakeEngine implements EngineClient {
             },
           ],
         };
+      case 'action.apply_action' ||
+          'action.create_mailbox' ||
+          'action.rename_mailbox' ||
+          'action.delete_mailbox':
+        actions.add({'op': r['op'], ...r});
+        return {
+          'type': 'write',
+          'data': {'type': 'action', 'data': 'a1'},
+        };
       case 'sync.start_sync':
         return {'type': 'done'};
       case 'message.allow_remote_content':
@@ -169,9 +203,22 @@ class FakeEngine implements EngineClient {
         if (extra) _msg('m9', 'Nouveau', date: 4000),
         _msg('m1', 'Premier', thread: 't1', seen: false, date: 1000),
         _msg('m2', 'Re: Premier', thread: 't1', date: 2000, attachments: true),
-        _msg('m3', 'Seul', date: 3000),
+        {
+          ..._msg('m3', 'Seul', date: 3000),
+          'mailboxes': ['mb-inbox', 'mb-other'],
+        },
       ],
       'mb-junk' => [_msg('m4', 'Pourriel', date: 500)],
+      'mb-other' => [
+        if (labelOnly)
+          {
+            ..._msg('m5', 'Facture', date: 700),
+            'mailboxes': ['mb-other'],
+          },
+      ],
+      'mb2-inbox' => [
+        {..._msg('m20', 'Chez Pro', date: 600), 'account': 'acc2'},
+      ],
       _ => <Map<String, dynamic>>[],
     };
     return {
@@ -391,4 +438,141 @@ void main() {
     store.dispose();
     knownSenders = [];
   });
+
+  test(
+    'les libellés sont les boîtes « autre » ; un message en porte',
+    () async {
+      final src = await EngineMailSource.load(FakeEngine());
+      expect(src.labels.keys, ['mb-other']);
+      expect(src.labels['mb-other']!.n, 'Factures');
+      expect(src.labels['mb-other']!.account, 'acc1');
+      final solo = src.boxes['acc1']!.firstWhere((m) => m.subject == 'Seul');
+      expect(solo.labels, ['mb-other']);
+      final other = src.boxes['acc1']!.firstWhere(
+        (m) => m.subject == 'Pourriel',
+      );
+      expect(other.labels, isEmpty);
+    },
+  );
+
+  test('poser un libellé envoie add_to_mailbox sur les messages', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final fake = FakeEngine();
+    final store = MailStore(prefs, source: await EngineMailSource.load(fake));
+    final conv = store.mails.firstWhere((m) => m.msgs.length == 2);
+    store.sel.add(conv.id);
+    store.toggleLabel('mb-other');
+    await Future<void>.delayed(Duration.zero);
+    expect(conv.labels, ['mb-other']);
+    final a = fake.actions.single;
+    expect(a['kind'], {'type': 'add_to_mailbox', 'mailbox': 'mb-other'});
+    expect(a['targets'], {
+      'type': 'messages',
+      'messages': ['m1', 'm2'],
+    });
+    store.toggleLabel('mb-other');
+    await Future<void>.delayed(Duration.zero);
+    expect(fake.actions.last['kind']['type'], 'remove_from_mailbox');
+    store.dispose();
+  });
+
+  test('créer, renommer, supprimer un libellé passe par le moteur', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final fake = FakeEngine();
+    final store = MailStore(prefs, source: await EngineMailSource.load(fake));
+    expect(await store.createLabel('acc1', ' Projets '), isTrue);
+    expect(fake.actions.last['name'], 'Projets');
+    expect(await store.renameLabel('mb-other', 'Compta'), isTrue);
+    expect(fake.actions.last['mailbox'], 'mb-other');
+    expect(await store.deleteLabel('mb-other'), isTrue);
+    expect(fake.actions.last['op'], 'delete_mailbox');
+    store.dispose();
+  });
+
+  test(
+    'deux comptes : libellés séparés, nommés par compte en vue unifiée',
+    () async {
+      SharedPreferences.setMockInitialValues({'account': 'all'});
+      final prefs = await SharedPreferences.getInstance();
+      final fake = FakeEngine()..second = true;
+      final store = MailStore(prefs, source: await EngineMailSource.load(fake));
+      expect(store.labelDefs.keys, unorderedEquals(['mb-other', 'mb2-other']));
+      expect(store.labelTitle('mb-other'), 'Factures · Alice');
+      expect(store.labelTitle('mb2-other'), 'Factures · Pro');
+      final mine = store.mails.firstWhere((m) => m.subject == 'Seul');
+      final pro = store.mails.firstWhere((m) => m.subject == 'Chez Pro');
+      store.sel.add(mine.id);
+      expect(store.labelsForTargets().keys, ['mb-other']);
+      store.sel.addAll([mine.id, pro.id]);
+      store.toggleLabel('mb2-other');
+      await Future<void>.delayed(Duration.zero);
+      expect(mine.labels, ['mb-other']);
+      expect(pro.labels, ['mb2-other']);
+      expect(fake.actions.single['targets']['messages'], ['m20']);
+      store.dispose();
+    },
+  );
+
+  test(
+    'un message présent seulement dans un libellé est classé dans Archive',
+    () async {
+      final fake = FakeEngine()..labelOnly = true;
+      final src = await EngineMailSource.load(fake);
+      final facture = src.boxes['acc1']!.firstWhere(
+        (m) => m.subject == 'Facture',
+      );
+      expect(facture.folder, 'archive');
+      expect(facture.labels, ['mb-other']);
+      final seul = src.boxes['acc1']!.firstWhere((m) => m.subject == 'Seul');
+      expect(seul.folder, 'inbox');
+    },
+  );
+
+  test(
+    'une boîte du serveur rattachée à un dossier y affiche ses messages',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final fake = FakeEngine()..labelOnly = true;
+      final store = MailStore(prefs, source: await EngineMailSource.load(fake));
+      expect(
+        store.mails.firstWhere((m) => m.subject == 'Facture').folder,
+        'archive',
+      );
+      await store.mapFolder('mb-other', 'sent');
+      final facture = store.mails.firstWhere((m) => m.subject == 'Facture');
+      expect(facture.folder, 'sent');
+      expect(facture.labels, isEmpty);
+      expect(store.labelDefs, isEmpty);
+      expect(store.source!.mappable.keys, ['mb-other']);
+      expect(prefs.getString('folderMap'), '{"mb-other":"sent"}');
+      expect(
+        store.mails.firstWhere((m) => m.subject == 'Seul').folder,
+        'inbox',
+      );
+      await store.mapFolder('mb-other', null);
+      expect(
+        store.mails.firstWhere((m) => m.subject == 'Facture').folder,
+        'archive',
+      );
+      expect(store.labelDefs.keys, ['mb-other']);
+      expect(prefs.getString('folderMap'), '{}');
+      store.dispose();
+    },
+  );
+
+  test(
+    'les rattachements enregistrés servent dès le premier chargement',
+    () async {
+      final src = await EngineMailSource.load(
+        FakeEngine()..labelOnly = true,
+        folderMap: decodeFolderMap('{"mb-other":"sent","x":"nimporte"}'),
+      );
+      expect(src.folderMap, {'mb-other': 'sent'});
+      expect(src.boxes['acc1']!.any((m) => m.folder == 'sent'), isTrue);
+      expect(src.labels, isEmpty);
+    },
+  );
 }

@@ -5,8 +5,9 @@ import 'mappers.dart';
 List<Mail> mailsOfFolder(
   String folder,
   String accountId,
-  List<Map<String, dynamic>> summaries,
-) {
+  List<Map<String, dynamic>> summaries, {
+  Set<String> labelIds = const {},
+}) {
   final groups = <String, List<Map<String, dynamic>>>{};
   for (final m in summaries) {
     final key = (m['thread'] as String?) ?? '${m['id']}';
@@ -14,7 +15,7 @@ List<Mail> mailsOfFolder(
   }
   return [
     for (final e in groups.entries)
-      _conversation(e.key, folder, accountId, e.value),
+      _conversation(e.key, folder, accountId, e.value, labelIds),
   ];
 }
 
@@ -26,6 +27,7 @@ Mail _conversation(
   String folder,
   String accountId,
   List<Map<String, dynamic>> items,
+  Set<String> labelIds,
 ) {
   final sorted = [...items]..sort((a, b) => _dateOf(a).compareTo(_dateOf(b)));
   final last = sorted.last;
@@ -44,7 +46,19 @@ Mail _conversation(
     starred:
         sorted.any((m) => (m['flags'] as Map?)?['flagged'] == true) ||
         flags['flagged'] == true,
+    labels: _labelsOf(sorted, labelIds),
     msgs: [for (final m in sorted) msgOf(m)],
     account: accountId,
   );
+}
+
+/// Libellés d'une conversation : boîtes « libellé » où se trouve au moins un de ses messages.
+List<String> _labelsOf(List<Map<String, dynamic>> items, Set<String> labelIds) {
+  final found = <String>{};
+  for (final m in items) {
+    for (final box in (m['mailboxes'] as List? ?? const [])) {
+      if (labelIds.contains('$box')) found.add('$box');
+    }
+  }
+  return found.toList()..sort();
 }

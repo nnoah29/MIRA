@@ -134,6 +134,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
       ),
     );
 
+    if (s.wantsAddAccount && s.source != null) tab = 2;
     final content = switch (tab) {
       0 => box([
         srow(

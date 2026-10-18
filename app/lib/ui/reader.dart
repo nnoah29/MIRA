@@ -495,7 +495,8 @@ class _MailBodyState extends State<_MailBody> {
     final f = folderById(m.folder);
     final chips = <Widget>[
       for (final l in m.labels)
-        _Tag(label: t(labelDefs[l]!.n), dot: Color(labelDefs[l]!.c)),
+        if (context.read<MailStore>().labelDef(l) case final d?)
+          _Tag(label: context.read<MailStore>().labelTitle(l), dot: Color(d.c)),
       if (m.flags.contains('needs')) _Tag(label: t('À répondre'), accent: true),
       if (m.flags.contains('waiting')) _Tag(label: t('En attente')),
     ];

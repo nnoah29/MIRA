@@ -19,6 +19,18 @@ Tout est produit dans `packaging/out/` (ignoré par git).
 | Flatpak | dépôt local / Flathub | `flatpak/io.github.nnoah29.Mira.yml` | non : demande `flatpak-builder` et le runtime Freedesktop 24.08 |
 | Snap | `mira-mail_<v>_amd64.snap` | `cd packaging && snapcraft` | non : demande `snapcraft` |
 
+## Android
+
+```bash
+packaging/android/build.sh    # moteur Rust (arm64-v8a, x86_64) + APK release, copiés dans packaging/out/
+```
+
+Prérequis : SDK et NDK Android, `rustup target add aarch64-linux-android x86_64-linux-android`, `cargo install cargo-ndk`. Les bibliothèques du moteur sont écrites dans `app/android/app/src/main/jniLibs/` (ignoré par git).
+
+Sur Android, l'app passe au moteur son dossier privé (`getApplicationSupportDirectory`) et une clé de 32 octets. Le moteur range les mots de passe des comptes dans `secrets.bin`, chiffré en AES-256-GCM avec cette clé. La clé elle-même est tirée une fois au hasard et rangée chiffrée par une clé du Keystore Android (`MainActivity.kt`), qui ne quitte pas le matériel sécurisé. Sous Linux, rien ne change : trousseau du système et dossiers XDG.
+
+L'APK release est encore signé avec la clé de debug : il faut une clé de publication avant le Play Store. L'identifiant Android reste `n.noah.mira`.
+
 ## Noms et identifiants
 
 - Paquet et commande : **`mira-mail`**. Le nom `mira` est déjà pris dans Debian (assembleur de génomes qui installe `/usr/bin/mira`).

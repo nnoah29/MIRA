@@ -1503,6 +1503,7 @@ dependencies = [
  "mail-parser",
  "mira-assembly",
  "mira-testkit",
+ "ring",
  "serde_json",
  "tempfile",
  "tokio",

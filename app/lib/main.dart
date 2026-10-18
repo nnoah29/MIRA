@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -43,8 +45,11 @@ Future<void> main() async {
 Future<MailSource?> openEngineSource(SharedPreferences prefs) async {
   if (Platform.environment['MIRA_DEMO'] == '1') return null;
   try {
+    final android = Platform.isAndroid;
     final client = await RustEngineClient.open(
       pollSecs: int.tryParse(prefs.getString('poll') ?? ''),
+      home: android ? (await getApplicationSupportDirectory()).path : null,
+      secretsKey: android ? await androidSecretsKey() : null,
     );
     return await EngineMailSource.load(
       client,
@@ -54,6 +59,17 @@ Future<MailSource?> openEngineSource(SharedPreferences prefs) async {
     stderr.writeln('MIRA : moteur indisponible, données de démonstration ($e)');
     return null;
   }
+}
+
+/// Clé du trousseau chiffré du moteur, gardée par le Keystore Android (voir MainActivity.kt).
+Future<Uint8List> androidSecretsKey() async {
+  final key = await const MethodChannel(
+    'mira/keystore',
+  ).invokeMethod<Uint8List>('secretsKey');
+  if (key == null || key.length != 32) {
+    throw StateError('clé du trousseau indisponible');
+  }
+  return key;
 }
 
 class MiraApp extends StatelessWidget {

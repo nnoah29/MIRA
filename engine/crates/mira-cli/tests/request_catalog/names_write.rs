@@ -22,6 +22,7 @@ pub fn compose_name(request: &ComposeRequest) -> &'static str {
         ComposeRequest::AttachFile { .. } => "compose.attach_file",
         ComposeRequest::RemoveAttachment { .. } => "compose.remove_attachment",
         ComposeRequest::DeleteDraft { .. } => "compose.delete_draft",
+        ComposeRequest::SaveDraftCopy { .. } => "compose.save_draft_copy",
         ComposeRequest::GetDraft { .. } => "compose.get_draft",
         ComposeRequest::ListDrafts { .. } => "compose.list_drafts",
         ComposeRequest::SendDraft { .. } => "compose.send_draft",

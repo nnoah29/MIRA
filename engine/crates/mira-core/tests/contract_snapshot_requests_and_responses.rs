@@ -114,5 +114,5 @@ fn every_write_operation_has_a_request_example() {
         assert!(name.starts_with(&format!("{domain}.{tag}")), "{name}");
         distinct.insert(format!("{domain}.{tag}"));
     }
-    assert_eq!(distinct.len(), 6 + 11 + 3);
+    assert_eq!(distinct.len(), 6 + 12 + 3);
 }

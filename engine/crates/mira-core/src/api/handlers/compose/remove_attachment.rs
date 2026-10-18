@@ -7,7 +7,7 @@ use crate::api::engine::Engine;
 use crate::drafts::remove_attachment;
 
 /// Retire la pièce jointe de ce rang (0 pour la première) et rend le brouillon à jour
-pub(crate) fn handle_remove_attachment(
+pub(crate) fn handle_detach(
     engine: &Engine,
     draft: &DraftId,
     position: u32,

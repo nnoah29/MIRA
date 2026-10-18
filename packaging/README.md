@@ -15,7 +15,7 @@ Tout est produit dans `packaging/out/` (ignoré par git).
 | `.rpm` (Fedora, RHEL/Rocky/Alma 9, openSUSE) | `mira-mail-<v>-1.x86_64.rpm` | `rpm/build.sh` | construit, dépendances vérifiées |
 | PKGBUILD (Arch, Manjaro, EndeavourOS ; AUR) | `mira-mail-bin` | `arch/PKGBUILD` | `makepkg` local, lancé sur écran virtuel |
 | Archive précompilée (source du PKGBUILD) | `mira-mail-<v>-x86_64.tar.gz` | `tarball.sh` | oui |
-| AppImage | `MIRA-<v>-x86_64.AppImage` | `appimage/build.sh` | non : demande `appimagetool` |
+| AppImage | `MIRA-<v>-x86_64.AppImage` | `appimage/build.sh` | oui, lancée sur écran virtuel |
 | Flatpak | dépôt local / Flathub | `flatpak/io.github.nnoah29.Mira.yml` | non : demande `flatpak-builder` et le runtime Freedesktop 24.08 |
 | Snap | `mira-mail_<v>_amd64.snap` | `cd packaging && snapcraft` | non : demande `snapcraft` |
 
@@ -24,6 +24,14 @@ Tout est produit dans `packaging/out/` (ignoré par git).
 - Paquet et commande : **`mira-mail`**. Le nom `mira` est déjà pris dans Debian (assembleur de génomes qui installe `/usr/bin/mira`).
 - Identifiant d'application : **`io.github.nnoah29.Mira`** (lanceur `.desktop`, icônes, fiche AppStream, identifiant GTK). Forme exigée par Flathub pour un projet hébergé sur GitHub.
 - Installation : `/usr/lib/mira-mail/` (application), `/usr/bin/mira-mail` (lien relatif), lanceur, icônes 512 px et SVG, fiche AppStream.
+
+## Licence
+
+MIT (`LICENSE` à la racine), installée avec chaque paquet : `/usr/share/licenses/mira-mail/LICENSE`, et `/usr/share/doc/mira-mail/copyright` pour le `.deb`.
+
+## AppImage
+
+`appimagetool` n'est pas dans le dépôt : le placer dans le `PATH`, ou le télécharger depuis https://github.com/AppImage/appimagetool/releases et passer `APPIMAGETOOL=/chemin/appimagetool` à `build-all.sh`.
 
 ## Compatibilité
 
@@ -42,7 +50,6 @@ Dépendances à l'exécution : GTK 3. Recommandées : `zenity` ou `kdialog` (fen
 
 ## Points ouverts
 
-- **Licence** : aucune licence n'est encore choisie ; les métadonnées indiquent `LicenseRef-proprietary`. À remplacer (`metainfo.xml`, `PKGBUILD`, `.spec`, `snapcraft.yaml`) dès qu'elle est décidée. Flathub et les dépôts de distributions en exigent une.
 - **Flatpak / Snap et fenêtres de fichiers** : le sélecteur de fichiers actuel lance `zenity`/`kdialog`, absents des bacs à sable. Joindre ou enregistrer un fichier n'y fonctionnera pas tant que l'app n'utilise pas le portail du bureau (`xdg-desktop-portal`).
 - **Flathub** demande une construction depuis les sources, hors ligne (Rust et Flutter vendorisés), au lieu de l'archive précompilée.
 - **Signature** : les paquets ne sont pas signés (dépôt APT/RPM signé à prévoir pour des mises à jour automatiques).

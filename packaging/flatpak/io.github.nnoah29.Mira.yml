@@ -28,4 +28,5 @@ modules:
       - install -Dm644 io.github.nnoah29.Mira.desktop /app/share/applications/io.github.nnoah29.Mira.desktop
       - install -Dm644 share/io.github.nnoah29.Mira.png /app/share/icons/hicolor/512x512/apps/io.github.nnoah29.Mira.png
       - install -Dm644 share/io.github.nnoah29.Mira.svg /app/share/icons/hicolor/scalable/apps/io.github.nnoah29.Mira.svg
+      - install -Dm644 share/LICENSE /app/share/licenses/io.github.nnoah29.Mira/LICENSE
       - install -Dm644 share/io.github.nnoah29.Mira.metainfo.xml /app/share/metainfo/io.github.nnoah29.Mira.metainfo.xml

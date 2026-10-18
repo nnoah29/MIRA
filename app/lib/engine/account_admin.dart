@@ -97,6 +97,14 @@ class QueuedAction {
   );
 }
 
+/// État de synchronisation d'un compte selon le moteur.
+class SyncStatus {
+  final int? lastSyncedAt;
+  final String? lastError;
+  final bool syncing;
+  const SyncStatus(this.lastSyncedAt, this.lastError, this.syncing);
+}
+
 class AccountAdmin {
   final EngineClient client;
   const AccountAdmin(this.client);
@@ -151,6 +159,20 @@ class AccountAdmin {
             a['last_error'] as String?,
           ),
     ];
+  }
+
+  /// Dernière synchronisation, dernière erreur et synchro en cours, pour chaque compte.
+  Future<Map<String, SyncStatus>> syncStatus() async {
+    final raw = await client.call(req('sync', 'get_sync_status'));
+    final list = ((raw['data'] as Map)['data'] as List).cast<Map>();
+    return {
+      for (final e in list)
+        '${e['account']}': SyncStatus(
+          (e['last_synced_at'] as num?)?.toInt(),
+          e['last_error'] as String?,
+          e['syncing'] == true,
+        ),
+    };
   }
 
   /// Abandonne une action en attente.

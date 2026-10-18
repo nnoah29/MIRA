@@ -1685,7 +1685,46 @@ class MailStore extends ChangeNotifier {
     );
   }
 
-  void emptyFolder() => removeForever(scope().map((m) => m.id).toList());
+  /// Vide la corbeille ou le spam : le moteur vide chaque boîte entière, y compris ce qui n'est pas chargé.
+  void emptyFolder() {
+    final actions = source?.messageActions;
+    final boxes = <String>[
+      for (final a in accounts)
+        if (unified || a.id == activeId) ?source?.mailboxOf(a.id, folder),
+    ];
+    if (actions == null || label != null || boxes.isEmpty) {
+      return removeForever(scope().map((m) => m.id).toList());
+    }
+    final gone = mails.where((m) => m.folder == folder).toList();
+    final ids = {for (final m in gone) m.id};
+    final idx = visible().indexWhere((m) => m.id == open);
+    mails = mails.where((m) => !ids.contains(m.id)).toList();
+    sel.clear();
+    _afterChange(idx);
+    final pending = _after(6500, () => _emptyBoxes(actions, boxes));
+    toast(
+      t('Dossier vidé'),
+      label: t('Annuler'),
+      cb: () {
+        pending.cancel();
+        mails.addAll(gone);
+        notifyListeners();
+      },
+    );
+  }
+
+  Future<void> _emptyBoxes(MessageActions actions, List<String> boxes) async {
+    try {
+      for (final b in boxes) {
+        await actions.emptyMailbox(b);
+      }
+    } catch (_) {
+      toast(t('Action non appliquée sur le serveur'), err: true);
+      for (final a in accounts) {
+        await _reloadOnce(a.id);
+      }
+    }
+  }
 
   /// Enregistre un fichier à l'endroit choisi par l'utilisateur (remplaçable dans les tests).
   Future<Uri?> Function(String name, Uint8List bytes) saveFile = (

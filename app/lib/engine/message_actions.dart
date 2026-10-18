@@ -37,6 +37,14 @@ class MessageActions {
   /// Déplace dans une boîte du serveur.
   Map<String, dynamic> move(String mailbox) => {'type': 'move', 'to': mailbox};
 
+  /// Vide une boîte du serveur (corbeille, spam) d'un seul appel, sans lister ses messages.
+  Future<void> emptyMailbox(String mailbox) => client.call(
+    req('action', 'empty_mailbox', {
+      'mailbox': mailbox,
+      'idempotency_key': _key(),
+    }),
+  );
+
   /// Applique l'action à ces messages, un appel par compte ; les messages sans identifiant moteur sont ignorés.
   Future<void> run(List<Mail> mails, Map<String, dynamic> kind) async {
     final byAccount = <String, List<String>>{};

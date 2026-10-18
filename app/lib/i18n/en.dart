@@ -188,6 +188,7 @@ const Map<String, String> enStrings = {
   'déplacés dans la réception': 'moved to inbox',
   'supprimé définitivement': 'permanently deleted',
   'supprimés définitivement': 'permanently deleted',
+  'Dossier vidé': 'Folder emptied',
   'marqué comme lu': 'marked as read',
   'marqués comme lus': 'marked as read',
   'marqué comme non lu': 'marked as unread',

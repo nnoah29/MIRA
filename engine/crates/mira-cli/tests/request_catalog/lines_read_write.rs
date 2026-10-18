@@ -63,6 +63,7 @@ pub const READ_WRITE_LINES: &[&[&str]] = &[
     &["draft", "attach", "dra", "/tmp/f"],
     &["draft", "detach", "dra", "0"],
     &["draft", "delete", "dra"],
+    &["draft", "save-copy", "dra"],
     &["draft", "get", "dra"],
     &["draft", "list", "acc"],
     &["draft", "send", "dra", "--at", "2030-01-01"],

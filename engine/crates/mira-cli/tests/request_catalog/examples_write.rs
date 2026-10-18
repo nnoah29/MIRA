@@ -52,6 +52,10 @@ pub fn draft_examples() -> Vec<String> {
             r#""op":"remove_attachment","draft":"d","position":0"#,
         ),
         draft("delete_draft"),
+        request_json(
+            "compose",
+            r#""op":"save_draft_copy","draft":"d","idempotency_key":"k""#,
+        ),
         draft("get_draft"),
         account("list_drafts"),
         account("list_outbox"),

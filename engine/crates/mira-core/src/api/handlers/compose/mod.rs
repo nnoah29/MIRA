@@ -9,6 +9,7 @@ mod list_drafts;
 mod list_outbox;
 mod remove_attachment;
 mod resolve_uncertain_send;
+mod save_draft_copy;
 mod send_draft;
 mod update_draft;
 
@@ -21,8 +22,9 @@ use self::delete_draft::handle_delete_draft;
 use self::get_draft::handle_get_draft;
 use self::list_drafts::handle_list_drafts;
 use self::list_outbox::handle_list_outbox;
-use self::remove_attachment::handle_remove_attachment;
+use self::remove_attachment::handle_detach;
 use self::resolve_uncertain_send::handle_resolve_uncertain_send;
+use self::save_draft_copy::handle_save_copy;
 use self::send_draft::handle_send_draft;
 use self::update_draft::handle_update_draft;
 use crate::api::contract::{ComposeRequest as Req, Response};
@@ -38,10 +40,12 @@ pub(crate) async fn route(engine: &Engine, request: Req) -> Result<Response, Mir
         } => handle_create_draft(engine, &account, identity.as_ref(), mode),
         Req::UpdateDraft { draft, changes } => handle_update_draft(engine, &draft, changes),
         Req::AttachFile { draft, path } => handle_attach_file(engine, &draft, &path),
-        Req::RemoveAttachment { draft, position } => {
-            handle_remove_attachment(engine, &draft, position)
-        }
+        Req::RemoveAttachment { draft, position } => handle_detach(engine, &draft, position),
         Req::DeleteDraft { draft } => handle_delete_draft(engine, &draft),
+        Req::SaveDraftCopy {
+            draft,
+            idempotency_key: k,
+        } => handle_save_copy(engine, &draft, k),
         Req::GetDraft { draft } => handle_get_draft(engine, &draft),
         Req::ListDrafts { account } => handle_list_drafts(engine, &account),
         Req::SendDraft {

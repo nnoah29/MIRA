@@ -317,6 +317,14 @@
         "resend": false
       }
     },
+    "compose.save_draft_copy": {
+      "domain": "compose",
+      "request": {
+        "draft": "draft-1",
+        "idempotency_key": "key-1",
+        "op": "save_draft_copy"
+      }
+    },
     "compose.send_draft": {
       "domain": "compose",
       "request": {

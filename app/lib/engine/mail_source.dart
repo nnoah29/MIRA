@@ -5,6 +5,7 @@ import 'account_admin.dart';
 import 'account_setup.dart';
 import 'compose_admin.dart';
 import 'label_admin.dart';
+import 'maintenance_admin.dart';
 import 'message_actions.dart';
 import 'sync_state.dart';
 
@@ -98,6 +99,9 @@ abstract class MailSource {
 
   /// Brouillons et envois (`null` : démonstration).
   ComposeAdmin? get composer;
+
+  /// Entretien du moteur (`null` : démonstration).
+  MaintenanceAdmin? get maintenance;
 
   /// Relit les boîtes du compte depuis le moteur.
   Future<List<Mail>> reload(Account account);

@@ -9,6 +9,7 @@ import '../theme/wall_source.dart';
 import 'accounts_settings.dart';
 import 'contacts_settings.dart';
 import 'image_rules_section.dart';
+import 'maintenance_settings.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
 
@@ -24,11 +25,12 @@ List<(String, String)> get accentPresets => <(String, String)>[
   (t('Jaune'), 'e5b100'),
 ];
 
-List<String> get _tabs => [
+List<String> _tabs(bool engine) => [
   t('Apparence'),
   t('Messagerie'),
   t('Comptes'),
   t('Contacts'),
+  if (engine) t('Stockage'),
 ];
 
 class SettingsPanel extends StatefulWidget {
@@ -339,6 +341,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
         ),
       ]),
       3 => box([const ContactsSettings()]),
+      4 when s.source != null => box([const MaintenanceSettings()]),
       _ when s.source != null => box([const AccountsSettings()]),
       _ => box([
         srow(me.name, me.email, const SizedBox.shrink()),
@@ -381,7 +384,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                for (var i = 0; i < _tabs.length; i++)
+                for (var i = 0; i < _tabs(s.source != null).length; i++)
                   Hov(
                     onTap: () => setState(() => tab = i),
                     builder: (_, h) {
@@ -399,7 +402,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                           ),
                         ),
                         child: Mono(
-                          _tabs[i],
+                          _tabs(s.source != null)[i],
                           ls: .14,
                           color: on ? p.accent : (h ? p.text : p.muted),
                           height: null,

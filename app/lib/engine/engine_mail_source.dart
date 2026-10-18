@@ -9,6 +9,7 @@ import '../data/format.dart';
 import '../data/html_lite.dart';
 import '../data/models.dart';
 import 'account_admin.dart';
+import 'maintenance_admin.dart';
 import 'sync_state.dart';
 import 'account_setup.dart';
 import 'compose_admin.dart';
@@ -110,6 +111,9 @@ class EngineMailSource implements MailSource {
 
   @override
   LabelAdmin get labelAdmin => LabelAdmin(client);
+
+  @override
+  MaintenanceAdmin get maintenance => MaintenanceAdmin(client);
 
   @override
   ComposeAdmin get composer => ComposeAdmin(client);

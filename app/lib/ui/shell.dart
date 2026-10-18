@@ -206,44 +206,47 @@ class _ShellState extends State<Shell> with WidgetsBindingObserver {
         },
         child: Scaffold(
           backgroundColor: p.bg,
-          body: DefaultTextStyle(
-            style: Fonts.sans(size: 15, color: p.text),
-            child: Stack(
-              children: [
-                Row(
-                  children: [
-                    if (!mobile) const Sidebar(),
-                    Expanded(child: main),
-                  ],
-                ),
-                if (mobile) ...[
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      ignoring: !s.navOpen,
-                      child: GestureDetector(
-                        onTap: s.closeNav,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 220),
-                          color: s.navOpen
-                              ? const Color(0x80000000)
-                              : Colors.transparent,
+          // Mobile : rien sous la barre d'état ni sous la barre de gestes (sans effet sur le bureau).
+          body: SafeArea(
+            child: DefaultTextStyle(
+              style: Fonts.sans(size: 15, color: p.text),
+              child: Stack(
+                children: [
+                  Row(
+                    children: [
+                      if (!mobile) const Sidebar(),
+                      Expanded(child: main),
+                    ],
+                  ),
+                  if (mobile) ...[
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        ignoring: !s.navOpen,
+                        child: GestureDetector(
+                          onTap: s.closeNav,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 220),
+                            color: s.navOpen
+                                ? const Color(0x80000000)
+                                : Colors.transparent,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.ease,
-                    left: s.navOpen ? 0 : -(w * .86).clamp(0, 300).toDouble(),
-                    top: 0,
-                    bottom: 0,
-                    width: (w * .86).clamp(0, 300).toDouble(),
-                    child: Sidebar(width: (w * .86).clamp(0, 300).toDouble()),
-                  ),
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.ease,
+                      left: s.navOpen ? 0 : -(w * .86).clamp(0, 300).toDouble(),
+                      top: 0,
+                      bottom: 0,
+                      width: (w * .86).clamp(0, 300).toDouble(),
+                      child: Sidebar(width: (w * .86).clamp(0, 300).toDouble()),
+                    ),
+                  ],
+                  const ToastHost(),
+                  HelpModal(),
                 ],
-                const ToastHost(),
-                HelpModal(),
-              ],
+              ),
             ),
           ),
         ),

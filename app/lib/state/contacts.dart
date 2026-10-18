@@ -1,0 +1,110 @@
+import 'dart:convert';
+import 'dart:math' as math;
+
+import '../data/models.dart';
+
+/// Un correspondant de l'historique : adresse, nom affiché, nombre d'envois et dernier envoi.
+class ContactEntry {
+  final String email;
+
+  /// Nom choisi par l'utilisateur (`null` : celui vu dans les messages).
+  final String? custom;
+  final String seen;
+  final int count, last;
+  const ContactEntry({
+    required this.email,
+    required this.custom,
+    required this.seen,
+    required this.count,
+    required this.last,
+  });
+
+  String get name => custom ?? seen;
+  Person get person => Person(name, email);
+}
+
+/// Mémoire des destinataires : ce qu'on a lu dans les messages envoyés, gardée d'une session à l'autre.
+class ContactBook {
+  /// Noms choisis par l'utilisateur, par adresse (en minuscules).
+  final Map<String, String> names;
+
+  /// Historique conservé : adresse → [nom vu, envois, dernier envoi].
+  final Map<String, List<Object>> history;
+  ContactBook(this.names, this.history);
+
+  /// Relit les deux tables enregistrées ; une valeur illisible est ignorée.
+  static ContactBook decode(String? namesJson, String? historyJson) {
+    Map<String, dynamic> read(String? j) {
+      try {
+        return (jsonDecode(j ?? '{}') as Map).cast<String, dynamic>();
+      } catch (_) {
+        return {};
+      }
+    }
+
+    return ContactBook(
+      {for (final e in read(namesJson).entries) e.key: '${e.value}'},
+      {
+        for (final e in read(historyJson).entries)
+          if (e.value is List && (e.value as List).length == 3)
+            e.key: [
+              '${(e.value as List)[0]}',
+              ((e.value as List)[1] as num).toInt(),
+              ((e.value as List)[2] as num).toInt(),
+            ],
+      },
+    );
+  }
+
+  String encodeNames() => jsonEncode(names);
+  String encodeHistory() => jsonEncode(history);
+
+  /// Fusionne les messages envoyés avec l'historique ; rend `true` si l'historique a changé.
+  bool remember(Iterable<Mail> sent, bool Function(String) mine) {
+    final seen = <String, List<Object>>{};
+    for (final m in sent) {
+      for (final p in [...m.to, ...m.cc]) {
+        final key = p.email.toLowerCase();
+        if (key.isEmpty || mine(key)) continue;
+        final cur = seen.putIfAbsent(key, () => [p.name, 0, 0]);
+        cur[1] = (cur[1] as int) + 1;
+        if (m.date >= (cur[2] as int)) {
+          cur[2] = m.date;
+          if (p.name != p.email) cur[0] = p.name;
+        }
+      }
+    }
+    var changed = false;
+    for (final e in seen.entries) {
+      final old = history[e.key];
+      final next = old == null
+          ? e.value
+          : [
+              e.value[0],
+              math.max(old[1] as int, e.value[1] as int),
+              math.max(old[2] as int, e.value[2] as int),
+            ];
+      if (old == null || old.join('|') != next.join('|')) {
+        history[e.key] = next;
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
+  /// Correspondants, du plus récent au plus ancien.
+  List<ContactEntry> entries() {
+    final out = [
+      for (final e in history.entries)
+        ContactEntry(
+          email: e.key,
+          custom: names[e.key],
+          seen: e.value[0] as String,
+          count: e.value[1] as int,
+          last: e.value[2] as int,
+        ),
+    ];
+    out.sort((a, b) => b.last.compareTo(a.last));
+    return out;
+  }
+}

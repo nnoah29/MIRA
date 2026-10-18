@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../data/models.dart';
 import 'account_admin.dart';
 import 'account_setup.dart';
+import 'compose_admin.dart';
 import 'label_admin.dart';
 
 /// Origine des données affichées : comptes, boîtes chargées, et enrichissement d'un message.
@@ -48,6 +49,12 @@ abstract class MailSource {
 
   /// Création, renommage, suppression et pose des libellés (`null` : démonstration).
   LabelAdmin? get labelAdmin;
+
+  /// Contenu d'une pièce jointe du moteur (`null` : illisible ou sans identifiant).
+  Future<Uint8List?> attachmentBytes(Attachment a);
+
+  /// Brouillons et envois (`null` : démonstration).
+  ComposeAdmin? get composer;
 
   /// Relit les boîtes du compte depuis le moteur.
   Future<List<Mail>> reload(Account account);

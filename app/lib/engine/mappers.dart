@@ -45,6 +45,7 @@ Attachment attachmentOf(Map<String, dynamic> a) {
     name,
     attachmentKind(name, '${a['mime_type']}'),
     sizeOf((a['size'] as num?)?.toInt() ?? 0),
+    id: a['id'] as String?,
   );
 }
 

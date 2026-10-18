@@ -567,8 +567,9 @@ void main() {
       expect(s.theme, 'light');
       expect(s.dense, isTrue);
       expect(s.sig, 'Salut');
-      s.setSetting('snip', '0');
-      expect(s.prefs.getString('snip'), '0');
+      s.setSetting('dense', '0');
+      expect(s.dense, isFalse);
+      expect(s.prefs.getString('dense'), '0');
       s.dispose();
     });
   });

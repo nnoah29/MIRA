@@ -13,11 +13,11 @@ void main() {
   final lib = bridgeLibraryCandidates().where((p) => File(p).existsSync());
   final skip = lib.isEmpty
       ? 'bibliothèque absente (cd bridge && cargo build --release)'
+      : Platform.environment['MIRA_HOME'] == null
+      ? 'lancer avec MIRA_HOME=<dossier jetable> pour ne pas toucher au vrai profil'
       : null;
 
   test('le moteur répond au contrat par FFI', () async {
-    final home = Platform.environment['MIRA_HOME'];
-    expect(home, isNotNull, reason: 'lancer avec MIRA_HOME=<dossier jetable>');
     final client = await RustEngineClient.open();
     final info = await client.call(req('engine', 'get_contract_info'));
     expect(info['type'], 'contract_info');

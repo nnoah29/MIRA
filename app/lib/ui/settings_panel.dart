@@ -7,6 +7,7 @@ import '../theme/app_theme.dart';
 import '../theme/icons.dart';
 import '../theme/wall_source.dart';
 import 'accounts_settings.dart';
+import 'contacts_settings.dart';
 import 'image_rules_section.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
@@ -23,7 +24,12 @@ List<(String, String)> get accentPresets => <(String, String)>[
   (t('Jaune'), 'e5b100'),
 ];
 
-List<String> get _tabs => [t('Apparence'), t('Messagerie'), t('Comptes')];
+List<String> get _tabs => [
+  t('Apparence'),
+  t('Messagerie'),
+  t('Comptes'),
+  t('Contacts'),
+];
 
 class SettingsPanel extends StatefulWidget {
   const SettingsPanel({super.key});
@@ -284,19 +290,13 @@ class _SettingsPanelState extends State<SettingsPanel> {
         ),
         srow(
           t('Densité de la liste'),
-          t('Compacte : plus de messages à l’écran.'),
+          t(
+            'Confortable : deux lignes d’aperçu sous l’objet. Compacte : plus de messages à l’écran, sans aperçu.',
+          ),
           seg('dense', [
             ('0', t('Confortable')),
             ('1', t('Compacte')),
           ], s.dense ? '1' : '0'),
-        ),
-        srow(
-          t('Aperçu des messages'),
-          t('Affiche les deux premières lignes sous l’objet.'),
-          seg('snip', [
-            ('1', t('Afficher')),
-            ('0', t('Masquer')),
-          ], s.snip ? '1' : '0'),
           last: true,
         ),
       ]),
@@ -338,6 +338,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
           ),
         ),
       ]),
+      3 => box([const ContactsSettings()]),
       _ when s.source != null => box([const AccountsSettings()]),
       _ => box([
         srow(me.name, me.email, const SizedBox.shrink()),

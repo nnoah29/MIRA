@@ -10,6 +10,7 @@ import '../data/html_lite.dart';
 import '../data/models.dart';
 import 'account_admin.dart';
 import 'account_setup.dart';
+import 'compose_admin.dart';
 import 'css_inliner.dart';
 import 'inline_images.dart';
 import 'label_admin.dart';
@@ -101,6 +102,22 @@ class EngineMailSource implements MailSource {
   LabelAdmin get labelAdmin => LabelAdmin(client);
 
   @override
+  ComposeAdmin get composer => ComposeAdmin(client);
+
+  final Map<String, Uint8List> _attachments = {};
+
+  @override
+  Future<Uint8List?> attachmentBytes(Attachment a) async {
+    final id = a.id;
+    if (id == null) return null;
+    final known = _attachments[id];
+    if (known != null) return known;
+    final bytes = await fetchAttachment(client, id);
+    if (bytes != null) _attachments[id] = bytes;
+    return bytes;
+  }
+
+  @override
   Future<void> syncNow() async {
     await client.call(
       req('sync', 'start_sync', {
@@ -178,6 +195,8 @@ class EngineMailSource implements MailSource {
           .addAll(msgs.where((m) => seen.add('${m['id']}')));
     }
     await _addLabelOnly(byFolder, boxes, found, seen);
+    final mine = await _drafts(account);
+    _dropDraftCopies(byFolder, mine);
     return [
       for (final e in byFolder.entries)
         ...mailsOfFolder(
@@ -186,7 +205,62 @@ class EngineMailSource implements MailSource {
           e.value,
           labelIds: found.keys.toSet(),
         ),
+      ...mine.map((d) => _draftMail(account, d)),
     ];
+  }
+
+  /// Brouillons en cours d'écriture, gardés par le moteur ; une lecture ratée n'efface rien.
+  Future<List<EngineDraft>> _drafts(Account account) async {
+    try {
+      final list = await composer.list(account.id);
+      return [
+        for (final d in list)
+          if (d.editing) d,
+      ];
+    } on EngineException {
+      return const [];
+    }
+  }
+
+  /// Le serveur garde une copie de chaque brouillon (même Message-ID) : on ne montre que le brouillon du moteur.
+  void _dropDraftCopies(
+    Map<String, List<Map<String, dynamic>>> byFolder,
+    List<EngineDraft> mine,
+  ) {
+    final copies = {for (final d in mine) 'draft-${d.id}@mira.local'};
+    byFolder['drafts']?.removeWhere(
+      (m) => copies.contains(
+        '${m['message_id_header']}'.replaceAll(RegExp(r'^<|>$'), ''),
+      ),
+    );
+  }
+
+  Mail _draftMail(Account account, EngineDraft d) {
+    final sender = identities[account.id]
+        ?.where((i) => i.id == d.identity)
+        .firstOrNull;
+    final from = Person(
+      sender?.displayName ?? account.name,
+      sender?.address ?? account.email,
+    );
+    final html = d.bodyHtml;
+    final body = html != null && html.trim().isNotEmpty
+        ? parseHtml(html)
+        : _plain(d.bodyText);
+    return Mail(
+      id: 'draft:${d.id}',
+      folder: 'drafts',
+      account: account.id,
+      from: from,
+      to: d.to,
+      cc: d.cc,
+      subject: d.subject.trim().isEmpty ? '(sans objet)' : d.subject,
+      date: d.updatedAt,
+      msgs: [
+        Msg(from: from, date: d.updatedAt, body: body, att: d.attachments),
+      ],
+      draft: DraftMeta(from: from.email, bcc: d.bcc, mode: 'draft'),
+    );
   }
 
   /// Messages présents seulement dans des libellés (ni réception, ni envoyés…) : classés dans Archive.

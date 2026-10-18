@@ -41,9 +41,13 @@ Future<Map<String, Uint8List>> loadInlineImages(
   };
 }
 
-Future<Uint8List?> _fetch(EngineClient client, String id) async {
-  final dir = await Directory.systemTemp.createTemp('mira-inline');
-  final file = File('${dir.path}/image');
+Future<Uint8List?> _fetch(EngineClient client, String id) =>
+    fetchAttachment(client, id);
+
+/// Lit une pièce jointe : le moteur l'écrit dans un dossier temporaire, lu une fois complet.
+Future<Uint8List?> fetchAttachment(EngineClient client, String id) async {
+  final dir = await Directory.systemTemp.createTemp('mira-att');
+  final file = File('${dir.path}/file');
   try {
     await client.call(
       req('message', 'save_attachment', {
@@ -51,14 +55,22 @@ Future<Uint8List?> _fetch(EngineClient client, String id) async {
         'destination': file.path,
       }),
     );
-    for (var i = 0; i < 500; i++) {
-      if (file.existsSync()) return await file.readAsBytes();
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-    }
-    return null;
+    return await _whenWritten(file);
   } on EngineException {
     return null;
   } finally {
     await dir.delete(recursive: true).catchError((_) => dir);
   }
+}
+
+/// Attend que le fichier existe et ne grossisse plus.
+Future<Uint8List?> _whenWritten(File file) async {
+  var last = -1;
+  for (var i = 0; i < 1500; i++) {
+    final size = file.existsSync() ? file.lengthSync() : -1;
+    if (size >= 0 && size == last) return file.readAsBytes();
+    last = size;
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+  }
+  return null;
 }

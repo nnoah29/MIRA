@@ -178,6 +178,7 @@ class FakeEngine implements EngineClient {
           ],
         };
       case 'action.apply_action' ||
+          'action.empty_mailbox' ||
           'action.create_mailbox' ||
           'action.rename_mailbox' ||
           'action.delete_mailbox':
@@ -1046,6 +1047,24 @@ void main() {
         store.dispose();
       },
     );
+
+    testWidgets('vider le spam appelle empty_mailbox sur la boîte entière', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final fake = FakeEngine();
+      final src = await tester.runAsync(() => EngineMailSource.load(fake));
+      final store = MailStore(prefs, source: src);
+      store.selectFolder('spam');
+      store.emptyFolder();
+      expect(store.mails.where((m) => m.folder == 'spam'), isEmpty);
+      await tester.pump(const Duration(seconds: 7));
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      expect(fake.actions.last['op'], 'empty_mailbox');
+      expect(fake.actions.last['mailbox'], 'mb-junk');
+      store.dispose();
+    });
 
     test('corbeille et spam passent par le moteur', () async {
       final (store, fake, conv) = await start();

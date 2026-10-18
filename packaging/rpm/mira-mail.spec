@@ -10,7 +10,7 @@ Name:           mira-mail
 Version:        %{mira_version}
 Release:        1%{?dist}
 Summary:        Desktop mail client that works offline
-License:        LicenseRef-proprietary
+License:        MIT
 URL:            https://github.com/nnoah29/MIRA
 ExclusiveArch:  x86_64
 Requires:       gtk3
@@ -28,6 +28,7 @@ and write from a single, calm interface.
 %{mira_packaging}/common/install-tree.sh %{mira_bundle} %{buildroot} %{_prefix}
 
 %files
+%license %{_datadir}/licenses/mira-mail/LICENSE
 %{_bindir}/mira-mail
 %{_prefix}/lib/mira-mail/
 %{_datadir}/applications/io.github.nnoah29.Mira.desktop

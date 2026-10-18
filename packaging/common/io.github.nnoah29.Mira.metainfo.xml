@@ -2,7 +2,7 @@
 <component type="desktop-application">
   <id>io.github.nnoah29.Mira</id>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>LicenseRef-proprietary</project_license>
+  <project_license>MIT</project_license>
   <name>MIRA</name>
   <summary>Your mail, always at hand, even offline</summary>
   <summary xml:lang="fr">Vos mails, toujours sous la main, même hors ligne</summary>

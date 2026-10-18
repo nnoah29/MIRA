@@ -9,7 +9,7 @@ description: |
   opens instantly, works without a connection, and stays yours.
   Connect Gmail, Outlook, Yahoo or any IMAP account and read, sort, search
   and write from a single, calm interface.
-license: Proprietary
+license: MIT
 grade: stable
 confinement: strict
 architectures:
@@ -37,4 +37,5 @@ parts:
         share/io.github.nnoah29.Mira.desktop > io.github.nnoah29.Mira.desktop
       install -Dm644 io.github.nnoah29.Mira.desktop $CRAFT_PART_INSTALL/usr/share/applications/io.github.nnoah29.Mira.desktop
       install -Dm644 share/io.github.nnoah29.Mira.png $CRAFT_PART_INSTALL/usr/share/icons/hicolor/512x512/apps/io.github.nnoah29.Mira.png
+      install -Dm644 share/LICENSE $CRAFT_PART_INSTALL/usr/share/licenses/mira-mail/LICENSE
       install -Dm644 share/io.github.nnoah29.Mira.metainfo.xml $CRAFT_PART_INSTALL/usr/share/metainfo/io.github.nnoah29.Mira.metainfo.xml

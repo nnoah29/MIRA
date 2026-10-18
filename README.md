@@ -66,6 +66,10 @@ Gmail · Outlook / Microsoft 365 · Yahoo · any IMAP/SMTP provider
 
 MIRA is in active development. It is built for the Linux desktop first.
 
+## License
+
+MIRA is released under the [MIT License](LICENSE).
+
 ## For developers
 
 Building and contributing: see [`docs/ENGINE.md`](docs/ENGINE.md).

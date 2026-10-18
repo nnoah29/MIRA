@@ -374,7 +374,7 @@ class MailStore extends ChangeNotifier {
     for (final m in mails) {
       if (m.id == id) return m;
     }
-    for (final m in _hits) {
+    for (final m in [..._hits, ..._deep]) {
       if (m.id == id) return m;
     }
     return null;
@@ -499,10 +499,79 @@ class MailStore extends ChangeNotifier {
           .where((m) => m.labels.contains(label) && !hidden(m))
           .toList();
     }
+    final pool = _withDeep(mails);
     if (folder == 'starred') {
-      return mails.where((m) => m.starred && !hidden(m)).toList();
+      return pool.where((m) => m.starred && !hidden(m)).toList();
     }
-    return mails.where((m) => m.folder == folder).toList();
+    return pool.where((m) => m.folder == folder).toList();
+  }
+
+  // ---- filtres sur toute la boîte (moteur) ----
+
+  /// Filtre rapide de la liste : `unread`, `att` ou `null`.
+  String? only;
+
+  /// Messages trouvés par le moteur au-delà des pages chargées, pour la vue et le filtre courants.
+  List<Mail> _deep = const [];
+  String _deepFor = '';
+
+  String get _deepKey => '${unified ? '*' : activeId}|$folder|$label|$only';
+
+  bool get _wantsDeep =>
+      source != null && label == null && (folder == 'starred' || only != null);
+
+  List<Mail> _withDeep(List<Mail> loaded) {
+    if (_deepFor != _deepKey || _deep.isEmpty) return loaded;
+    final have = {for (final m in loaded) m.id};
+    return [
+      ...loaded,
+      for (final m in _deep)
+        if (!have.contains(m.id)) m,
+    ];
+  }
+
+  bool _matchesOnly(Mail m) => switch (only) {
+    'unread' => m.unread,
+    'att' => m.msgs.any((x) => x.hasAttachments || x.att.isNotEmpty),
+    _ => true,
+  };
+
+  /// Active ou retire un filtre rapide ; le moteur cherche dans toute la boîte.
+  void setOnly(String? v) {
+    only = only == v ? null : v;
+    notifyListeners();
+    unawaited(_refreshDeep());
+  }
+
+  /// Relit dans le moteur les messages de la vue courante qui ne sont pas encore chargés.
+  Future<void> _refreshDeep() async {
+    final src = source;
+    final key = _deepKey;
+    if (src == null || !_wantsDeep) {
+      _deep = const [];
+      _deepFor = '';
+      return;
+    }
+    final found = <Mail>[];
+    try {
+      for (final a in accounts) {
+        if (!(unified || a.id == activeId)) continue;
+        found.addAll(
+          await src.filtered(
+            a.id,
+            folder,
+            unread: only == 'unread',
+            attachments: only == 'att',
+          ),
+        );
+      }
+    } catch (_) {
+      return;
+    }
+    if (key != _deepKey) return;
+    _deep = found;
+    _deepFor = key;
+    notifyListeners();
   }
 
   bool _matchesLocally(Mail m, String qq) =>
@@ -530,6 +599,7 @@ class MailStore extends ChangeNotifier {
     final qq = q.trim().toLowerCase();
     var l = qq.isEmpty ? scope() : _searchResults(qq);
     if (pill != 'all') l = l.where((m) => m.flags.contains(pill)).toList();
+    if (only != null) l = l.where(_matchesOnly).toList();
     l.sort(switch (sort) {
       'old' => (Mail a, Mail b) => a.date - b.date,
       'unread' => (Mail a, Mail b) {
@@ -746,6 +816,9 @@ class MailStore extends ChangeNotifier {
     folder = 'inbox';
     label = null;
     pill = 'all';
+    only = null;
+    _deep = const [];
+    _deepFor = '';
     q = '';
     searchCtl.clear();
     sel.clear();
@@ -910,6 +983,7 @@ class MailStore extends ChangeNotifier {
 
   void _afterNav() {
     pill = 'all';
+    unawaited(_refreshDeep());
     sel.clear();
     if (view != PaneView.compose && !visible().any((m) => m.id == open)) {
       open = null;
@@ -1093,6 +1167,7 @@ class MailStore extends ChangeNotifier {
       if (_signature(fresh) == _signature(_boxes[id] ?? const [])) return;
       _boxes[id] = fresh;
       _rememberContacts();
+      unawaited(_refreshDeep());
       if (unified) {
         mails = _mergedBoxes();
       } else if (id == activeId) {

@@ -221,6 +221,22 @@ void showSortPop(BuildContext anchor) {
                   s.setSort(k);
                 },
               ),
+            PopSep(),
+            PopTitle(t('Afficher seulement')),
+            for (final (k, n) in [
+              ('unread', t('Non lus')),
+              ('att', t('Avec pièces jointes')),
+            ])
+              PopItem(
+                key: ValueKey('only-$k'),
+                leading: SizedBox.shrink(),
+                label: n,
+                on: s.only == k,
+                onTap: () {
+                  close();
+                  s.setOnly(k);
+                },
+              ),
           ],
         );
       },

@@ -91,6 +91,15 @@ abstract class MailSource {
   /// Demande une page de plus par boîte à la prochaine lecture du compte.
   void readDeeper(String account);
 
+  /// Messages qui répondent au filtre dans toute la boîte, pas seulement les pages chargées.
+  /// `folder == 'starred'` : favoris de tous les comptes (vue du moteur).
+  Future<List<Mail>> filtered(
+    String account,
+    String folder, {
+    bool unread = false,
+    bool attachments = false,
+  });
+
   /// Recherche plein texte dans tout l'index local du moteur (tous comptes, toute l'ancienneté).
   Future<List<Mail>> search(String query);
 

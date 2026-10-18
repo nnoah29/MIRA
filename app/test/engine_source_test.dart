@@ -775,6 +775,74 @@ void main() {
     },
   );
 
+  group('reports', () {
+    Future<(MailStore, SharedPreferences)> start() async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final src = await EngineMailSource.load(FakeEngine());
+      return (MailStore(prefs, source: src), prefs);
+    }
+
+    test(
+      'un message reporté reste reporté après relecture et redémarrage',
+      () async {
+        final (store, prefs) = await start();
+        final conv = store.mails.firstWhere((m) => m.msgs.length == 2);
+        store.sel.add(conv.id);
+        store.snooze('tom');
+        expect(conv.folder, 'snoozed');
+        await store.source!.reload(store.accounts.single);
+        final fresh = await store.source!.reload(store.accounts.single);
+        expect(fresh.firstWhere((m) => m.id == conv.id).folder, 'inbox');
+        store.dispose();
+        final again = MailStore(
+          prefs,
+          source: await EngineMailSource.load(FakeEngine()),
+        );
+        expect(
+          again.mails.firstWhere((m) => m.id == conv.id).folder,
+          'snoozed',
+        );
+        expect(
+          again.mails.firstWhere((m) => m.id == conv.id).snooze,
+          'demain 08:00',
+        );
+        again.dispose();
+      },
+    );
+
+    test(
+      'à l\'heure du rappel le message revient en réception, non lu',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'snoozes': '{"acc1/inbox/t1":[1,"demain 08:00"]}',
+        });
+        final prefs = await SharedPreferences.getInstance();
+        final store = MailStore(
+          prefs,
+          source: await EngineMailSource.load(FakeEngine()),
+        );
+        final conv = store.mails.firstWhere((m) => m.id == 'acc1/inbox/t1');
+        expect(conv.folder, 'inbox');
+        expect(conv.unread, isTrue);
+        expect(prefs.getString('snoozes'), '{}');
+        expect(store.toasts.last.msg, contains('Rappel'));
+        store.dispose();
+      },
+    );
+
+    test('annuler un report l\'oublie', () async {
+      final (store, prefs) = await start();
+      final conv = store.mails.firstWhere((m) => m.msgs.length == 2);
+      store.sel.add(conv.id);
+      store.snooze('1h');
+      store.toasts.last.cb!();
+      expect(conv.folder, 'inbox');
+      expect(prefs.getString('snoozes'), '{}');
+      store.dispose();
+    });
+  });
+
   group('recherche', () {
     Future<(MailStore, FakeEngine)> start() async {
       SharedPreferences.setMockInitialValues({});

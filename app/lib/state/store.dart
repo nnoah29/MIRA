@@ -184,6 +184,10 @@ class MailStore extends ChangeNotifier {
     if (source != null) {
       _applyIdentities();
       _boxes.addAll(source!.boxes);
+      _loadSnoozes();
+      for (final l in _boxes.values) {
+        _applySnoozes(l);
+      }
       _changeSub = source!.changes.listen(_reloadAccount);
     }
     final saved = prefs.getString('account');
@@ -196,6 +200,10 @@ class MailStore extends ChangeNotifier {
       mails = source != null ? (_boxes[active.id] ?? []) : seedAccount(active);
     }
     chat = [_welcome()];
+    if (source != null) {
+      wakeSnoozed();
+      _armWake();
+    }
   }
 
   // ---- synchronisation ----
@@ -342,6 +350,7 @@ class MailStore extends ChangeNotifier {
   void dispose() {
     _changeSub?.cancel();
     _searchTimer?.cancel();
+    _wake?.cancel();
     _wallSub?.cancel();
     for (final t in _timers) {
       t.cancel();
@@ -1058,6 +1067,7 @@ class MailStore extends ChangeNotifier {
     if (src == null || acc == null) return;
     try {
       final fresh = _withOutgoing(id, await src.reload(acc));
+      _applySnoozes(fresh);
       _keepLocalState(id, fresh);
       if (_signature(fresh) == _signature(_boxes[id] ?? const [])) return;
       _boxes[id] = fresh;
@@ -1232,7 +1242,9 @@ class MailStore extends ChangeNotifier {
     for (final (m, _, _) in prev) {
       m.folder = to;
       m.snooze = null;
+      _snoozed.remove(m.id);
     }
+    _saveSnoozes();
     sel.clear();
     _afterChange(idx);
     _pushMoves([for (final (m, f, _) in prev) (m, f, to)]);
@@ -1270,6 +1282,96 @@ class MailStore extends ChangeNotifier {
     );
   }
 
+  // ---- reports (côté app : le moteur n'en a pas) ----
+
+  /// Messages reportés : identifiant → (instant du rappel, libellé affiché).
+  final Map<String, (int, String)> _snoozed = {};
+
+  void _loadSnoozes() {
+    try {
+      final raw = jsonDecode(prefs.getString('snoozes') ?? '{}') as Map;
+      for (final e in raw.entries) {
+        final v = e.value as List;
+        _snoozed['${e.key}'] = ((v[0] as num).toInt(), '${v[1]}');
+      }
+    } catch (_) {
+      /* reports illisibles : on repart de zéro */
+    }
+  }
+
+  Timer? _wake;
+
+  /// Programme le réveil du prochain message reporté (un seul minuteur, rien s'il n'y en a pas).
+  void _armWake() {
+    _wake?.cancel();
+    if (_snoozed.isEmpty) return;
+    final next = _snoozed.values
+        .map((v) => v.$1)
+        .reduce((a, b) => a < b ? a : b);
+    final wait = (next - nowMs()).clamp(0, 3600000) + 50;
+    _wake = Timer(Duration(milliseconds: wait), wakeSnoozed);
+  }
+
+  void _saveSnoozes() {
+    if (source == null) return;
+    _armWake();
+    prefs.setString(
+      'snoozes',
+      jsonEncode({
+        for (final e in _snoozed.entries) e.key: [e.value.$1, e.value.$2],
+      }),
+    );
+  }
+
+  /// Remet en « Reportés » les messages relus dont le rappel n'est pas échu.
+  void _applySnoozes(List<Mail> l) {
+    final now = nowMs();
+    for (final m in l) {
+      final s = _snoozed[m.id];
+      if (s == null || m.folder != 'inbox' || s.$1 <= now) continue;
+      m.folder = 'snoozed';
+      m.snooze = s.$2;
+    }
+  }
+
+  /// Rappelle les messages reportés dont l'heure est venue : retour en réception, non lus.
+  void wakeSnoozed() {
+    final now = nowMs();
+    final due = [
+      for (final e in _snoozed.entries)
+        if (e.value.$1 <= now) e.key,
+    ];
+    if (due.isEmpty) {
+      _armWake();
+      return;
+    }
+    Mail? first;
+    for (final id in due) {
+      _snoozed.remove(id);
+      final m =
+          byId(id) ??
+          _boxes.values.expand((l) => l).where((x) => x.id == id).firstOrNull;
+      if (m == null) continue;
+      m.folder = 'inbox';
+      m.unread = true;
+      m.snooze = null;
+      first ??= m;
+    }
+    _saveSnoozes();
+    notifyListeners();
+    final woken = first;
+    if (woken != null) {
+      toast(
+        t('Rappel : {0}', [woken.subject]),
+        label: t('Ouvrir'),
+        cb: () {
+          reveal(woken);
+          openMail(woken.id);
+        },
+      );
+    }
+  }
+
   void snoozeTo(List<String> ids, String lbl, int ms) {
     final idx = visible().indexWhere((m) => m.id == open);
     final prev = ids.map((id) {
@@ -1280,6 +1382,13 @@ class MailStore extends ChangeNotifier {
       m.folder = 'snoozed';
       m.snooze = lbl;
     }
+    if (source != null) {
+      final until = ms > 0 ? nowMs() + ms : scheduledMs(lbl);
+      for (final id in ids) {
+        _snoozed[id] = (until, lbl);
+      }
+      _saveSnoozes();
+    }
     sel.clear();
     _afterChange(idx);
     toast(
@@ -1289,11 +1398,13 @@ class MailStore extends ChangeNotifier {
         for (final (m, f) in prev) {
           m.folder = f;
           m.snooze = null;
+          _snoozed.remove(m.id);
         }
+        _saveSnoozes();
         notifyListeners();
       },
     );
-    if (ms > 0) {
+    if (ms > 0 && source == null) {
       _after(ms, () {
         for (final id in ids) {
           final m = byId(id);

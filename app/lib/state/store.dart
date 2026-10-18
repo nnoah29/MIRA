@@ -16,6 +16,7 @@ import '../engine/engine_client.dart';
 import '../engine/label_admin.dart';
 import '../engine/message_actions.dart';
 import '../engine/mail_source.dart';
+import '../engine/sync_state.dart';
 import '../theme/wall_source.dart';
 import '../theme/wall_theme.dart';
 import '../theme/app_theme.dart';
@@ -139,6 +140,7 @@ class MailStore extends ChangeNotifier {
   /// Données réelles du moteur (`null` : données fictives de démonstration).
   final MailSource? source;
   StreamSubscription<String>? _changeSub;
+  StreamSubscription<void>? _syncSub;
 
   /// Historique des destinataires et noms choisis.
   late final ContactBook contactBook;
@@ -190,6 +192,7 @@ class MailStore extends ChangeNotifier {
         _applySnoozes(l);
       }
       _changeSub = source!.changes.listen(_reloadAccount);
+      _syncSub = source!.syncEvents.listen((_) => notifyListeners());
     }
     final saved = prefs.getString('account');
     unified = saved == 'all';
@@ -350,6 +353,7 @@ class MailStore extends ChangeNotifier {
   @override
   void dispose() {
     _changeSub?.cancel();
+    _syncSub?.cancel();
     _searchTimer?.cancel();
     _wake?.cancel();
     _wallSub?.cancel();
@@ -1687,6 +1691,28 @@ class MailStore extends ChangeNotifier {
   }
 
   final unsubscriber = Unsubscriber();
+
+  /// Comptes visibles qui ne se synchronisent pas normalement, avec leur état (hors ligne, échec, en cours).
+  List<(Account, SyncState)> get syncIssues {
+    final states = source?.syncStates ?? const <String, SyncState>{};
+    return [
+      for (final a in accounts)
+        if ((unified || a.id == activeId) && states[a.id] != null)
+          if (states[a.id]!.offline ||
+              states[a.id]!.failed != null ||
+              states[a.id]!.syncing)
+            (a, states[a.id]!),
+    ];
+  }
+
+  /// Relance la synchronisation après un échec ou un retour du réseau.
+  Future<void> retrySync() async {
+    try {
+      await source?.syncNow();
+    } catch (_) {
+      toast(t('Synchronisation impossible'), err: true);
+    }
+  }
 
   /// Moyen de désabonnement de la conversation ouverte (`null` : l'expéditeur n'en annonce pas).
   Unsub? unsubFor(Mail m) => Unsubscriber.of(m.msgs);

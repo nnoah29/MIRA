@@ -13,6 +13,7 @@ import 'reader.dart';
 import 'add_account_panel.dart';
 import 'settings_panel.dart';
 import 'sidebar.dart';
+import 'sync_banner.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
 
@@ -184,6 +185,7 @@ class _ShellState extends State<Shell> with WidgetsBindingObserver {
     final main = Column(
       children: [
         const Topbar(),
+        const SyncBanner(),
         Expanded(child: split),
       ],
     );

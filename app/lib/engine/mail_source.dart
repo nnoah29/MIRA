@@ -6,6 +6,7 @@ import 'account_setup.dart';
 import 'compose_admin.dart';
 import 'label_admin.dart';
 import 'message_actions.dart';
+import 'sync_state.dart';
 
 /// Résultat d'une recherche sur le serveur : messages déjà connus du moteur, et nombre de ceux qu'il n'a pas synchronisés.
 class ServerSearch {
@@ -67,6 +68,12 @@ abstract class MailSource {
 
   /// Boîte du serveur qui tient le rôle de ce dossier pour ce compte (`null` : inconnue).
   String? mailboxOf(String account, String folder);
+
+  /// État de synchronisation par compte (hors ligne, en cours, échec).
+  Map<String, SyncState> get syncStates;
+
+  /// Émet à chaque changement de [syncStates].
+  Stream<void> get syncEvents;
 
   /// Nombre de non lus exact du dossier selon le moteur (`null` : inconnu).
   int? unreadOf(String account, String folder);

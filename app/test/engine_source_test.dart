@@ -413,6 +413,42 @@ class FakeEngine implements EngineClient {
 
 void main() {
   test(
+    'hors ligne, échec et avancement de la synchro suivent les événements',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final fake = FakeEngine();
+      final store = MailStore(prefs, source: await EngineMailSource.load(fake));
+      Future<void> emit(Map<String, dynamic> kind) async {
+        fake.feed.add({'kind': kind});
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+
+      expect(store.syncIssues, isEmpty);
+      await emit({'type': 'went_offline', 'account': 'acc1'});
+      expect(store.syncIssues.single.$2.offline, isTrue);
+      await emit({'type': 'back_online', 'account': 'acc1'});
+      expect(store.syncIssues, isEmpty);
+      await emit({
+        'type': 'sync_progress',
+        'account': 'acc1',
+        'done': 1,
+        'total': 4,
+      });
+      expect(store.syncIssues.single.$2.percent, 25);
+      await emit({
+        'type': 'sync_failed',
+        'account': 'acc1',
+        'code': 'network.timeout',
+      });
+      expect(store.syncIssues.single.$2.failed, 'network.timeout');
+      await emit({'type': 'sync_finished', 'account': 'acc1'});
+      expect(store.syncIssues, isEmpty);
+      store.dispose();
+    },
+  );
+
+  test(
     'le compteur de non lus vient du moteur, pas des messages chargés',
     () async {
       SharedPreferences.setMockInitialValues({});

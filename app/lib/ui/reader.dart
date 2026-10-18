@@ -12,6 +12,7 @@ import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
 import 'viewer.dart';
+import 'original_dialog.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
 
@@ -158,6 +159,15 @@ class _ReaderState extends State<Reader> {
                         ),
                         const SizedBox(width: 8),
                         IBtn('trash', tip: t('Supprimer (#)'), onTap: s.trash),
+                        if (s.source != null) ...[
+                          const SizedBox(width: 8),
+                          IBtn(
+                            'file',
+                            key: const ValueKey('show-original'),
+                            tip: t('Afficher l’original'),
+                            onTap: () => showOriginal(context, m),
+                          ),
+                        ],
                       ],
                     ),
                   ),

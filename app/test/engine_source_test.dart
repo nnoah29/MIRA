@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 
@@ -270,6 +271,19 @@ class FakeEngine implements EngineClient {
             'status': {'type': 'running', 'done': 0, 'total': 1},
           },
         };
+      case 'message.get_raw_source':
+        return {
+          'type': 'raw_source',
+          'data': {
+            'size': 20,
+            'content_base64': base64Encode(
+              utf8.encode('Subject: Été\r\n\r\nok'),
+            ),
+          },
+        };
+      case 'sync.resync_mailbox':
+        actions.add({'op': r['op'], ...r});
+        return {'type': 'done'};
       case 'maintenance.get_storage_stats':
         return {
           'type': 'storage_stats',
@@ -451,6 +465,20 @@ class FakeEngine implements EngineClient {
 }
 
 void main() {
+  test('original du message et resynchronisation du dossier', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final fake = FakeEngine();
+    final store = MailStore(prefs, source: await EngineMailSource.load(fake));
+    final conv = store.mails.firstWhere((m) => m.folder == 'inbox');
+    expect(await store.originalOf(conv), 'Subject: Été\r\n\r\nok');
+    await store.resyncFolder();
+    expect(fake.actions.last['op'], 'resync_mailbox');
+    expect(fake.actions.last['mailbox'], 'mb-inbox');
+    expect(store.toasts.last.msg, 'Resynchronisation lancée');
+    store.dispose();
+  });
+
   test('entretien : volumes, intégrité, purge, index et export', () async {
     final fake = FakeEngine();
     final admin = (await EngineMailSource.load(fake)).maintenance;

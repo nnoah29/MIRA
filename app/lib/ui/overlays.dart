@@ -333,6 +333,12 @@ void showMorePop(BuildContext anchor) {
           label: t('Tout marquer comme lu'),
           onTap: () => run(s.readAllVisible),
         ),
+        if (s.source != null && s.label == null)
+          PopItem(
+            leading: popIco('refresh', ctx),
+            label: t('Resynchroniser ce dossier'),
+            onTap: () => run(s.resyncFolder),
+          ),
         if (s.folder == 'trash' || s.folder == 'spam')
           PopItem(
             leading: popIco('trash', ctx),

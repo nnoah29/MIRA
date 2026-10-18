@@ -1696,6 +1696,41 @@ class MailStore extends ChangeNotifier {
 
   final unsubscriber = Unsubscriber();
 
+  /// Lit la source brute du dernier message de la conversation (`null` : indisponible).
+  Future<String?> originalOf(Mail m) async {
+    final ref = m.msgs.reversed
+        .map((x) => x.ref)
+        .whereType<String>()
+        .firstOrNull;
+    if (source == null || ref == null) return null;
+    try {
+      final bytes = await source!.rawSource(ref);
+      return bytes == null ? null : utf8.decode(bytes, allowMalformed: true);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Resynchronise entièrement le dossier affiché, pour les comptes de la vue.
+  Future<void> resyncFolder() async {
+    final src = source;
+    if (src == null) return;
+    var any = false;
+    try {
+      for (final a in accounts) {
+        if (!(unified || a.id == activeId)) continue;
+        any = await src.resync(a.id, folder) || any;
+      }
+      toast(
+        any
+            ? t('Resynchronisation lancée')
+            : t('Ce dossier n’existe pas sur le serveur'),
+      );
+    } catch (_) {
+      toast(t('Synchronisation impossible'), err: true);
+    }
+  }
+
   /// Demande où écrire un export (remplaçable dans les tests) ; `null` : annulé.
   Future<String?> Function(String name) pickExportPath = (name) async {
     final uri = await FilePicker.saveFile(fileName: name, bytes: Uint8List(0));

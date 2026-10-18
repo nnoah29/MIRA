@@ -100,6 +100,12 @@ abstract class MailSource {
   /// Brouillons et envois (`null` : démonstration).
   ComposeAdmin? get composer;
 
+  /// Source brute du message tel que reçu (`null` : indisponible).
+  Future<Uint8List?> rawSource(String messageRef);
+
+  /// Resynchronise entièrement la boîte de ce dossier ; faux si le dossier n'a pas de boîte.
+  Future<bool> resync(String account, String folder);
+
   /// Entretien du moteur (`null` : démonstration).
   MaintenanceAdmin? get maintenance;
 

@@ -15,6 +15,7 @@ import 'add_account_panel.dart';
 import 'html_body.dart';
 import 'identities_box.dart';
 import 'labels_box.dart';
+import 'synced_mailboxes.dart';
 import 'widgets.dart';
 
 String _message(Object e) =>
@@ -343,6 +344,11 @@ class _AccountCardState extends State<AccountCard> {
                       done: t('Fenêtre de synchronisation modifiée.'),
                     ),
             ),
+          ),
+          _row(
+            p,
+            t('DOSSIERS SYNCHRONISÉS'),
+            SyncedMailboxes(account: a, admin: widget.admin),
           ),
           _row(
             p,

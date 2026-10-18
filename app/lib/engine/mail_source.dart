@@ -60,6 +60,9 @@ abstract class MailSource {
   /// Boîte du serveur qui tient le rôle de ce dossier pour ce compte (`null` : inconnue).
   String? mailboxOf(String account, String folder);
 
+  /// Recherche plein texte dans tout l'index local du moteur (tous comptes, toute l'ancienneté).
+  Future<List<Mail>> search(String query);
+
   /// Brouillons et envois (`null` : démonstration).
   ComposeAdmin? get composer;
 

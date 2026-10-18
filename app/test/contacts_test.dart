@@ -59,6 +59,18 @@ void main() {
     expect(ContactBook.decode('pas du json', null).entries(), isEmpty);
   });
 
+  test('le nom choisi s\'affiche à la place du nom reçu, dans la liste comme dans le lecteur', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = MailStore(await SharedPreferences.getInstance());
+    const bob = Person('bob.x', 'Bob@X.org');
+    expect(store.shown(bob), 'bob.x');
+    store.setContactName('bob@x.org', 'Bob Martin');
+    expect(store.shown(bob), 'Bob Martin');
+    store.setContactName('bob@x.org', '');
+    expect(store.shown(bob), 'bob.x');
+    store.dispose();
+  });
+
   testWidgets('l\'onglet Contacts permet de nommer une adresse', (
     tester,
   ) async {

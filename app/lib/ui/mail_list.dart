@@ -421,10 +421,12 @@ class MailRow extends StatelessWidget {
         ? t('À : {0}', [
             m.to.isEmpty
                 ? t('(aucun destinataire)')
-                : m.to.map((x) => x.name).join(', '),
+                : m.to.map(s.shown).join(', '),
           ])
-        : m.from.name;
-    final avName = out ? (m.to.isNotEmpty ? m.to[0].name : '?') : m.from.name;
+        : s.shown(m.from);
+    final avName = out
+        ? (m.to.isNotEmpty ? s.shown(m.to[0]) : '?')
+        : s.shown(m.from);
     final last = m.msgs.last;
     final hasAtt = m.msgs.any((x) => x.att.isNotEmpty);
     final isSel = s.open == m.id;

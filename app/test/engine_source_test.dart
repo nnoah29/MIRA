@@ -271,6 +271,9 @@ class FakeEngine implements EngineClient {
             'status': {'type': 'running', 'done': 0, 'total': 1},
           },
         };
+      case 'mailbox.set_synced_mailboxes':
+        actions.add({'op': r['op'], ...r});
+        return {'type': 'done'};
       case 'message.get_raw_source':
         return {
           'type': 'raw_source',
@@ -465,6 +468,17 @@ class FakeEngine implements EngineClient {
 }
 
 void main() {
+  test('dossiers synchronisés : lus puis envoyés au moteur', () async {
+    final fake = FakeEngine();
+    final admin = (await EngineMailSource.load(fake)).admin;
+    final boxes = await admin.mailboxes('acc1');
+    expect(boxes.first.id, 'mb-inbox');
+    expect(boxes.every((b) => b.synced), isTrue);
+    await admin.setSyncedMailboxes('acc1', ['mb-inbox', 'mb-drafts']);
+    expect(fake.actions.last['op'], 'set_synced_mailboxes');
+    expect(fake.actions.last['mailboxes'], ['mb-inbox', 'mb-drafts']);
+  });
+
   test('original du message et resynchronisation du dossier', () async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();

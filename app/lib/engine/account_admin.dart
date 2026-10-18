@@ -75,6 +75,13 @@ class IdentityDetail {
 }
 
 /// Gestion des comptes et des identités par le contrat du moteur.
+/// Boîte d'un compte et son état de synchronisation.
+class BoxChoice {
+  final String id, name, role;
+  final bool synced;
+  const BoxChoice(this.id, this.name, this.role, this.synced);
+}
+
 class AccountAdmin {
   final EngineClient client;
   const AccountAdmin(this.client);
@@ -91,6 +98,31 @@ class AccountAdmin {
         ),
     ];
   }
+
+  /// Boîtes du compte, avec celles que le moteur synchronise.
+  Future<List<BoxChoice>> mailboxes(String id) async {
+    final raw = await client.call(
+      req('mailbox', 'list_mailboxes', {'account': id}),
+    );
+    return [
+      for (final b in (raw['data'] as List).cast<Map>())
+        BoxChoice(
+          '${b['id']}',
+          '${b['display_name'] ?? b['name'] ?? b['id']}',
+          '${b['role']}',
+          b['sync_enabled'] != false,
+        ),
+    ];
+  }
+
+  /// Ne synchronise plus que ces boîtes.
+  Future<void> setSyncedMailboxes(String id, List<String> mailboxes) =>
+      client.call(
+        req('mailbox', 'set_synced_mailboxes', {
+          'account': id,
+          'mailboxes': mailboxes,
+        }),
+      );
 
   Future<void> _account(String op, String id, [Map<String, dynamic>? extra]) =>
       client.call(req('account', op, {'account': id, ...?extra}));

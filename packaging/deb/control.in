@@ -1,0 +1,16 @@
+Package: mira-mail
+Version: @VERSION@
+Architecture: amd64
+Maintainer: nnoah29 <toffanoah@gmail.com>
+Installed-Size: @SIZE@
+Depends: libgtk-3-0 | libgtk-3-0t64, libepoxy0, libfontconfig1, libc6 (>= 2.34), libstdc++6
+Recommends: zenity | kdialog, xdg-utils, gnome-keyring | kwalletmanager
+Section: mail
+Priority: optional
+Homepage: https://github.com/nnoah29/MIRA
+Description: Desktop mail client that works offline
+ MIRA keeps a full copy of your mail on your own computer, so everything
+ opens instantly, works without a connection, and stays yours.
+ .
+ Connect Gmail, Outlook, Yahoo or any IMAP account and read, sort, search
+ and write from a single, calm interface.

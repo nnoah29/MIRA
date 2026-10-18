@@ -1,0 +1,31 @@
+# Flatpak de MIRA. Construction : flatpak-builder --user --install --force-clean out/flatpak flatpak/io.github.nnoah29.Mira.yml
+# Ce manifeste installe l'archive précompilée (packaging/tarball.sh) ; Flathub demandera une construction depuis les sources.
+app-id: io.github.nnoah29.Mira
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+command: mira-mail
+finish-args:
+  - --share=network
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --talk-name=org.freedesktop.secrets
+  - --talk-name=org.freedesktop.Notifications
+  - --filesystem=xdg-download
+modules:
+  - name: mira-mail
+    buildsystem: simple
+    sources:
+      - type: archive
+        path: ../out/mira-mail-1.0.0-x86_64.tar.gz
+    build-commands:
+      - install -d /app/lib/mira-mail /app/bin
+      - cp -a app/. /app/lib/mira-mail/
+      - ln -s ../lib/mira-mail/mira /app/bin/mira-mail
+      - sed 's|^Exec=.*|Exec=mira-mail|' share/io.github.nnoah29.Mira.desktop > io.github.nnoah29.Mira.desktop
+      - install -Dm644 io.github.nnoah29.Mira.desktop /app/share/applications/io.github.nnoah29.Mira.desktop
+      - install -Dm644 share/io.github.nnoah29.Mira.png /app/share/icons/hicolor/512x512/apps/io.github.nnoah29.Mira.png
+      - install -Dm644 share/io.github.nnoah29.Mira.svg /app/share/icons/hicolor/scalable/apps/io.github.nnoah29.Mira.svg
+      - install -Dm644 share/io.github.nnoah29.Mira.metainfo.xml /app/share/metainfo/io.github.nnoah29.Mira.metainfo.xml

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.nnoah29.Mira</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-proprietary</project_license>
+  <name>MIRA</name>
+  <summary>Your mail, always at hand, even offline</summary>
+  <summary xml:lang="fr">Vos mails, toujours sous la main, même hors ligne</summary>
+  <developer id="io.github.nnoah29">
+    <name>nnoah29</name>
+  </developer>
+  <description>
+    <p>MIRA is a desktop mail client that keeps a full copy of your mail on your own computer, so everything opens instantly, works without a connection, and stays yours.</p>
+    <p>Connect Gmail, Outlook, Yahoo or any IMAP account and read, sort, search and write from a single, calm interface.</p>
+    <ul>
+      <li>Read, reply and organise offline; changes sync when you're back online</li>
+      <li>Unified inbox across all your accounts</li>
+      <li>Remote images and trackers blocked by default</li>
+      <li>Undo send, scheduled sending and snooze</li>
+      <li>Fast full-text search, extendable to the server</li>
+      <li>Desktop notifications for new mail</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">io.github.nnoah29.Mira.desktop</launchable>
+  <url type="homepage">https://github.com/nnoah29/MIRA</url>
+  <url type="bugtracker">https://github.com/nnoah29/MIRA/issues</url>
+  <categories>
+    <category>Network</category>
+    <category>Email</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="1.0.0" date="2026-10-18"/>
+  </releases>
+</component>

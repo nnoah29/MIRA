@@ -1,0 +1,25 @@
+pkgbase = mira-mail-bin
+	pkgdesc = Desktop mail client that works offline
+	pkgver = 1.0.0
+	pkgrel = 1
+	url = https://github.com/nnoah29/MIRA
+	arch = x86_64
+	license = LicenseRef-proprietary
+	depends = gtk3
+	depends = libepoxy
+	depends = fontconfig
+	depends = glibc
+	depends = gcc-libs
+	optdepends = zenity: file dialogs on GNOME and others
+	optdepends = kdialog: file dialogs on KDE
+	optdepends = xdg-utils: open links in the browser
+	optdepends = gnome-keyring: store account passwords
+	optdepends = kwallet: store account passwords on KDE
+	provides = mira-mail
+	conflicts = mira-mail
+	options = !strip
+	options = !debug
+	source = https://github.com/nnoah29/MIRA/releases/download/v1.0.0/mira-mail-1.0.0-x86_64.tar.gz
+	sha256sums = SKIP
+
+pkgname = mira-mail-bin

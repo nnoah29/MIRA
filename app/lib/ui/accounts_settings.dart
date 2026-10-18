@@ -16,6 +16,7 @@ import 'html_body.dart';
 import 'identities_box.dart';
 import 'labels_box.dart';
 import 'pending_actions.dart';
+import 'sync_status_line.dart';
 import 'synced_mailboxes.dart';
 import 'widgets.dart';
 
@@ -354,32 +355,38 @@ class _AccountCardState extends State<AccountCard> {
           _row(
             p,
             t('COMPTE'),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Btn(
-                  key: ValueKey('sync-${a.id}'),
-                  icon: 'refresh',
-                  label: t('Synchroniser maintenant'),
-                  onTap: busy || a.paused
-                      ? null
-                      : () => _run(
-                          () => widget.setup.startSync(a.id),
-                          done: t('Synchronisation lancée.'),
-                        ),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    Btn(
+                      key: ValueKey('sync-${a.id}'),
+                      icon: 'refresh',
+                      label: t('Synchroniser maintenant'),
+                      onTap: busy || a.paused
+                          ? null
+                          : () => _run(
+                              () => widget.setup.startSync(a.id),
+                              done: t('Synchronisation lancée.'),
+                            ),
+                    ),
+                    Btn(
+                      key: ValueKey('pause-${a.id}'),
+                      label: a.paused ? t('Reprendre') : t('Mettre en pause'),
+                      onTap: busy
+                          ? null
+                          : () => _run(
+                              () => a.paused
+                                  ? widget.admin.resume(a.id)
+                                  : widget.admin.pause(a.id),
+                            ),
+                    ),
+                  ],
                 ),
-                Btn(
-                  key: ValueKey('pause-${a.id}'),
-                  label: a.paused ? t('Reprendre') : t('Mettre en pause'),
-                  onTap: busy
-                      ? null
-                      : () => _run(
-                          () => a.paused
-                              ? widget.admin.resume(a.id)
-                              : widget.admin.pause(a.id),
-                        ),
-                ),
+                SyncStatusLine(account: a, admin: widget.admin),
               ],
             ),
           ),

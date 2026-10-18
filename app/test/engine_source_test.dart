@@ -272,6 +272,24 @@ class FakeEngine implements EngineClient {
             'status': {'type': 'running', 'done': 0, 'total': 1},
           },
         };
+      case 'sync.get_sync_status':
+        return {
+          'type': 'sync',
+          'data': {
+            'type': 'status',
+            'data': [
+              {
+                'account': 'acc1',
+                'last_error': 'auth.failed',
+                'last_synced_at': 1700000000000,
+                'mailboxes_in_progress': [],
+                'pending_actions': 0,
+                'state': {'type': 'connected'},
+                'syncing': false,
+              },
+            ],
+          },
+        };
       case 'queue.list_actions':
         queueAsked.add(r);
         return {
@@ -498,6 +516,15 @@ class FakeEngine implements EngineClient {
 }
 
 void main() {
+  test('état de synchro par compte lu dans le moteur', () async {
+    final admin = (await EngineMailSource.load(FakeEngine())).admin;
+    final st = (await admin.syncStatus())['acc1']!;
+    expect(
+      (st.lastSyncedAt, st.lastError, st.syncing),
+      (1700000000000, 'auth.failed', false),
+    );
+  });
+
   test(
     'actions en attente : envois exclus, abandon envoyé au moteur',
     () async {

@@ -19,6 +19,7 @@ class FakeEngine implements EngineClient {
   bool serverCopy = false;
   bool failActions = false;
   String outboxState = 'pending';
+  final searches = <String>[];
   final actions = <Map<String, dynamic>>[];
   final composed = <Map<String, dynamic>>[];
   final drafts = <String, Map<String, dynamic>>{};
@@ -97,6 +98,7 @@ class FakeEngine implements EngineClient {
             {'id': 'mb-inbox', 'role': 'inbox'},
             {'id': 'mb-junk', 'role': 'junk'},
             {'id': 'mb-drafts', 'role': 'drafts'},
+            {'id': 'mb-archive', 'role': 'archive'},
             {
               'id': 'mb-other',
               'role': 'other',
@@ -223,6 +225,24 @@ class FakeEngine implements EngineClient {
         composed.add({'op': r['op'], ...r});
         drafts[r['draft']]!['state'] = {'type': 'sending'};
         return _write('action', 'send1');
+      case 'search.search':
+        searches.add('${r['query']}');
+        return {
+          'type': 'messages',
+          'data': {
+            'items': [
+              {
+                ..._msg('m50', 'Contrat ancien', date: 100),
+                'mailboxes': ['mb-archive'],
+              },
+              {
+                ..._msg('m1', 'Premier', thread: 't1', seen: false, date: 1000),
+                'mailboxes': ['mb-inbox'],
+              },
+            ],
+            'next_cursor': null,
+          },
+        };
       case 'compose.list_outbox':
         return _write('outbox', [
           for (final d in drafts.values)
@@ -675,6 +695,80 @@ void main() {
       store.dispose();
     },
   );
+
+  group('recherche', () {
+    Future<(MailStore, FakeEngine)> start() async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final fake = FakeEngine();
+      return (
+        MailStore(prefs, source: await EngineMailSource.load(fake)),
+        fake,
+      );
+    }
+
+    Future<void> wait() =>
+        Future<void>.delayed(const Duration(milliseconds: 400));
+
+    test('la recherche interroge l\'index du moteur et trouve des messages non chargés', () async {
+      final (store, fake) = await start();
+      store.setQuery('contrat');
+      await wait();
+      expect(fake.searches, ['contrat']);
+      final subjects = store.visible().map((m) => m.subject);
+      expect(subjects, contains('Contrat ancien'));
+      expect(
+        store.visible().firstWhere((m) => m.subject == 'Contrat ancien').folder,
+        'archive',
+      );
+      store.dispose();
+    });
+
+    test(
+      'un message déjà chargé n\'apparaît qu\'une fois et garde son état',
+      () async {
+        final (store, _) = await start();
+        store.setQuery('premier');
+        await wait();
+        final hits = store.visible().where(
+          (m) => m.subject.contains('Premier'),
+        );
+        expect(hits.length, 1);
+        expect(
+          identical(
+            hits.single,
+            store.mails.firstWhere((m) => m.msgs.length == 2),
+          ),
+          isTrue,
+        );
+        store.dispose();
+      },
+    );
+
+    test('une saisie trop courte ne lance pas de recherche, effacer la requête rend la liste', () async {
+      final (store, fake) = await start();
+      store.setQuery('c');
+      await wait();
+      expect(fake.searches, isEmpty);
+      store.setQuery('contrat');
+      await wait();
+      store.setQuery('');
+      expect(store.visible().every((m) => m.folder == store.folder), isTrue);
+      store.dispose();
+    });
+
+    test('un résultat trouvé par le moteur peut être ouvert', () async {
+      final (store, _) = await start();
+      store.setQuery('contrat');
+      await wait();
+      final hit = store.visible().firstWhere(
+        (m) => m.subject == 'Contrat ancien',
+      );
+      store.openMail(hit.id);
+      expect(store.open, hit.id);
+      store.dispose();
+    });
+  });
 
   group('boîte d\'envoi', () {
     Future<(MailStore, FakeEngine)> sent({String? sched}) async {

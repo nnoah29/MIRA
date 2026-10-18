@@ -282,17 +282,19 @@ class _Thread extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.pal;
+    final s = context.watch<MailStore>();
     final to = isMine(msg.from.email)
         ? (!isMine(mail.from.email)
-              ? mail.from.name
-              : mail.to.map((t) => t.name).join(', '))
+              ? s.shown(mail.from)
+              : mail.to.map(s.shown).join(', '))
         : t('moi');
+    final fromName = s.shown(msg.from);
     final bodyLeft = narrow ? 24.0 : 74.0;
     final info = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          msg.from.name,
+          fromName,
           style: Fonts.sans(
             size: 15,
             w: FontWeight.w600,
@@ -336,7 +338,7 @@ class _Thread extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Avatar(msg.from.name, size: 40, font: 11),
+                              Avatar(fromName, size: 40, font: 11),
                               const SizedBox(width: 14),
                               Expanded(child: info),
                             ],
@@ -351,7 +353,7 @@ class _Thread extends StatelessWidget {
                       )
                     : Row(
                         children: [
-                          Avatar(msg.from.name, size: 40, font: 11),
+                          Avatar(fromName, size: 40, font: 11),
                           const SizedBox(width: 14),
                           Expanded(child: info),
                           const SizedBox(width: 14),

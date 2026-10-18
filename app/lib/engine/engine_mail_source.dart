@@ -109,6 +109,7 @@ class EngineMailSource implements MailSource {
   MessageActions get messageActions => MessageActions(client);
 
   final Map<String, String> _folderBoxes = {};
+  final Map<String, String> _boxFolder = {};
 
   @override
   String? mailboxOf(String account, String folder) =>
@@ -194,6 +195,10 @@ class EngineMailSource implements MailSource {
     for (final b in boxes) {
       final folder = folderForRole('${b['role']}');
       if (folder != null) _folderBoxes['${account.id}/$folder'] = '${b['id']}';
+    }
+    for (final b in boxes) {
+      final folder = _folderOf(b);
+      if (folder != null) _boxFolder['${b['id']}'] = folder;
     }
     final byFolder = <String, List<Map<String, dynamic>>>{};
     final seen = <String>{};
@@ -392,6 +397,64 @@ class EngineMailSource implements MailSource {
     );
     final items = (raw['data'] as Map)['items'] as List;
     return [for (final m in items) (m as Map).cast<String, dynamic>()];
+  }
+
+  static const _searchOrder = [
+    'inbox',
+    'sent',
+    'drafts',
+    'archive',
+    'trash',
+    'spam',
+  ];
+
+  /// Dossier où ranger un résultat de recherche : le premier de ses boîtes connu, sinon Archive.
+  String _folderOfHit(Map<String, dynamic> m) {
+    final folders = {
+      for (final b in (m['mailboxes'] as List? ?? const []))
+        if (_boxFolder['$b'] != null) _boxFolder['$b']!,
+    };
+    return _searchOrder.firstWhere(folders.contains, orElse: () => 'archive');
+  }
+
+  @override
+  Future<List<Mail>> search(String query) async {
+    final raw = await client.call(
+      req('search', 'search', {
+        'query': query,
+        'filters': {
+          'common': {
+            'unread_only': false,
+            'flagged_only': false,
+            'has_attachments': false,
+            'from_contains': null,
+            'since': null,
+            'until': null,
+          },
+          'to_contains': null,
+          'mailbox': null,
+        },
+        'page': {'cursor': null, 'limit': pageSize},
+      }),
+    );
+    final items = [
+      for (final m in ((raw['data'] as Map)['items'] as List))
+        (m as Map).cast<String, dynamic>(),
+    ];
+    final groups = <String, List<Map<String, dynamic>>>{};
+    for (final m in items) {
+      groups.putIfAbsent('${m['account']}|${_folderOfHit(m)}', () => []).add(m);
+    }
+    final labelIds = labels.keys.toSet();
+    return [
+      for (final e in groups.entries)
+        ...mailsOfFolder(
+          e.key.split('|')[1],
+          e.key.split('|')[0],
+          e.value,
+          labelIds: labelIds,
+        ),
+    ];
   }
 
   @override

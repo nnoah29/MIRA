@@ -341,6 +341,7 @@ class MailStore extends ChangeNotifier {
   @override
   void dispose() {
     _changeSub?.cancel();
+    _searchTimer?.cancel();
     _wallSub?.cancel();
     for (final t in _timers) {
       t.cancel();
@@ -355,7 +356,41 @@ class MailStore extends ChangeNotifier {
     for (final m in mails) {
       if (m.id == id) return m;
     }
+    for (final m in _hits) {
+      if (m.id == id) return m;
+    }
     return null;
+  }
+
+  // ---- recherche dans l'index du moteur ----
+  List<Mail> _hits = const [];
+  String _hitsFor = '';
+  Timer? _searchTimer;
+
+  /// Lance la recherche du moteur après une courte pause de frappe ; l'affichage local sert en attendant.
+  void _scheduleSearch(String v) {
+    _searchTimer?.cancel();
+    final src = source;
+    if (src == null || v.trim().length < 2) {
+      _hits = const [];
+      _hitsFor = '';
+      return;
+    }
+    _searchTimer = Timer(const Duration(milliseconds: 250), () async {
+      try {
+        final found = await src.search(v.trim());
+        if (q != v) return;
+        final loaded = {
+          for (final l in _boxes.values)
+            for (final m in l) m.id: m,
+        };
+        _hits = [for (final m in found) loaded[m.id] ?? m];
+        _hitsFor = v;
+        notifyListeners();
+      } catch (_) {
+        /* recherche indisponible : le filtre local continue */
+      }
+    });
   }
 
   bool hidden(Mail m) => m.folder == 'trash' || m.folder == 'spam';
@@ -373,20 +408,31 @@ class MailStore extends ChangeNotifier {
     return mails.where((m) => m.folder == folder).toList();
   }
 
+  bool _matchesLocally(Mail m, String qq) =>
+      ('${m.subject} ${m.from.name} ${m.from.email} ${plainMsgs(m.msgs)}')
+          .toLowerCase()
+          .contains(qq);
+
+  /// Résultats de recherche : ceux du moteur (tout l'index) puis ceux déjà chargés, hors corbeille et spam.
+  List<Mail> _searchResults(String qq) {
+    final seen = <String>{};
+    final inScope = [
+      if (_hitsFor == q) ..._hits,
+      ...mails.where((m) => _matchesLocally(m, qq)),
+    ];
+    return [
+      for (final m in inScope)
+        if ((!hidden(m) || m.folder == folder) &&
+            (unified || m.account == activeId) &&
+            seen.add(m.id))
+          m,
+    ];
+  }
+
   List<Mail> visible() {
-    var l = scope();
-    if (pill != 'all') l = l.where((m) => m.flags.contains(pill)).toList();
     final qq = q.trim().toLowerCase();
-    if (qq.isNotEmpty) {
-      l = l
-          .where(
-            (m) =>
-                ('${m.subject} ${m.from.name} ${m.from.email} ${plainMsgs(m.msgs)}')
-                    .toLowerCase()
-                    .contains(qq),
-          )
-          .toList();
-    }
+    var l = qq.isEmpty ? scope() : _searchResults(qq);
+    if (pill != 'all') l = l.where((m) => m.flags.contains(pill)).toList();
     l.sort(switch (sort) {
       'old' => (Mail a, Mail b) => a.date - b.date,
       'unread' => (Mail a, Mail b) {
@@ -775,6 +821,7 @@ class MailStore extends ChangeNotifier {
 
   void setQuery(String v) {
     q = v;
+    _scheduleSearch(v);
     notifyListeners();
   }
 
@@ -1828,6 +1875,9 @@ class MailStore extends ChangeNotifier {
           Person(contactBook.names[c.email.toLowerCase()] ?? c.name, c.email),
     ];
   }
+
+  /// Nom à afficher pour une personne : celui choisi dans Contacts, sinon celui du message.
+  String shown(Person p) => contactBook.names[p.email.toLowerCase()] ?? p.name;
 
   /// Donne un nom à une adresse ; un nom vide rend le nom vu dans les messages.
   void setContactName(String email, String name) {

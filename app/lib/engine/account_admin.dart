@@ -82,6 +82,21 @@ class BoxChoice {
   const BoxChoice(this.id, this.name, this.role, this.synced);
 }
 
+/// Action du compte en attente d'application sur le serveur.
+class QueuedAction {
+  final String id, kind, state;
+  final int targets, attempts;
+  final String? error;
+  const QueuedAction(
+    this.id,
+    this.kind,
+    this.state,
+    this.targets,
+    this.attempts,
+    this.error,
+  );
+}
+
 class AccountAdmin {
   final EngineClient client;
   const AccountAdmin(this.client);
@@ -114,6 +129,37 @@ class AccountAdmin {
         ),
     ];
   }
+
+  /// Actions pas encore appliquées sur le serveur (hors envois, visibles dans la boîte d'envoi).
+  Future<List<QueuedAction>> pendingActions(String id) async {
+    final raw = await client.call(
+      req('queue', 'list_actions', {
+        'account': id,
+        'states': ['pending', 'in_progress', 'failed', 'uncertain'],
+      }),
+    );
+    final list = ((raw['data'] as Map)['data'] as List).cast<Map>();
+    return [
+      for (final a in list)
+        if ((a['kind'] as Map?)?['type'] != 'send')
+          QueuedAction(
+            '${a['id']}',
+            '${(a['kind'] as Map?)?['type']}',
+            '${a['state']}',
+            (a['targets'] as List? ?? const []).length,
+            (a['attempts'] as num?)?.toInt() ?? 0,
+            a['last_error'] as String?,
+          ),
+    ];
+  }
+
+  /// Abandonne une action en attente.
+  Future<void> cancelAction(String action) =>
+      client.call(req('queue', 'cancel_action', {'action': action}));
+
+  /// Relance tout de suite une action échouée.
+  Future<void> retryAction(String action) =>
+      client.call(req('queue', 'retry_action', {'action': action}));
 
   /// Ne synchronise plus que ces boîtes.
   Future<void> setSyncedMailboxes(String id, List<String> mailboxes) =>

@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeEngine implements EngineClient {
   final calls = <String>[];
+  final queueAsked = <Map<String, dynamic>>[];
   final bodyFails = <String>{};
   bool allowed = false;
   bool extra = false;
@@ -271,6 +272,35 @@ class FakeEngine implements EngineClient {
             'status': {'type': 'running', 'done': 0, 'total': 1},
           },
         };
+      case 'queue.list_actions':
+        queueAsked.add(r);
+        return {
+          'type': 'write',
+          'data': {
+            'type': 'queued_actions',
+            'data': [
+              {
+                'id': 'q1',
+                'kind': {'type': 'archive'},
+                'state': 'failed',
+                'targets': ['m1', 'm2'],
+                'attempts': 3,
+                'last_error': 'network.timeout',
+              },
+              {
+                'id': 'q2',
+                'kind': {'type': 'send', 'draft': 'dr1'},
+                'state': 'pending',
+                'targets': [],
+                'attempts': 0,
+                'last_error': null,
+              },
+            ],
+          },
+        };
+      case 'queue.cancel_action':
+        actions.add({'op': r['op'], ...r});
+        return {'type': 'done'};
       case 'mailbox.set_synced_mailboxes':
         actions.add({'op': r['op'], ...r});
         return {'type': 'done'};
@@ -468,6 +498,24 @@ class FakeEngine implements EngineClient {
 }
 
 void main() {
+  test(
+    'actions en attente : envois exclus, abandon envoyé au moteur',
+    () async {
+      final fake = FakeEngine();
+      final admin = (await EngineMailSource.load(fake)).admin;
+      final list = await admin.pendingActions('acc1');
+      expect(list.single.id, 'q1');
+      expect(
+        (list.single.kind, list.single.targets, list.single.error),
+        ('archive', 2, 'network.timeout'),
+      );
+      expect(fake.queueAsked.single['states'], contains('failed'));
+      await admin.cancelAction('q1');
+      expect(fake.actions.last['op'], 'cancel_action');
+      expect(fake.actions.last['action'], 'q1');
+    },
+  );
+
   test('dossiers synchronisés : lus puis envoyés au moteur', () async {
     final fake = FakeEngine();
     final admin = (await EngineMailSource.load(fake)).admin;

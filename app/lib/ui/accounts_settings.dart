@@ -15,6 +15,7 @@ import 'add_account_panel.dart';
 import 'html_body.dart';
 import 'identities_box.dart';
 import 'labels_box.dart';
+import 'pending_actions.dart';
 import 'synced_mailboxes.dart';
 import 'widgets.dart';
 
@@ -381,6 +382,11 @@ class _AccountCardState extends State<AccountCard> {
                 ),
               ],
             ),
+          ),
+          _row(
+            p,
+            t('ACTIONS EN ATTENTE'),
+            PendingActions(account: a, admin: widget.admin),
           ),
           if (a.imap != null) _serversBlock(p),
           IdentitiesBox(account: a, admin: widget.admin),

@@ -270,6 +270,32 @@ class FakeEngine implements EngineClient {
             'status': {'type': 'running', 'done': 0, 'total': 1},
           },
         };
+      case 'maintenance.get_storage_stats':
+        return {
+          'type': 'storage_stats',
+          'data': {
+            'messages': 12,
+            'attachments': 3,
+            'attachments_cached': 1,
+            'raw_bytes': 5000,
+            'compressed_bytes': 2048,
+          },
+        };
+      case 'maintenance.check_integrity':
+        return {
+          'type': 'integrity',
+          'data': {'ok': true},
+        };
+      case 'maintenance.purge_attachment_cache' ||
+          'maintenance.rebuild_search_index':
+        actions.add({'op': r['op'], ...r});
+        return {'type': 'ok'};
+      case 'maintenance.export_diagnostic':
+        actions.add({'op': r['op'], ...r});
+        return {
+          'type': 'exported',
+          'data': {'path': r['destination'], 'bytes': 321},
+        };
       case 'sync.extend_window':
         actions.add({'op': r['op'], ...r});
         return {
@@ -425,6 +451,26 @@ class FakeEngine implements EngineClient {
 }
 
 void main() {
+  test('entretien : volumes, intégrité, purge, index et export', () async {
+    final fake = FakeEngine();
+    final admin = (await EngineMailSource.load(fake)).maintenance!;
+    final st = await admin.stats();
+    expect(
+      (st.messages, st.attachments, st.cached, st.compressedBytes),
+      (12, 3, 1, 2048),
+    );
+    expect(await admin.checkIntegrity(), isTrue);
+    await admin.purgeAttachments();
+    await admin.rebuildIndex();
+    expect(await admin.export('export_diagnostic', '/tmp/d.json'), 321);
+    expect(fake.actions.map((a) => a['op']), [
+      'purge_attachment_cache',
+      'rebuild_search_index',
+      'export_diagnostic',
+    ]);
+    expect(fake.actions.last['destination'], '/tmp/d.json');
+  });
+
   test(
     'hors ligne, échec et avancement de la synchro suivent les événements',
     () async {

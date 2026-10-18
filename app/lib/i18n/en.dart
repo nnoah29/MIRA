@@ -117,6 +117,32 @@ const Map<String, String> enStrings = {
   'Départ prévu à {0}.': 'Scheduled to leave at {0}.',
   'Annuler l’envoi': 'Cancel sending',
   'Réessayer': 'Retry',
+  'Stockage': 'Storage',
+  'Stockage et maintenance': 'Storage and maintenance',
+  'Mesure en cours…': 'Measuring…',
+  '{0} messages, {1} pièces jointes ({2} en cache), {3} sur disque':
+      '{0} messages, {1} attachments ({2} cached), {3} on disk',
+  'Vérifier la base': 'Check database',
+  'Contrôle l’intégrité de la base locale.':
+      'Checks the local database integrity.',
+  'Base saine': 'Database is healthy',
+  'Base endommagée : exporte un diagnostic':
+      'Database damaged: export a diagnostic',
+  'Vider le cache': 'Clear cache',
+  'Supprime les pièces jointes gardées en local ; elles seront retéléchargées au besoin.': 'Removes locally kept attachments; they are downloaded again when needed.',
+  'Cache vidé': 'Cache cleared',
+  'Reconstruire l’index': 'Rebuild index',
+  'Reconstruit la recherche locale si des résultats manquent.':
+      'Rebuilds local search if results are missing.',
+  'Index reconstruit': 'Index rebuilt',
+  'Exporter un diagnostic': 'Export diagnostic',
+  'Écrit un rapport sans contenu de messages ni secrets, utile pour signaler un problème.': 'Writes a report without message content or secrets, useful to report a problem.',
+  'Exporter le profil': 'Export profile',
+  'Écrit la configuration des comptes (sans mots de passe).':
+      'Writes the account configuration (no passwords).',
+  'Opération impossible': 'Operation failed',
+  'Export annulé': 'Export cancelled',
+  'Exporté ({0})': 'Exported ({0})',
   'Remonter plus loin sur le serveur': 'Fetch older mail from the server',
   'Récupération sur le serveur… Annuler': 'Fetching from the server… Cancel',
   'Récupération sur le serveur… {0} % Annuler':

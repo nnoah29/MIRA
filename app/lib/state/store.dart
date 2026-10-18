@@ -1695,6 +1695,12 @@ class MailStore extends ChangeNotifier {
 
   final unsubscriber = Unsubscriber();
 
+  /// Demande où écrire un export (remplaçable dans les tests) ; `null` : annulé.
+  Future<String?> Function(String name) pickExportPath = (name) async {
+    final uri = await FilePicker.saveFile(fileName: name, bytes: Uint8List(0));
+    return uri?.toFilePath();
+  };
+
   /// Extension de la plage en cours : (compte, opération) ; `null` hors extension.
   (String, String)? extending;
 

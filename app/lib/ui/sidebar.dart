@@ -5,6 +5,7 @@ import '../data/models.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
+import 'mira_logo.dart';
 import 'overlays.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
@@ -31,29 +32,19 @@ class Sidebar extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
             child: Row(
               children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: p.accent,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                  alignment: Alignment.center,
-                  child: Ico(
-                    'diamond',
-                    size: 18,
-                    stroke: 2.4,
-                    color: p.onAccent,
-                  ),
-                ),
+                MiraLogo(size: 48, color: p.accent),
                 const SizedBox(width: 14),
-                Text(
-                  'MIRA',
-                  style: Fonts.sans(
-                    size: 15,
-                    w: FontWeight.w500,
-                    color: p.text,
+                Text.rich(
+                  TextSpan(
+                    text: 'MI',
+                    children: [
+                      TextSpan(
+                        text: 'RA',
+                        style: TextStyle(color: p.accent),
+                      ),
+                    ],
                   ),
+                  style: Fonts.display(size: 30, color: p.text, ls: .06),
                 ),
               ],
             ),

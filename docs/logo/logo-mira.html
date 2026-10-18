@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MIRA — Logo</title>
+    <style>
+        @font-face{font-family:"Anton";src:url("../../app/assets/google_fonts/Anton-Regular.ttf");font-display:swap}
+        @font-face{font-family:"Hanken Grotesk";font-weight:400;src:url("../../app/assets/google_fonts/HankenGrotesk-Regular.ttf")}
+        @font-face{font-family:"Hanken Grotesk";font-weight:500;src:url("../../app/assets/google_fonts/HankenGrotesk-Medium.ttf")}
+        @font-face{font-family:"Hanken Grotesk";font-weight:700;src:url("../../app/assets/google_fonts/HankenGrotesk-Bold.ttf")}
+        @font-face{font-family:"JetBrains Mono";font-weight:400;src:url("../../app/assets/google_fonts/JetBrainsMono-Regular.ttf")}
+        @font-face{font-family:"JetBrains Mono";font-weight:500;src:url("../../app/assets/google_fonts/JetBrainsMono-Medium.ttf")}
+        :root{
+            --bg:#1b1b1b;--side:#1e1e1e;--surface:#242424;--surface2:#2a2a2a;--line:#333;
+            --text:#ecebe6;--muted:#adaca5;--dim:#8b8a84;--accent:#e8542b;--accent-hi:#ff8a63;--accent-lo:#bb3510;
+        }
+        *{box-sizing:border-box;margin:0}
+        body{background:var(--bg);color:var(--text);font:400 15px/1.55 "Hanken Grotesk",system-ui,sans-serif;padding:0 16px 80px}
+        .wrap{max-width:1080px;margin:0 auto}
+        .mono{font:500 11px/1 "JetBrains Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+        header{padding:56px 0 40px;border-bottom:1px solid var(--line)}
+        h1{font:400 clamp(56px,10vw,112px)/.95 "Anton",sans-serif;text-transform:uppercase;letter-spacing:.01em;margin-top:18px}
+        h1 span{color:var(--accent)}
+        header p{max-width:56ch;color:var(--muted);margin-top:18px}
+        section{padding:40px 0;border-bottom:1px solid var(--line)}
+        section>.mono{margin-bottom:22px;display:block}
+        .hero{display:grid;place-items:center;background:var(--side);border:1px solid var(--line);border-radius:4px;padding:64px 16px;
+            background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+            background-size:40px 40px;background-position:center}
+        .hero svg{width:min(320px,70vw);height:auto;filter:drop-shadow(0 0 28px rgba(232,84,43,.18))}
+        .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+        .card{border:1px solid var(--line);border-radius:4px;background:var(--surface);display:grid;place-items:center;gap:16px;padding:36px 16px 18px;min-height:220px}
+        .card .mono{align-self:end}
+        .card.light{background:#f3f1ea;border-color:#cdc9bd}
+        .card.light .mono{color:#6b685f}
+        .card.acc{background:var(--accent);border-color:var(--accent)}
+        .card.acc .mono{color:#1b1b1b}
+        .lock{display:flex;align-items:center;gap:20px}
+        .lock .word{font:400 54px/1 "Anton",sans-serif;letter-spacing:.06em;text-transform:uppercase}
+        .lock .tag{font:500 10px/1 "JetBrains Mono",monospace;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-top:8px}
+        .sizes{display:flex;align-items:flex-end;gap:28px;flex-wrap:wrap}
+        .sizes figure{display:grid;gap:10px;justify-items:center}
+        .app-icon{background:var(--surface2);border-radius:22%;display:grid;place-items:center}
+        .app-icon.sq{background:var(--accent);border-radius:3px}
+        button{font:500 11px/1 "JetBrains Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text);background:transparent;
+            border:1px solid var(--line);border-radius:3px;padding:11px 14px;cursor:pointer}
+        button:hover{border-color:var(--accent);color:var(--accent)}
+        .colors{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+        .sw{border:1px solid var(--line);border-radius:4px;overflow:hidden}
+        .sw i{display:block;height:64px}
+        .sw div{padding:10px 12px;background:var(--surface);font:500 11px/1.5 "JetBrains Mono",monospace;color:var(--muted)}
+        .sw b{color:var(--text);font-weight:500;display:block}
+        @media (max-width:560px){.lock .word{font-size:40px}}
+    </style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+        <linearGradient id="g" x1="26" y1="30" x2="174" y2="170" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#ff8a63"/>
+            <stop offset=".55" stop-color="#e8542b"/>
+            <stop offset="1" stop-color="#bb3510"/>
+        </linearGradient>
+        <symbol id="mark" viewBox="0 0 200 200">
+            <path d="M30 118V30H170V170H82" fill="none" stroke="url(#g)" stroke-width="7" stroke-linejoin="miter" stroke-miterlimit="10"/>
+            <text x="100" y="124" text-anchor="middle" font-family="Anton,sans-serif" font-size="74" fill="#e8542b">M</text>
+        </symbol>
+        <symbol id="mark-mono" viewBox="0 0 200 200">
+            <path d="M30 118V30H170V170H82" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="miter" stroke-miterlimit="10"/>
+            <text x="100" y="124" text-anchor="middle" font-family="Anton,sans-serif" font-size="74" fill="currentColor">M</text>
+        </symbol>
+    </defs>
+</svg>
+
+<div class="wrap">
+    <header>
+        <span class="mono">Identité · Logo v1</span>
+        <h1>Mi<span>ra</span></h1>
+        <p>Un cadre ouvert, comme une fenêtre sur la boîte de réception, et un M en Anton. Orange MIRA en dégradé, fond charbon, filet de 7 unités.</p>
+    </header>
+
+    <section>
+        <span class="mono">Marque principale</span>
+        <div class="hero"><svg role="img" aria-label="Logo MIRA" id="main"><use href="#mark"/></svg></div>
+    </section>
+
+    <section>
+        <span class="mono">Signature</span>
+
+        <div class="grid" style="grid-template-columns:1fr">
+            <div class="card" style="padding:56px 16px 24px">
+                <div class="lock">
+                    <svg width="110" height="110"><use href="#mark"/></svg>
+                    <div><div class="word">Mira</div><div class="tag">Mail · hors ligne</div></div>
+                </div>
+                <span class="mono">Horizontale</span>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <span class="mono">Variantes</span>
+        <div class="grid">
+            <div class="card"><svg width="120" height="120"><use href="#mark"/></svg><span class="mono">Sombre</span></div>
+            <div class="card light"><svg width="120" height="120" style="color:#d6431a"><use href="#mark-mono"/></svg><span class="mono">Clair</span></div>
+            <div class="card acc"><svg width="120" height="120" style="color:#1b1b1b"><use href="#mark-mono"/></svg><span class="mono">Sur orange</span></div>
+            <div class="card"><svg width="120" height="120" style="color:#ecebe6"><use href="#mark-mono"/></svg><span class="mono">Monochrome</span></div>
+        </div>
+    </section>
+
+    <section>
+        <span class="mono">Tailles &amp; icône d’app</span>
+        <div class="sizes">
+            <figure><svg width="128" height="128"><use href="#mark"/></svg><span class="mono">128</span></figure>
+            <figure><svg width="64" height="64"><use href="#mark"/></svg><span class="mono">64</span></figure>
+            <figure><svg width="32" height="32"><use href="#mark"/></svg><span class="mono">32</span></figure>
+            <figure><svg width="16" height="16"><use href="#mark"/></svg><span class="mono">16</span></figure>
+            <figure><div class="app-icon" style="width:96px;height:96px"><svg width="64" height="64"><use href="#mark"/></svg></div><span class="mono">Icône</span></figure>
+            <figure><div class="app-icon sq" style="width:28px;height:28px"><svg width="22" height="22" style="color:#1b1b1b"><use href="#mark-mono"/></svg></div><span class="mono">Barre latérale</span></figure>
+        </div>
+    </section>
+
+    <section>
+        <span class="mono">Couleurs &amp; polices</span>
+        <div class="colors">
+            <div class="sw"><i style="background:#ff8a63"></i><div><b>Haut</b>#FF8A63</div></div>
+            <div class="sw"><i style="background:#e8542b"></i><div><b>Accent</b>#E8542B</div></div>
+            <div class="sw"><i style="background:#bb3510"></i><div><b>Bas</b>#BB3510</div></div>
+            <div class="sw"><i style="background:#1b1b1b"></i><div><b>Fond</b>#1B1B1B</div></div>
+            <div class="sw"><i style="background:#ecebe6"></i><div><b>Texte</b>#ECEBE6</div></div>
+        </div>
+        <p class="mono" style="margin-top:22px;line-height:1.8">Lettre : Anton · Mot-symbole : Anton, interlettrage +6 % · Étiquettes : JetBrains Mono</p>
+        <div style="margin-top:22px"><button id="copy">Copier le SVG</button></div>
+    </section>
+</div>
+
+<script>
+    document.getElementById('copy').addEventListener('click',function(){
+        var svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><defs><linearGradient id="g" x1="26" y1="30" x2="174" y2="170" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ff8a63"/><stop offset=".55" stop-color="#e8542b"/><stop offset="1" stop-color="#bb3510"/></linearGradient></defs><rect width="200" height="200" fill="#1b1b1b"/><path d="M30 118V30H170V170H82" fill="none" stroke="url(#g)" stroke-width="7" stroke-miterlimit="10"/><text x="100" y="124" text-anchor="middle" font-family="Anton,sans-serif" font-size="74" fill="#e8542b">M</text></svg>';
+        var b=this;
+        navigator.clipboard.writeText(svg).then(function(){b.textContent='Copié';setTimeout(function(){b.textContent='Copier le SVG'},1500)});
+    });
+</script>
+</body>
+</html>

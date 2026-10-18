@@ -1,6 +1,7 @@
 import 'mail_source.dart';
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -424,6 +425,23 @@ class EngineMailSource implements MailSource {
       req('sync', 'extend_window', {'mailbox': box, 'days': days}),
     );
     return '${(raw['data'] as Map)['id']}';
+  }
+
+  @override
+  Future<Uint8List?> rawSource(String messageRef) async {
+    final raw = await client.call(
+      req('message', 'get_raw_source', {'message': messageRef}),
+    );
+    final b64 = (raw['data'] as Map?)?['content_base64'];
+    return b64 is String ? base64Decode(b64) : null;
+  }
+
+  @override
+  Future<bool> resync(String account, String folder) async {
+    final box = mailboxOf(account, folder);
+    if (box == null) return false;
+    await client.call(req('sync', 'resync_mailbox', {'mailbox': box}));
+    return true;
   }
 
   @override

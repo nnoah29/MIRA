@@ -197,9 +197,19 @@ class EngineMailSource implements MailSource {
       final folder = folderForRole('${b['role']}');
       if (folder != null) _folderBoxes['${account.id}/$folder'] = '${b['id']}';
     }
+    _unread.removeWhere((k, _) => k.startsWith('${account.id}/'));
     for (final b in boxes) {
       final folder = _folderOf(b);
-      if (folder != null) _boxFolder['${b['id']}'] = folder;
+      if (folder == null) continue;
+      _boxFolder['${b['id']}'] = folder;
+      final n = b['unread'];
+      if (n is int) {
+        _unread.update(
+          '${account.id}/$folder',
+          (v) => v + n,
+          ifAbsent: () => n,
+        );
+      }
     }
     final byFolder = <String, List<Map<String, dynamic>>>{};
     final seen = <String>{};
@@ -385,6 +395,10 @@ class EngineMailSource implements MailSource {
   /// Profondeur de lecture par compte : nombre de pages de `pageSize` messages lues par boîte.
   final Map<String, int> _depth = {};
   final Set<String> _more = {};
+  final Map<String, int> _unread = {};
+
+  @override
+  int? unreadOf(String account, String folder) => _unread['$account/$folder'];
 
   @override
   bool hasMore(String account) => _more.contains(account);

@@ -23,6 +23,22 @@ class ContactEntry {
   Person get person => Person(name, email);
 }
 
+/// Vrai pour une adresse technique (désabonnement, rebond, ne-pas-répondre) qui n'est pas un correspondant.
+bool isAutomatedAddress(String email) {
+  final at = email.lastIndexOf('@');
+  if (at < 0) return false;
+  final local = email.substring(0, at).toLowerCase();
+  final domain = email.substring(at + 1).toLowerCase();
+  if (domain.contains('unsubscribe') || domain.startsWith('bounce')) {
+    return true;
+  }
+  if (RegExp(r'^(no-?reply|do-?not-?reply|bounces?|mailer-daemon)([-_+.=].*)?$')
+      .hasMatch(local)) {
+    return true;
+  }
+  return local.length > 40 && !local.contains(RegExp(r'[-_ ]'));
+}
+
 /// Mémoire des destinataires : ce qu'on a lu dans les messages envoyés, gardée d'une session à l'autre.
 class ContactBook {
   /// Noms choisis par l'utilisateur, par adresse (en minuscules).
@@ -87,7 +103,7 @@ class ContactBook {
     for (final m in sent) {
       for (final p in [...m.to, ...m.cc]) {
         final key = p.email.toLowerCase();
-        if (key.isEmpty || mine(key)) continue;
+        if (key.isEmpty || mine(key) || isAutomatedAddress(key)) continue;
         if (m.date <= (removed[key] ?? -1)) continue;
         final cur = seen.putIfAbsent(key, () => [p.name, 0, 0]);
         cur[1] = (cur[1] as int) + 1;
@@ -119,13 +135,14 @@ class ContactBook {
   List<ContactEntry> entries() {
     final out = [
       for (final e in history.entries)
-        ContactEntry(
-          email: e.key,
-          custom: names[e.key],
-          seen: e.value[0] as String,
-          count: e.value[1] as int,
-          last: e.value[2] as int,
-        ),
+        if (!isAutomatedAddress(e.key))
+          ContactEntry(
+            email: e.key,
+            custom: names[e.key],
+            seen: e.value[0] as String,
+            count: e.value[1] as int,
+            last: e.value[2] as int,
+          ),
     ];
     out.sort((a, b) => b.last.compareTo(a.last));
     return out;

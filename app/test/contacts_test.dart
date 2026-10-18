@@ -68,6 +68,24 @@ void main() {
     expect(back.removed['bob@x.org'], 500);
   });
 
+  test('les adresses techniques ne sont pas des contacts', () {
+    for (final e in [
+      '32.mrtvi3jrifruiqkomjug6qkiky2gcqkcifqug4dyg5kwq2bngqzew6dblbygwwlznvit2pi=@unsubscribe2.customer.io',
+      'noreply@x.org',
+      'no-reply+abc@x.org',
+      'bounces@mail.x.org',
+      'a@bounce.x.org',
+    ]) {
+      expect(isAutomatedAddress(e), isTrue, reason: e);
+    }
+    expect(isAutomatedAddress('noah.toffa@epitech.eu'), isFalse);
+    expect(isAutomatedAddress('fabrice.dalmeida@benin-digital.com'), isFalse);
+    final book = ContactBook({}, {
+      'noreply@x.org': ['N', 1, 1],
+    });
+    expect(book.entries(), isEmpty);
+  });
+
   test('un nom choisi remplace le nom vu, et survit à l\'enregistrement', () {
     final book = ContactBook({'bob@x.org': 'Bobby'}, {});
     book.remember([

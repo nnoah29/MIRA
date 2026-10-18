@@ -413,6 +413,23 @@ class EngineMailSource implements MailSource {
   final Map<String, int> _unread = {};
 
   @override
+  Future<String?> extendWindow(String account, String folder, int days) async {
+    final box = mailboxOf(account, folder);
+    if (box == null) return null;
+    final raw = await client.call(
+      req('sync', 'extend_window', {'mailbox': box, 'days': days}),
+    );
+    return '${(raw['data'] as Map)['id']}';
+  }
+
+  @override
+  Future<void> cancelOperation(String operation) async {
+    await client.call(
+      req('operation', 'cancel_operation', {'operation': operation}),
+    );
+  }
+
+  @override
   int? unreadOf(String account, String folder) => _unread['$account/$folder'];
 
   @override

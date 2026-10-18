@@ -93,9 +93,12 @@ class PluginNotifications implements SystemNotifications {
   @override
   Future<void> init(void Function(String payload) onTap) async {
     await _plugin.initialize(
-      settings: const InitializationSettings(
-        linux: LinuxInitializationSettings(defaultActionName: 'Ouvrir'),
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      settings: InitializationSettings(
+        linux: LinuxInitializationSettings(
+          defaultActionName: 'Ouvrir',
+          defaultIcon: AssetsLinuxIcon('assets/icon/mira.png'),
+        ),
+        android: const AndroidInitializationSettings('@mipmap/ic_launcher'),
       ),
       onDidReceiveNotificationResponse: (r) {
         final p = r.payload;

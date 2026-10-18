@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=MIRA
+GenericName=Mail client
+GenericName[fr]=Client de messagerie
+Comment=Your mail, always at hand. Even offline.
+Comment[fr]=Vos mails, toujours sous la main, même hors ligne.
+Exec=mira %U
+Icon=n.noah.mira
+Terminal=false
+Categories=Network;Email;
+StartupWMClass=n.noah.mira
+Keywords=mail;email;imap;inbox;

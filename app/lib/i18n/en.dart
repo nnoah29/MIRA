@@ -98,6 +98,13 @@ const Map<String, String> enStrings = {
   'Nom enregistré': 'Name saved',
   '{0} messages': '{0} messages',
   'Chargement…': 'Loading…',
+  'Chercher aussi sur le serveur': 'Also search on the server',
+  'Recherche sur le serveur…': 'Searching on the server…',
+  'Recherche sur le serveur impossible.': 'Server search failed.',
+  'Recherche sur le serveur terminée.': 'Server search finished.',
+  '{0} message(s) du serveur ne sont pas synchronisés.':
+      '{0} server message(s) are not synced.',
+  'Résultats limités aux plus récents.': 'Results limited to the most recent.',
   'Boîte d’envoi': 'Outbox',
   'Échec de l’envoi': 'Send failed',
   'Envoi incertain': 'Send uncertain',

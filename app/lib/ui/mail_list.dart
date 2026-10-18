@@ -337,6 +337,10 @@ class _MailListViewState extends State<MailListView> {
                 textAlign: TextAlign.center,
                 style: Fonts.sans(size: 15, color: p.dim),
               ),
+              if (s.source != null && s.q.trim().length >= 2) ...[
+                const SizedBox(height: 16),
+                const _ServerSearchRow(),
+              ],
             ],
           ),
         ),
@@ -376,6 +380,42 @@ class _MailListViewState extends State<MailListView> {
                 ),
               ],
             ),
+          if (s.source != null && s.q.trim().length >= 2)
+            const SliverToBoxAdapter(child: _ServerSearchRow()),
+        ],
+      ),
+    );
+  }
+}
+
+/// Pied de liste d'une recherche : étendre la recherche au serveur, et son bilan.
+class _ServerSearchRow extends StatelessWidget {
+  const _ServerSearchRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<MailStore>();
+    final p = context.pal;
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          Btn(
+            key: const ValueKey('search-server'),
+            icon: 'search',
+            label: s.serverSearching
+                ? t('Recherche sur le serveur…')
+                : t('Chercher aussi sur le serveur'),
+            onTap: s.serverSearching ? null : s.searchServer,
+          ),
+          if (s.serverNote != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              s.serverNote!,
+              textAlign: TextAlign.center,
+              style: Fonts.sans(size: 13.5, color: p.dim),
+            ),
+          ],
         ],
       ),
     );

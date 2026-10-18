@@ -9,6 +9,7 @@ import '../data/format.dart';
 import '../data/html_lite.dart';
 import '../data/models.dart';
 import 'account_admin.dart';
+import 'sync_state.dart';
 import 'account_setup.dart';
 import 'compose_admin.dart';
 import 'css_inliner.dart';
@@ -32,6 +33,14 @@ class EngineMailSource implements MailSource {
   @override
   final Map<String, List<Mail>> boxes;
   final StreamController<String> _changes = StreamController.broadcast();
+  final StreamController<void> _syncEvents = StreamController.broadcast();
+  final Map<String, SyncState> _sync = {};
+
+  @override
+  Map<String, SyncState> get syncStates => _sync;
+
+  @override
+  Stream<void> get syncEvents => _syncEvents.stream;
   StreamSubscription<Map<String, dynamic>>? _events;
 
   EngineMailSource._(
@@ -163,7 +172,13 @@ class EngineMailSource implements MailSource {
       final kind = (e['kind'] as Map?)?.cast<String, dynamic>() ?? const {};
       final account = kind['account'];
       if (account is String && _isChange('${kind['type']}')) _schedule(account);
+      if (account is String) _trackSync(account, '${kind['type']}', kind);
     }, onError: (_) {});
+  }
+
+  void _trackSync(String account, String type, Map<String, dynamic> kind) {
+    final state = _sync.putIfAbsent(account, SyncState.new);
+    if (state.apply(type, kind) && !_syncEvents.isClosed) _syncEvents.add(null);
   }
 
   /// Regroupe les rafales d'événements d'un compte en une seule notification.
@@ -679,5 +694,6 @@ class EngineMailSource implements MailSource {
     }
     unawaited(_events?.cancel() ?? Future<void>.value());
     await _changes.close();
+    await _syncEvents.close();
   }
 }

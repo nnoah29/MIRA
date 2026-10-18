@@ -148,6 +148,7 @@ class MailStore extends ChangeNotifier {
     contactBook = ContactBook.decode(
       prefs.getString('contactNames'),
       prefs.getString('contactHistory'),
+      prefs.getString('contactRemoved'),
     );
     followWallpaper = prefs.getString('follow') != '0';
     lang = AppLang.fromCode(prefs.getString('lang'));
@@ -2248,6 +2249,15 @@ class MailStore extends ChangeNotifier {
 
   /// Nom à afficher pour une personne : celui choisi dans Contacts, sinon celui du message.
   String shown(Person p) => contactBook.names[p.email.toLowerCase()] ?? p.name;
+
+  /// Retire un correspondant de l'historique ; il revient seulement si on lui écrit de nouveau.
+  void forgetContact(String email) {
+    contactBook.forget(email, DateTime.now().millisecondsSinceEpoch);
+    prefs.setString('contactHistory', contactBook.encodeHistory());
+    prefs.setString('contactNames', contactBook.encodeNames());
+    prefs.setString('contactRemoved', contactBook.encodeRemoved());
+    notifyListeners();
+  }
 
   /// Donne un nom à une adresse ; un nom vide rend le nom vu dans les messages.
   void setContactName(String email, String name) {

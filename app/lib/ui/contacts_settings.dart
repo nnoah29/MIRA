@@ -146,6 +146,16 @@ class _ContactRowState extends State<_ContactRow> {
             ),
           ),
           const SizedBox(width: 12),
+          IBtn(
+            'trash',
+            key: ValueKey('contact-delete-${e.email}'),
+            tip: t('Supprimer ce contact'),
+            onTap: () {
+              s.forgetContact(e.email);
+              s.toast(t('Contact supprimé'));
+            },
+          ),
+          const SizedBox(width: 8),
           Btn(
             key: ValueKey('contact-save-${e.email}'),
             label: t('Enregistrer'),

@@ -48,6 +48,26 @@ void main() {
     expect(book.entries().single.last, 900);
   });
 
+  test('un contact supprimé ne revient que pour un message plus récent', () {
+    final book = ContactBook({'bob@x.org': 'Bobby'}, {});
+    final sent = [
+      _sent(100, const [Person('Bob', 'bob@x.org')]),
+    ];
+    book.remember(sent, (_) => false);
+    book.forget('Bob@x.org', 500);
+    expect(book.entries(), isEmpty);
+    expect(book.names, isEmpty);
+    book.remember(sent, (_) => false);
+    expect(book.entries(), isEmpty);
+    book.remember([
+      ...sent,
+      _sent(900, const [Person('Bob', 'bob@x.org')]),
+    ], (_) => false);
+    expect(book.entries().single.email, 'bob@x.org');
+    final back = ContactBook.decode(null, null, book.encodeRemoved());
+    expect(back.removed['bob@x.org'], 500);
+  });
+
   test('un nom choisi remplace le nom vu, et survit à l\'enregistrement', () {
     final book = ContactBook({'bob@x.org': 'Bobby'}, {});
     book.remember([

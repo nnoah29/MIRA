@@ -105,6 +105,11 @@ class PluginNotifications implements SystemNotifications {
         if (p != null && p.isNotEmpty) onTap(p);
       },
     );
+    await _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.requestNotificationsPermission();
   }
 
   @override

@@ -11,11 +11,20 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 String contractVersion() =>
     RustLib.instance.api.crateApiEngineContractVersion();
 
-/// Ouvre le moteur sur le profil nommé (trousseau et dossier de données du système) ; `poll_secs` fixe le relevé périodique (30 s à 1 h), sinon le délai du fournisseur.
-Future<String> openEngine({required String profile, int? pollSecs}) => RustLib
-    .instance
-    .api
-    .crateApiEngineOpenEngine(profile: profile, pollSecs: pollSecs);
+/// Ouvre le moteur sur le profil nommé ; `poll_secs` fixe le relevé périodique (30 s à 1 h), sinon le délai du fournisseur.
+/// `home` remplace le dossier de données du système (Android : dossier privé de l'app) ; `secrets_key`
+/// (32 octets, gardés par l'app dans le Keystore) remplace le trousseau du système par un fichier chiffré dans `home`.
+Future<String> openEngine({
+  required String profile,
+  int? pollSecs,
+  String? home,
+  Uint8List? secretsKey,
+}) => RustLib.instance.api.crateApiEngineOpenEngine(
+  profile: profile,
+  pollSecs: pollSecs,
+  home: home,
+  secretsKey: secretsKey,
+);
 
 /// Exécute une requête du contrat (JSON) et rend l'enveloppe JSON `{ok, data | error}`.
 Future<String> execute({required String requestJson}) =>

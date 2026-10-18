@@ -47,7 +47,7 @@ pub fn route_open(state: &mut AppState, intent: Intent) -> Vec<Command> {
         Intent::Palette(_) | Intent::Open | Intent::NextPane | Intent::PrevPane | Intent::Archive | Intent::Trash
         | Intent::DeletePermanently | Intent::ToggleFlag | Intent::ToggleRead | Intent::OpenMovePicker
         | Intent::Undo | Intent::Search(_) | Intent::Compose(_) | Intent::Queue(_) | Intent::Drafts(_)
-        | Intent::StartSync | Intent::Help => Vec::new(),
+        | Intent::StartSync | Intent::Help | Intent::AccountForm(_) => Vec::new(),
     }
 }
 

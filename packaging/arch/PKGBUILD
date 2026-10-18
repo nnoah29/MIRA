@@ -1,0 +1,32 @@
+# Maintainer: nnoah29 <toffanoah@gmail.com>
+# Paquet AUR « -bin » : installe l'archive précompilée publiée sur GitHub.
+pkgname=mira-mail-bin
+pkgver=1.0.0
+pkgrel=1
+pkgdesc='Desktop mail client that works offline'
+arch=('x86_64')
+url='https://github.com/nnoah29/MIRA'
+license=('LicenseRef-proprietary')
+depends=('gtk3' 'libepoxy' 'fontconfig' 'glibc' 'gcc-libs')
+optdepends=('zenity: file dialogs on GNOME and others'
+            'kdialog: file dialogs on KDE'
+            'xdg-utils: open links in the browser'
+            'gnome-keyring: store account passwords'
+            'kwallet: store account passwords on KDE')
+provides=('mira-mail')
+conflicts=('mira-mail')
+options=('!strip' '!debug')
+source=("$url/releases/download/v$pkgver/mira-mail-$pkgver-x86_64.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+  cd "mira-mail-$pkgver-x86_64"
+  install -d "$pkgdir/usr/lib/mira-mail" "$pkgdir/usr/bin"
+  cp -a app/. "$pkgdir/usr/lib/mira-mail/"
+  ln -s ../lib/mira-mail/mira "$pkgdir/usr/bin/mira-mail"
+  sed 's|^Exec=.*|Exec=mira-mail|' share/io.github.nnoah29.Mira.desktop \
+    | install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/io.github.nnoah29.Mira.desktop"
+  install -Dm644 share/io.github.nnoah29.Mira.png "$pkgdir/usr/share/icons/hicolor/512x512/apps/io.github.nnoah29.Mira.png"
+  install -Dm644 share/io.github.nnoah29.Mira.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/io.github.nnoah29.Mira.svg"
+  install -Dm644 share/io.github.nnoah29.Mira.metainfo.xml "$pkgdir/usr/share/metainfo/io.github.nnoah29.Mira.metainfo.xml"
+}

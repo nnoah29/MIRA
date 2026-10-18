@@ -1,0 +1,4 @@
+#!/bin/sh
+# Point d'entrée de l'AppImage : lance MIRA depuis le dossier monté.
+here="$(dirname "$(readlink -f "$0")")"
+exec "$here/usr/lib/mira-mail/mira" "$@"

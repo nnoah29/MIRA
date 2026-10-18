@@ -10,6 +10,7 @@ import 'engine_client.dart';
 /// Chemins où chercher la bibliothèque du moteur, du plus explicite au plus courant.
 List<String> bridgeLibraryCandidates() => [
   ?Platform.environment['MIRA_BRIDGE_LIB'],
+  '${File(Platform.resolvedExecutable).parent.path}/lib/libmira_bridge.so',
   '../bridge/target/release/libmira_bridge.so',
   '../bridge/target/debug/libmira_bridge.so',
   'libmira_bridge.so',

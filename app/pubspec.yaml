@@ -48,6 +48,7 @@ dependencies:
   csslib: ^1.0.2
   pdfrx: ^2.6.5
   url_launcher: ^6.3.3
+  flutter_local_notifications: ^22.3.2
 
 dev_dependencies:
   flutter_test:

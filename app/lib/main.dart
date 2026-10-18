@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'engine/mail_source.dart';
 import 'engine/rust_engine_client.dart';
 import 'i18n/i18n.dart';
 import 'state/folder_map.dart';
+import 'state/mail_notifier.dart';
 import 'state/store.dart';
 import 'theme/app_theme.dart';
 import 'ui/shell.dart';
@@ -28,12 +30,13 @@ Future<void> main() async {
   await initializeDateFormatting('en_US');
   final prefs = await SharedPreferences.getInstance();
   final source = await openEngineSource(prefs);
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => MailStore(prefs, watchWallpaper: true, source: source),
-      child: const MiraApp(),
-    ),
+  final store = MailStore(prefs, watchWallpaper: true, source: source);
+  unawaited(store.useNotifications(PluginNotifications()));
+  AppLifecycleListener(
+    onStateChange: (state) =>
+        store.appFocused = state == AppLifecycleState.resumed,
   );
+  runApp(ChangeNotifierProvider.value(value: store, child: const MiraApp()));
 }
 
 /// Ouvre le moteur Rust ; `MIRA_DEMO=1` ou une erreur d'ouverture donne les données de démonstration.

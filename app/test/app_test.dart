@@ -241,6 +241,13 @@ void main() {
     await tester.tap(find.text('MESSAGERIE'));
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Signature'), findsOneWidget);
+    await tester.tap(find.text('NOTIFICATIONS'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byKey(const ValueKey('notify-test')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('notifyPreview-0')));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(s.prefs.getString('notifyPreview'), '0');
+    expect(s.notifySettings.preview, isFalse);
     await teardown(tester, s);
   });
 

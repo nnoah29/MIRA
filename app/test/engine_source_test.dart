@@ -7,6 +7,7 @@ import 'package:mira/data/models.dart';
 import 'package:mira/engine/engine_client.dart';
 import 'package:mira/engine/engine_mail_source.dart';
 import 'package:mira/state/folder_map.dart';
+import 'package:mira/state/mail_notifier.dart';
 import 'package:mira/state/store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -17,6 +18,7 @@ class FakeEngine implements EngineClient {
   final bodyFails = <String>{};
   bool allowed = false;
   bool extra = false;
+  bool arrived = false;
   bool second = false;
   bool labelOnly = false;
   bool serverCopy = false;
@@ -488,6 +490,13 @@ class FakeEngine implements EngineClient {
     final items = switch (mailbox) {
       'mb-inbox' => [
         if (extra) _msg('m9', 'Nouveau', date: 4000),
+        if (arrived)
+          _msg(
+            'm10',
+            'Arrivé à l’instant',
+            seen: false,
+            date: DateTime.now().millisecondsSinceEpoch,
+          ),
         _msg('m1', 'Premier', thread: 't1', seen: false, date: 1000),
         _msg('m2', 'Re: Premier', thread: 't1', date: 2000, attachments: true),
         {
@@ -533,7 +542,130 @@ class FakeEngine implements EngineClient {
   Future<void> close() async {}
 }
 
+class FakeNotifications implements SystemNotifications {
+  final shown = <(String, String, String?)>[];
+  void Function(String)? tap;
+
+  @override
+  Future<void> init(void Function(String payload) onTap) async => tap = onTap;
+
+  @override
+  Future<void> show(
+    int id,
+    String title,
+    String body, {
+    String? payload,
+    bool sound = true,
+  }) async => shown.add((title, body, payload));
+}
+
 void main() {
+  group('notifications', () {
+    Future<(MailStore, FakeEngine, FakeNotifications)> start([
+      Map<String, Object> prefs = const {},
+    ]) async {
+      SharedPreferences.setMockInitialValues(prefs);
+      final p = await SharedPreferences.getInstance();
+      final fake = FakeEngine();
+      final store = MailStore(p, source: await EngineMailSource.load(fake));
+      final n = FakeNotifications();
+      await store.useNotifications(n);
+      store.appFocused = false;
+      return (store, fake, n);
+    }
+
+    Future<void> arrive(FakeEngine fake) async {
+      fake.arrived = true;
+      fake.feed.add({
+        'kind': {
+          'type': 'new_message_received',
+          'account': 'acc1',
+          'message': 'm10',
+          'mailbox': 'mb-inbox',
+        },
+      });
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+    }
+
+    test(
+      'un nouveau message notifie expéditeur et objet ; le clic l’ouvre',
+      () async {
+        final (store, fake, n) = await start();
+        await arrive(fake);
+        expect(n.shown.single.$1, 'Bob');
+        expect(n.shown.single.$2, 'Arrivé à l’instant');
+        n.tap!(n.shown.single.$3!);
+        expect(store.open, n.shown.single.$3);
+        store.dispose();
+      },
+    );
+
+    test(
+      'rien au premier plan, en mode discret le contenu est masqué',
+      () async {
+        final (store, fake, n) = await start({'notifyPreview': '0'});
+        store.appFocused = true;
+        await arrive(fake);
+        expect(n.shown, isEmpty);
+        store.setNotify('notifyFocused', '1');
+        fake.arrived = false;
+        await store.refreshNow();
+        await arrive(fake);
+        expect(n.shown.single.$1, 'Nouveau message');
+        expect(n.shown.single.$2, 'alice@example.org');
+        store.dispose();
+      },
+    );
+
+    test('compte coupé ou notifications désactivées : rien', () async {
+      final (store, fake, n) = await start({'notifyMuted': '["acc1"]'});
+      await arrive(fake);
+      expect(n.shown, isEmpty);
+      store.dispose();
+    });
+
+    test('heures calmes, y compris à cheval sur minuit', () {
+      SharedPreferences.setMockInitialValues({'notifyQuiet': '22-7'});
+      return SharedPreferences.getInstance().then((p) {
+        final cfg = NotifySettings(p);
+        expect([22, 23, 0, 6].every(cfg.isQuiet), isTrue);
+        expect([7, 12, 21].any(cfg.isQuiet), isFalse);
+      });
+    });
+
+    test('les messages déjà connus ou anciens ne sont pas « nouveaux »', () {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      Mail mail(String ref, int date) => Mail(
+        id: 'a/inbox/$ref',
+        folder: 'inbox',
+        from: const Person('B', 'b@x.org'),
+        to: const [],
+        subject: ref,
+        date: date,
+        unread: true,
+        msgs: [
+          Msg(
+            from: const Person('B', 'b@x.org'),
+            date: date,
+            body: const [],
+            ref: ref,
+          ),
+        ],
+        account: 'a',
+      );
+      final before = [mail('old', now)];
+      expect(newArrivals(null, [mail('x', now)], now), isEmpty);
+      expect(
+        newArrivals(before, [
+          mail('old', now),
+          mail('x', now),
+          mail('ancient', 0),
+        ], now).map((m) => m.subject),
+        ['x'],
+      );
+    });
+  });
+
   group('filtres sur toute la boîte', () {
     Future<(MailStore, FakeEngine)> start() async {
       SharedPreferences.setMockInitialValues({});

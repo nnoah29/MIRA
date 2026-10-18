@@ -68,6 +68,12 @@ abstract class MailSource {
   /// Boîte du serveur qui tient le rôle de ce dossier pour ce compte (`null` : inconnue).
   String? mailboxOf(String account, String folder);
 
+  /// Vrai si ce compte a des messages plus anciens que ceux chargés.
+  bool hasMore(String account);
+
+  /// Demande une page de plus par boîte à la prochaine lecture du compte.
+  void readDeeper(String account);
+
   /// Recherche plein texte dans tout l'index local du moteur (tous comptes, toute l'ancienneté).
   Future<List<Mail>> search(String query);
 

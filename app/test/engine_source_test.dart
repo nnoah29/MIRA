@@ -20,6 +20,8 @@ class FakeEngine implements EngineClient {
   bool failActions = false;
   String outboxState = 'pending';
   final searches = <String>[];
+  final limits = <int>[];
+  bool many = false;
   final actions = <Map<String, dynamic>>[];
   final composed = <Map<String, dynamic>>[];
   final drafts = <String, Map<String, dynamic>>{};
@@ -108,6 +110,20 @@ class FakeEngine implements EngineClient {
           ],
         };
       case 'message.list_messages':
+        final limit = ((r['page'] as Map)['limit'] as num).toInt();
+        limits.add(limit);
+        if (many && (r['view'] as Map)['mailbox'] == 'mb-inbox') {
+          final all = [
+            for (var i = 0; i < 5; i++) _msg('p$i', 'Ancien $i', date: 900 - i),
+          ];
+          return {
+            'type': 'messages',
+            'data': {
+              'items': all.take(limit).toList(),
+              'next_cursor': limit < all.length ? 'c' : null,
+            },
+          };
+        }
         return _list('${(r['view'] as Map)['mailbox']}');
       case 'message.get_message_body':
         if (bodyFails.contains(r['message'])) {
@@ -730,6 +746,31 @@ void main() {
         const Attachment('devis.pdf', 'PDF', '2 Ko', id: 'a1'),
       );
       expect(store.toasts.last.err, isTrue);
+      store.dispose();
+    },
+  );
+
+  test(
+    'messages plus anciens : une page de plus à chaque demande, jusqu\'au bout',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final fake = FakeEngine()..many = true;
+      final src = await EngineMailSource.load(fake, pageSize: 2);
+      final store = MailStore(prefs, source: src);
+      int ancients() =>
+          store.mails.where((m) => m.subject.startsWith('Ancien')).length;
+      expect(ancients(), 2);
+      expect(store.moreAvailable, isTrue);
+      await store.loadMore();
+      expect(ancients(), 4);
+      expect(store.moreAvailable, isTrue);
+      await store.loadMore();
+      expect(ancients(), 5);
+      expect(store.moreAvailable, isFalse);
+      final calls = fake.limits.length;
+      await store.loadMore();
+      expect(fake.limits.length, calls);
       store.dispose();
     },
   );

@@ -21,7 +21,7 @@ class MailsColumn extends StatelessWidget {
     final mobile = MediaQuery.sizeOf(context).width <= 760;
     final hp = mobile ? 16.0 : 24.0;
     final title = s.label != null
-        ? t(labelDefs[s.label]!.n)
+        ? s.labelTitle(s.label!)
         : t(folderById(s.folder).n);
     final sc = s.scope();
     final un = s.nonRead(sc);
@@ -643,10 +643,11 @@ class MailRow extends StatelessWidget {
                           Ico('clip', size: 13, color: p.dim),
                           const SizedBox(width: 8),
                         ],
-                        for (final lb in m.labels.take(2)) ...[
-                          Square(8, Color(labelDefs[lb]!.c)),
-                          const SizedBox(width: 8),
-                        ],
+                        for (final lb in m.labels.take(2))
+                          if (s.labelDef(lb) != null) ...[
+                            Square(8, Color(s.labelDef(lb)!.c)),
+                            const SizedBox(width: 8),
+                          ],
                         _Star(m, h),
                       ],
                     ),

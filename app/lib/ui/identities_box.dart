@@ -60,7 +60,7 @@ class _IdentitiesBoxState extends State<IdentitiesBox> {
   String _msg(Object e) =>
       e is EngineException ? e.message : t('Erreur inattendue : {0}', ['$e']);
 
-  Future<void> _run(Future<void> Function() job) async {
+  Future<void> _run(Future<void> Function() job, {String? done}) async {
     setState(() {
       busy = true;
       error = null;
@@ -69,6 +69,7 @@ class _IdentitiesBoxState extends State<IdentitiesBox> {
       await job();
       await load();
       if (mounted) await context.read<MailStore>().identitiesChanged();
+      if (mounted && done != null) context.read<MailStore>().toast(done);
     } catch (e) {
       if (mounted) setState(() => error = _msg(e));
     } finally {
@@ -96,7 +97,7 @@ class _IdentitiesBoxState extends State<IdentitiesBox> {
     newName.clear();
     newSignature.clear();
     newDefault = false;
-  });
+  }, done: t('Identité ajoutée'));
 
   /// Adresses vues dans les messages déjà synchronisés, proposées en un clic.
   Widget _hints(Pal p, List<IdentityDetail> list) {
@@ -208,9 +209,12 @@ class _IdentitiesBoxState extends State<IdentitiesBox> {
                     displayName: name,
                     signature: sig,
                   ),
+                  done: t('Identité enregistrée'),
                 ),
-                onDefault: () =>
-                    _run(() => widget.admin.setDefaultIdentity(i.id)),
+                onDefault: () => _run(
+                  () => widget.admin.setDefaultIdentity(i.id),
+                  done: t('Identité par défaut modifiée'),
+                ),
               ),
             if (list.isEmpty)
               Text(
@@ -238,31 +242,42 @@ class _IdentitiesBoxState extends State<IdentitiesBox> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 10,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    FormField2(
-                      fieldKey: ValueKey('new-id-address-${widget.account.id}'),
-                      label: t('ADRESSE'),
-                      controller: newAddress,
+                    SizedBox(
                       width: 280,
-                      hint: 'alias@exemple.com',
+                      child: Column(
+                        children: [
+                          FormField2(
+                            fieldKey: ValueKey(
+                              'new-id-address-${widget.account.id}',
+                            ),
+                            label: t('ADRESSE'),
+                            controller: newAddress,
+                            hint: 'alias@exemple.com',
+                          ),
+                          const SizedBox(height: 10),
+                          FormField2(
+                            fieldKey: ValueKey(
+                              'new-id-name-${widget.account.id}',
+                            ),
+                            label: t('NOM AFFICHÉ'),
+                            controller: newName,
+                          ),
+                        ],
+                      ),
                     ),
-                    FormField2(
-                      fieldKey: ValueKey('new-id-name-${widget.account.id}'),
-                      label: t('NOM AFFICHÉ'),
-                      controller: newName,
-                      width: 240,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FormField2(
+                        fieldKey: ValueKey('new-id-sig-${widget.account.id}'),
+                        label: t('SIGNATURE'),
+                        controller: newSignature,
+                        maxLines: 5,
+                      ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 10),
-                FormField2(
-                  fieldKey: ValueKey('new-id-sig-${widget.account.id}'),
-                  label: t('SIGNATURE'),
-                  controller: newSignature,
-                  width: 540,
                 ),
                 const SizedBox(height: 10),
                 Wrap(
@@ -374,34 +389,43 @@ class _IdentityRowState extends State<_IdentityRow> {
             ],
           ),
           const SizedBox(height: 10),
-          Wrap(
-            spacing: 12,
-            runSpacing: 10,
-            crossAxisAlignment: WrapCrossAlignment.end,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              FormField2(
-                fieldKey: ValueKey('id-name-${i.id}'),
-                label: t('NOM AFFICHÉ'),
-                controller: name,
+              SizedBox(
                 width: 260,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FormField2(
+                      fieldKey: ValueKey('id-name-${i.id}'),
+                      label: t('NOM AFFICHÉ'),
+                      controller: name,
+                    ),
+                    const SizedBox(height: 10),
+                    Btn(
+                      key: ValueKey('save-identity-${i.id}'),
+                      label: t('Enregistrer'),
+                      onTap: widget.busy
+                          ? null
+                          : () => widget.onSave(
+                              name.text.trim().isEmpty
+                                  ? i.displayName
+                                  : name.text.trim(),
+                              sig.text,
+                            ),
+                    ),
+                  ],
+                ),
               ),
-              FormField2(
-                fieldKey: ValueKey('id-sig-${i.id}'),
-                label: t('SIGNATURE'),
-                controller: sig,
-                width: 340,
-              ),
-              Btn(
-                key: ValueKey('save-identity-${i.id}'),
-                label: t('Enregistrer'),
-                onTap: widget.busy
-                    ? null
-                    : () => widget.onSave(
-                        name.text.trim().isEmpty
-                            ? i.displayName
-                            : name.text.trim(),
-                        sig.text,
-                      ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FormField2(
+                  fieldKey: ValueKey('id-sig-${i.id}'),
+                  label: t('SIGNATURE'),
+                  controller: sig,
+                  maxLines: 5,
+                ),
               ),
             ],
           ),

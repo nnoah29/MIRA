@@ -16,7 +16,10 @@ final _addressRe = RegExp(r'^[^\s@<>,;]+@[^\s@<>,;]+\.[^\s@<>,;]+$');
 
 /// Panneau « Ajouter un compte » : fournisseurs pris en charge, identité, authentification, serveurs détaillés.
 class AddAccountPanel extends StatefulWidget {
-  const AddAccountPanel({super.key});
+  /// Dans les réglages : sans en-tête ni défilement propre, `onAdded` reçoit le compte créé.
+  final bool embedded;
+  final void Function(String id)? onAdded;
+  const AddAccountPanel({super.key, this.embedded = false, this.onAdded});
 
   @override
   State<AddAccountPanel> createState() => _AddAccountPanelState();
@@ -243,7 +246,12 @@ class _AddAccountPanelState extends State<AddAccountPanel> {
   Future<void> _finish(String id) async {
     final store = context.read<MailStore>();
     unawaited(setup.startSync(id).catchError((_) {}));
-    await store.accountAdded(id);
+    if (widget.embedded) {
+      await store.accountsChanged();
+      widget.onAdded?.call(id);
+    } else {
+      await store.accountAdded(id);
+    }
     store.toast(t('Compte ajouté : {0}', [address.text.trim()]));
   }
 
@@ -264,6 +272,7 @@ class _AddAccountPanelState extends State<AddAccountPanel> {
     final s = context.read<MailStore>();
     final narrow = MediaQuery.sizeOf(context).width <= 1100;
     final hp = narrow ? 16.0 : 32.0;
+    if (widget.embedded) return _sections(p);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -283,23 +292,25 @@ class _AddAccountPanelState extends State<AddAccountPanel> {
         Expanded(
           child: ScrollArea(
             padding: EdgeInsets.fromLTRB(hp, 0, hp, 40),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _providerSection(),
-                if (provider != null) ...[
-                  _identitySection(),
-                  _authSection(),
-                  if (provider!.isManual) _serversSection(),
-                  _actions(p),
-                ],
-              ],
-            ),
+            child: _sections(p),
           ),
         ),
       ],
     );
   }
+
+  Widget _sections(Pal p) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _providerSection(),
+      if (provider != null) ...[
+        _identitySection(),
+        _authSection(),
+        if (provider!.isManual) _serversSection(),
+        _actions(p),
+      ],
+    ],
+  );
 
   Widget _providerSection() => FormSection(
     title: t('Fournisseur'),

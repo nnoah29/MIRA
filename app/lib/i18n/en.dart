@@ -250,6 +250,7 @@ const Map<String, String> enStrings = {
   'Activé': 'On',
   'Désactivé': 'Off',
   'Signature': 'Signature',
+  '{0} d’un autre compte ignorée(s)': '{0} from another account skipped',
   'Ajoutée à tes réponses et transferts.':
       'Added to your replies and forwards.',
   'Démo': 'Demo',

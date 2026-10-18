@@ -291,10 +291,10 @@ void showLabelPop(BuildContext anchor) {
           mainAxisSize: MainAxisSize.min,
           children: [
             PopTitle(t('Libellés')),
-            for (final e in labelDefs.entries)
+            for (final e in s.labelsForTargets().entries)
               PopItem(
                 leading: Square(8, Color(e.value.c)),
-                label: t(e.value.n),
+                label: s.labelTitle(e.key),
                 on: ms.isNotEmpty && ms.every((m) => m.labels.contains(e.key)),
                 onTap: () => s.toggleLabel(e.key),
               ),

@@ -159,7 +159,13 @@ class Mail {
 class LabelDef {
   final String n;
   final int c;
-  const LabelDef(this.n, this.c);
+
+  /// Compte propriétaire (`null` : libellé de démonstration).
+  final String? account;
+
+  /// Boîte « tous les messages » ou « favoris » : rattachable, mais ni renommée ni supprimée.
+  final bool system;
+  const LabelDef(this.n, this.c, {this.account, this.system = false});
 }
 
 class FolderDef {
@@ -236,7 +242,7 @@ List<Sender> knownSenders = [];
 /// Identité du compte actif (change quand on bascule de compte).
 Person me = Person(defaultAccounts[0].name, defaultAccounts[0].email);
 
-const labelDefs = <String, LabelDef>{
+const seedLabelDefs = <String, LabelDef>{
   'projets': LabelDef('Projets', 0xFFe8542b),
   'candidatures': LabelDef('Candidatures', 0xFF6aa8d9),
   'factures': LabelDef('Factures', 0xFF8bc48a),

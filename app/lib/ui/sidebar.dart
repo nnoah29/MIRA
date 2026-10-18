@@ -155,7 +155,7 @@ class Sidebar extends StatelessWidget {
                     count: s.navCount(f.id),
                   ),
                 _NavTitle(t('Libellés')),
-                for (final e in labelDefs.entries)
+                for (final e in s.labelDefs.entries)
                   _NavItem(
                     on: s.label == e.key,
                     onTap: () => s.selectLabel(e.key),
@@ -163,7 +163,7 @@ class Sidebar extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Square(8, Color(e.value.c)),
                     ),
-                    label: t(e.value.n),
+                    label: s.labelTitle(e.key),
                     count: s.nonRead(
                       s.mails.where(
                         (m) => m.labels.contains(e.key) && !s.hidden(m),
@@ -350,7 +350,11 @@ class Topbar extends StatelessWidget {
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 190),
                         child: Text(
-                          s.unified ? t('Toutes les boîtes') : s.active.email,
+                          s.unified
+                              ? t('Toutes les boîtes')
+                              : (s.active.name.trim().isEmpty
+                                    ? s.active.email
+                                    : s.active.name),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Fonts.sans(

@@ -11,6 +11,7 @@ import 'engine/engine_mail_source.dart';
 import 'engine/mail_source.dart';
 import 'engine/rust_engine_client.dart';
 import 'i18n/i18n.dart';
+import 'state/folder_map.dart';
 import 'state/store.dart';
 import 'theme/app_theme.dart';
 import 'ui/shell.dart';
@@ -42,7 +43,10 @@ Future<MailSource?> openEngineSource(SharedPreferences prefs) async {
     final client = await RustEngineClient.open(
       pollSecs: int.tryParse(prefs.getString('poll') ?? ''),
     );
-    return await EngineMailSource.load(client);
+    return await EngineMailSource.load(
+      client,
+      folderMap: decodeFolderMap(prefs.getString('folderMap')),
+    );
   } catch (e) {
     stderr.writeln('MIRA : moteur indisponible, données de démonstration ($e)');
     return null;

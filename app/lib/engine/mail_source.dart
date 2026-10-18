@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../data/models.dart';
 import 'account_admin.dart';
 import 'account_setup.dart';
+import 'label_admin.dart';
 
 /// Origine des données affichées : comptes, boîtes chargées, et enrichissement d'un message.
 abstract class MailSource {
@@ -35,6 +36,18 @@ abstract class MailSource {
 
   /// Relit la liste des comptes ; rend les comptes apparus depuis la dernière lecture.
   Future<List<Account>> refreshAccounts();
+
+  /// Libellés de tous les comptes, par identifiant (`null` : données de démonstration).
+  Map<String, LabelDef> get labels;
+
+  /// Boîtes du serveur rattachables à un dossier (libellés, « tous les messages »), par identifiant.
+  Map<String, LabelDef> get mappable;
+
+  /// Rattachements boîte du serveur → dossier de l'interface (modifiable ; relire le compte ensuite).
+  Map<String, String> get folderMap;
+
+  /// Création, renommage, suppression et pose des libellés (`null` : démonstration).
+  LabelAdmin? get labelAdmin;
 
   /// Relit les boîtes du compte depuis le moteur.
   Future<List<Mail>> reload(Account account);

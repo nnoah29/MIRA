@@ -453,7 +453,7 @@ class FakeEngine implements EngineClient {
 void main() {
   test('entretien : volumes, intégrité, purge, index et export', () async {
     final fake = FakeEngine();
-    final admin = (await EngineMailSource.load(fake)).maintenance!;
+    final admin = (await EngineMailSource.load(fake)).maintenance;
     final st = await admin.stats();
     expect(
       (st.messages, st.attachments, st.cached, st.compressedBytes),

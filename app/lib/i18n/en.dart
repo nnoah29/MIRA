@@ -117,6 +117,8 @@ const Map<String, String> enStrings = {
   'Départ prévu à {0}.': 'Scheduled to leave at {0}.',
   'Annuler l’envoi': 'Cancel sending',
   'Réessayer': 'Retry',
+  'Supprimer ce contact': 'Delete this contact',
+  'Contact supprimé': 'Contact deleted',
   'Stockage': 'Storage',
   'Stockage et maintenance': 'Storage and maintenance',
   'Mesure en cours…': 'Measuring…',

@@ -30,10 +30,18 @@ class ContactBook {
 
   /// Historique conservé : adresse → [nom vu, envois, dernier envoi].
   final Map<String, List<Object>> history;
-  ContactBook(this.names, this.history);
+
+  /// Correspondants supprimés : adresse → instant de la suppression ; seuls des messages plus récents les ramènent.
+  final Map<String, int> removed;
+  ContactBook(this.names, this.history, [Map<String, int>? removed])
+    : removed = removed ?? {};
 
   /// Relit les deux tables enregistrées ; une valeur illisible est ignorée.
-  static ContactBook decode(String? namesJson, String? historyJson) {
+  static ContactBook decode(
+    String? namesJson,
+    String? historyJson, [
+    String? removedJson,
+  ]) {
     Map<String, dynamic> read(String? j) {
       try {
         return (jsonDecode(j ?? '{}') as Map).cast<String, dynamic>();
@@ -53,7 +61,21 @@ class ContactBook {
               ((e.value as List)[2] as num).toInt(),
             ],
       },
+      {
+        for (final e in read(removedJson).entries)
+          if (e.value is num) e.key: (e.value as num).toInt(),
+      },
     );
+  }
+
+  String encodeRemoved() => jsonEncode(removed);
+
+  /// Retire un correspondant de l'historique et de ses noms, jusqu'à un message plus récent que `now`.
+  void forget(String email, int now) {
+    final key = email.toLowerCase();
+    history.remove(key);
+    names.remove(key);
+    removed[key] = now;
   }
 
   String encodeNames() => jsonEncode(names);
@@ -66,6 +88,7 @@ class ContactBook {
       for (final p in [...m.to, ...m.cc]) {
         final key = p.email.toLowerCase();
         if (key.isEmpty || mine(key)) continue;
+        if (m.date <= (removed[key] ?? -1)) continue;
         final cur = seen.putIfAbsent(key, () => [p.name, 0, 0]);
         cur[1] = (cur[1] as int) + 1;
         if (m.date >= (cur[2] as int)) {

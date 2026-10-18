@@ -996,4 +996,4 @@ Pour retrouver le code d'une commande quelconque : `engine/crates/mira-cli/src/c
 | `[[nodiscard]]` | un `Result` non utilisé est un avertissement du compilateur |
 | tag dispatch / type étiquette | `PhantomData<K>` (`Id<K>`) |
 
-Pour aller plus loin : `README.md` (construire et utiliser le CLI), `docs/ARCHITECTURE-IMPLEMENTEE.md` (organisation du moteur), `docs/DECISIONS-AGENT.md` (pourquoi les choix), `docs/specs/` (spécifications par jalon).
+Pour aller plus loin : `docs/ENGINE.md` (construire et utiliser le CLI), `docs/ARCHITECTURE-IMPLEMENTEE.md` (organisation du moteur), `docs/DECISIONS-AGENT.md` (pourquoi les choix), `docs/specs/` (spécifications par jalon).

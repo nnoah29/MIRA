@@ -117,6 +117,10 @@ const Map<String, String> enStrings = {
   'Départ prévu à {0}.': 'Scheduled to leave at {0}.',
   'Annuler l’envoi': 'Cancel sending',
   'Réessayer': 'Retry',
+  'Remonter plus loin sur le serveur': 'Fetch older mail from the server',
+  'Récupération sur le serveur… Annuler': 'Fetching from the server… Cancel',
+  'Récupération sur le serveur… {0} % Annuler':
+      'Fetching from the server… {0}% Cancel',
   'Renvoyer': 'Send again',
   'Ne pas renvoyer': 'Do not resend',
   'Envoi annulé': 'Sending cancelled',

@@ -270,6 +270,19 @@ class FakeEngine implements EngineClient {
             'status': {'type': 'running', 'done': 0, 'total': 1},
           },
         };
+      case 'sync.extend_window':
+        actions.add({'op': r['op'], ...r});
+        return {
+          'type': 'operation',
+          'data': {
+            'id': 'op-x',
+            'kind': 'extend_window',
+            'status': {'type': 'running', 'done': 0, 'total': 1},
+          },
+        };
+      case 'operation.cancel_operation':
+        actions.add({'op': r['op'], ...r});
+        return {'type': 'ok'};
       case 'operation.get_operation':
         return {
           'type': 'operation',

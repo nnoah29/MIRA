@@ -192,7 +192,10 @@ class MailStore extends ChangeNotifier {
         _applySnoozes(l);
       }
       _changeSub = source!.changes.listen(_reloadAccount);
-      _syncSub = source!.syncEvents.listen((_) => notifyListeners());
+      _syncSub = source!.syncEvents.listen((_) {
+        _extensionProgress();
+        notifyListeners();
+      });
     }
     final saved = prefs.getString('account');
     unified = saved == 'all';
@@ -1691,6 +1694,60 @@ class MailStore extends ChangeNotifier {
   }
 
   final unsubscriber = Unsubscriber();
+
+  /// Extension de la plage en cours : (compte, opération) ; `null` hors extension.
+  (String, String)? extending;
+
+  /// Le dossier affiché peut être prolongé sur le serveur : tout est déjà chargé et le dossier a une boîte.
+  bool get canExtend =>
+      source != null &&
+      !moreAvailable &&
+      label == null &&
+      accounts.any(
+        (a) =>
+            (unified || a.id == activeId) &&
+            source!.mailboxOf(a.id, folder) != null,
+      );
+
+  /// Demande au moteur de remonter de trois mois sur le serveur, pour les comptes de la vue.
+  Future<void> extendWindow() async {
+    final src = source;
+    if (src == null || extending != null) return;
+    for (final a in accounts) {
+      if (!(unified || a.id == activeId)) continue;
+      try {
+        final op = await src.extendWindow(a.id, folder, 90);
+        if (op == null) continue;
+        extending = (a.id, op);
+        notifyListeners();
+        return;
+      } catch (_) {
+        toast(t('Synchronisation impossible'), err: true);
+      }
+    }
+  }
+
+  /// Interrompt l'extension en cours.
+  Future<void> cancelExtend() async {
+    final e = extending;
+    if (e == null) return;
+    try {
+      await source?.cancelOperation(e.$2);
+    } catch (_) {
+      toast(t('Synchronisation impossible'), err: true);
+    }
+  }
+
+  void _extensionProgress() {
+    final e = extending;
+    if (e == null) return;
+    final st = source?.syncStates[e.$1];
+    if (st == null || st.ended != e.$2) return;
+    extending = null;
+    if (st.failed == null) source?.readDeeper(e.$1);
+    unawaited(_reloadOnce(e.$1));
+    if (st.failed != null) toast(t('Synchronisation impossible'), err: true);
+  }
 
   /// Comptes visibles qui ne se synchronisent pas normalement, avec leur état (hors ligne, échec, en cours).
   List<(Account, SyncState)> get syncIssues {

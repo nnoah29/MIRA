@@ -75,6 +75,12 @@ abstract class MailSource {
   /// Émet à chaque changement de [syncStates].
   Stream<void> get syncEvents;
 
+  /// Télécharge du serveur `days` jours de plus pour ce dossier ; rend l'opération (`null` : dossier inconnu).
+  Future<String?> extendWindow(String account, String folder, int days);
+
+  /// Annule une opération en cours du moteur.
+  Future<void> cancelOperation(String operation);
+
   /// Nombre de non lus exact du dossier selon le moteur (`null` : inconnu).
   int? unreadOf(String account, String folder);
 

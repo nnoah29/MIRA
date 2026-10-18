@@ -3,6 +3,9 @@ class SyncState {
   bool offline = false;
   bool syncing = false;
   String? failed;
+
+  /// Dernière opération terminée ou échouée (suivi d'une extension de plage).
+  String? ended;
   int done = 0;
   int total = 0;
 
@@ -11,7 +14,7 @@ class SyncState {
 
   /// Applique un événement ; vrai si l'affichage doit changer.
   bool apply(String type, Map<String, dynamic> kind) {
-    final before = (offline, syncing, failed, percent);
+    final before = (offline, syncing, failed, percent, ended);
     switch (type) {
       case 'went_offline':
         offline = true;
@@ -27,13 +30,15 @@ class SyncState {
         done = (kind['done'] as num?)?.toInt() ?? 0;
         total = (kind['total'] as num?)?.toInt() ?? 0;
       case 'sync_finished':
+        ended = kind['operation'] as String?;
         syncing = false;
         offline = false;
         failed = null;
       case 'sync_failed':
+        ended = kind['operation'] as String?;
         syncing = false;
         failed = '${kind['code']}';
     }
-    return before != (offline, syncing, failed, percent);
+    return before != (offline, syncing, failed, percent, ended);
   }
 }

@@ -383,7 +383,9 @@ class _MailListViewState extends State<MailListView> {
           if (s.source != null && s.q.trim().length >= 2)
             const SliverToBoxAdapter(child: _ServerSearchRow())
           else if (s.q.trim().isEmpty && s.moreAvailable)
-            const SliverToBoxAdapter(child: _LoadMoreRow()),
+            const SliverToBoxAdapter(child: _LoadMoreRow())
+          else if (s.q.trim().isEmpty && (s.canExtend || s.extending != null))
+            const SliverToBoxAdapter(child: _ExtendRow()),
         ],
       ),
     );
@@ -408,6 +410,38 @@ class _LoadMoreRow extends StatelessWidget {
               : t('Afficher les messages plus anciens'),
           onTap: s.loadingMore ? null : s.loadMore,
         ),
+      ),
+    );
+  }
+}
+
+/// Pied de liste : tout le local est affiché, aller chercher plus ancien sur le serveur.
+class _ExtendRow extends StatelessWidget {
+  const _ExtendRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<MailStore>();
+    final busy = s.extending != null;
+    final pct = busy ? s.source?.syncStates[s.extending!.$1]?.percent : null;
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Center(
+        child: busy
+            ? Btn(
+                key: const ValueKey('extend-cancel'),
+                icon: 'x',
+                label: pct == null
+                    ? t('Récupération sur le serveur… Annuler')
+                    : t('Récupération sur le serveur… {0} % Annuler', [pct]),
+                onTap: s.cancelExtend,
+              )
+            : Btn(
+                key: const ValueKey('extend'),
+                icon: 'refresh',
+                label: t('Remonter plus loin sur le serveur'),
+                onTap: s.extendWindow,
+              ),
       ),
     );
   }

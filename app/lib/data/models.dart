@@ -54,6 +54,13 @@ class Quote extends Block {
   const Quote(this.children);
 }
 
+/// Moyens de désabonnement annoncés par l'expéditeur.
+class Unsub {
+  final String? url, mailto;
+  final bool oneClick;
+  const Unsub({this.url, this.mailto, this.oneClick = false});
+}
+
 class Msg {
   Person from;
   int date;
@@ -65,6 +72,9 @@ class Msg {
 
   /// Le moteur annonce des pièces jointes (liste lue à l'ouverture).
   final bool hasAttachments;
+
+  /// Désabonnement proposé par l'expéditeur (`null` : aucun).
+  final Unsub? unsub;
 
   /// Corps et pièces jointes déjà demandés au moteur.
   bool hydrated = false;
@@ -87,6 +97,7 @@ class Msg {
     List<Attachment>? att,
     this.ref,
     this.hasAttachments = false,
+    this.unsub,
   }) : att = att ?? [];
   Msg copy() =>
       Msg(
@@ -96,6 +107,7 @@ class Msg {
           att: [...att],
           ref: ref,
           hasAttachments: hasAttachments,
+          unsub: unsub,
         )
         ..hydrated = hydrated
         ..loaded = loaded

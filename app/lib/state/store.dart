@@ -24,6 +24,7 @@ import 'contacts.dart';
 import 'folder_map.dart';
 import 'image_policy.dart';
 import 'rich_controller.dart';
+import 'unsubscribe.dart';
 import '../i18n/i18n.dart';
 
 enum PaneView { empty, read, compose, assistant, settings, addAccount }
@@ -1682,6 +1683,44 @@ class MailStore extends ChangeNotifier {
     _syncAction(unread, (a) => a.read(true));
     toast(
       '${tn(l.length, 'message', 'messages')} ${t(l.length > 1 ? 'marqués comme lus' : 'marqué comme lu')}',
+    );
+  }
+
+  final unsubscriber = Unsubscriber();
+
+  /// Moyen de désabonnement de la conversation ouverte (`null` : l'expéditeur n'en annonce pas).
+  Unsub? unsubFor(Mail m) => Unsubscriber.of(m.msgs);
+
+  /// Se désabonne : en un clic si possible, sinon page web ou message de désabonnement prérempli.
+  Future<void> unsubscribe(Mail m) async {
+    final u = unsubFor(m);
+    if (u == null) return;
+    final url = u.url == null ? null : Uri.tryParse(u.url!);
+    if (url != null && u.oneClick) {
+      final ok = await unsubscriber.postOneClick(url);
+      toast(
+        ok ? t('Désabonnement envoyé') : t('Désabonnement impossible'),
+        err: !ok,
+      );
+    } else if (url != null) {
+      await unsubscriber.openPage(url);
+    } else if (u.mailto != null) {
+      _mailtoUnsubscribe(m, u.mailto!);
+    }
+  }
+
+  void _mailtoUnsubscribe(Mail m, String mailto) {
+    final uri = Uri.tryParse(
+      mailto.startsWith('mailto:') ? mailto : 'mailto:$mailto',
+    );
+    if (uri == null || uri.path.isEmpty) return;
+    openCompose(
+      ComposeInit(
+        from: fromFor(m),
+        to: [Person('', uri.path)],
+        subject: uri.queryParameters['subject'] ?? 'unsubscribe',
+        text: uri.queryParameters['body'],
+      ),
     );
   }
 

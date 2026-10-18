@@ -651,7 +651,7 @@ class MailRow extends StatelessWidget {
                         _Star(m, h),
                       ],
                     ),
-                    if (!dense && s.snip)
+                    if (!dense)
                       Text(
                         snip,
                         maxLines: 2,

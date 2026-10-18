@@ -12,7 +12,13 @@ class Attachment {
   final String t; // type (PDF, PNG…)
   final String s; // taille formatée
   final Uint8List? bytes; // aperçu pour les images ajoutées
-  const Attachment(this.n, this.t, this.s, {this.bytes});
+
+  /// Fichier local d'origine (pièce jointe ajoutée à la rédaction).
+  final String? path;
+
+  /// Identifiant de la pièce jointe dans le moteur (`null` : fichier local ou démonstration).
+  final String? id;
+  const Attachment(this.n, this.t, this.s, {this.bytes, this.path, this.id});
 }
 
 /// Fragment de texte stylé (équivalent d'un nœud inline HTML).

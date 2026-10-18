@@ -8,6 +8,25 @@ const dayMs = 24 * hourMs;
 
 int nowMs() => DateTime.now().millisecondsSinceEpoch;
 
+/// Instant d'envoi d'un choix de programmation (« dans 1 heure », « demain 08:00 », « lundi 08:00 »).
+int scheduledMs(String choice, [DateTime? from]) {
+  final now = from ?? DateTime.now();
+  final c = choice.toLowerCase();
+  if (c.startsWith('dans')) {
+    return now.add(const Duration(hours: 1)).millisecondsSinceEpoch;
+  }
+  final days = c.startsWith('demain')
+      ? 1
+      : (DateTime.monday - now.weekday + 7) % 7 +
+            (now.weekday == DateTime.monday ? 7 : 0);
+  return DateTime(
+    now.year,
+    now.month,
+    now.day + days,
+    8,
+  ).millisecondsSinceEpoch;
+}
+
 String pad2(int n) => n.toString().padLeft(2, '0');
 
 String hhmm(int ms) {

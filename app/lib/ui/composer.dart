@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 
 import '../data/format.dart';
 import '../data/models.dart';
-import '../data/seed.dart';
 import '../state/rich_controller.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
@@ -97,6 +96,7 @@ class _ComposerState extends State<Composer> {
             bytes: readable && len <= 8 * 1024 * 1024
                 ? await f.readAsBytes()
                 : null,
+            path: f.path,
           ),
         );
       }
@@ -261,8 +261,7 @@ class _ComposerState extends State<Composer> {
                               on: e.email == c.from,
                               onTap: () {
                                 close();
-                                c.from = e.email;
-                                s.touch();
+                                s.changeFrom(e.email);
                               },
                             ),
                         ],
@@ -825,8 +824,8 @@ class _RecipientBoxState extends State<RecipientBox> {
     }
     final em = m.group(0)!;
     Person? known;
-    for (final c in contacts) {
-      if (c.email == em) known = c;
+    for (final c in context.read<MailStore>().contactPeople()) {
+      if (c.email.toLowerCase() == em.toLowerCase()) known = c;
     }
     if (!widget.list.any((p) => p.email == em)) {
       widget.list.add(known ?? Person(em, em));
@@ -849,7 +848,9 @@ class _RecipientBoxState extends State<RecipientBox> {
         c.email.toLowerCase().startsWith(q) ||
         c.name.toLowerCase().split(' ').any((w) => w.startsWith(q));
     final hits =
-        contacts
+        context
+            .read<MailStore>()
+            .contactPeople()
             .where(
               (c) =>
                   c.email.toLowerCase().contains(q) ||

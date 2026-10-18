@@ -16,7 +16,10 @@ class FakeEngine implements EngineClient {
   bool extra = false;
   bool second = false;
   bool labelOnly = false;
+  bool serverCopy = false;
   final actions = <Map<String, dynamic>>[];
+  final composed = <Map<String, dynamic>>[];
+  final drafts = <String, Map<String, dynamic>>{};
   final feed = StreamController<Map<String, dynamic>>.broadcast();
 
   Map<String, dynamic> _msg(
@@ -91,6 +94,7 @@ class FakeEngine implements EngineClient {
           'data': [
             {'id': 'mb-inbox', 'role': 'inbox'},
             {'id': 'mb-junk', 'role': 'junk'},
+            {'id': 'mb-drafts', 'role': 'drafts'},
             {
               'id': 'mb-other',
               'role': 'other',
@@ -162,6 +166,64 @@ class FakeEngine implements EngineClient {
           'type': 'write',
           'data': {'type': 'action', 'data': 'a1'},
         };
+      case 'compose.create_draft':
+        composed.add({'op': r['op'], ...r});
+        drafts['dr1'] = {
+          'id': 'dr1',
+          'account': r['account'],
+          'identity': r['identity'] ?? 'id1',
+          'to': [],
+          'cc': [],
+          'bcc': [],
+          'subject': '',
+          'body_text': '',
+          'body_html': null,
+          'attachments': [],
+          'in_reply_to': null,
+          'state': {'type': 'editing'},
+          'updated_at': 5000,
+        };
+        return _write('draft', drafts['dr1']);
+      case 'compose.update_draft':
+        composed.add({'op': r['op'], ...r});
+        drafts[r['draft']]!.addAll((r['changes'] as Map).cast());
+        return {'type': 'done'};
+      case 'compose.attach_file':
+        composed.add({'op': r['op'], ...r});
+        (drafts[r['draft']]!['attachments'] as List).add({
+          'filename': '${r['path']}'.split('/').last,
+          'mime_type': 'application/pdf',
+          'size': 9,
+        });
+        return _write('draft', drafts[r['draft']]);
+      case 'compose.remove_attachment':
+        composed.add({'op': r['op'], ...r});
+        (drafts[r['draft']]!['attachments'] as List).removeAt(
+          r['position'] as int,
+        );
+        return {'type': 'done'};
+      case 'compose.delete_draft':
+        composed.add({'op': r['op'], ...r});
+        drafts.remove(r['draft']);
+        return {'type': 'done'};
+      case 'compose.list_drafts':
+        return _write('drafts', [
+          for (final d in drafts.values)
+            if (d['account'] == r['account']) d,
+        ]);
+      case 'compose.save_draft_copy':
+        composed.add({'op': r['op'], ...r});
+        return _write('action', 'copy1');
+      case 'compose.send_draft':
+        composed.add({'op': r['op'], ...r});
+        drafts[r['draft']]!['state'] = {'type': 'sending'};
+        return _write('action', 'send1');
+      case 'compose.cancel_send':
+        composed.add({'op': r['op'], ...r});
+        for (final d in drafts.values) {
+          d['state'] = {'type': 'editing'};
+        }
+        return {'type': 'done'};
       case 'sync.start_sync':
         return {'type': 'done'};
       case 'message.allow_remote_content':
@@ -197,6 +259,11 @@ class FakeEngine implements EngineClient {
     throw EngineException('internal.bug', 'op inconnue $op');
   }
 
+  Map<String, dynamic> _write(String type, Object? data) => {
+    'type': 'write',
+    'data': {'type': type, 'data': data},
+  };
+
   Map<String, dynamic> _list(String mailbox) {
     final items = switch (mailbox) {
       'mb-inbox' => [
@@ -209,6 +276,13 @@ class FakeEngine implements EngineClient {
         },
       ],
       'mb-junk' => [_msg('m4', 'Pourriel', date: 500)],
+      'mb-drafts' => [
+        if (serverCopy)
+          {
+            ..._msg('m30', 'Salut', date: 5000),
+            'message_id_header': 'draft-dr1@mira.local',
+          },
+      ],
       'mb-other' => [
         if (labelOnly)
           {
@@ -439,6 +513,73 @@ void main() {
     knownSenders = [];
   });
 
+  group('signature', () {
+    Future<MailStore> start() async {
+      SharedPreferences.setMockInitialValues({'sig': 'Signature générale'});
+      final prefs = await SharedPreferences.getInstance();
+      final src = await EngineMailSource.load(FakeEngine());
+      return MailStore(prefs, source: src);
+    }
+
+    test(
+      'un nouveau message porte la signature de l\'adresse d\'envoi',
+      () async {
+        final store = await start();
+        store.openCompose(const ComposeInit());
+        expect(store.c!.body.text, '\n\nAlice, Pro');
+        expect(store.c!.sigText, 'Alice, Pro');
+        store.dispose();
+        knownSenders = [];
+      },
+    );
+
+    test(
+      'changer l\'expéditeur remplace la signature, pas le texte écrit',
+      () async {
+        final store = await start();
+        store.openCompose(const ComposeInit());
+        final body = store.c!.body;
+        body.setContent(
+          'Bonjour${body.text}',
+          List<int>.filled(7 + body.text.length, 0),
+        );
+        store.changeFrom('alice@example.org');
+        expect(body.text, 'Bonjour\n\nSignature générale');
+        expect(store.c!.from, 'alice@example.org');
+        expect(store.c!.fromChosen, isTrue);
+        store.dispose();
+        knownSenders = [];
+      },
+    );
+
+    test('un message réduit à sa signature compte pour vide', () async {
+      final store = await start();
+      store.openCompose(const ComposeInit());
+      store.c!.dirty = true;
+      expect(store.saveDraft(), isFalse);
+      store.dispose();
+      knownSenders = [];
+    });
+
+    test(
+      'un transfert place la signature avant le message transféré',
+      () async {
+        final store = await start();
+        store.openMail(store.mails.first.id);
+        store.replyTo('fwd');
+        final text = store.c!.body.text;
+        expect(text.startsWith('\n\n'), isTrue);
+        expect(
+          text.indexOf('Message transféré'),
+          greaterThan(text.indexOf('Signature')),
+        );
+        expect(store.c!.body.flags.length, text.length);
+        store.dispose();
+        knownSenders = [];
+      },
+    );
+  });
+
   test(
     'les libellés sont les boîtes « autre » ; un message en porte',
     () async {
@@ -575,4 +716,205 @@ void main() {
       expect(src.labels, isEmpty);
     },
   );
+
+  group('rédaction par le moteur', () {
+    Future<(MailStore, FakeEngine)> start() async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final fake = FakeEngine();
+      final src = await EngineMailSource.load(fake);
+      final store = MailStore(prefs, source: src);
+      store.openCompose(
+        const ComposeInit(
+          to: [Person('Bob', 'bob@example.org')],
+          subject: 'Salut',
+          text: 'Bonjour',
+          from: 'alice@example.org',
+        ),
+      );
+      return (store, fake);
+    }
+
+    Map<String, dynamic> last(FakeEngine f, String op) =>
+        f.composed.lastWhere((c) => c['op'] == op);
+
+    test(
+      'l\'enregistrement crée puis met à jour le brouillon du moteur',
+      () async {
+        final (store, fake) = await start();
+        store.c!.dirty = true;
+        store.saveDraft();
+        await store.c!.push;
+        expect(fake.composed.map((c) => c['op']), [
+          'create_draft',
+          'update_draft',
+        ]);
+        expect(last(fake, 'create_draft')['identity'], 'i1');
+        final changes = last(fake, 'update_draft')['changes'] as Map;
+        expect(changes['subject'], 'Salut');
+        expect(changes['body_text'], 'Bonjour');
+        expect(changes['to'], [
+          {'name': 'Bob', 'address': 'bob@example.org'},
+        ]);
+        expect(store.c!.id, 'draft:dr1');
+        expect(
+          store.mails.where((m) => m.folder == 'drafts').single.id,
+          'draft:dr1',
+        );
+        store.dispose();
+      },
+    );
+
+    test('choisir l\'expéditeur suffit à enregistrer un brouillon', () async {
+      final (store, fake) = await start();
+      store.c!
+        ..to = []
+        ..subject.text = ''
+        ..body.setContent('', const [])
+        ..fromChosen = true;
+      store.touch();
+      store.saveDraft();
+      await store.c!.push;
+      expect(fake.composed.map((c) => c['op']), contains('create_draft'));
+      store.dispose();
+    });
+
+    test('quitter la rédaction copie le brouillon sur le serveur', () async {
+      final (store, fake) = await start();
+      store.c!.dirty = true;
+      store.closeCompose();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(last(fake, 'save_draft_copy')['draft'], 'dr1');
+      expect(store.mails.where((m) => m.folder == 'drafts').length, 1);
+      store.dispose();
+    });
+
+    test('la copie serveur du brouillon n\'apparaît pas en double', () async {
+      final (store, fake) = await start();
+      store.c!.dirty = true;
+      store.saveDraft();
+      await store.c!.push;
+      fake.serverCopy = true;
+      final fresh = await store.source!.reload(store.accounts.single);
+      expect(fresh.where((m) => m.folder == 'drafts').length, 1);
+      store.dispose();
+    });
+
+    test('un second enregistrement ne recrée pas le brouillon', () async {
+      final (store, fake) = await start();
+      for (var i = 0; i < 2; i++) {
+        store.c!.dirty = true;
+        store.saveDraft();
+      }
+      await store.c!.push;
+      expect(fake.composed.where((c) => c['op'] == 'create_draft').length, 1);
+      expect(fake.composed.where((c) => c['op'] == 'update_draft').length, 2);
+      store.dispose();
+    });
+
+    test('envoyer met le brouillon en file puis ferme la rédaction', () async {
+      final (store, fake) = await start();
+      await store.send();
+      expect(last(fake, 'send_draft')['draft'], 'dr1');
+      expect(last(fake, 'send_draft')['at'], isNull);
+      expect(store.c, isNull);
+      expect(store.mails.where((m) => m.folder == 'drafts'), isEmpty);
+      expect(
+        store.mails.where((m) => m.folder == 'sent').map((m) => m.subject),
+        contains('Salut'),
+      );
+      expect(store.toasts.last.label, isNotNull);
+      store.dispose();
+    });
+
+    test('programmer envoie une date', () async {
+      final (store, fake) = await start();
+      await store.send('demain 08:00');
+      expect(last(fake, 'send_draft')['at'], isA<int>());
+      store.dispose();
+    });
+
+    test('annuler l\'envoi rouvre le brouillon', () async {
+      final (store, fake) = await start();
+      await store.send();
+      store.toasts.last.cb!();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(last(fake, 'cancel_send')['action'], 'send1');
+      expect(store.c?.engineId, 'dr1');
+      expect(store.mails.where((m) => m.id == 'sending:dr1'), isEmpty);
+      store.dispose();
+    });
+
+    test(
+      'les pièces jointes locales sont envoyées au moteur, puis retirées',
+      () async {
+        final (store, fake) = await start();
+        final a = Attachment('devis.pdf', 'PDF', '9', path: '/tmp/devis.pdf');
+        store.c!.atts.add(a);
+        store.c!.dirty = true;
+        store.saveDraft();
+        await store.c!.push;
+        expect(last(fake, 'attach_file')['path'], '/tmp/devis.pdf');
+        store.c!.atts.remove(a);
+        store.c!.dirty = true;
+        store.saveDraft();
+        await store.c!.push;
+        expect(last(fake, 'remove_attachment')['position'], 0);
+        store.dispose();
+      },
+    );
+
+    test('quitter la rédaction copie le brouillon sur le serveur', () async {
+      final (store, fake) = await start();
+      store.c!.dirty = true;
+      final cs = store.c!;
+      store.closeCompose();
+      await cs.push;
+      expect(fake.composed.map((c) => c['op']), [
+        'create_draft',
+        'update_draft',
+        'save_draft_copy',
+      ]);
+      expect(last(fake, 'save_draft_copy')['draft'], 'dr1');
+      expect(store.mails.where((m) => m.folder == 'drafts'), isNotEmpty);
+      store.dispose();
+    });
+
+    test('abandonner supprime le brouillon du moteur', () async {
+      final (store, fake) = await start();
+      store.c!.dirty = true;
+      store.saveDraft();
+      await store.c!.push;
+      store.discard();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(last(fake, 'delete_draft')['draft'], 'dr1');
+      store.dispose();
+    });
+
+    test('les brouillons du moteur reviennent à la relecture', () async {
+      final (store, fake) = await start();
+      store.c!.dirty = true;
+      store.saveDraft();
+      await store.c!.push;
+      final fresh = await store.source!.reload(store.accounts.single);
+      final d = fresh.singleWhere((m) => m.folder == 'drafts');
+      expect(d.id, 'draft:dr1');
+      expect(d.to.single.email, 'bob@example.org');
+      expect(fake.drafts, isNotEmpty);
+      store.dispose();
+    });
+  });
+
+  test('le contenu d\'une pièce jointe est lu une fois puis gardé', () async {
+    final fake = FakeEngine();
+    final src = await EngineMailSource.load(fake);
+    const a = Attachment('devis.pdf', 'PDF', '2 Ko', id: 'a1');
+    expect(await src.attachmentBytes(a), [1, 2, 3]);
+    await src.attachmentBytes(a);
+    expect(fake.calls.where((c) => c == 'message.save_attachment').length, 1);
+    expect(
+      await src.attachmentBytes(const Attachment('x', 'PDF', '1')),
+      isNull,
+    );
+  });
 }

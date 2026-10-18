@@ -8,6 +8,8 @@ import '../data/format.dart';
 import '../data/html_lite.dart';
 import '../data/models.dart';
 import '../data/seed.dart';
+import '../engine/blocks_html.dart';
+import '../engine/compose_admin.dart';
 import '../engine/engine_client.dart';
 import '../engine/label_admin.dart';
 import '../engine/mail_source.dart';
@@ -15,6 +17,7 @@ import '../theme/wall_source.dart';
 import '../theme/wall_theme.dart';
 import '../theme/app_theme.dart';
 import 'assistant.dart';
+import 'contacts.dart';
 import 'folder_map.dart';
 import 'image_policy.dart';
 import 'rich_controller.dart';
@@ -67,6 +70,24 @@ class ComposeState {
   String saved = '';
   bool center = false;
   int shake = 0;
+
+  /// Signature insérée dans le corps (vide : aucune) ; remplacée si l'expéditeur change.
+  String sigText = '';
+
+  /// L'expéditeur a été choisi à la main : le brouillon existe même sans autre contenu.
+  bool fromChosen = false;
+
+  /// Brouillon correspondant dans le moteur (`null` : pas encore créé).
+  String? engineId;
+
+  /// Pièces jointes déjà confiées au moteur, dans son ordre.
+  List<Attachment> engineAtts = [];
+
+  /// Le brouillon du moteur a changé depuis la dernière copie sur le serveur.
+  bool copyStale = false;
+
+  /// Enregistrements en cours, exécutés l'un après l'autre.
+  Future<void> push = Future.value();
   ComposeState({
     this.id,
     this.replyTo,
@@ -114,7 +135,14 @@ class MailStore extends ChangeNotifier {
   /// Données réelles du moteur (`null` : données fictives de démonstration).
   final MailSource? source;
   StreamSubscription<String>? _changeSub;
+
+  /// Historique des destinataires et noms choisis.
+  late final ContactBook contactBook;
   MailStore(this.prefs, {bool watchWallpaper = false, this.source}) {
+    contactBook = ContactBook.decode(
+      prefs.getString('contactNames'),
+      prefs.getString('contactHistory'),
+    );
     followWallpaper = prefs.getString('follow') != '0';
     lang = AppLang.fromCode(prefs.getString('lang'));
     appLang = lang;
@@ -132,7 +160,6 @@ class MailStore extends ChangeNotifier {
     theme = prefs.getString('theme') == 'light' ? 'light' : 'dark';
     accentHex = prefs.getString('accent');
     dense = prefs.getString('dense') == '1';
-    snip = prefs.getString('snip') != '0';
     live = prefs.getString('live') != '0';
     sig = prefs.getString('sig') ?? 'Cordialement,\nNoah';
     final extra = <Account>[];
@@ -270,7 +297,7 @@ class MailStore extends ChangeNotifier {
     return Color(0xFF000000 | int.parse(h, radix: 16));
   }
 
-  late bool dense, snip, live;
+  late bool dense, live;
   late String sig;
   late List<ChatMsg> chat;
   bool busy = false;
@@ -394,13 +421,19 @@ class MailStore extends ChangeNotifier {
       .length;
 
   // ---- toasts ----
-  void toast(String msg, {String? label, VoidCallback? cb, bool err = false}) {
+  void toast(
+    String msg, {
+    String? label,
+    VoidCallback? cb,
+    bool err = false,
+    int? ms,
+  }) {
     final t = ToastItem(++_toastId, msg, label, cb, err);
     toasts.add(t);
     while (toasts.length > 3) {
       toasts.removeAt(0);
     }
-    _after(label != null ? 6500 : 3200, () => killToast(t));
+    _after(ms ?? (label != null ? 6500 : 3200), () => killToast(t));
     notifyListeners();
   }
 
@@ -425,9 +458,6 @@ class MailStore extends ChangeNotifier {
       case 'dense':
         dense = v == '1';
         prefs.setString('dense', v);
-      case 'snip':
-        snip = v == '1';
-        prefs.setString('snip', v);
       case 'follow':
         followWallpaper = v == '1';
         prefs.setString('follow', v);
@@ -890,10 +920,11 @@ class MailStore extends ChangeNotifier {
     final acc = accounts.where((a) => a.id == id).firstOrNull;
     if (src == null || acc == null) return;
     try {
-      final fresh = await src.reload(acc);
+      final fresh = _withOutgoing(id, await src.reload(acc));
       _keepLocalState(id, fresh);
       if (_signature(fresh) == _signature(_boxes[id] ?? const [])) return;
       _boxes[id] = fresh;
+      _rememberContacts();
       if (unified) {
         mails = _mergedBoxes();
       } else if (id == activeId) {
@@ -1424,6 +1455,7 @@ class MailStore extends ChangeNotifier {
       tmp.loadBlocks(last.body);
       final head =
           '\n${t('---------- Message transféré ----------')}\n${t('De : {0} <{1}>', [last.from.name, last.from.email])}\n${t('Objet : {0}', [m.subject])}\n\n';
+      final sign = '\n\n${signatureFor(fromFor(m))}';
       openCompose(
         ComposeInit(
           from: fromFor(m),
@@ -1432,8 +1464,12 @@ class MailStore extends ChangeNotifier {
           to: const [],
           subject: 'Fwd: ${stripRe(m.subject)}',
           atts: last.att.toList(),
-          text: head + tmp.text,
-          flags: [...RichController.gapFlags(head), ...tmp.flags],
+          text: sign + head + tmp.text,
+          flags: [
+            ...RichController.gapFlags(sign),
+            ...RichController.gapFlags(head),
+            ...tmp.flags,
+          ],
         ),
       );
       return;
@@ -1470,6 +1506,7 @@ class MailStore extends ChangeNotifier {
   void openCompose(ComposeInit i) {
     if (c != null) {
       saveDraft();
+      _copyToServer(c!);
       c!.timer?.cancel();
     }
     final cs = ComposeState(
@@ -1483,14 +1520,26 @@ class MailStore extends ChangeNotifier {
       from: i.from ?? fromFor(),
       quote: i.quote,
     );
+    if (source?.composer != null && (i.id ?? '').startsWith('draft:')) {
+      cs.engineId = i.id!.substring('draft:'.length);
+      cs.engineAtts = [...i.atts];
+    }
     cs.subject.text = i.subject;
+    final blank = i.mode == 'new' && i.text == null && i.blocks == null;
+    final text = blank ? '\n\n${signatureFor(cs.from)}' : i.text;
     if (i.blocks != null) {
       cs.body.loadBlocks(i.blocks!);
     } else {
       cs.body.setContent(
-        i.text ?? '',
-        i.flags ?? List<int>.filled((i.text ?? '').length, 0),
+        text ?? '',
+        blank
+            ? RichController.gapFlags(text!)
+            : i.flags ?? List<int>.filled((text ?? '').length, 0),
       );
+    }
+    if (i.mode != 'draft') {
+      final sig = signatureFor(cs.from);
+      if (sig.trim().isNotEmpty && cs.body.text.contains(sig)) cs.sigText = sig;
     }
     cs.body.addListener(() {});
     c = cs;
@@ -1511,6 +1560,7 @@ class MailStore extends ChangeNotifier {
         notifyListeners();
       }
     });
+
     notifyListeners();
   }
 
@@ -1519,8 +1569,12 @@ class MailStore extends ChangeNotifier {
     if (cs == null || !cs.dirty) return false;
     final subject = cs.subject.text;
     final blocks = cs.body.toBlocks();
-    final plainTxt = cs.body.text.trim();
+    final plainTxt =
+        cs.sigText.isNotEmpty && cs.body.text.trim() == cs.sigText.trim()
+        ? ''
+        : cs.body.text.trim();
     final empty =
+        !cs.fromChosen &&
         cs.to.isEmpty &&
         cs.cc.isEmpty &&
         subject.trim().isEmpty &&
@@ -1533,11 +1587,12 @@ class MailStore extends ChangeNotifier {
         cs.id = null;
         notifyListeners();
       }
+      _dropEngineDraft(cs);
       return false;
     }
     if (d == null) {
       d = Mail(
-        id: 'd${nextUid()}',
+        id: cs.engineId != null ? 'draft:${cs.engineId}' : 'd${nextUid()}',
         folder: 'drafts',
         from: senderFor(cs.from),
         to: [],
@@ -1569,8 +1624,194 @@ class MailStore extends ChangeNotifier {
       body: [...blocks, ...?cs.quote],
       att: [...cs.atts],
     );
+    _queuePush(cs);
     notifyListeners();
     return true;
+  }
+
+  /// Change l'adresse d'envoi ; la signature insérée devient celle de la nouvelle adresse.
+  void changeFrom(String email) {
+    final cs = c;
+    if (cs == null) return;
+    cs.from = email;
+    cs.fromChosen = true;
+    final next = signatureFor(email);
+    final old = cs.sigText;
+    final at = old.isEmpty ? -1 : cs.body.text.lastIndexOf(old);
+    if (at >= 0 && next != old) {
+      final text = cs.body.text;
+      final flags = cs.body.flags;
+      final keep = cs.body.selection;
+      final end = at + old.length;
+      cs.body.setContent(text.replaceRange(at, end, next), [
+        ...flags.take(at),
+        ...List<int>.filled(next.length, 0),
+        ...flags.skip(end),
+      ]);
+      final cursor = keep.baseOffset.clamp(0, cs.body.text.length);
+      cs.body.selection = TextSelection.collapsed(offset: cursor);
+      cs.sigText = next;
+    }
+    touch();
+  }
+
+  // ---- contacts ----
+
+  /// Messages envoyés connus, tous comptes confondus.
+  Iterable<Mail> _sentMails() => [
+    for (final l in source != null ? _boxes.values : [mails])
+      for (final m in l)
+        if (m.folder == 'sent') m,
+  ];
+
+  /// Met l'historique des destinataires à jour d'après les messages envoyés.
+  void _rememberContacts() {
+    if (contactBook.remember(_sentMails(), isMine)) {
+      prefs.setString('contactHistory', contactBook.encodeHistory());
+    }
+  }
+
+  /// Correspondants à montrer dans les réglages, après mise à jour de l'historique.
+  List<ContactEntry> contactEntries() {
+    _rememberContacts();
+    return contactBook.entries();
+  }
+
+  /// Personnes proposées à la saisie d'un destinataire : l'historique, puis (démonstration) les contacts fictifs.
+  List<Person> contactPeople() {
+    final known = [for (final e in contactEntries()) e.person];
+    if (source != null) return known;
+    final have = {for (final p in known) p.email.toLowerCase()};
+    return [
+      ...known,
+      for (final c in contacts)
+        if (!have.contains(c.email.toLowerCase()))
+          Person(contactBook.names[c.email.toLowerCase()] ?? c.name, c.email),
+    ];
+  }
+
+  /// Donne un nom à une adresse ; un nom vide rend le nom vu dans les messages.
+  void setContactName(String email, String name) {
+    final key = email.toLowerCase();
+    if (name.trim().isEmpty) {
+      contactBook.names.remove(key);
+    } else {
+      contactBook.names[key] = name.trim();
+    }
+    prefs.setString('contactNames', contactBook.encodeNames());
+    notifyListeners();
+  }
+
+  // ---- brouillons du moteur ----
+
+  /// Met l'enregistrement au moteur à la suite des précédents (jamais deux en même temps).
+  void _queuePush(ComposeState cs) {
+    if (source?.composer == null) return;
+    cs.push = cs.push.then((_) => _pushDraft(cs)).catchError((_) {
+      cs.saved = t('Enregistrement impossible');
+      notifyListeners();
+    });
+  }
+
+  /// Identité du moteur pour une adresse d'envoi.
+  String? _identityFor(String email, String account) => source
+      ?.identities[account]
+      ?.where((i) => i.address.toLowerCase() == email.toLowerCase())
+      .firstOrNull
+      ?.id;
+
+  /// Crée le brouillon dans le moteur au premier enregistrement, puis y recopie le contenu.
+  Future<void> _pushDraft(ComposeState cs) async {
+    final admin = source!.composer!;
+    final account = accountByEmail(cs.from)?.id ?? activeId;
+    final identity = _identityFor(cs.from, account);
+    if (cs.engineId == null) {
+      final origin = byId(cs.replyTo)?.msgs.last.ref;
+      final mode = origin == null
+          ? 'new'
+          : switch (cs.mode) {
+              'all' => 'reply_all',
+              'fwd' => 'forward',
+              _ => 'reply',
+            };
+      final created = await admin.create(
+        account,
+        identity: identity,
+        mode: mode,
+        message: origin,
+      );
+      cs.engineId = created.id;
+      _rekeyDraft(cs, 'draft:${created.id}');
+    }
+    final quote = cs.quote ?? const <Block>[];
+    final blocks = [...cs.body.toBlocks(), ...quote];
+    await admin.update(
+      cs.engineId!,
+      identity: identity,
+      to: cs.to,
+      cc: cs.cc,
+      bcc: cs.bcc,
+      subject: cs.subject.text,
+      text: blocksToText(blocks),
+      html: blocksToHtml(blocks),
+    );
+    await _syncAttachments(cs, admin);
+    cs.copyStale = true;
+  }
+
+  /// En quittant la rédaction : le brouillon est copié dans « Brouillons » sur le serveur.
+  void _copyToServer(ComposeState cs) {
+    final admin = source?.composer;
+    if (admin == null) return;
+    cs.push = cs.push
+        .then((_) async {
+          final id = cs.engineId;
+          if (id == null || !cs.copyStale) return;
+          cs.copyStale = false;
+          await admin.saveCopy(id);
+        })
+        .catchError((_) {
+          cs.copyStale = true;
+        });
+  }
+
+  /// Retire puis ajoute les pièces jointes pour que le moteur ait la même liste que l'écran.
+  Future<void> _syncAttachments(ComposeState cs, ComposeAdmin admin) async {
+    final wanted = cs.atts;
+    for (var i = cs.engineAtts.length - 1; i >= 0; i--) {
+      if (wanted.contains(cs.engineAtts[i])) continue;
+      await admin.detach(cs.engineId!, i);
+      cs.engineAtts.removeAt(i);
+    }
+    for (final a in wanted) {
+      if (cs.engineAtts.contains(a) || a.path == null) continue;
+      await admin.attach(cs.engineId!, a.path!);
+      cs.engineAtts.add(a);
+    }
+  }
+
+  /// Le brouillon local prend l'identifiant du moteur, pour que la relecture le retrouve.
+  void _rekeyDraft(ComposeState cs, String id) {
+    final d = byId(cs.id);
+    if (d != null) {
+      if (open == d.id) open = id;
+      d.id = id;
+    }
+    cs.id = id;
+  }
+
+  /// Supprime le brouillon du moteur (écran vidé ou abandonné).
+  void _dropEngineDraft(ComposeState cs) {
+    final admin = source?.composer;
+    if (admin == null) return;
+    cs.push = cs.push
+        .then((_) async {
+          final id = cs.engineId;
+          if (id == null) return;
+          cs.engineId = null;
+          await admin.delete(id);
+        })
+        .catchError((_) {});
   }
 
   void _leaveCompose() {
@@ -1588,6 +1829,7 @@ class MailStore extends ChangeNotifier {
     if (cs == null) return;
     cs.timer?.cancel();
     final saved = save ? saveDraft() : false;
+    if (save) _copyToServer(cs);
     c = null;
     _leaveCompose();
     notifyListeners();
@@ -1600,13 +1842,14 @@ class MailStore extends ChangeNotifier {
     cs.timer?.cancel();
     final had = byId(cs.id);
     if (had != null) mails = mails.where((x) => x != had).toList();
+    _dropEngineDraft(cs);
     c = null;
     _leaveCompose();
     notifyListeners();
     toast(had != null ? t('Brouillon supprimé') : t('Message abandonné'));
   }
 
-  void send([String? sched]) {
+  Future<void> send([String? sched]) async {
     final cs = c;
     if (cs == null) return;
     if (cs.to.isEmpty) {
@@ -1615,10 +1858,7 @@ class MailStore extends ChangeNotifier {
       toast('Ajoute au moins un destinataire', err: true);
       return;
     }
-    if (source != null) {
-      toast('Envoi réel pas encore branché sur le moteur', err: true);
-      return;
-    }
+    if (source != null) return _sendReal(cs, sched);
     cs.timer?.cancel();
     final blocks = [...cs.body.toBlocks(), ...?cs.quote];
     final init = ComposeInit(
@@ -1686,6 +1926,127 @@ class MailStore extends ChangeNotifier {
         openCompose(init);
       },
     );
+  }
+
+  /// Envoi par le moteur : brouillon enregistré, puis mis en file (annulable pendant le délai du moteur).
+  Future<void> _sendReal(ComposeState cs, String? sched) async {
+    final admin = source?.composer;
+    if (admin == null || _sending) return;
+    _sending = true;
+    cs.timer?.cancel();
+    cs.dirty = true;
+    try {
+      saveDraft();
+      await cs.push;
+      final id = cs.engineId;
+      if (id == null) throw const EngineException('draft_missing', '');
+      final action = await admin.send(
+        id,
+        at: sched == null ? null : scheduledMs(sched),
+      );
+      _afterSend(cs, id, action, sched);
+    } catch (_) {
+      toast(t('Envoi impossible, le message reste en brouillon'), err: true);
+    } finally {
+      _sending = false;
+    }
+  }
+
+  bool _sending = false;
+
+  /// Envois mis en file et pas encore visibles dans « Envoyés » : brouillon → (message affiché, fin de validité).
+  final Map<String, (Mail, int)> _outgoing = {};
+
+  void _afterSend(ComposeState cs, String draft, String action, String? sched) {
+    final local = byId(cs.id);
+    final account = accountByEmail(cs.from)?.id ?? activeId;
+    final shown = Mail(
+      id: 'sending:$draft',
+      folder: 'sent',
+      account: account,
+      from: senderFor(cs.from),
+      to: [...cs.to],
+      cc: [...cs.cc],
+      subject: cs.subject.text.trim().isEmpty
+          ? '(sans objet)'
+          : cs.subject.text.trim(),
+      date: nowMs(),
+      sched: sched,
+      msgs: [
+        Msg(
+          from: senderFor(cs.from),
+          date: nowMs(),
+          body: [...cs.body.toBlocks(), ...?cs.quote],
+          att: [...cs.atts],
+        ),
+      ],
+    );
+    final at = sched == null ? nowMs() : scheduledMs(sched);
+    _outgoing[draft] = (shown, at + 120000);
+    mails = [...mails.where((m) => m != local), shown];
+    if (!unified) _boxes[account] = mails;
+    _rememberContacts();
+    c = null;
+    _leaveCompose();
+    notifyListeners();
+    toast(
+      sched != null
+          ? t('Message programmé · {0}', [t(sched)])
+          : t('Message envoyé'),
+      label: t('Annuler'),
+      cb: () => _cancelSend(action, draft),
+      ms: 10000,
+    );
+    _after(at - nowMs() + 11000, () => _settleSend(draft, account));
+  }
+
+  /// Après le départ du message : synchronise puis relit jusqu'à ce que « Envoyés » le contienne.
+  Future<void> _settleSend(String draft, String account) async {
+    try {
+      await source?.syncNow();
+    } catch (_) {
+      /* la relecture suivante réessaie */
+    }
+    for (var i = 0; i < 8 && _outgoing.containsKey(draft); i++) {
+      await Future<void>.delayed(const Duration(seconds: 2));
+      await _reloadOnce(account);
+    }
+  }
+
+  /// Ajoute aux messages relus les envois pas encore revenus du serveur.
+  List<Mail> _withOutgoing(String account, List<Mail> fresh) {
+    final now = nowMs();
+    final keep = <Mail>[];
+    for (final e in _outgoing.entries.toList()) {
+      final (m, until) = e.value;
+      if (m.account != account) continue;
+      final arrived = fresh.any(
+        (x) =>
+            x.folder == 'sent' &&
+            x.subject == m.subject &&
+            x.date >= m.date - 60000,
+      );
+      if (arrived || now > until) {
+        _outgoing.remove(e.key);
+      } else {
+        keep.add(m);
+      }
+    }
+    return keep.isEmpty ? fresh : [...fresh, ...keep];
+  }
+
+  Future<void> _cancelSend(String action, String draft) async {
+    try {
+      await source!.composer!.cancelSend(action);
+      final gone = _outgoing.remove(draft)?.$1;
+      if (gone != null) mails = mails.where((m) => m != gone).toList();
+      for (final a in accounts) {
+        await _reloadOnce(a.id);
+      }
+      openMail('draft:$draft');
+    } catch (_) {
+      toast(t('Annulation impossible, le message est déjà parti'), err: true);
+    }
   }
 
   void autoReply(Mail sent, Mail? orig) {

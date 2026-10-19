@@ -20,6 +20,11 @@ mira-provider-generic.workspace = true
 serde.workspace = true
 toml.workspace = true
 tracing.workspace = true
+ring.workspace = true
+
+[build-dependencies]
+ring.workspace = true
+toml = { version = "1", default-features = false, features = ["parse", "display", "serde"] }
 
 [dev-dependencies]
 tempfile.workspace = true

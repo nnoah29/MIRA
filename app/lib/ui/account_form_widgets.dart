@@ -131,6 +131,7 @@ class FormField2 extends StatelessWidget {
   final Widget? trailing;
   final double? width;
   final Key? fieldKey;
+  final int maxLines;
   const FormField2({
     super.key,
     required this.label,
@@ -142,6 +143,7 @@ class FormField2 extends StatelessWidget {
     this.trailing,
     this.width,
     this.fieldKey,
+    this.maxLines = 1,
   });
 
   @override
@@ -152,8 +154,10 @@ class FormField2 extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Mono(label, size: 10.5, ls: .12, color: p.muted, height: null),
-          const SizedBox(height: 6),
+          if (label.isNotEmpty) ...[
+            Mono(label, size: 10.5, ls: .12, color: p.muted, height: null),
+            const SizedBox(height: 6),
+          ],
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
@@ -169,7 +173,11 @@ class FormField2 extends StatelessWidget {
                     obscureText: secret,
                     enableSuggestions: !secret,
                     autocorrect: false,
-                    keyboardType: keyboard,
+                    keyboardType: maxLines > 1
+                        ? TextInputType.multiline
+                        : keyboard,
+                    minLines: maxLines,
+                    maxLines: maxLines,
                     onChanged: onChanged,
                     cursorColor: p.accent,
                     cursorWidth: 1,

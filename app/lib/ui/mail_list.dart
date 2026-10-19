@@ -21,7 +21,7 @@ class MailsColumn extends StatelessWidget {
     final mobile = MediaQuery.sizeOf(context).width <= 760;
     final hp = mobile ? 16.0 : 24.0;
     final title = s.label != null
-        ? t(labelDefs[s.label]!.n)
+        ? s.labelTitle(s.label!)
         : t(folderById(s.folder).n);
     final sc = s.scope();
     final un = s.nonRead(sc);
@@ -107,6 +107,40 @@ class MailsColumn extends StatelessWidget {
               spacing: 6,
               runSpacing: 6,
               children: [
+                if (s.only != null)
+                  Hov(
+                    key: const ValueKey('only-chip'),
+                    onTap: () => s.setOnly(s.only),
+                    tip: t('Retirer le filtre'),
+                    builder: (_, h) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 11,
+                        vertical: 6.25,
+                      ),
+                      decoration: BoxDecoration(
+                        color: p.accentSoft,
+                        border: Border.all(color: p.accent),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            s.only == 'unread'
+                                ? t('Non lus')
+                                : t('Avec pièces jointes'),
+                            style: Fonts.mono(
+                              size: 11,
+                              color: p.accent,
+                              ls: 0,
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Ico('x', size: 11, color: h ? p.text : p.accent),
+                        ],
+                      ),
+                    ),
+                  ),
                 for (final (k, n) in pills)
                   Hov(
                     onTap: () => s.setPill(k),
@@ -337,6 +371,10 @@ class _MailListViewState extends State<MailListView> {
                 textAlign: TextAlign.center,
                 style: Fonts.sans(size: 15, color: p.dim),
               ),
+              if (s.source != null && s.q.trim().length >= 2) ...[
+                const SizedBox(height: 16),
+                const _ServerSearchRow(),
+              ],
             ],
           ),
         ),
@@ -376,6 +414,101 @@ class _MailListViewState extends State<MailListView> {
                 ),
               ],
             ),
+          if (s.source != null && s.q.trim().length >= 2)
+            const SliverToBoxAdapter(child: _ServerSearchRow())
+          else if (s.q.trim().isEmpty && s.moreAvailable)
+            const SliverToBoxAdapter(child: _LoadMoreRow())
+          else if (s.q.trim().isEmpty && (s.canExtend || s.extending != null))
+            const SliverToBoxAdapter(child: _ExtendRow()),
+        ],
+      ),
+    );
+  }
+}
+
+/// Pied de liste : charger les messages plus anciens.
+class _LoadMoreRow extends StatelessWidget {
+  const _LoadMoreRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<MailStore>();
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Center(
+        child: Btn(
+          key: const ValueKey('load-more'),
+          icon: 'chev',
+          label: s.loadingMore
+              ? t('Chargement…')
+              : t('Afficher les messages plus anciens'),
+          onTap: s.loadingMore ? null : s.loadMore,
+        ),
+      ),
+    );
+  }
+}
+
+/// Pied de liste : tout le local est affiché, aller chercher plus ancien sur le serveur.
+class _ExtendRow extends StatelessWidget {
+  const _ExtendRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<MailStore>();
+    final busy = s.extending != null;
+    final pct = busy ? s.source?.syncStates[s.extending!.$1]?.percent : null;
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Center(
+        child: busy
+            ? Btn(
+                key: const ValueKey('extend-cancel'),
+                icon: 'x',
+                label: pct == null
+                    ? t('Récupération sur le serveur… Annuler')
+                    : t('Récupération sur le serveur… {0} % Annuler', [pct]),
+                onTap: s.cancelExtend,
+              )
+            : Btn(
+                key: const ValueKey('extend'),
+                icon: 'refresh',
+                label: t('Remonter plus loin sur le serveur'),
+                onTap: s.extendWindow,
+              ),
+      ),
+    );
+  }
+}
+
+/// Pied de liste d'une recherche : étendre la recherche au serveur, et son bilan.
+class _ServerSearchRow extends StatelessWidget {
+  const _ServerSearchRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<MailStore>();
+    final p = context.pal;
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          Btn(
+            key: const ValueKey('search-server'),
+            icon: 'search',
+            label: s.serverSearching
+                ? t('Recherche sur le serveur…')
+                : t('Chercher aussi sur le serveur'),
+            onTap: s.serverSearching ? null : s.searchServer,
+          ),
+          if (s.serverNote != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              s.serverNote!,
+              textAlign: TextAlign.center,
+              style: Fonts.sans(size: 13.5, color: p.dim),
+            ),
+          ],
         ],
       ),
     );
@@ -415,15 +548,18 @@ class MailRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<MailStore>();
     final p = context.pal;
-    final out = m.folder == 'sent' || m.folder == 'drafts';
+    final out =
+        m.folder == 'sent' || m.folder == 'drafts' || m.folder == 'outbox';
     final who = out
         ? t('À : {0}', [
             m.to.isEmpty
                 ? t('(aucun destinataire)')
-                : m.to.map((x) => x.name).join(', '),
+                : m.to.map(s.shown).join(', '),
           ])
-        : m.from.name;
-    final avName = out ? (m.to.isNotEmpty ? m.to[0].name : '?') : m.from.name;
+        : s.shown(m.from);
+    final avName = out
+        ? (m.to.isNotEmpty ? s.shown(m.to[0]) : '?')
+        : s.shown(m.from);
     final last = m.msgs.last;
     final hasAtt = m.msgs.any((x) => x.att.isNotEmpty);
     final isSel = s.open == m.id;
@@ -433,7 +569,14 @@ class MailRow extends StatelessWidget {
     final snipText = plainOf(last.body);
     final snip = snipText.length > 170 ? snipText.substring(0, 170) : snipText;
     String? tag;
-    if (m.folder == 'drafts') {
+    final o = m.outbox;
+    if (o != null) {
+      tag = switch (o.state) {
+        'failed' => t('Échec de l’envoi'),
+        'uncertain' => t('Envoi incertain'),
+        _ => t('Départ à {0}', [hhmm(o.at)]),
+      };
+    } else if (m.folder == 'drafts') {
       tag = t('Brouillon');
     } else if (m.folder == 'snoozed') {
       tag = t('Reporté · {0}', [t(m.snooze ?? '')]);
@@ -643,14 +786,15 @@ class MailRow extends StatelessWidget {
                           Ico('clip', size: 13, color: p.dim),
                           const SizedBox(width: 8),
                         ],
-                        for (final lb in m.labels.take(2)) ...[
-                          Square(8, Color(labelDefs[lb]!.c)),
-                          const SizedBox(width: 8),
-                        ],
+                        for (final lb in m.labels.take(2))
+                          if (s.labelDef(lb) != null) ...[
+                            Square(8, Color(s.labelDef(lb)!.c)),
+                            const SizedBox(width: 8),
+                          ],
                         _Star(m, h),
                       ],
                     ),
-                    if (!dense && s.snip)
+                    if (!dense)
                       Text(
                         snip,
                         maxLines: 2,

@@ -60,7 +60,9 @@ void main() {
 
     test('regroupement par date', () {
       expect(groupOf(nowMs()), "Aujourd'hui");
-      expect(groupOf(nowMs() - 26 * hourMs), 'Hier');
+      final now = DateTime.now();
+      final yesterdayNoon = DateTime(now.year, now.month, now.day - 1, 12);
+      expect(groupOf(yesterdayNoon.millisecondsSinceEpoch), 'Hier');
       expect(groupOf(nowMs() - 4 * dayMs), 'Cette semaine');
       expect(groupOf(nowMs() - 20 * dayMs), 'Plus ancien');
     });
@@ -567,8 +569,9 @@ void main() {
       expect(s.theme, 'light');
       expect(s.dense, isTrue);
       expect(s.sig, 'Salut');
-      s.setSetting('snip', '0');
-      expect(s.prefs.getString('snip'), '0');
+      s.setSetting('dense', '0');
+      expect(s.dense, isFalse);
+      expect(s.prefs.getString('dense'), '0');
       s.dispose();
     });
   });

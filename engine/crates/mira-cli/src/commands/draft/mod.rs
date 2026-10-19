@@ -4,6 +4,7 @@ pub mod attachments;
 pub mod create;
 pub mod recipients;
 pub mod resolve_send;
+pub mod save_copy;
 pub mod send;
 pub mod update;
 
@@ -28,6 +29,8 @@ pub enum DraftCommand {
     Detach(attachments::DetachArgs),
     /// Supprime un brouillon.
     Delete(DraftArg),
+    /// Dépose une copie du brouillon dans la boîte Brouillons du serveur.
+    SaveCopy(save_copy::SaveCopyArgs),
     /// Affiche un brouillon.
     Get(DraftArg),
     /// Liste les brouillons d'un compte.
@@ -53,6 +56,7 @@ pub fn build_request(
         DraftCommand::Attach(args) => attachments::attach_request(args),
         DraftCommand::Detach(args) => attachments::detach_request(args),
         DraftCommand::Delete(target) => ComposeRequest::DeleteDraft { draft: target.id() },
+        DraftCommand::SaveCopy(args) => save_copy::request(args, context),
         DraftCommand::Get(target) => ComposeRequest::GetDraft { draft: target.id() },
         DraftCommand::List(target) => ComposeRequest::ListDrafts {
             account: target.id(),
@@ -79,6 +83,7 @@ pub fn wait_policy(command: &DraftCommand) -> WaitPolicy {
         | DraftCommand::Attach(_)
         | DraftCommand::Detach(_)
         | DraftCommand::Delete(_)
+        | DraftCommand::SaveCopy(_)
         | DraftCommand::Get(_)
         | DraftCommand::List(_)
         | DraftCommand::CancelSend(_)

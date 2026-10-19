@@ -247,6 +247,31 @@ void main() {
     expect(find.text('Ce compte doit être reconnecté.'), findsOneWidget);
   });
 
+  testWidgets('un onglet par compte : seuls les réglages du compte choisi', (
+    tester,
+  ) async {
+    await _pump(tester);
+    expect(find.byKey(const ValueKey('name-a1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('name-a2')), findsNothing);
+    await _tap(tester, 'account-head-a2');
+    expect(find.byKey(const ValueKey('name-a1')), findsNothing);
+    expect(find.byKey(const ValueKey('name-a2')), findsOneWidget);
+  });
+
+  testWidgets('l’ajout de compte est un onglet à côté des comptes', (
+    tester,
+  ) async {
+    await _pump(tester);
+    expect(find.byKey(const ValueKey('add-account-inline')), findsNothing);
+    await _tap(tester, 'settings-add-account');
+    expect(find.byKey(const ValueKey('add-account-inline')), findsOneWidget);
+    expect(find.byKey(const ValueKey('account-head-a1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('name-a1')), findsNothing);
+    await _tap(tester, 'account-head-a1');
+    expect(find.byKey(const ValueKey('add-account-inline')), findsNothing);
+    expect(find.byKey(const ValueKey('name-a1')), findsOneWidget);
+  });
+
   testWidgets('renommer, fenêtre de synchro, pause puis reprise', (
     tester,
   ) async {
@@ -343,6 +368,7 @@ void main() {
     expect(add['display_name'], 'Nouveau');
     expect(add['is_default'], true);
     expect(find.text('nouveau@ex.org'), findsOneWidget);
+    await _settle(tester);
   });
 
   testWidgets('adresse détectée dans les messages envoyés : ajout en un clic', (

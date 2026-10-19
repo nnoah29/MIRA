@@ -6,7 +6,7 @@ use mira_vocabulary::{
     IdentityId, MessageId, Timestamp,
 };
 
-use super::compose_drafts::{creation_requests, editing_requests};
+use super::compose_drafts::{creation_requests, editing_requests, server_copy_requests};
 use super::compose_sending::sending_requests;
 use super::{Named, numbered};
 
@@ -42,7 +42,13 @@ fn sample_draft() -> Draft {
 
 /// Au moins une requête par variante de `ComposeRequest`
 pub fn requests() -> Vec<Named<Request>> {
-    let items = [creation_requests(), editing_requests(), sending_requests()].concat();
+    let items = [
+        creation_requests(),
+        editing_requests(),
+        server_copy_requests(),
+        sending_requests(),
+    ]
+    .concat();
     let ops: Vec<&str> = items.iter().map(op_name).collect();
     let names = numbered("compose", &ops);
     let wrap = |request| Request::Compose(request);
@@ -79,6 +85,7 @@ pub fn op_name(request: &ComposeRequest) -> &'static str {
         ComposeRequest::AttachFile { .. } => "attach_file",
         ComposeRequest::RemoveAttachment { .. } => "remove_attachment",
         ComposeRequest::DeleteDraft { .. } => "delete_draft",
+        ComposeRequest::SaveDraftCopy { .. } => "save_draft_copy",
         ComposeRequest::GetDraft { .. } => "get_draft",
         ComposeRequest::ListDrafts { .. } => "list_drafts",
         ComposeRequest::SendDraft { .. } => "send_draft",

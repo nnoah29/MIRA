@@ -3,17 +3,21 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../data/format.dart';
 import '../engine/account_admin.dart';
 import '../engine/account_setup.dart';
 import '../engine/engine_client.dart';
 import '../i18n/i18n.dart';
 import '../state/store.dart';
-import '../theme/icons.dart';
 import '../theme/app_theme.dart';
 import 'account_form_widgets.dart';
+import 'account_tabs.dart';
+import 'add_account_panel.dart';
 import 'html_body.dart';
 import 'identities_box.dart';
+import 'labels_box.dart';
+import 'pending_actions.dart';
+import 'sync_status_line.dart';
+import 'synced_mailboxes.dart';
 import 'widgets.dart';
 
 String _message(Object e) =>
@@ -28,7 +32,7 @@ String _message(Object e) =>
   _ => (t('Erreur'), true),
 };
 
-/// Paramètres › Comptes : un bloc par compte (état, nom, synchro, serveurs, identités, suppression).
+/// Paramètres › Comptes : un onglet par compte, avec ses réglages en dessous.
 class AccountsSettings extends StatefulWidget {
   const AccountsSettings({super.key});
 
@@ -40,7 +44,8 @@ class _AccountsSettingsState extends State<AccountsSettings> {
   late final AccountAdmin admin;
   late final AccountSetup setup;
   List<AccountDetail>? accounts;
-  String? error;
+  String? error, selectedId;
+  bool adding = false;
 
   @override
   void initState() {
@@ -69,7 +74,11 @@ class _AccountsSettingsState extends State<AccountsSettings> {
   @override
   Widget build(BuildContext context) {
     final p = context.pal;
-    final s = context.read<MailStore>();
+    final s = context.watch<MailStore>();
+    if (s.wantsAddAccount) {
+      adding = true;
+      s.wantsAddAccount = false;
+    }
     if (error != null) {
       return Padding(
         padding: const EdgeInsets.all(20),
@@ -83,49 +92,84 @@ class _AccountsSettingsState extends State<AccountsSettings> {
         child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
       );
     }
+    final current =
+        list.where((a) => a.id == selectedId).firstOrNull ?? list.firstOrNull;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final (i, a) in list.indexed)
+        _tabs(list, current),
+        if (adding)
+          AddAccountPanel(
+            key: const ValueKey('add-account-inline'),
+            embedded: true,
+            onAdded: _added,
+          )
+        else if (current != null)
           AccountCard(
-            key: ValueKey('account-${a.id}'),
-            account: a,
+            key: ValueKey('account-${current.id}'),
+            account: current,
             admin: admin,
             setup: setup,
-            initiallyOpen: list.length == 1 || i == 0,
             onChanged: changed,
           ),
-        Padding(
-          padding: const EdgeInsets.all(20),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Btn(
-              key: const ValueKey('settings-add-account'),
-              icon: 'plus',
-              label: t('Ajouter un compte'),
-              go: true,
-              onTap: s.openAddAccount,
-            ),
-          ),
-        ),
       ],
+    );
+  }
+
+  /// Compte créé dans l'onglet d'ajout : on le sélectionne et on relit la liste.
+  Future<void> _added(String id) async {
+    await load();
+    if (mounted) {
+      setState(() {
+        adding = false;
+        selectedId = id;
+      });
+    }
+  }
+
+  /// Un onglet par compte, puis l'ajout d'un compte.
+  Widget _tabs(List<AccountDetail> list, AccountDetail? current) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.end,
+        children: [
+          for (final a in list)
+            KeyedSubtree(
+              key: ValueKey('account-head-${a.id}'),
+              child: AccountTab(
+                account: a,
+                stateText: stateLabel(a).$1,
+                bad: stateLabel(a).$2,
+                selected: !adding && a.id == current?.id,
+                onTap: () => setState(() {
+                  adding = false;
+                  selectedId = a.id;
+                }),
+              ),
+            ),
+          AddAccountTab(
+            key: const ValueKey('settings-add-account'),
+            selected: adding,
+            onTap: () => setState(() => adding = true),
+          ),
+        ],
+      ),
     );
   }
 }
 
-/// Bloc d'un compte : en-tête (état) et détails dépliables.
+/// Détails du compte sélectionné : nom, synchro, serveurs, identités, libellés, suppression.
 class AccountCard extends StatefulWidget {
   final AccountDetail account;
   final AccountAdmin admin;
   final AccountSetup setup;
-  final bool initiallyOpen;
   final Future<void> Function() onChanged;
   const AccountCard({
     super.key,
     required this.account,
     required this.admin,
     required this.setup,
-    required this.initiallyOpen,
     required this.onChanged,
   });
 
@@ -134,7 +178,6 @@ class AccountCard extends StatefulWidget {
 }
 
 class _AccountCardState extends State<AccountCard> {
-  late bool open = widget.initiallyOpen;
   late final name = TextEditingController(text: widget.account.displayName);
   final password = TextEditingController();
   late final imapHost = TextEditingController(text: widget.account.imap?.host);
@@ -240,89 +283,7 @@ class _AccountCardState extends State<AccountCard> {
   }, done: t('Mot de passe enregistré.'));
 
   @override
-  Widget build(BuildContext context) {
-    final p = context.pal;
-    final (label, bad) = stateLabel(a);
-    return Container(
-      margin: const EdgeInsets.fromLTRB(0, 0, 0, 1),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: p.lineSoft)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Hov(
-            key: ValueKey('account-head-${a.id}'),
-            onTap: () => setState(() => open = !open),
-            builder: (_, h) => Container(
-              color: h ? p.surface2 : null,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              child: Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    alignment: Alignment.center,
-                    color: Color(colorOf(a.address)),
-                    child: Text(
-                      initials(
-                        a.displayName.isEmpty ? a.address : a.displayName,
-                      ),
-                      style: Fonts.sans(
-                        size: 13,
-                        w: FontWeight.w700,
-                        color: const Color(0xFF1b1b1b),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          a.displayName,
-                          style: Fonts.sans(
-                            size: 15,
-                            w: FontWeight.w500,
-                            color: p.text,
-                          ),
-                        ),
-                        Text(
-                          a.address,
-                          style: Fonts.sans(size: 13.5, color: p.dim),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (a.pendingActions > 0)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: Mono(
-                        t('{0} en attente', ['${a.pendingActions}']),
-                        size: 10.5,
-                        color: p.muted,
-                        height: null,
-                      ),
-                    ),
-                  Mono(
-                    label,
-                    size: 10.5,
-                    ls: .12,
-                    color: bad ? p.accent : p.muted,
-                    height: null,
-                  ),
-                  const SizedBox(width: 10),
-                  Ico(open ? 'minus' : 'plus', size: 14, color: p.dim),
-                ],
-              ),
-            ),
-          ),
-          if (open) _details(p),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => _details(context.pal);
 
   Widget _row(Pal p, String title, Widget child) => Padding(
     padding: const EdgeInsets.only(bottom: 18),
@@ -345,8 +306,9 @@ class _AccountCardState extends State<AccountCard> {
           if (a.needsAuth) _reauthBlock(p),
           _row(
             p,
-            t('NOM AFFICHÉ'),
+            t('NOM DU COMPTE'),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(
                   width: 300,
@@ -387,38 +349,55 @@ class _AccountCardState extends State<AccountCard> {
           ),
           _row(
             p,
+            t('DOSSIERS SYNCHRONISÉS'),
+            SyncedMailboxes(account: a, admin: widget.admin),
+          ),
+          _row(
+            p,
             t('COMPTE'),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Btn(
-                  key: ValueKey('sync-${a.id}'),
-                  icon: 'refresh',
-                  label: t('Synchroniser maintenant'),
-                  onTap: busy || a.paused
-                      ? null
-                      : () => _run(
-                          () => widget.setup.startSync(a.id),
-                          done: t('Synchronisation lancée.'),
-                        ),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    Btn(
+                      key: ValueKey('sync-${a.id}'),
+                      icon: 'refresh',
+                      label: t('Synchroniser maintenant'),
+                      onTap: busy || a.paused
+                          ? null
+                          : () => _run(
+                              () => widget.setup.startSync(a.id),
+                              done: t('Synchronisation lancée.'),
+                            ),
+                    ),
+                    Btn(
+                      key: ValueKey('pause-${a.id}'),
+                      label: a.paused ? t('Reprendre') : t('Mettre en pause'),
+                      onTap: busy
+                          ? null
+                          : () => _run(
+                              () => a.paused
+                                  ? widget.admin.resume(a.id)
+                                  : widget.admin.pause(a.id),
+                            ),
+                    ),
+                  ],
                 ),
-                Btn(
-                  key: ValueKey('pause-${a.id}'),
-                  label: a.paused ? t('Reprendre') : t('Mettre en pause'),
-                  onTap: busy
-                      ? null
-                      : () => _run(
-                          () => a.paused
-                              ? widget.admin.resume(a.id)
-                              : widget.admin.pause(a.id),
-                        ),
-                ),
+                SyncStatusLine(account: a, admin: widget.admin),
               ],
             ),
           ),
+          _row(
+            p,
+            t('ACTIONS EN ATTENTE'),
+            PendingActions(account: a, admin: widget.admin),
+          ),
           if (a.imap != null) _serversBlock(p),
           IdentitiesBox(account: a, admin: widget.admin),
+          LabelsBox(accountId: a.id),
           _dangerBlock(p),
           if (busy)
             Padding(

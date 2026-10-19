@@ -41,6 +41,10 @@ pub enum ComposeRequest {
     DeleteDraft {
         draft: DraftId,
     },
+    SaveDraftCopy {
+        draft: DraftId,
+        idempotency_key: IdempotencyKey,
+    },
     GetDraft {
         draft: DraftId,
     },

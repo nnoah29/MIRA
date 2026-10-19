@@ -10,6 +10,7 @@ import 'engine_client.dart';
 /// Chemins où chercher la bibliothèque du moteur, du plus explicite au plus courant.
 List<String> bridgeLibraryCandidates() => [
   ?Platform.environment['MIRA_BRIDGE_LIB'],
+  '${File(Platform.resolvedExecutable).parent.path}/lib/libmira_bridge.so',
   '../bridge/target/release/libmira_bridge.so',
   '../bridge/target/debug/libmira_bridge.so',
   'libmira_bridge.so',
@@ -28,12 +29,22 @@ class RustEngineClient implements EngineClient {
   RustEngineClient._();
 
   /// Charge la bibliothèque, vérifie le contrat et ouvre le profil.
+  /// `home` et `secretsKey` remplacent le dossier de données et le trousseau du système (Android).
   static Future<RustEngineClient> open({
     String profile = 'default',
     int? pollSecs,
+    String? home,
+    Uint8List? secretsKey,
   }) async {
     await RustLib.init(externalLibrary: openBridgeLibrary());
-    openEnvelope(await ffi.openEngine(profile: profile, pollSecs: pollSecs));
+    openEnvelope(
+      await ffi.openEngine(
+        profile: profile,
+        pollSecs: pollSecs,
+        home: home,
+        secretsKey: secretsKey,
+      ),
+    );
     return RustEngineClient._();
   }
 

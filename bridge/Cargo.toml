@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.99"
 publish = false
+license = "MIT"
 description = "Pont FFI (flutter_rust_bridge) entre l'interface Flutter et le moteur MIRA"
 
 [lib]
@@ -22,6 +23,7 @@ mira-assembly = { path = "../engine/crates/mira-assembly" }
 flutter_rust_bridge = "=2.11.1"
 serde_json = "1"
 base64 = "0.22"
+ring = "0.17"
 mail-parser = "0.11"
 tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "sync", "time"] }
 

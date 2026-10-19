@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show Uint8List;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -8,13 +10,23 @@ import '../data/format.dart';
 import '../data/html_lite.dart';
 import '../data/models.dart';
 import '../data/seed.dart';
+import '../engine/blocks_html.dart';
+import '../engine/compose_admin.dart';
+import '../engine/engine_client.dart';
+import '../engine/label_admin.dart';
+import '../engine/message_actions.dart';
 import '../engine/mail_source.dart';
+import '../engine/sync_state.dart';
 import '../theme/wall_source.dart';
 import '../theme/wall_theme.dart';
 import '../theme/app_theme.dart';
 import 'assistant.dart';
+import 'contacts.dart';
+import 'folder_map.dart';
 import 'image_policy.dart';
 import 'rich_controller.dart';
+import 'mail_notifier.dart';
+import 'unsubscribe.dart';
 import '../i18n/i18n.dart';
 
 enum PaneView { empty, read, compose, assistant, settings, addAccount }
@@ -64,6 +76,24 @@ class ComposeState {
   String saved = '';
   bool center = false;
   int shake = 0;
+
+  /// Signature insérée dans le corps (vide : aucune) ; remplacée si l'expéditeur change.
+  String sigText = '';
+
+  /// L'expéditeur a été choisi à la main : le brouillon existe même sans autre contenu.
+  bool fromChosen = false;
+
+  /// Brouillon correspondant dans le moteur (`null` : pas encore créé).
+  String? engineId;
+
+  /// Pièces jointes déjà confiées au moteur, dans son ordre.
+  List<Attachment> engineAtts = [];
+
+  /// Le brouillon du moteur a changé depuis la dernière copie sur le serveur.
+  bool copyStale = false;
+
+  /// Enregistrements en cours, exécutés l'un après l'autre.
+  Future<void> push = Future.value();
   ComposeState({
     this.id,
     this.replyTo,
@@ -111,7 +141,16 @@ class MailStore extends ChangeNotifier {
   /// Données réelles du moteur (`null` : données fictives de démonstration).
   final MailSource? source;
   StreamSubscription<String>? _changeSub;
+  StreamSubscription<void>? _syncSub;
+
+  /// Historique des destinataires et noms choisis.
+  late final ContactBook contactBook;
   MailStore(this.prefs, {bool watchWallpaper = false, this.source}) {
+    contactBook = ContactBook.decode(
+      prefs.getString('contactNames'),
+      prefs.getString('contactHistory'),
+      prefs.getString('contactRemoved'),
+    );
     followWallpaper = prefs.getString('follow') != '0';
     lang = AppLang.fromCode(prefs.getString('lang'));
     appLang = lang;
@@ -129,7 +168,6 @@ class MailStore extends ChangeNotifier {
     theme = prefs.getString('theme') == 'light' ? 'light' : 'dark';
     accentHex = prefs.getString('accent');
     dense = prefs.getString('dense') == '1';
-    snip = prefs.getString('snip') != '0';
     live = prefs.getString('live') != '0';
     sig = prefs.getString('sig') ?? 'Cordialement,\nNoah';
     final extra = <Account>[];
@@ -151,7 +189,15 @@ class MailStore extends ChangeNotifier {
     if (source != null) {
       _applyIdentities();
       _boxes.addAll(source!.boxes);
+      _loadSnoozes();
+      for (final l in _boxes.values) {
+        _applySnoozes(l);
+      }
       _changeSub = source!.changes.listen(_reloadAccount);
+      _syncSub = source!.syncEvents.listen((_) {
+        _extensionProgress();
+        notifyListeners();
+      });
     }
     final saved = prefs.getString('account');
     unified = saved == 'all';
@@ -163,6 +209,10 @@ class MailStore extends ChangeNotifier {
       mails = source != null ? (_boxes[active.id] ?? []) : seedAccount(active);
     }
     chat = [_welcome()];
+    if (source != null) {
+      wakeSnoozed();
+      _armWake();
+    }
   }
 
   // ---- synchronisation ----
@@ -267,7 +317,7 @@ class MailStore extends ChangeNotifier {
     return Color(0xFF000000 | int.parse(h, radix: 16));
   }
 
-  late bool dense, snip, live;
+  late bool dense, live;
   late String sig;
   late List<ChatMsg> chat;
   bool busy = false;
@@ -308,10 +358,14 @@ class MailStore extends ChangeNotifier {
   @override
   void dispose() {
     _changeSub?.cancel();
+    _syncSub?.cancel();
+    _searchTimer?.cancel();
+    _wake?.cancel();
     _wallSub?.cancel();
     for (final t in _timers) {
       t.cancel();
     }
+    c?.timer?.cancel();
     super.dispose();
   }
 
@@ -321,7 +375,120 @@ class MailStore extends ChangeNotifier {
     for (final m in mails) {
       if (m.id == id) return m;
     }
+    for (final m in [..._hits, ..._deep]) {
+      if (m.id == id) return m;
+    }
     return null;
+  }
+
+  // ---- messages plus anciens ----
+  bool loadingMore = false;
+
+  /// Comptes de la vue courante ayant des messages plus anciens non chargés.
+  List<String> _deeper() {
+    final src = source;
+    if (src == null) return const [];
+    return [
+      for (final a in accounts)
+        if ((unified || a.id == activeId) && src.hasMore(a.id)) a.id,
+    ];
+  }
+
+  bool get moreAvailable => _deeper().isNotEmpty;
+
+  /// Charge une page de plus par boîte pour les comptes de la vue.
+  Future<void> loadMore() async {
+    final src = source;
+    final ids = _deeper();
+    if (src == null || ids.isEmpty || loadingMore) return;
+    loadingMore = true;
+    notifyListeners();
+    try {
+      for (final id in ids) {
+        src.readDeeper(id);
+        await _reloadOnce(id);
+      }
+    } finally {
+      loadingMore = false;
+      notifyListeners();
+    }
+  }
+
+  // ---- recherche dans l'index du moteur ----
+  List<Mail> _hits = const [];
+  String _hitsFor = '';
+  Timer? _searchTimer;
+
+  /// Recherche sur le serveur en cours, et son bilan une fois finie (`null` : pas lancée pour cette requête).
+  bool serverSearching = false;
+  String? serverNote;
+
+  /// Étend la recherche au serveur : trouve aussi des messages dont le corps n'est pas téléchargé.
+  Future<void> searchServer() async {
+    final src = source;
+    final asked = q;
+    if (src == null || asked.trim().length < 2 || serverSearching) return;
+    serverSearching = true;
+    serverNote = null;
+    notifyListeners();
+    try {
+      final r = await src.searchServer(asked.trim());
+      if (q != asked) return;
+      final have = {for (final m in _hits) m.id};
+      final loaded = {
+        for (final l in _boxes.values)
+          for (final m in l) m.id: m,
+      };
+      _hits = [
+        ..._hits,
+        for (final m in r.found)
+          if (!have.contains(m.id)) loaded[m.id] ?? m,
+      ];
+      _hitsFor = asked;
+      serverNote = _serverNoteOf(r);
+    } catch (_) {
+      if (q == asked) serverNote = t('Recherche sur le serveur impossible.');
+    } finally {
+      serverSearching = false;
+      notifyListeners();
+    }
+  }
+
+  String _serverNoteOf(ServerSearch r) {
+    final parts = [
+      if (r.unsynced > 0)
+        t('{0} message(s) du serveur ne sont pas synchronisés.', [r.unsynced]),
+      if (r.truncated) t('Résultats limités aux plus récents.'),
+    ];
+    return parts.isEmpty
+        ? t('Recherche sur le serveur terminée.')
+        : parts.join(' ');
+  }
+
+  /// Lance la recherche du moteur après une courte pause de frappe ; l'affichage local sert en attendant.
+  void _scheduleSearch(String v) {
+    _searchTimer?.cancel();
+    final src = source;
+    if (src == null || v.trim().length < 2) {
+      _hits = const [];
+      _hitsFor = '';
+      return;
+    }
+    _searchTimer = Timer(const Duration(milliseconds: 250), () async {
+      try {
+        final found = await src.search(v.trim());
+        if (q != v) return;
+        final loaded = {
+          for (final l in _boxes.values)
+            for (final m in l) m.id: m,
+        };
+        _hits = [for (final m in found) loaded[m.id] ?? m];
+        _hitsFor = v;
+        notifyListeners();
+      } catch (_) {
+        /* recherche indisponible : le filtre local continue */
+      }
+    });
   }
 
   bool hidden(Mail m) => m.folder == 'trash' || m.folder == 'spam';
@@ -333,26 +500,107 @@ class MailStore extends ChangeNotifier {
           .where((m) => m.labels.contains(label) && !hidden(m))
           .toList();
     }
+    final pool = _withDeep(mails);
     if (folder == 'starred') {
-      return mails.where((m) => m.starred && !hidden(m)).toList();
+      return pool.where((m) => m.starred && !hidden(m)).toList();
     }
-    return mails.where((m) => m.folder == folder).toList();
+    return pool.where((m) => m.folder == folder).toList();
+  }
+
+  // ---- filtres sur toute la boîte (moteur) ----
+
+  /// Filtre rapide de la liste : `unread`, `att` ou `null`.
+  String? only;
+
+  /// Messages trouvés par le moteur au-delà des pages chargées, pour la vue et le filtre courants.
+  List<Mail> _deep = const [];
+  String _deepFor = '';
+
+  String get _deepKey => '${unified ? '*' : activeId}|$folder|$label|$only';
+
+  bool get _wantsDeep =>
+      source != null && label == null && (folder == 'starred' || only != null);
+
+  List<Mail> _withDeep(List<Mail> loaded) {
+    if (_deepFor != _deepKey || _deep.isEmpty) return loaded;
+    final have = {for (final m in loaded) m.id};
+    return [
+      ...loaded,
+      for (final m in _deep)
+        if (!have.contains(m.id)) m,
+    ];
+  }
+
+  bool _matchesOnly(Mail m) => switch (only) {
+    'unread' => m.unread,
+    'att' => m.msgs.any((x) => x.hasAttachments || x.att.isNotEmpty),
+    _ => true,
+  };
+
+  /// Active ou retire un filtre rapide ; le moteur cherche dans toute la boîte.
+  void setOnly(String? v) {
+    only = only == v ? null : v;
+    notifyListeners();
+    unawaited(_refreshDeep());
+  }
+
+  /// Relit dans le moteur les messages de la vue courante qui ne sont pas encore chargés.
+  Future<void> _refreshDeep() async {
+    final src = source;
+    final key = _deepKey;
+    if (src == null || !_wantsDeep) {
+      _deep = const [];
+      _deepFor = '';
+      return;
+    }
+    final found = <Mail>[];
+    try {
+      for (final a in accounts) {
+        if (!(unified || a.id == activeId)) continue;
+        found.addAll(
+          await src.filtered(
+            a.id,
+            folder,
+            unread: only == 'unread',
+            attachments: only == 'att',
+          ),
+        );
+      }
+    } catch (_) {
+      return;
+    }
+    if (key != _deepKey) return;
+    _deep = found;
+    _deepFor = key;
+    notifyListeners();
+  }
+
+  bool _matchesLocally(Mail m, String qq) =>
+      ('${m.subject} ${m.from.name} ${m.from.email} ${plainMsgs(m.msgs)}')
+          .toLowerCase()
+          .contains(qq);
+
+  /// Résultats de recherche : ceux du moteur (tout l'index) puis ceux déjà chargés, hors corbeille et spam.
+  List<Mail> _searchResults(String qq) {
+    final seen = <String>{};
+    final inScope = [
+      if (_hitsFor == q) ..._hits,
+      ...mails.where((m) => _matchesLocally(m, qq)),
+    ];
+    return [
+      for (final m in inScope)
+        if ((!hidden(m) || m.folder == folder) &&
+            (unified || m.account == activeId) &&
+            seen.add(m.id))
+          m,
+    ];
   }
 
   List<Mail> visible() {
-    var l = scope();
-    if (pill != 'all') l = l.where((m) => m.flags.contains(pill)).toList();
     final qq = q.trim().toLowerCase();
-    if (qq.isNotEmpty) {
-      l = l
-          .where(
-            (m) =>
-                ('${m.subject} ${m.from.name} ${m.from.email} ${plainMsgs(m.msgs)}')
-                    .toLowerCase()
-                    .contains(qq),
-          )
-          .toList();
-    }
+    var l = qq.isEmpty ? scope() : _searchResults(qq);
+    if (pill != 'all') l = l.where((m) => m.flags.contains(pill)).toList();
+    if (only != null) l = l.where(_matchesOnly).toList();
     l.sort(switch (sort) {
       'old' => (Mail a, Mail b) => a.date - b.date,
       'unread' => (Mail a, Mail b) {
@@ -365,21 +613,36 @@ class MailStore extends ChangeNotifier {
   }
 
   List<String> targets() {
-    if (sel.isNotEmpty) return sel.where((id) => byId(id) != null).toList();
-    if (open != null && byId(open) != null) return [open!];
+    bool actionable(String id) => byId(id) != null && byId(id)!.outbox == null;
+    if (sel.isNotEmpty) return sel.where(actionable).toList();
+    if (open != null && actionable(open!)) return [open!];
     return [];
+  }
+
+  int _unreadIn(String folder) {
+    final local = nonRead(mails.where((m) => m.folder == folder));
+    final src = source;
+    if (src == null) return local;
+    var exact = 0;
+    for (final a in accounts) {
+      if (!unified && a.id != activeId) continue;
+      exact += src.unreadOf(a.id, folder) ?? 0;
+    }
+    return exact > local ? exact : local;
   }
 
   int navCount(String id) {
     switch (id) {
       case 'inbox':
-        return nonRead(mails.where((m) => m.folder == 'inbox'));
+        return _unreadIn('inbox');
       case 'starred':
         return mails.where((m) => m.starred && !hidden(m)).length;
       case 'drafts':
         return mails.where((m) => m.folder == 'drafts').length;
+      case 'outbox':
+        return mails.where((m) => m.folder == 'outbox').length;
       case 'spam':
-        return nonRead(mails.where((m) => m.folder == 'spam'));
+        return _unreadIn('spam');
       case 'snoozed':
         return mails.where((m) => m.folder == 'snoozed').length;
     }
@@ -391,13 +654,19 @@ class MailStore extends ChangeNotifier {
       .length;
 
   // ---- toasts ----
-  void toast(String msg, {String? label, VoidCallback? cb, bool err = false}) {
+  void toast(
+    String msg, {
+    String? label,
+    VoidCallback? cb,
+    bool err = false,
+    int? ms,
+  }) {
     final t = ToastItem(++_toastId, msg, label, cb, err);
     toasts.add(t);
     while (toasts.length > 3) {
       toasts.removeAt(0);
     }
-    _after(label != null ? 6500 : 3200, () => killToast(t));
+    _after(ms ?? (label != null ? 6500 : 3200), () => killToast(t));
     notifyListeners();
   }
 
@@ -422,9 +691,6 @@ class MailStore extends ChangeNotifier {
       case 'dense':
         dense = v == '1';
         prefs.setString('dense', v);
-      case 'snip':
-        snip = v == '1';
-        prefs.setString('snip', v);
       case 'follow':
         followWallpaper = v == '1';
         prefs.setString('follow', v);
@@ -551,6 +817,9 @@ class MailStore extends ChangeNotifier {
     folder = 'inbox';
     label = null;
     pill = 'all';
+    only = null;
+    _deep = const [];
+    _deepFor = '';
     q = '';
     searchCtl.clear();
     sel.clear();
@@ -715,6 +984,7 @@ class MailStore extends ChangeNotifier {
 
   void _afterNav() {
     pill = 'all';
+    unawaited(_refreshDeep());
     sel.clear();
     if (view != PaneView.compose && !visible().any((m) => m.id == open)) {
       open = null;
@@ -735,6 +1005,8 @@ class MailStore extends ChangeNotifier {
 
   void setQuery(String v) {
     q = v;
+    serverNote = null;
+    _scheduleSearch(v);
     notifyListeners();
   }
 
@@ -798,7 +1070,10 @@ class MailStore extends ChangeNotifier {
       );
       return;
     }
-    m.unread = false;
+    if (m.unread) {
+      m.unread = false;
+      _syncAction([m], (a) => a.read(true));
+    }
     _hydrate(m);
     _prefetchAround(m);
     if (view == PaneView.assistant) {
@@ -887,10 +1162,19 @@ class MailStore extends ChangeNotifier {
     final acc = accounts.where((a) => a.id == id).firstOrNull;
     if (src == null || acc == null) return;
     try {
-      final fresh = await src.reload(acc);
+      final fresh = _withOutgoing(id, await src.reload(acc));
+      _applySnoozes(fresh);
       _keepLocalState(id, fresh);
       if (_signature(fresh) == _signature(_boxes[id] ?? const [])) return;
+      final arrived = newArrivals(
+        _boxes[id],
+        fresh,
+        DateTime.now().millisecondsSinceEpoch,
+      );
       _boxes[id] = fresh;
+      unawaited(_announce(acc, arrived));
+      _rememberContacts();
+      unawaited(_refreshDeep());
       if (unified) {
         mails = _mergedBoxes();
       } else if (id == activeId) {
@@ -913,6 +1197,7 @@ class MailStore extends ChangeNotifier {
         m.folder,
         m.subject,
         m.msgs.length,
+        Object.hashAll(m.labels),
       ),
   ]);
 
@@ -965,8 +1250,14 @@ class MailStore extends ChangeNotifier {
   void toggleAssistant() =>
       view == PaneView.assistant ? closePane() : showView(PaneView.assistant);
 
-  /// Ouvre le panneau d'ajout de compte (moteur réel) ou la fenêtre fictive (démonstration).
-  void openAddAccount() => showView(PaneView.addAccount);
+  /// Demande Réglages › Comptes avec l'onglet d'ajout ouvert ; consommé par l'écran des comptes.
+  bool wantsAddAccount = false;
+
+  /// Ouvre l'ajout de compte : onglet « Ajouter » des réglages des comptes (moteur réel).
+  void openAddAccount() {
+    wantsAddAccount = true;
+    showView(PaneView.settings);
+  }
 
   /// Prend en compte un compte que le moteur vient d'ajouter : liste relue, bascule dessus.
   Future<void> accountAdded(String id) async {
@@ -1054,9 +1345,12 @@ class MailStore extends ChangeNotifier {
     for (final (m, _, _) in prev) {
       m.folder = to;
       m.snooze = null;
+      _snoozed.remove(m.id);
     }
+    _saveSnoozes();
     sel.clear();
     _afterChange(idx);
+    _pushMoves([for (final (m, f, _) in prev) (m, f, to)]);
     toast(
       '${tn(ids.length, 'message', 'messages')} ${t(ids.length > 1 ? (verbPl ?? verb) : verb)}',
       label: t('Annuler'),
@@ -1066,6 +1360,7 @@ class MailStore extends ChangeNotifier {
           if (s != null) m.snooze = s;
         }
         notifyListeners();
+        _pushMoves([for (final (m, f, _) in prev) (m, to, f)]);
       },
     );
   }
@@ -1076,14 +1371,108 @@ class MailStore extends ChangeNotifier {
     mails = mails.where((m) => !ids.contains(m.id)).toList();
     sel.clear();
     _afterChange(idx);
+    final pending = _after(6500, () {
+      _syncAction(gone, (a) => a.deleteForever);
+    });
     toast(
       '${tn(gone.length, 'message', 'messages')} ${t(gone.length > 1 ? 'supprimés définitivement' : 'supprimé définitivement')}',
       label: t('Annuler'),
       cb: () {
+        pending.cancel();
         mails.addAll(gone);
         notifyListeners();
       },
     );
+  }
+
+  // ---- reports (côté app : le moteur n'en a pas) ----
+
+  /// Messages reportés : identifiant → (instant du rappel, libellé affiché).
+  final Map<String, (int, String)> _snoozed = {};
+
+  void _loadSnoozes() {
+    try {
+      final raw = jsonDecode(prefs.getString('snoozes') ?? '{}') as Map;
+      for (final e in raw.entries) {
+        final v = e.value as List;
+        _snoozed['${e.key}'] = ((v[0] as num).toInt(), '${v[1]}');
+      }
+    } catch (_) {
+      /* reports illisibles : on repart de zéro */
+    }
+  }
+
+  Timer? _wake;
+
+  /// Programme le réveil du prochain message reporté (un seul minuteur, rien s'il n'y en a pas).
+  void _armWake() {
+    _wake?.cancel();
+    if (_snoozed.isEmpty) return;
+    final next = _snoozed.values
+        .map((v) => v.$1)
+        .reduce((a, b) => a < b ? a : b);
+    final wait = (next - nowMs()).clamp(0, 3600000) + 50;
+    _wake = Timer(Duration(milliseconds: wait), wakeSnoozed);
+  }
+
+  void _saveSnoozes() {
+    if (source == null) return;
+    _armWake();
+    prefs.setString(
+      'snoozes',
+      jsonEncode({
+        for (final e in _snoozed.entries) e.key: [e.value.$1, e.value.$2],
+      }),
+    );
+  }
+
+  /// Remet en « Reportés » les messages relus dont le rappel n'est pas échu.
+  void _applySnoozes(List<Mail> l) {
+    final now = nowMs();
+    for (final m in l) {
+      final s = _snoozed[m.id];
+      if (s == null || m.folder != 'inbox' || s.$1 <= now) continue;
+      m.folder = 'snoozed';
+      m.snooze = s.$2;
+    }
+  }
+
+  /// Rappelle les messages reportés dont l'heure est venue : retour en réception, non lus.
+  void wakeSnoozed() {
+    final now = nowMs();
+    final due = [
+      for (final e in _snoozed.entries)
+        if (e.value.$1 <= now) e.key,
+    ];
+    if (due.isEmpty) {
+      _armWake();
+      return;
+    }
+    Mail? first;
+    for (final id in due) {
+      _snoozed.remove(id);
+      final m =
+          byId(id) ??
+          _boxes.values.expand((l) => l).where((x) => x.id == id).firstOrNull;
+      if (m == null) continue;
+      m.folder = 'inbox';
+      m.unread = true;
+      m.snooze = null;
+      first ??= m;
+    }
+    _saveSnoozes();
+    notifyListeners();
+    final woken = first;
+    if (woken != null) {
+      toast(
+        t('Rappel : {0}', [woken.subject]),
+        label: t('Ouvrir'),
+        cb: () {
+          reveal(woken);
+          openMail(woken.id);
+        },
+      );
+    }
   }
 
   void snoozeTo(List<String> ids, String lbl, int ms) {
@@ -1096,6 +1485,13 @@ class MailStore extends ChangeNotifier {
       m.folder = 'snoozed';
       m.snooze = lbl;
     }
+    if (source != null) {
+      final until = ms > 0 ? nowMs() + ms : scheduledMs(lbl);
+      for (final id in ids) {
+        _snoozed[id] = (until, lbl);
+      }
+      _saveSnoozes();
+    }
     sel.clear();
     _afterChange(idx);
     toast(
@@ -1105,11 +1501,13 @@ class MailStore extends ChangeNotifier {
         for (final (m, f) in prev) {
           m.folder = f;
           m.snooze = null;
+          _snoozed.remove(m.id);
         }
+        _saveSnoozes();
         notifyListeners();
       },
     );
-    if (ms > 0) {
+    if (ms > 0 && source == null) {
       _after(ms, () {
         for (final id in ids) {
           final m = byId(id);
@@ -1197,15 +1595,60 @@ class MailStore extends ChangeNotifier {
     }
     sel.clear();
     notifyListeners();
+    _syncAction(ms, (a) => a.read(!allRead));
     toast(
       '${tn(ms.length, 'message', 'messages')} ${t(allRead ? (ms.length > 1 ? 'marqués comme non lus' : 'marqué comme non lu') : (ms.length > 1 ? 'marqués comme lus' : 'marqué comme lu'))}',
     );
   }
 
+  /// Libellés connus (moteur, ou démonstration) ; ceux du compte actif en vue simple.
+  Map<String, LabelDef> get labelDefs {
+    final all = source?.labels ?? seedLabelDefs;
+    if (source == null || unified) return all;
+    return {
+      for (final e in all.entries)
+        if (e.value.account == activeId) e.key: e.value,
+    };
+  }
+
+  /// Libellé d'identifiant donné (`null` : supprimé ou d'un autre compte).
+  LabelDef? labelDef(String k) => (source?.labels ?? seedLabelDefs)[k];
+
+  /// Nom affiché d'un libellé ; en vue unifiée, suivi du compte (« Factures · Perso »).
+  String labelTitle(String k) {
+    final def = labelDef(k);
+    if (def == null) return '';
+    final owner = accounts.where((a) => a.id == def.account).firstOrNull;
+    if (!unified || accounts.length < 2 || owner == null) return t(def.n);
+    return '${t(def.n)} · ${owner.name.isEmpty ? owner.email : owner.name}';
+  }
+
+  /// Libellés proposés pour la sélection : ceux des comptes des conversations choisies.
+  Map<String, LabelDef> labelsForTargets() {
+    final all = source?.labels ?? seedLabelDefs;
+    if (source == null) return all;
+    final accs = {for (final i in targets()) byId(i)?.account};
+    return {
+      for (final e in all.entries)
+        if (accs.isEmpty || accs.contains(e.value.account)) e.key: e.value,
+    };
+  }
+
   void toggleLabel(String k) {
     final ids = targets();
     if (ids.isEmpty) return hint();
-    final ms = ids.map((i) => byId(i)!).toList();
+    final all0 = ids.map((i) => byId(i)!).toList();
+    final def = labelDef(k);
+    if (def == null) return;
+    final admin = source?.labelAdmin;
+    final ms = admin == null
+        ? all0
+        : all0.where((m) => m.account == def.account).toList();
+    final skipped = all0.length - ms.length;
+    if (ms.isEmpty) {
+      toast('Libellé d’un autre compte : rien à modifier', err: true);
+      return;
+    }
     final all = ms.every((m) => m.labels.contains(k));
     for (final m in ms) {
       m.labels = all
@@ -1213,11 +1656,84 @@ class MailStore extends ChangeNotifier {
           : {...m.labels, k}.toList();
     }
     notifyListeners();
+    final done = t(all ? 'Libellé « {0} » retiré' : 'Libellé « {0} » ajouté', [
+      labelTitle(k),
+    ]);
     toast(
-      t(all ? 'Libellé « {0} » retiré' : 'Libellé « {0} » ajouté', [
-        t(labelDefs[k]!.n),
-      ]),
+      skipped == 0
+          ? done
+          : '$done · ${t('{0} d’un autre compte ignorée(s)', [skipped])}',
     );
+    if (admin != null) _pushLabel(admin, ms, k, !all);
+  }
+
+  /// Envoie la pose du libellé au moteur ; en cas d'échec, rétablit l'état précédent.
+  Future<void> _pushLabel(
+    LabelAdmin admin,
+    List<Mail> ms,
+    String k,
+    bool on,
+  ) async {
+    try {
+      for (final m in ms) {
+        await admin.setOn(m, k, on);
+      }
+    } catch (e) {
+      for (final m in ms) {
+        m.labels = on
+            ? m.labels.where((x) => x != k).toList()
+            : {...m.labels, k}.toList();
+      }
+      toast('Libellé non modifié', err: true);
+      notifyListeners();
+    }
+  }
+
+  /// Rattache une boîte du serveur à un dossier de l'interface (`null` : redevient un libellé).
+  Future<void> mapFolder(String mailboxId, String? folder) async {
+    final src = source;
+    final account = src?.mappable[mailboxId]?.account;
+    if (src == null || account == null) return;
+    if (folder == null) {
+      src.folderMap.remove(mailboxId);
+    } else {
+      src.folderMap[mailboxId] = folder;
+    }
+    await prefs.setString('folderMap', encodeFolderMap(src.folderMap));
+    if (label == mailboxId) selectFolder('inbox');
+    await _reloadAccount(account);
+    notifyListeners();
+  }
+
+  /// Crée un libellé sur un compte du moteur ; rend `false` si le nom est refusé.
+  Future<bool> createLabel(String account, String name) =>
+      _labelOp(() => source!.labelAdmin!.create(account, name.trim()), account);
+
+  /// Renomme un libellé du moteur.
+  Future<bool> renameLabel(String key, String name) => _labelOp(
+    () => source!.labelAdmin!.rename(key, name.trim()),
+    labelDef(key)?.account,
+  );
+
+  /// Supprime un libellé du moteur ; si on le consultait, retour à la réception.
+  Future<bool> deleteLabel(String key) async {
+    final account = labelDef(key)?.account;
+    final ok = await _labelOp(() => source!.labelAdmin!.delete(key), account);
+    if (ok && label == key) selectFolder('inbox');
+    return ok;
+  }
+
+  Future<bool> _labelOp(Future<void> Function() job, String? account) async {
+    if (source?.labelAdmin == null || account == null) return false;
+    try {
+      await job();
+    } catch (e) {
+      toast(e is EngineException ? e.message : 'Libellé refusé', err: true);
+      return false;
+    }
+    await _reloadAccount(account);
+    notifyListeners();
+    return true;
   }
 
   void toggleStar([String? id]) {
@@ -1225,6 +1741,7 @@ class MailStore extends ChangeNotifier {
     if (m == null) return;
     m.starred = !m.starred;
     notifyListeners();
+    _syncAction([m], (a) => a.flag(m.starred));
   }
 
   void toggleSel(String id) {
@@ -1248,20 +1765,328 @@ class MailStore extends ChangeNotifier {
 
   void readAllVisible() {
     final l = visible();
+    final unread = l.where((m) => m.unread).toList();
     for (final m in l) {
       m.unread = false;
     }
     notifyListeners();
+    _syncAction(unread, (a) => a.read(true));
     toast(
       '${tn(l.length, 'message', 'messages')} ${t(l.length > 1 ? 'marqués comme lus' : 'marqué comme lu')}',
     );
   }
 
-  void emptyFolder() => removeForever(scope().map((m) => m.id).toList());
+  final unsubscriber = Unsubscriber();
 
-  void download(String n) {
-    toast(t('Téléchargement de {0}…', [n]));
-    _after(1200, () => toast(t('{0} téléchargé', [n])));
+  // ---- notifications du bureau ----
+
+  late final notifySettings = NotifySettings(prefs);
+
+  /// Service de notifications du système (`null` : aucune, comme dans les tests).
+  SystemNotifications? notifications;
+
+  /// La fenêtre de MIRA est au premier plan (tenu à jour par l'application).
+  bool appFocused = true;
+
+  /// Branche le service de notifications ; un clic ouvre le message notifié.
+  Future<void> useNotifications(SystemNotifications n) async {
+    notifications = n;
+    try {
+      await n.init(openNotified);
+    } catch (_) {
+      notifications = null;
+    }
+  }
+
+  /// Ouvre un message depuis sa notification : compte, Réception, puis le message.
+  void openNotified(String id) {
+    final account = id.split('/').first;
+    if (!unified && account != activeId) switchAccount(account);
+    if (folder != 'inbox' || label != null) selectFolder('inbox');
+    if (byId(id) != null) openMail(id);
+  }
+
+  /// Annonce les nouveaux messages d'un compte, selon les réglages ; plus de trois : une seule notification.
+  Future<void> _announce(Account acc, List<Mail> arrived) async {
+    final n = notifications;
+    final cfg = notifySettings;
+    if (n == null || arrived.isEmpty || !cfg.enabled) return;
+    if (cfg.muted.contains(acc.id)) return;
+    if (appFocused && !cfg.whenFocused) return;
+    if (cfg.isQuiet(DateTime.now().hour)) return;
+    try {
+      if (arrived.length > 3) {
+        await n.show(
+          acc.id.hashCode & 0x7fffffff,
+          t('{0} nouveaux messages', [arrived.length]),
+          acc.email,
+          payload: arrived.first.id,
+          sound: cfg.sound,
+        );
+        return;
+      }
+      for (final m in arrived) {
+        await n.show(
+          m.id.hashCode & 0x7fffffff,
+          cfg.preview ? shown(m.from) : t('Nouveau message'),
+          cfg.preview ? m.subject : acc.email,
+          payload: m.id,
+          sound: cfg.sound,
+        );
+      }
+    } catch (_) {
+      /* service de notifications indisponible : rien à afficher */
+    }
+  }
+
+  /// Change un réglage de notification et redessine.
+  void setNotify(String key, String value) {
+    prefs.setString(key, value);
+    notifyListeners();
+  }
+
+  /// Coupe ou rétablit les notifications d'un compte.
+  void muteAccount(String account, bool mute) {
+    notifySettings.setMuted(account, mute);
+    notifyListeners();
+  }
+
+  /// Affiche une notification d'essai, même au premier plan.
+  Future<void> testNotification() async {
+    final n = notifications;
+    if (n == null) {
+      toast(t('Notifications indisponibles sur ce système'), err: true);
+      return;
+    }
+    try {
+      await n.show(
+        0,
+        t('MIRA'),
+        t('Les notifications fonctionnent.'),
+        sound: notifySettings.sound,
+      );
+    } catch (_) {
+      toast(t('Notifications indisponibles sur ce système'), err: true);
+    }
+  }
+
+  /// Lit la source brute du dernier message de la conversation (`null` : indisponible).
+  Future<String?> originalOf(Mail m) async {
+    final ref = m.msgs.reversed
+        .map((x) => x.ref)
+        .whereType<String>()
+        .firstOrNull;
+    if (source == null || ref == null) return null;
+    try {
+      final bytes = await source!.rawSource(ref);
+      return bytes == null ? null : utf8.decode(bytes, allowMalformed: true);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Resynchronise entièrement le dossier affiché, pour les comptes de la vue.
+  Future<void> resyncFolder() async {
+    final src = source;
+    if (src == null) return;
+    var any = false;
+    try {
+      for (final a in accounts) {
+        if (!(unified || a.id == activeId)) continue;
+        any = await src.resync(a.id, folder) || any;
+      }
+      toast(
+        any
+            ? t('Resynchronisation lancée')
+            : t('Ce dossier n’existe pas sur le serveur'),
+      );
+    } catch (_) {
+      toast(t('Synchronisation impossible'), err: true);
+    }
+  }
+
+  /// Demande où écrire un export (remplaçable dans les tests) ; `null` : annulé.
+  Future<String?> Function(String name) pickExportPath = (name) async {
+    final uri = await FilePicker.saveFile(fileName: name, bytes: Uint8List(0));
+    return uri?.toFilePath();
+  };
+
+  /// Extension de la plage en cours : (compte, opération) ; `null` hors extension.
+  (String, String)? extending;
+
+  /// Le dossier affiché peut être prolongé sur le serveur : tout est déjà chargé et le dossier a une boîte.
+  bool get canExtend =>
+      source != null &&
+      !moreAvailable &&
+      label == null &&
+      accounts.any(
+        (a) =>
+            (unified || a.id == activeId) &&
+            source!.mailboxOf(a.id, folder) != null,
+      );
+
+  /// Demande au moteur de remonter de trois mois sur le serveur, pour les comptes de la vue.
+  Future<void> extendWindow() async {
+    final src = source;
+    if (src == null || extending != null) return;
+    for (final a in accounts) {
+      if (!(unified || a.id == activeId)) continue;
+      try {
+        final op = await src.extendWindow(a.id, folder, 90);
+        if (op == null) continue;
+        extending = (a.id, op);
+        notifyListeners();
+        return;
+      } catch (_) {
+        toast(t('Synchronisation impossible'), err: true);
+      }
+    }
+  }
+
+  /// Interrompt l'extension en cours.
+  Future<void> cancelExtend() async {
+    final e = extending;
+    if (e == null) return;
+    try {
+      await source?.cancelOperation(e.$2);
+    } catch (_) {
+      toast(t('Synchronisation impossible'), err: true);
+    }
+  }
+
+  void _extensionProgress() {
+    final e = extending;
+    if (e == null) return;
+    final st = source?.syncStates[e.$1];
+    if (st == null || st.ended != e.$2) return;
+    extending = null;
+    if (st.failed == null) source?.readDeeper(e.$1);
+    unawaited(_reloadOnce(e.$1));
+    if (st.failed != null) toast(t('Synchronisation impossible'), err: true);
+  }
+
+  /// Comptes visibles qui ne se synchronisent pas normalement, avec leur état (hors ligne, échec, en cours).
+  List<(Account, SyncState)> get syncIssues {
+    final states = source?.syncStates ?? const <String, SyncState>{};
+    return [
+      for (final a in accounts)
+        if ((unified || a.id == activeId) && states[a.id] != null)
+          if (states[a.id]!.offline ||
+              states[a.id]!.failed != null ||
+              states[a.id]!.syncing)
+            (a, states[a.id]!),
+    ];
+  }
+
+  /// Relance la synchronisation après un échec ou un retour du réseau.
+  Future<void> retrySync() async {
+    try {
+      await source?.syncNow();
+    } catch (_) {
+      toast(t('Synchronisation impossible'), err: true);
+    }
+  }
+
+  /// Moyen de désabonnement de la conversation ouverte (`null` : l'expéditeur n'en annonce pas).
+  Unsub? unsubFor(Mail m) => Unsubscriber.of(m.msgs);
+
+  /// Se désabonne : en un clic si possible, sinon page web ou message de désabonnement prérempli.
+  Future<void> unsubscribe(Mail m) async {
+    final u = unsubFor(m);
+    if (u == null) return;
+    final url = u.url == null ? null : Uri.tryParse(u.url!);
+    if (url != null && u.oneClick) {
+      final ok = await unsubscriber.postOneClick(url);
+      toast(
+        ok ? t('Désabonnement envoyé') : t('Désabonnement impossible'),
+        err: !ok,
+      );
+    } else if (url != null) {
+      await unsubscriber.openPage(url);
+    } else if (u.mailto != null) {
+      _mailtoUnsubscribe(m, u.mailto!);
+    }
+  }
+
+  void _mailtoUnsubscribe(Mail m, String mailto) {
+    final uri = Uri.tryParse(
+      mailto.startsWith('mailto:') ? mailto : 'mailto:$mailto',
+    );
+    if (uri == null || uri.path.isEmpty) return;
+    openCompose(
+      ComposeInit(
+        from: fromFor(m),
+        to: [Person('', uri.path)],
+        subject: uri.queryParameters['subject'] ?? 'unsubscribe',
+        text: uri.queryParameters['body'],
+      ),
+    );
+  }
+
+  /// Vide la corbeille ou le spam : le moteur vide chaque boîte entière, y compris ce qui n'est pas chargé.
+  void emptyFolder() {
+    final actions = source?.messageActions;
+    final boxes = <String>[
+      for (final a in accounts)
+        if (unified || a.id == activeId) ?source?.mailboxOf(a.id, folder),
+    ];
+    if (actions == null || label != null || boxes.isEmpty) {
+      return removeForever(scope().map((m) => m.id).toList());
+    }
+    final gone = mails.where((m) => m.folder == folder).toList();
+    final ids = {for (final m in gone) m.id};
+    final idx = visible().indexWhere((m) => m.id == open);
+    mails = mails.where((m) => !ids.contains(m.id)).toList();
+    sel.clear();
+    _afterChange(idx);
+    final pending = _after(6500, () => _emptyBoxes(actions, boxes));
+    toast(
+      t('Dossier vidé'),
+      label: t('Annuler'),
+      cb: () {
+        pending.cancel();
+        mails.addAll(gone);
+        notifyListeners();
+      },
+    );
+  }
+
+  Future<void> _emptyBoxes(MessageActions actions, List<String> boxes) async {
+    try {
+      for (final b in boxes) {
+        await actions.emptyMailbox(b);
+      }
+    } catch (_) {
+      toast(t('Action non appliquée sur le serveur'), err: true);
+      for (final a in accounts) {
+        await _reloadOnce(a.id);
+      }
+    }
+  }
+
+  /// Enregistre un fichier à l'endroit choisi par l'utilisateur (remplaçable dans les tests).
+  Future<Uri?> Function(String name, Uint8List bytes) saveFile = (
+    name,
+    bytes,
+  ) => FilePicker.saveFile(fileName: name, bytes: bytes);
+
+  /// Télécharge une pièce jointe : contenu lu dans le moteur, puis enregistré où l'utilisateur le choisit.
+  Future<void> download(Attachment a) async {
+    final src = source;
+    final known = a.bytes != null || a.id != null;
+    if (src == null || !known) {
+      toast(t('Téléchargement de {0}…', [a.n]));
+      _after(1200, () => toast(t('{0} téléchargé', [a.n])));
+      return;
+    }
+    try {
+      final bytes = a.bytes ?? await src.attachmentBytes(a);
+      if (bytes == null) throw const EngineException('unavailable', '');
+      final saved = await saveFile(a.n, bytes);
+      if (saved != null) toast(t('{0} téléchargé', [a.n]));
+    } catch (_) {
+      toast(t('Téléchargement impossible'), err: true);
+    }
   }
 
   void step(int d) {
@@ -1297,6 +2122,7 @@ class MailStore extends ChangeNotifier {
       tmp.loadBlocks(last.body);
       final head =
           '\n${t('---------- Message transféré ----------')}\n${t('De : {0} <{1}>', [last.from.name, last.from.email])}\n${t('Objet : {0}', [m.subject])}\n\n';
+      final sign = '\n\n${signatureFor(fromFor(m))}';
       openCompose(
         ComposeInit(
           from: fromFor(m),
@@ -1305,8 +2131,12 @@ class MailStore extends ChangeNotifier {
           to: const [],
           subject: 'Fwd: ${stripRe(m.subject)}',
           atts: last.att.toList(),
-          text: head + tmp.text,
-          flags: [...RichController.gapFlags(head), ...tmp.flags],
+          text: sign + head + tmp.text,
+          flags: [
+            ...RichController.gapFlags(sign),
+            ...RichController.gapFlags(head),
+            ...tmp.flags,
+          ],
         ),
       );
       return;
@@ -1343,6 +2173,7 @@ class MailStore extends ChangeNotifier {
   void openCompose(ComposeInit i) {
     if (c != null) {
       saveDraft();
+      _copyToServer(c!);
       c!.timer?.cancel();
     }
     final cs = ComposeState(
@@ -1356,14 +2187,26 @@ class MailStore extends ChangeNotifier {
       from: i.from ?? fromFor(),
       quote: i.quote,
     );
+    if (source?.composer != null && (i.id ?? '').startsWith('draft:')) {
+      cs.engineId = i.id!.substring('draft:'.length);
+      cs.engineAtts = [...i.atts];
+    }
     cs.subject.text = i.subject;
+    final blank = i.mode == 'new' && i.text == null && i.blocks == null;
+    final text = blank ? '\n\n${signatureFor(cs.from)}' : i.text;
     if (i.blocks != null) {
       cs.body.loadBlocks(i.blocks!);
     } else {
       cs.body.setContent(
-        i.text ?? '',
-        i.flags ?? List<int>.filled((i.text ?? '').length, 0),
+        text ?? '',
+        blank
+            ? RichController.gapFlags(text!)
+            : i.flags ?? List<int>.filled((text ?? '').length, 0),
       );
+    }
+    if (i.mode != 'draft') {
+      final sig = signatureFor(cs.from);
+      if (sig.trim().isNotEmpty && cs.body.text.contains(sig)) cs.sigText = sig;
     }
     cs.body.addListener(() {});
     c = cs;
@@ -1384,6 +2227,7 @@ class MailStore extends ChangeNotifier {
         notifyListeners();
       }
     });
+
     notifyListeners();
   }
 
@@ -1392,8 +2236,12 @@ class MailStore extends ChangeNotifier {
     if (cs == null || !cs.dirty) return false;
     final subject = cs.subject.text;
     final blocks = cs.body.toBlocks();
-    final plainTxt = cs.body.text.trim();
+    final plainTxt =
+        cs.sigText.isNotEmpty && cs.body.text.trim() == cs.sigText.trim()
+        ? ''
+        : cs.body.text.trim();
     final empty =
+        !cs.fromChosen &&
         cs.to.isEmpty &&
         cs.cc.isEmpty &&
         subject.trim().isEmpty &&
@@ -1406,11 +2254,12 @@ class MailStore extends ChangeNotifier {
         cs.id = null;
         notifyListeners();
       }
+      _dropEngineDraft(cs);
       return false;
     }
     if (d == null) {
       d = Mail(
-        id: 'd${nextUid()}',
+        id: cs.engineId != null ? 'draft:${cs.engineId}' : 'd${nextUid()}',
         folder: 'drafts',
         from: senderFor(cs.from),
         to: [],
@@ -1442,8 +2291,305 @@ class MailStore extends ChangeNotifier {
       body: [...blocks, ...?cs.quote],
       att: [...cs.atts],
     );
+    _queuePush(cs);
     notifyListeners();
     return true;
+  }
+
+  /// Change l'adresse d'envoi ; la signature insérée devient celle de la nouvelle adresse.
+  void changeFrom(String email) {
+    final cs = c;
+    if (cs == null) return;
+    cs.from = email;
+    cs.fromChosen = true;
+    final next = signatureFor(email);
+    final old = cs.sigText;
+    final at = old.isEmpty ? -1 : cs.body.text.lastIndexOf(old);
+    if (at >= 0 && next != old) {
+      final text = cs.body.text;
+      final flags = cs.body.flags;
+      final keep = cs.body.selection;
+      final end = at + old.length;
+      cs.body.setContent(text.replaceRange(at, end, next), [
+        ...flags.take(at),
+        ...List<int>.filled(next.length, 0),
+        ...flags.skip(end),
+      ]);
+      final cursor = keep.baseOffset.clamp(0, cs.body.text.length);
+      cs.body.selection = TextSelection.collapsed(offset: cursor);
+      cs.sigText = next;
+    }
+    touch();
+  }
+
+  // ---- actions sur les messages, envoyées au moteur ----
+
+  /// Applique l'action au moteur ; si elle échoue, relit les comptes touchés pour retrouver l'état réel.
+  Future<void> _syncAction(
+    List<Mail> ms,
+    Map<String, dynamic> Function(MessageActions a) kind,
+  ) async {
+    final actions = source?.messageActions;
+    if (actions == null || ms.isEmpty) return;
+    try {
+      await actions.run(ms, kind(actions));
+    } catch (_) {
+      toast(t('Action non appliquée sur le serveur'), err: true);
+      for (final id in {for (final m in ms) m.account}) {
+        await _reloadOnce(id);
+      }
+    }
+  }
+
+  /// Action du moteur pour passer un message d'un dossier à un autre (`null` : rien à faire côté serveur).
+  Map<String, dynamic>? _moveKind(
+    MessageActions a,
+    Mail m,
+    String from,
+    String to,
+  ) {
+    if (to == 'archive') return a.archive;
+    if (to == 'trash') return a.trash;
+    if (to == 'spam') return a.spam(true);
+    if (from == 'spam' && to == 'inbox') return a.spam(false);
+    final box = source?.mailboxOf(m.account, to);
+    return box == null ? null : a.move(box);
+  }
+
+  /// Répercute des changements de dossier au moteur, un appel par type d'action.
+  void _pushMoves(List<(Mail, String, String)> moves) {
+    final actions = source?.messageActions;
+    if (actions == null) return;
+    final groups = <String, (Map<String, dynamic>, List<Mail>)>{};
+    for (final (m, from, to) in moves) {
+      final kind = _moveKind(actions, m, from, to);
+      if (kind == null) continue;
+      groups.putIfAbsent('${m.account}|$kind', () => (kind, [])).$2.add(m);
+    }
+    for (final (kind, ms) in groups.values) {
+      _syncAction(ms, (_) => kind);
+    }
+  }
+
+  // ---- boîte d'envoi ----
+
+  /// Exécute une opération sur un envoi de la boîte d'envoi, puis relit le compte.
+  Future<void> _outboxOp(
+    Mail m,
+    Future<void> Function() op,
+    String done,
+  ) async {
+    try {
+      await op();
+      toast(t(done));
+    } catch (_) {
+      toast(t('Action impossible sur cet envoi'), err: true);
+    }
+    await _reloadOnce(m.account);
+    if (byId(m.id) == null) {
+      open = null;
+      view = PaneView.empty;
+      notifyListeners();
+    }
+  }
+
+  /// Annule un envoi en attente : le message redevient un brouillon.
+  Future<void> cancelOutbox(Mail m) {
+    final o = m.outbox;
+    final admin = source?.composer;
+    if (o == null || admin == null) return Future.value();
+    return _outboxOp(m, () => admin.cancelSend(o.action), 'Envoi annulé');
+  }
+
+  /// Relance un envoi échoué.
+  Future<void> retryOutbox(Mail m) {
+    final o = m.outbox;
+    final admin = source?.composer;
+    if (o == null || admin == null) return Future.value();
+    return _outboxOp(m, () => admin.retry(o.action), 'Nouvel essai lancé');
+  }
+
+  /// Envoi incertain : le renvoyer, ou le tenir pour parti.
+  Future<void> resolveOutbox(Mail m, {required bool resend}) {
+    final o = m.outbox;
+    final admin = source?.composer;
+    if (o == null || admin == null) return Future.value();
+    return _outboxOp(
+      m,
+      () => admin.resolve(o.action, resend: resend),
+      resend ? 'Message renvoyé' : 'Message tenu pour envoyé',
+    );
+  }
+
+  // ---- contacts ----
+
+  /// Messages envoyés connus, tous comptes confondus.
+  Iterable<Mail> _sentMails() => [
+    for (final l in source != null ? _boxes.values : [mails])
+      for (final m in l)
+        if (m.folder == 'sent') m,
+  ];
+
+  /// Met l'historique des destinataires à jour d'après les messages envoyés.
+  void _rememberContacts() {
+    if (contactBook.remember(_sentMails(), isMine)) {
+      prefs.setString('contactHistory', contactBook.encodeHistory());
+    }
+  }
+
+  /// Correspondants à montrer dans les réglages, après mise à jour de l'historique.
+  List<ContactEntry> contactEntries() {
+    _rememberContacts();
+    return contactBook.entries();
+  }
+
+  /// Personnes proposées à la saisie d'un destinataire : l'historique, puis (démonstration) les contacts fictifs.
+  List<Person> contactPeople() {
+    final known = [for (final e in contactEntries()) e.person];
+    if (source != null) return known;
+    final have = {for (final p in known) p.email.toLowerCase()};
+    return [
+      ...known,
+      for (final c in contacts)
+        if (!have.contains(c.email.toLowerCase()))
+          Person(contactBook.names[c.email.toLowerCase()] ?? c.name, c.email),
+    ];
+  }
+
+  /// Nom à afficher pour une personne : celui choisi dans Contacts, sinon celui du message.
+  String shown(Person p) => contactBook.names[p.email.toLowerCase()] ?? p.name;
+
+  /// Retire un correspondant de l'historique ; il revient seulement si on lui écrit de nouveau.
+  void forgetContact(String email) {
+    contactBook.forget(email, DateTime.now().millisecondsSinceEpoch);
+    prefs.setString('contactHistory', contactBook.encodeHistory());
+    prefs.setString('contactNames', contactBook.encodeNames());
+    prefs.setString('contactRemoved', contactBook.encodeRemoved());
+    notifyListeners();
+  }
+
+  /// Donne un nom à une adresse ; un nom vide rend le nom vu dans les messages.
+  void setContactName(String email, String name) {
+    final key = email.toLowerCase();
+    if (name.trim().isEmpty) {
+      contactBook.names.remove(key);
+    } else {
+      contactBook.names[key] = name.trim();
+    }
+    prefs.setString('contactNames', contactBook.encodeNames());
+    notifyListeners();
+  }
+
+  // ---- brouillons du moteur ----
+
+  /// Met l'enregistrement au moteur à la suite des précédents (jamais deux en même temps).
+  void _queuePush(ComposeState cs) {
+    if (source?.composer == null) return;
+    cs.push = cs.push.then((_) => _pushDraft(cs)).catchError((_) {
+      cs.saved = t('Enregistrement impossible');
+      notifyListeners();
+    });
+  }
+
+  /// Identité du moteur pour une adresse d'envoi.
+  String? _identityFor(String email, String account) => source
+      ?.identities[account]
+      ?.where((i) => i.address.toLowerCase() == email.toLowerCase())
+      .firstOrNull
+      ?.id;
+
+  /// Crée le brouillon dans le moteur au premier enregistrement, puis y recopie le contenu.
+  Future<void> _pushDraft(ComposeState cs) async {
+    final admin = source!.composer!;
+    final account = accountByEmail(cs.from)?.id ?? activeId;
+    final identity = _identityFor(cs.from, account);
+    if (cs.engineId == null) {
+      final origin = byId(cs.replyTo)?.msgs.last.ref;
+      final mode = origin == null
+          ? 'new'
+          : switch (cs.mode) {
+              'all' => 'reply_all',
+              'fwd' => 'forward',
+              _ => 'reply',
+            };
+      final created = await admin.create(
+        account,
+        identity: identity,
+        mode: mode,
+        message: origin,
+      );
+      cs.engineId = created.id;
+      _rekeyDraft(cs, 'draft:${created.id}');
+    }
+    final quote = cs.quote ?? const <Block>[];
+    final blocks = [...cs.body.toBlocks(), ...quote];
+    await admin.update(
+      cs.engineId!,
+      identity: identity,
+      to: cs.to,
+      cc: cs.cc,
+      bcc: cs.bcc,
+      subject: cs.subject.text,
+      text: blocksToText(blocks),
+      html: blocksToHtml(blocks),
+    );
+    await _syncAttachments(cs, admin);
+    cs.copyStale = true;
+  }
+
+  /// En quittant la rédaction : le brouillon est copié dans « Brouillons » sur le serveur.
+  void _copyToServer(ComposeState cs) {
+    final admin = source?.composer;
+    if (admin == null) return;
+    cs.push = cs.push
+        .then((_) async {
+          final id = cs.engineId;
+          if (id == null || !cs.copyStale) return;
+          cs.copyStale = false;
+          await admin.saveCopy(id);
+        })
+        .catchError((_) {
+          cs.copyStale = true;
+        });
+  }
+
+  /// Retire puis ajoute les pièces jointes pour que le moteur ait la même liste que l'écran.
+  Future<void> _syncAttachments(ComposeState cs, ComposeAdmin admin) async {
+    final wanted = cs.atts;
+    for (var i = cs.engineAtts.length - 1; i >= 0; i--) {
+      if (wanted.contains(cs.engineAtts[i])) continue;
+      await admin.detach(cs.engineId!, i);
+      cs.engineAtts.removeAt(i);
+    }
+    for (final a in wanted) {
+      if (cs.engineAtts.contains(a) || a.path == null) continue;
+      await admin.attach(cs.engineId!, a.path!);
+      cs.engineAtts.add(a);
+    }
+  }
+
+  /// Le brouillon local prend l'identifiant du moteur, pour que la relecture le retrouve.
+  void _rekeyDraft(ComposeState cs, String id) {
+    final d = byId(cs.id);
+    if (d != null) {
+      if (open == d.id) open = id;
+      d.id = id;
+    }
+    cs.id = id;
+  }
+
+  /// Supprime le brouillon du moteur (écran vidé ou abandonné).
+  void _dropEngineDraft(ComposeState cs) {
+    final admin = source?.composer;
+    if (admin == null) return;
+    cs.push = cs.push
+        .then((_) async {
+          final id = cs.engineId;
+          if (id == null) return;
+          cs.engineId = null;
+          await admin.delete(id);
+        })
+        .catchError((_) {});
   }
 
   void _leaveCompose() {
@@ -1461,6 +2607,7 @@ class MailStore extends ChangeNotifier {
     if (cs == null) return;
     cs.timer?.cancel();
     final saved = save ? saveDraft() : false;
+    if (save) _copyToServer(cs);
     c = null;
     _leaveCompose();
     notifyListeners();
@@ -1473,13 +2620,14 @@ class MailStore extends ChangeNotifier {
     cs.timer?.cancel();
     final had = byId(cs.id);
     if (had != null) mails = mails.where((x) => x != had).toList();
+    _dropEngineDraft(cs);
     c = null;
     _leaveCompose();
     notifyListeners();
     toast(had != null ? t('Brouillon supprimé') : t('Message abandonné'));
   }
 
-  void send([String? sched]) {
+  Future<void> send([String? sched]) async {
     final cs = c;
     if (cs == null) return;
     if (cs.to.isEmpty) {
@@ -1488,10 +2636,7 @@ class MailStore extends ChangeNotifier {
       toast('Ajoute au moins un destinataire', err: true);
       return;
     }
-    if (source != null) {
-      toast('Envoi réel pas encore branché sur le moteur', err: true);
-      return;
-    }
+    if (source != null) return _sendReal(cs, sched);
     cs.timer?.cancel();
     final blocks = [...cs.body.toBlocks(), ...?cs.quote];
     final init = ComposeInit(
@@ -1559,6 +2704,133 @@ class MailStore extends ChangeNotifier {
         openCompose(init);
       },
     );
+  }
+
+  /// Envoi par le moteur : brouillon enregistré, puis mis en file (annulable pendant le délai du moteur).
+  Future<void> _sendReal(ComposeState cs, String? sched) async {
+    final admin = source?.composer;
+    if (admin == null || _sending) return;
+    _sending = true;
+    cs.timer?.cancel();
+    cs.dirty = true;
+    try {
+      saveDraft();
+      await cs.push;
+      final id = cs.engineId;
+      if (id == null) throw const EngineException('draft_missing', '');
+      final action = await admin.send(
+        id,
+        at: sched == null ? null : scheduledMs(sched),
+      );
+      _afterSend(cs, id, action, sched);
+    } catch (_) {
+      toast(t('Envoi impossible, le message reste en brouillon'), err: true);
+    } finally {
+      _sending = false;
+    }
+  }
+
+  bool _sending = false;
+
+  /// Envois mis en file et pas encore visibles dans « Envoyés » : brouillon → (message affiché, fin de validité).
+  final Map<String, (Mail, int)> _outgoing = {};
+
+  void _afterSend(ComposeState cs, String draft, String action, String? sched) {
+    final local = byId(cs.id);
+    final account = accountByEmail(cs.from)?.id ?? activeId;
+    final shown = Mail(
+      id: 'sending:$draft',
+      folder: 'sent',
+      account: account,
+      from: senderFor(cs.from),
+      to: [...cs.to],
+      cc: [...cs.cc],
+      subject: cs.subject.text.trim().isEmpty
+          ? '(sans objet)'
+          : cs.subject.text.trim(),
+      date: nowMs(),
+      sched: sched,
+      msgs: [
+        Msg(
+          from: senderFor(cs.from),
+          date: nowMs(),
+          body: [...cs.body.toBlocks(), ...?cs.quote],
+          att: [...cs.atts],
+        ),
+      ],
+    );
+    final at = sched == null ? nowMs() : scheduledMs(sched);
+    if (sched == null) _outgoing[draft] = (shown, at + 120000);
+    mails = [...mails.where((m) => m != local), if (sched == null) shown];
+    if (!unified) _boxes[account] = mails;
+    _rememberContacts();
+    c = null;
+    _leaveCompose();
+    notifyListeners();
+    unawaited(_reloadOnce(account));
+    toast(
+      sched != null
+          ? t('Message programmé · {0}', [t(sched)])
+          : t('Message envoyé'),
+      label: t('Annuler'),
+      cb: () => _cancelSend(action, draft),
+      ms: 10000,
+    );
+    _after(at - nowMs() + 11000, () => _settleSend(draft, account));
+  }
+
+  /// Après le départ du message : synchronise puis relit jusqu'à ce que « Envoyés » le contienne.
+  Future<void> _settleSend(String draft, String account) async {
+    try {
+      await source?.syncNow();
+    } catch (_) {
+      /* la relecture suivante réessaie */
+    }
+    for (var i = 0; i < 8 && _outgoing.containsKey(draft); i++) {
+      await Future<void>.delayed(const Duration(seconds: 2));
+      await _reloadOnce(account);
+    }
+  }
+
+  /// Ajoute aux messages relus les envois pas encore revenus du serveur.
+  List<Mail> _withOutgoing(String account, List<Mail> fresh) {
+    final now = nowMs();
+    final keep = <Mail>[];
+    for (final e in _outgoing.entries.toList()) {
+      final (m, until) = e.value;
+      if (m.account != account) continue;
+      final arrived = fresh.any(
+        (x) =>
+            x.folder == 'sent' &&
+            x.subject == m.subject &&
+            x.date >= m.date - 60000,
+      );
+      if (arrived || now > until) {
+        _outgoing.remove(e.key);
+      } else {
+        keep.add(m);
+      }
+    }
+    final immediate = {
+      for (final e in _outgoing.entries)
+        if (e.value.$1.sched == null) 'outbox:${e.key}',
+    };
+    final shown = fresh.where((m) => !immediate.contains(m.id)).toList();
+    return keep.isEmpty ? shown : [...shown, ...keep];
+  }
+
+  Future<void> _cancelSend(String action, String draft) async {
+    try {
+      await source!.composer!.cancelSend(action);
+      final gone = _outgoing.remove(draft)?.$1;
+      if (gone != null) mails = mails.where((m) => m != gone).toList();
+      for (final a in accounts) {
+        await _reloadOnce(a.id);
+      }
+      openMail('draft:$draft');
+    } catch (_) {
+      toast(t('Annulation impossible, le message est déjà parti'), err: true);
+    }
   }
 
   void autoReply(Mail sent, Mail? orig) {

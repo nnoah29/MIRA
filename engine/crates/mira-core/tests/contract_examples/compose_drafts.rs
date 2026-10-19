@@ -1,7 +1,7 @@
 //! Exemples de rédaction : création dans chaque mode, modification, pièces jointes, lecture.
 
 use mira_core::api::{ComposeRequest, DraftChanges, DraftMode};
-use mira_vocabulary::{AccountId, DraftId, IdentityId, MessageId};
+use mira_vocabulary::{AccountId, DraftId, IdempotencyKey, IdentityId, MessageId};
 
 /// Création d'un brouillon dans chacun des quatre modes
 pub fn creation_requests() -> Vec<ComposeRequest> {
@@ -47,4 +47,12 @@ pub fn editing_requests() -> Vec<ComposeRequest> {
             account: AccountId::from_raw("account-1"),
         },
     ]
+}
+
+/// Copie d'un brouillon dans la boîte Brouillons du serveur
+pub fn server_copy_requests() -> Vec<ComposeRequest> {
+    vec![ComposeRequest::SaveDraftCopy {
+        draft: DraftId::from_raw("draft-1"),
+        idempotency_key: IdempotencyKey("key-1".to_string()),
+    }]
 }

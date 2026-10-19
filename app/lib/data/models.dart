@@ -12,7 +12,13 @@ class Attachment {
   final String t; // type (PDF, PNG…)
   final String s; // taille formatée
   final Uint8List? bytes; // aperçu pour les images ajoutées
-  const Attachment(this.n, this.t, this.s, {this.bytes});
+
+  /// Fichier local d'origine (pièce jointe ajoutée à la rédaction).
+  final String? path;
+
+  /// Identifiant de la pièce jointe dans le moteur (`null` : fichier local ou démonstration).
+  final String? id;
+  const Attachment(this.n, this.t, this.s, {this.bytes, this.path, this.id});
 }
 
 /// Fragment de texte stylé (équivalent d'un nœud inline HTML).
@@ -48,6 +54,13 @@ class Quote extends Block {
   const Quote(this.children);
 }
 
+/// Moyens de désabonnement annoncés par l'expéditeur.
+class Unsub {
+  final String? url, mailto;
+  final bool oneClick;
+  const Unsub({this.url, this.mailto, this.oneClick = false});
+}
+
 class Msg {
   Person from;
   int date;
@@ -59,6 +72,9 @@ class Msg {
 
   /// Le moteur annonce des pièces jointes (liste lue à l'ouverture).
   final bool hasAttachments;
+
+  /// Désabonnement proposé par l'expéditeur (`null` : aucun).
+  final Unsub? unsub;
 
   /// Corps et pièces jointes déjà demandés au moteur.
   bool hydrated = false;
@@ -81,6 +97,7 @@ class Msg {
     List<Attachment>? att,
     this.ref,
     this.hasAttachments = false,
+    this.unsub,
   }) : att = att ?? [];
   Msg copy() =>
       Msg(
@@ -90,6 +107,7 @@ class Msg {
           att: [...att],
           ref: ref,
           hasAttachments: hasAttachments,
+          unsub: unsub,
         )
         ..hydrated = hydrated
         ..loaded = loaded
@@ -115,6 +133,25 @@ class DraftMeta {
   });
 }
 
+/// État d'un envoi dans la boîte d'envoi du moteur.
+class OutboxInfo {
+  final String action, draft, state, subject;
+  final String? error;
+
+  /// Instant prévu pour le départ, en millisecondes.
+  final int at;
+  const OutboxInfo({
+    required this.action,
+    required this.draft,
+    required this.state,
+    required this.at,
+    this.subject = '',
+    this.error,
+  });
+
+  bool get waiting => state == 'pending' || state == 'in_progress';
+}
+
 class Mail {
   String id;
   String folder;
@@ -131,6 +168,9 @@ class Mail {
   String? sched;
   List<Msg> msgs;
   DraftMeta? draft;
+
+  /// Envoi en attente, en cours, échoué ou incertain (`null` : message ordinaire).
+  OutboxInfo? outbox;
 
   /// Compte auquel appartient ce message.
   String account;
@@ -150,6 +190,7 @@ class Mail {
     this.sched,
     required this.msgs,
     this.draft,
+    this.outbox,
     String? account,
   }) : account = account ?? currentAccountId,
        labels = labels ?? [],
@@ -159,7 +200,13 @@ class Mail {
 class LabelDef {
   final String n;
   final int c;
-  const LabelDef(this.n, this.c);
+
+  /// Compte propriétaire (`null` : libellé de démonstration).
+  final String? account;
+
+  /// Boîte « tous les messages » ou « favoris » : rattachable, mais ni renommée ni supprimée.
+  final bool system;
+  const LabelDef(this.n, this.c, {this.account, this.system = false});
 }
 
 class FolderDef {
@@ -236,7 +283,7 @@ List<Sender> knownSenders = [];
 /// Identité du compte actif (change quand on bascule de compte).
 Person me = Person(defaultAccounts[0].name, defaultAccounts[0].email);
 
-const labelDefs = <String, LabelDef>{
+const seedLabelDefs = <String, LabelDef>{
   'projets': LabelDef('Projets', 0xFFe8542b),
   'candidatures': LabelDef('Candidatures', 0xFF6aa8d9),
   'factures': LabelDef('Factures', 0xFF8bc48a),
@@ -249,6 +296,7 @@ const folderDefs = <FolderDef>[
   FolderDef('snoozed', 'Reportés', 'clock'),
   FolderDef('sent', 'Envoyés', 'send'),
   FolderDef('drafts', 'Brouillons', 'file'),
+  FolderDef('outbox', 'Boîte d’envoi', 'outbox'),
   FolderDef('archive', 'Archives', 'archive'),
   FolderDef('spam', 'Spam', 'warn'),
   FolderDef('trash', 'Corbeille', 'trash'),

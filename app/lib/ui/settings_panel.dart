@@ -7,7 +7,10 @@ import '../theme/app_theme.dart';
 import '../theme/icons.dart';
 import '../theme/wall_source.dart';
 import 'accounts_settings.dart';
+import 'contacts_settings.dart';
 import 'image_rules_section.dart';
+import 'maintenance_settings.dart';
+import 'notification_settings.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
 
@@ -23,7 +26,14 @@ List<(String, String)> get accentPresets => <(String, String)>[
   (t('Jaune'), 'e5b100'),
 ];
 
-List<String> get _tabs => [t('Apparence'), t('Messagerie'), t('Comptes')];
+List<String> _tabs(bool engine) => [
+  t('Apparence'),
+  t('Messagerie'),
+  t('Notifications'),
+  t('Comptes'),
+  t('Contacts'),
+  if (engine) t('Stockage'),
+];
 
 class SettingsPanel extends StatefulWidget {
   const SettingsPanel({super.key});
@@ -134,6 +144,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
       ),
     );
 
+    if (s.wantsAddAccount && s.source != null) tab = 3;
     final content = switch (tab) {
       0 => box([
         srow(
@@ -283,19 +294,13 @@ class _SettingsPanelState extends State<SettingsPanel> {
         ),
         srow(
           t('Densité de la liste'),
-          t('Compacte : plus de messages à l’écran.'),
+          t(
+            'Confortable : deux lignes d’aperçu sous l’objet. Compacte : plus de messages à l’écran, sans aperçu.',
+          ),
           seg('dense', [
             ('0', t('Confortable')),
             ('1', t('Compacte')),
           ], s.dense ? '1' : '0'),
-        ),
-        srow(
-          t('Aperçu des messages'),
-          t('Affiche les deux premières lignes sous l’objet.'),
-          seg('snip', [
-            ('1', t('Afficher')),
-            ('0', t('Masquer')),
-          ], s.snip ? '1' : '0'),
           last: true,
         ),
       ]),
@@ -337,6 +342,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
           ),
         ),
       ]),
+      2 => box([const NotificationSettings()]),
+      4 => box([const ContactsSettings()]),
+      5 when s.source != null => box([const MaintenanceSettings()]),
       _ when s.source != null => box([const AccountsSettings()]),
       _ => box([
         srow(me.name, me.email, const SizedBox.shrink()),
@@ -379,7 +387,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                for (var i = 0; i < _tabs.length; i++)
+                for (var i = 0; i < _tabs(s.source != null).length; i++)
                   Hov(
                     onTap: () => setState(() => tab = i),
                     builder: (_, h) {
@@ -397,7 +405,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                           ),
                         ),
                         child: Mono(
-                          _tabs[i],
+                          _tabs(s.source != null)[i],
                           ls: .14,
                           color: on ? p.accent : (h ? p.text : p.muted),
                           height: null,

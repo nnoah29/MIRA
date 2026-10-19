@@ -75,6 +75,36 @@ class IdentityDetail {
 }
 
 /// Gestion des comptes et des identités par le contrat du moteur.
+/// Boîte d'un compte et son état de synchronisation.
+class BoxChoice {
+  final String id, name, role;
+  final bool synced;
+  const BoxChoice(this.id, this.name, this.role, this.synced);
+}
+
+/// Action du compte en attente d'application sur le serveur.
+class QueuedAction {
+  final String id, kind, state;
+  final int targets, attempts;
+  final String? error;
+  const QueuedAction(
+    this.id,
+    this.kind,
+    this.state,
+    this.targets,
+    this.attempts,
+    this.error,
+  );
+}
+
+/// État de synchronisation d'un compte selon le moteur.
+class SyncStatus {
+  final int? lastSyncedAt;
+  final String? lastError;
+  final bool syncing;
+  const SyncStatus(this.lastSyncedAt, this.lastError, this.syncing);
+}
+
 class AccountAdmin {
   final EngineClient client;
   const AccountAdmin(this.client);
@@ -91,6 +121,76 @@ class AccountAdmin {
         ),
     ];
   }
+
+  /// Boîtes du compte, avec celles que le moteur synchronise.
+  Future<List<BoxChoice>> mailboxes(String id) async {
+    final raw = await client.call(
+      req('mailbox', 'list_mailboxes', {'account': id}),
+    );
+    return [
+      for (final b in (raw['data'] as List).cast<Map>())
+        BoxChoice(
+          '${b['id']}',
+          '${b['display_name'] ?? b['name'] ?? b['id']}',
+          '${b['role']}',
+          b['sync_enabled'] != false,
+        ),
+    ];
+  }
+
+  /// Actions pas encore appliquées sur le serveur (hors envois, visibles dans la boîte d'envoi).
+  Future<List<QueuedAction>> pendingActions(String id) async {
+    final raw = await client.call(
+      req('queue', 'list_actions', {
+        'account': id,
+        'states': ['pending', 'in_progress', 'failed', 'uncertain'],
+      }),
+    );
+    final list = ((raw['data'] as Map)['data'] as List).cast<Map>();
+    return [
+      for (final a in list)
+        if ((a['kind'] as Map?)?['type'] != 'send')
+          QueuedAction(
+            '${a['id']}',
+            '${(a['kind'] as Map?)?['type']}',
+            '${a['state']}',
+            (a['targets'] as List? ?? const []).length,
+            (a['attempts'] as num?)?.toInt() ?? 0,
+            a['last_error'] as String?,
+          ),
+    ];
+  }
+
+  /// Dernière synchronisation, dernière erreur et synchro en cours, pour chaque compte.
+  Future<Map<String, SyncStatus>> syncStatus() async {
+    final raw = await client.call(req('sync', 'get_sync_status'));
+    final list = ((raw['data'] as Map)['data'] as List).cast<Map>();
+    return {
+      for (final e in list)
+        '${e['account']}': SyncStatus(
+          (e['last_synced_at'] as num?)?.toInt(),
+          e['last_error'] as String?,
+          e['syncing'] == true,
+        ),
+    };
+  }
+
+  /// Abandonne une action en attente.
+  Future<void> cancelAction(String action) =>
+      client.call(req('queue', 'cancel_action', {'action': action}));
+
+  /// Relance tout de suite une action échouée.
+  Future<void> retryAction(String action) =>
+      client.call(req('queue', 'retry_action', {'action': action}));
+
+  /// Ne synchronise plus que ces boîtes.
+  Future<void> setSyncedMailboxes(String id, List<String> mailboxes) =>
+      client.call(
+        req('mailbox', 'set_synced_mailboxes', {
+          'account': id,
+          'mailboxes': mailboxes,
+        }),
+      );
 
   Future<void> _account(String op, String id, [Map<String, dynamic>? extra]) =>
       client.call(req('account', op, {'account': id, ...?extra}));

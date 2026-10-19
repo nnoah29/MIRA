@@ -5,6 +5,7 @@ import '../data/models.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
+import 'mira_logo.dart';
 import 'overlays.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
@@ -31,29 +32,19 @@ class Sidebar extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
             child: Row(
               children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: p.accent,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                  alignment: Alignment.center,
-                  child: Ico(
-                    'diamond',
-                    size: 18,
-                    stroke: 2.4,
-                    color: p.onAccent,
-                  ),
-                ),
+                MiraLogo(size: 48, color: p.accent),
                 const SizedBox(width: 14),
-                Text(
-                  'MIRA',
-                  style: Fonts.sans(
-                    size: 15,
-                    w: FontWeight.w500,
-                    color: p.text,
+                Text.rich(
+                  TextSpan(
+                    text: 'MI',
+                    children: [
+                      TextSpan(
+                        text: 'RA',
+                        style: TextStyle(color: p.accent),
+                      ),
+                    ],
                   ),
+                  style: Fonts.display(size: 30, color: p.text, ls: .06),
                 ),
               ],
             ),
@@ -151,20 +142,23 @@ class Sidebar extends StatelessWidget {
               children: [
                 _NavTitle(t('Ma boîte')),
                 for (final f in folderDefs)
-                  _NavItem(
-                    on: s.label == null && s.folder == f.id,
-                    onTap: () => s.selectFolder(f.id),
-                    leading: Ico(
-                      f.icon,
-                      color: s.label == null && s.folder == f.id
-                          ? p.accent
-                          : null,
+                  if (f.id != 'outbox' ||
+                      s.navCount('outbox') > 0 ||
+                      (s.label == null && s.folder == 'outbox'))
+                    _NavItem(
+                      on: s.label == null && s.folder == f.id,
+                      onTap: () => s.selectFolder(f.id),
+                      leading: Ico(
+                        f.icon,
+                        color: s.label == null && s.folder == f.id
+                            ? p.accent
+                            : null,
+                      ),
+                      label: t(f.n),
+                      count: s.navCount(f.id),
                     ),
-                    label: t(f.n),
-                    count: s.navCount(f.id),
-                  ),
                 _NavTitle(t('Libellés')),
-                for (final e in labelDefs.entries)
+                for (final e in s.labelDefs.entries)
                   _NavItem(
                     on: s.label == e.key,
                     onTap: () => s.selectLabel(e.key),
@@ -172,7 +166,7 @@ class Sidebar extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Square(8, Color(e.value.c)),
                     ),
-                    label: t(e.value.n),
+                    label: s.labelTitle(e.key),
                     count: s.nonRead(
                       s.mails.where(
                         (m) => m.labels.contains(e.key) && !s.hidden(m),
@@ -359,7 +353,11 @@ class Topbar extends StatelessWidget {
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 190),
                         child: Text(
-                          s.unified ? t('Toutes les boîtes') : s.active.email,
+                          s.unified
+                              ? t('Toutes les boîtes')
+                              : (s.active.name.trim().isEmpty
+                                    ? s.active.email
+                                    : s.active.name),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Fonts.sans(

@@ -221,6 +221,22 @@ void showSortPop(BuildContext anchor) {
                   s.setSort(k);
                 },
               ),
+            PopSep(),
+            PopTitle(t('Afficher seulement')),
+            for (final (k, n) in [
+              ('unread', t('Non lus')),
+              ('att', t('Avec pièces jointes')),
+            ])
+              PopItem(
+                key: ValueKey('only-$k'),
+                leading: SizedBox.shrink(),
+                label: n,
+                on: s.only == k,
+                onTap: () {
+                  close();
+                  s.setOnly(k);
+                },
+              ),
           ],
         );
       },
@@ -291,10 +307,10 @@ void showLabelPop(BuildContext anchor) {
           mainAxisSize: MainAxisSize.min,
           children: [
             PopTitle(t('Libellés')),
-            for (final e in labelDefs.entries)
+            for (final e in s.labelsForTargets().entries)
               PopItem(
                 leading: Square(8, Color(e.value.c)),
-                label: t(e.value.n),
+                label: s.labelTitle(e.key),
                 on: ms.isNotEmpty && ms.every((m) => m.labels.contains(e.key)),
                 onTap: () => s.toggleLabel(e.key),
               ),
@@ -333,6 +349,12 @@ void showMorePop(BuildContext anchor) {
           label: t('Tout marquer comme lu'),
           onTap: () => run(s.readAllVisible),
         ),
+        if (s.source != null && s.label == null)
+          PopItem(
+            leading: popIco('refresh', ctx),
+            label: t('Resynchroniser ce dossier'),
+            onTap: () => run(s.resyncFolder),
+          ),
         if (s.folder == 'trash' || s.folder == 'spam')
           PopItem(
             leading: popIco('trash', ctx),

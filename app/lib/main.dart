@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -11,6 +14,8 @@ import 'engine/engine_mail_source.dart';
 import 'engine/mail_source.dart';
 import 'engine/rust_engine_client.dart';
 import 'i18n/i18n.dart';
+import 'state/folder_map.dart';
+import 'state/mail_notifier.dart';
 import 'state/store.dart';
 import 'theme/app_theme.dart';
 import 'ui/shell.dart';
@@ -27,26 +32,44 @@ Future<void> main() async {
   await initializeDateFormatting('en_US');
   final prefs = await SharedPreferences.getInstance();
   final source = await openEngineSource(prefs);
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => MailStore(prefs, watchWallpaper: true, source: source),
-      child: const MiraApp(),
-    ),
+  final store = MailStore(prefs, watchWallpaper: true, source: source);
+  unawaited(store.useNotifications(PluginNotifications()));
+  AppLifecycleListener(
+    onStateChange: (state) =>
+        store.appFocused = state == AppLifecycleState.resumed,
   );
+  runApp(ChangeNotifierProvider.value(value: store, child: const MiraApp()));
 }
 
 /// Ouvre le moteur Rust ; `MIRA_DEMO=1` ou une erreur d'ouverture donne les données de démonstration.
 Future<MailSource?> openEngineSource(SharedPreferences prefs) async {
   if (Platform.environment['MIRA_DEMO'] == '1') return null;
   try {
+    final android = Platform.isAndroid;
     final client = await RustEngineClient.open(
       pollSecs: int.tryParse(prefs.getString('poll') ?? ''),
+      home: android ? (await getApplicationSupportDirectory()).path : null,
+      secretsKey: android ? await androidSecretsKey() : null,
     );
-    return await EngineMailSource.load(client);
+    return await EngineMailSource.load(
+      client,
+      folderMap: decodeFolderMap(prefs.getString('folderMap')),
+    );
   } catch (e) {
     stderr.writeln('MIRA : moteur indisponible, données de démonstration ($e)');
     return null;
   }
+}
+
+/// Clé du trousseau chiffré du moteur, gardée par le Keystore Android (voir MainActivity.kt).
+Future<Uint8List> androidSecretsKey() async {
+  final key = await const MethodChannel(
+    'mira/keystore',
+  ).invokeMethod<Uint8List>('secretsKey');
+  if (key == null || key.length != 32) {
+    throw StateError('clé du trousseau indisponible');
+  }
+  return key;
 }
 
 class MiraApp extends StatelessWidget {

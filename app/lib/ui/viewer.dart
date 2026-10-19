@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:pdfrx/pdfrx.dart';
 import 'package:provider/provider.dart';
 
 import '../data/documents.dart';
@@ -85,7 +86,8 @@ class _AttachmentViewerState extends State<AttachmentViewer> {
     final size = MediaQuery.sizeOf(context);
     final narrow = size.width <= 760;
     final kind = kindOf(a);
-    final zoomable = kind != AttKind.other && !(kind == AttKind.text);
+    final realPdf = kind == AttKind.pdf && (a.id != null || a.path != null);
+    final zoomable = kind != AttKind.other && kind != AttKind.text && !realPdf;
 
     Widget header = Container(
       padding: EdgeInsets.symmetric(horizontal: narrow ? 12 : 20, vertical: 12),
@@ -148,7 +150,7 @@ class _AttachmentViewerState extends State<AttachmentViewer> {
             icon: 'download',
             label: t('Télécharger'),
             iconOnly: narrow,
-            onTap: () => s.download(a.n),
+            onTap: () => s.download(a),
           ),
           const SizedBox(width: 6),
           IBtn(
@@ -161,14 +163,15 @@ class _AttachmentViewerState extends State<AttachmentViewer> {
     );
 
     Widget body = switch (kind) {
-      AttKind.image => _ImageBody(a, tc, key: ValueKey('${a.n}$i')),
-      AttKind.text => _TextBody(a),
+      AttKind.image => _Fetched(
+        a,
+        (x) => _ImageBody(x, tc, key: ValueKey('${x.n}$i')),
+      ),
+      AttKind.text => _Fetched(a, _TextBody.new),
+      AttKind.pdf when realPdf => _Fetched(a, _PdfBody.new),
       AttKind.pdf => _PaperBody(documentPages(a), zoom),
-      AttKind.other => _Unavailable(a, () => s.download(a.n)),
+      AttKind.other => _Unavailable(a, () => s.download(a)),
     };
-    if (kind == AttKind.pdf && a.bytes != null) {
-      body = _PaperBody(documentPages(a), zoom);
-    }
 
     return SafeArea(
       child: Center(
@@ -221,6 +224,78 @@ class _AttachmentViewerState extends State<AttachmentViewer> {
         ),
       ),
     );
+  }
+}
+
+// ----------------------------------------------------------- contenu réel
+
+/// Affiche une pièce jointe du moteur une fois son contenu lu ; les autres passent directement.
+class _Fetched extends StatefulWidget {
+  final Attachment a;
+  final Widget Function(Attachment loaded) builder;
+  const _Fetched(this.a, this.builder);
+  @override
+  State<_Fetched> createState() => _FetchedState();
+}
+
+class _FetchedState extends State<_Fetched> {
+  Future<Uint8List?>? _bytes;
+
+  @override
+  void initState() {
+    super.initState();
+    final a = widget.a;
+    if (a.bytes == null && a.id != null) {
+      _bytes = context.read<MailStore>().source?.attachmentBytes(a);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final a = widget.a;
+    final pending = _bytes;
+    if (pending == null) return widget.builder(a);
+    final p = context.pal;
+    return FutureBuilder<Uint8List?>(
+      future: pending,
+      builder: (ctx, snap) {
+        if (snap.connectionState != ConnectionState.done) {
+          return Center(
+            child: Mono(t('Chargement…'), color: p.muted, height: null),
+          );
+        }
+        final bytes = snap.data;
+        if (bytes == null) {
+          return _Unavailable(a, () => ctx.read<MailStore>().download(a));
+        }
+        return widget.builder(
+          Attachment(a.n, a.t, a.s, bytes: bytes, path: a.path, id: a.id),
+        );
+      },
+    );
+  }
+}
+
+/// Document PDF réel, rendu page par page (défilement, zoom à la molette ou au pincement).
+class _PdfBody extends StatelessWidget {
+  final Attachment a;
+  const _PdfBody(this.a);
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.pal;
+    final params = PdfViewerParams(
+      backgroundColor: p.bg,
+      loadingBannerBuilder: (_, _, _) =>
+          Center(child: Mono(t('Chargement…'), color: p.muted, height: null)),
+      errorBannerBuilder: (_, _, _, _) => Center(
+        child: Mono(t('Contenu indisponible.'), color: p.muted, height: null),
+      ),
+    );
+    final bytes = a.bytes;
+    return bytes != null
+        ? PdfViewer.data(bytes, sourceName: a.id ?? a.n, params: params)
+        : PdfViewer.file(a.path!, params: params);
   }
 }
 

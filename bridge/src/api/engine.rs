@@ -15,11 +15,21 @@ pub fn contract_version() -> String {
     format!("{}.{}", CONTRACT_VERSION.major, CONTRACT_VERSION.minor)
 }
 
-/// Ouvre le moteur sur le profil nommé (trousseau et dossier de données du système) ; `poll_secs` fixe le relevé périodique (30 s à 1 h), sinon le délai du fournisseur.
-pub async fn open_engine(profile: String, poll_secs: Option<u32>) -> String {
+/// Ouvre le moteur sur le profil nommé ; `poll_secs` fixe le relevé périodique (30 s à 1 h), sinon le délai du fournisseur.
+/// `home` remplace le dossier de données du système (Android : dossier privé de l'app) ; `secrets_key`
+/// (32 octets, gardés par l'app dans le Keystore) remplace le trousseau du système par un fichier chiffré dans `home`.
+pub async fn open_engine(
+    profile: String,
+    poll_secs: Option<u32>,
+    home: Option<String>,
+    secrets_key: Option<Vec<u8>>,
+) -> String {
     let mut config = production_config(ProfileId::from_raw(profile));
     config.network.background_sync = BackgroundSync::On(supervisor_for(poll_secs));
-    runtime::open(config)
+    match crate::platform::adapt(&mut config, home, secrets_key) {
+        Ok(()) => runtime::open(config),
+        Err(error) => crate::envelope::failure(&error),
+    }
 }
 
 /// Exécute une requête du contrat (JSON) et rend l'enveloppe JSON `{ok, data | error}`.

@@ -8,6 +8,7 @@ import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
 import 'overlays.dart';
+import 'search_filters_bar.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
 
@@ -101,6 +102,7 @@ class MailsColumn extends StatelessWidget {
               ],
             ),
           ),
+          if (s.filtersOpen) SearchFiltersBar(padding: hp),
           Padding(
             padding: EdgeInsets.fromLTRB(hp, 18, hp, 14),
             child: Wrap(

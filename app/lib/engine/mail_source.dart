@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../data/models.dart';
+import '../state/search_filters.dart';
 import 'account_admin.dart';
 import 'account_setup.dart';
 import 'compose_admin.dart';
@@ -101,7 +102,7 @@ abstract class MailSource {
   });
 
   /// Recherche plein texte dans tout l'index local du moteur (tous comptes, toute l'ancienneté).
-  Future<List<Mail>> search(String query);
+  Future<List<Mail>> search(String query, SearchFilters filters);
 
   /// Cherche aussi sur le serveur (corps non téléchargés compris) ; plus lent que la recherche locale.
   Future<ServerSearch> searchServer(String query);

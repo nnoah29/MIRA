@@ -15,6 +15,7 @@ import '../engine/compose_admin.dart';
 import '../engine/engine_client.dart';
 import '../engine/label_admin.dart';
 import 'local_labels.dart';
+import 'search_filters.dart';
 import '../engine/message_actions.dart';
 import '../engine/mail_source.dart';
 import '../engine/sync_state.dart';
@@ -284,6 +285,8 @@ class MailStore extends ChangeNotifier {
   String? label;
   String pill = 'all';
   String q = '';
+  SearchFilters searchFilters = const SearchFilters();
+  bool filtersOpen = false;
   String sort = 'new';
   final Set<String> sel = <String>{};
   String? open;
@@ -420,6 +423,9 @@ class MailStore extends ChangeNotifier {
   // ---- recherche dans l'index du moteur ----
   List<Mail> _hits = const [];
   String _hitsFor = '';
+
+  /// Clé d'un jeu de résultats : le texte et les filtres qui l'ont produit.
+  String _hitsKey(String v) => '$v|${searchFilters.hashCode}';
   Timer? _searchTimer;
 
   /// Recherche sur le serveur en cours, et son bilan une fois finie (`null` : pas lancée pour cette requête).
@@ -447,7 +453,7 @@ class MailStore extends ChangeNotifier {
         for (final m in r.found)
           if (!have.contains(m.id)) loaded[m.id] ?? m,
       ];
-      _hitsFor = asked;
+      _hitsFor = _hitsKey(asked);
       serverNote = _serverNoteOf(r);
     } catch (_) {
       if (q == asked) serverNote = t('Recherche sur le serveur impossible.');
@@ -472,21 +478,22 @@ class MailStore extends ChangeNotifier {
   void _scheduleSearch(String v) {
     _searchTimer?.cancel();
     final src = source;
-    if (src == null || v.trim().length < 2) {
+    if (src == null || (v.trim().length < 2 && !searchFilters.engineActive)) {
       _hits = const [];
       _hitsFor = '';
       return;
     }
     _searchTimer = Timer(const Duration(milliseconds: 250), () async {
       try {
-        final found = await src.search(v.trim());
-        if (q != v) return;
+        final asked = _hitsKey(v);
+        final found = await src.search(v.trim(), searchFilters);
+        if (q != v || asked != _hitsKey(v)) return;
         final loaded = {
           for (final l in _boxes.values)
             for (final m in l) m.id: m,
         };
         _hits = [for (final m in found) loaded[m.id] ?? m];
-        _hitsFor = v;
+        _hitsFor = asked;
         notifyListeners();
       } catch (_) {
         /* recherche indisponible : le filtre local continue */
@@ -587,13 +594,14 @@ class MailStore extends ChangeNotifier {
   List<Mail> _searchResults(String qq) {
     final seen = <String>{};
     final inScope = [
-      if (_hitsFor == q) ..._hits,
+      if (_hitsFor == _hitsKey(q)) ..._hits,
       ...mails.where((m) => _matchesLocally(m, qq)),
     ];
     return [
       for (final m in inScope)
         if ((!hidden(m) || m.folder == folder) &&
             (unified || m.account == activeId) &&
+            searchFilters.matches(m, nowMs()) &&
             seen.add(m.id))
           m,
     ];
@@ -601,7 +609,7 @@ class MailStore extends ChangeNotifier {
 
   List<Mail> visible() {
     final qq = q.trim().toLowerCase();
-    var l = qq.isEmpty ? scope() : _searchResults(qq);
+    var l = !searching ? scope() : _searchResults(qq);
     if (pill != 'all') l = l.where((m) => m.flags.contains(pill)).toList();
     if (only != null) l = l.where(_matchesOnly).toList();
     l.sort(switch (sort) {
@@ -750,8 +758,7 @@ class MailStore extends ChangeNotifier {
     folder = 'inbox';
     label = null;
     pill = 'all';
-    q = '';
-    searchCtl.clear();
+    _resetSearch();
     sort = 'new';
     sel.clear();
     open = null;
@@ -823,8 +830,7 @@ class MailStore extends ChangeNotifier {
     only = null;
     _deep = const [];
     _deepFor = '';
-    q = '';
-    searchCtl.clear();
+    _resetSearch();
     sel.clear();
     open = null;
     view = PaneView.empty;
@@ -1014,10 +1020,35 @@ class MailStore extends ChangeNotifier {
   }
 
   void clearQuery() {
-    q = '';
-    searchCtl.clear();
+    _resetSearch();
     notifyListeners();
     searchFocus.requestFocus();
+  }
+
+  /// Efface le texte cherché et les filtres de recherche.
+  void _resetSearch() {
+    q = '';
+    searchCtl.clear();
+    searchFilters = const SearchFilters();
+    filtersOpen = false;
+    _hits = const [];
+    _hitsFor = '';
+  }
+
+  /// Une recherche est en cours : du texte, ou au moins un filtre.
+  bool get searching => q.trim().isNotEmpty || !searchFilters.isEmpty;
+
+  /// Remplace les filtres de recherche et relance la recherche du moteur.
+  void setSearchFilters(SearchFilters f) {
+    if (f == searchFilters) return;
+    searchFilters = f;
+    _scheduleSearch(q);
+    notifyListeners();
+  }
+
+  void toggleFiltersBar() {
+    filtersOpen = !filtersOpen;
+    notifyListeners();
   }
 
   void toggleNav() {
@@ -1309,8 +1340,7 @@ class MailStore extends ChangeNotifier {
       view == PaneView.settings ? closePane() : showView(PaneView.settings);
 
   void reveal(Mail m) {
-    q = '';
-    searchCtl.clear();
+    _resetSearch();
     pill = 'all';
     if (!visible().contains(m) || !scope().contains(m)) {
       label = null;

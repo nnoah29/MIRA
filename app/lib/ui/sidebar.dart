@@ -308,7 +308,14 @@ class Topbar extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (hasQ)
+                IBtn(
+                  'filter',
+                  key: const ValueKey('search-filters-toggle'),
+                  on: s.filtersOpen || !s.searchFilters.isEmpty,
+                  tip: t('Filtres de recherche'),
+                  onTap: s.toggleFiltersBar,
+                ),
+                if (hasQ || !s.searchFilters.isEmpty)
                   Hov(
                     onTap: s.clearQuery,
                     tip: t('Effacer la recherche'),

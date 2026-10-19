@@ -7,6 +7,7 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 out="$root/packaging/out"
 bundle="$out/bundle"
 
+. "$root/packaging/oauth-credentials.sh"
 echo "== Moteur (bibliothèque du pont, release)"
 (cd "$root/bridge" && cargo build --release)
 

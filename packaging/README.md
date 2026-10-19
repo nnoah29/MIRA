@@ -30,6 +30,10 @@ packaging/install.sh --uninstall  # retire l'application (comptes et mails conse
 
 Installation pour l'utilisateur courant, sans `sudo`, quelle que soit la distribution : l'archive `.tar.gz` de la release est vérifiée avec `SHA256SUMS`, puis extraite dans `~/.local/share/mira-mail/<version>/` ; `current` pointe vers la version active, la précédente est gardée pour revenir en arrière. Commande `~/.local/bin/mira-mail`, lanceur et icônes dans `~/.local/share`. Le dépôt étant privé, le script passe par `gh` s'il est connecté, sinon par `curl` (dépôt public seulement).
 
+## Identifiants OAuth intégrés
+
+`build-bundle.sh` et `android/build.sh` intègrent au moteur la section `[oauth]` de `~/.config/mira/config.toml` (ou du fichier désigné par `MIRA_OAUTH_CONFIG` ; `MIRA_OAUTH_CONFIG=` vide pour s'en passer). Le reste du fichier n'est pas repris. Le `build.rs` de `mira-assembly` la chiffre en AES-256-GCM avec une clé tirée à chaque compilation : ni l'identifiant ni le secret n'apparaissent en clair dans le binaire. La clé voyageant avec le binaire, c'est un masquage contre la lecture directe, pas une protection : Google ne tient pas le secret d'une app de bureau pour confidentiel, la sécurité du flux repose sur PKCE et la redirection vers `127.0.0.1`. Un `config.toml` présent chez l'utilisateur l'emporte, provider par provider.
+
 ## Android
 
 ```bash

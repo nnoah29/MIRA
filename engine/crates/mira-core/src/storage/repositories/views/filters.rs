@@ -21,3 +21,10 @@ pub struct SearchFilters {
     pub to_contains: Option<String>,
     pub mailbox: Option<MailboxId>,
 }
+
+impl SearchFilters {
+    /// Aucun filtre n'est posé : la recherche ne se restreint à rien d'autre que le texte.
+    pub fn is_empty(&self) -> bool {
+        *self == SearchFilters::default()
+    }
+}

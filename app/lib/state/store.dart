@@ -14,6 +14,7 @@ import '../engine/blocks_html.dart';
 import '../engine/compose_admin.dart';
 import '../engine/engine_client.dart';
 import '../engine/label_admin.dart';
+import 'local_labels.dart';
 import '../engine/message_actions.dart';
 import '../engine/mail_source.dart';
 import '../engine/sync_state.dart';
@@ -190,8 +191,10 @@ class MailStore extends ChangeNotifier {
       _applyIdentities();
       _boxes.addAll(source!.boxes);
       _loadSnoozes();
+      localLabels = LocalLabels.decode(prefs.getString('localLabels'));
       for (final l in _boxes.values) {
         _applySnoozes(l);
+        localLabels.apply(l);
       }
       _changeSub = source!.changes.listen(_reloadAccount);
       _syncSub = source!.syncEvents.listen((_) {
@@ -1164,6 +1167,7 @@ class MailStore extends ChangeNotifier {
     try {
       final fresh = _withOutgoing(id, await src.reload(acc));
       _applySnoozes(fresh);
+      localLabels.apply(fresh);
       _keepLocalState(id, fresh);
       if (_signature(fresh) == _signature(_boxes[id] ?? const [])) return;
       final arrived = newArrivals(
@@ -1402,6 +1406,8 @@ class MailStore extends ChangeNotifier {
     }
   }
 
+  LocalLabels localLabels = LocalLabels();
+
   Timer? _wake;
 
   /// Programme le réveil du prochain message reporté (un seul minuteur, rien s'il n'y en a pas).
@@ -1604,15 +1610,18 @@ class MailStore extends ChangeNotifier {
   /// Libellés connus (moteur, ou démonstration) ; ceux du compte actif en vue simple.
   Map<String, LabelDef> get labelDefs {
     final all = source?.labels ?? seedLabelDefs;
-    if (source == null || unified) return all;
+    if (source == null) return all;
+    if (unified) return {...all, ...localLabels.defs};
     return {
       for (final e in all.entries)
         if (e.value.account == activeId) e.key: e.value,
+      ...localLabels.defs,
     };
   }
 
   /// Libellé d'identifiant donné (`null` : supprimé ou d'un autre compte).
-  LabelDef? labelDef(String k) => (source?.labels ?? seedLabelDefs)[k];
+  LabelDef? labelDef(String k) =>
+      localLabels.defs[k] ?? (source?.labels ?? seedLabelDefs)[k];
 
   /// Nom affiché d'un libellé ; en vue unifiée, suivi du compte (« Factures · Perso »).
   String labelTitle(String k) {
@@ -1631,6 +1640,7 @@ class MailStore extends ChangeNotifier {
     return {
       for (final e in all.entries)
         if (accs.isEmpty || accs.contains(e.value.account)) e.key: e.value,
+      ...localLabels.defs,
     };
   }
 
@@ -1640,6 +1650,7 @@ class MailStore extends ChangeNotifier {
     final all0 = ids.map((i) => byId(i)!).toList();
     final def = labelDef(k);
     if (def == null) return;
+    if (def.local) return _toggleLocalLabel(k, all0);
     final admin = source?.labelAdmin;
     final ms = admin == null
         ? all0
@@ -1665,6 +1676,53 @@ class MailStore extends ChangeNotifier {
           : '$done · ${t('{0} d’un autre compte ignorée(s)', [skipped])}',
     );
     if (admin != null) _pushLabel(admin, ms, k, !all);
+  }
+
+  /// Pose ou retire un libellé local sur les conversations, tous comptes confondus.
+  void _toggleLocalLabel(String k, List<Mail> ms) {
+    final all = ms.every((m) => m.labels.contains(k));
+    localLabels.set(ms.map((m) => m.id), k, !all);
+    localLabels.apply(ms);
+    _saveLocalLabels();
+    toast(
+      t(all ? 'Libellé « {0} » retiré' : 'Libellé « {0} » ajouté', [
+        labelTitle(k),
+      ]),
+    );
+  }
+
+  void _saveLocalLabels() {
+    prefs.setString('localLabels', localLabels.encode());
+    notifyListeners();
+  }
+
+  /// Crée un libellé local ; `false` si le nom est vide ou déjà pris.
+  bool addLocalLabel(String name) {
+    if (localLabels.create(name) == null) return false;
+    _saveLocalLabels();
+    return true;
+  }
+
+  /// Renomme un libellé local ; `false` si le nom est vide ou déjà pris.
+  bool renameLocalLabel(String key, String name) {
+    if (!localLabels.rename(key, name)) return false;
+    _saveLocalLabels();
+    return true;
+  }
+
+  void recolorLocalLabel(String key) {
+    localLabels.recolor(key);
+    _saveLocalLabels();
+  }
+
+  /// Supprime un libellé local ; si on le consultait, retour à la réception.
+  void deleteLocalLabel(String key) {
+    localLabels.delete(key);
+    for (final l in _boxes.values) {
+      localLabels.apply(l);
+    }
+    if (label == key) selectFolder('inbox');
+    _saveLocalLabels();
   }
 
   /// Envoie la pose du libellé au moteur ; en cas d'échec, rétablit l'état précédent.

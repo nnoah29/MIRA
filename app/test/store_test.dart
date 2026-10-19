@@ -152,6 +152,25 @@ void main() {
       s.dispose();
     });
 
+    test('libellé local : pose sur une conversation et mémorisation', () async {
+      final s = await newStore();
+      expect(s.addLocalLabel('Perso'), isTrue);
+      expect(s.addLocalLabel('perso'), isFalse);
+      final key = s.localLabels.defs.keys.single;
+      final m = byTitle(s, 'Retour sur la maquette');
+      s.toggleSel(m.id);
+      s.toggleLabel(key);
+      expect(m.labels.contains(key), isTrue);
+      expect(s.labelTitle(key), 'Perso');
+      final saved = s.prefs.getString('localLabels');
+      expect(saved, contains('Perso'));
+      s.toggleLabel(key);
+      expect(m.labels.contains(key), isFalse);
+      s.deleteLocalLabel(key);
+      expect(s.localLabels.defs, isEmpty);
+      s.dispose();
+    });
+
     test('reporter déplace dans « Reportés »', () async {
       final s = await newStore();
       final m = byTitle(s, 'Planning');

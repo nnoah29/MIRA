@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import '../data/format.dart';
 import '../data/html_lite.dart';
 import '../data/models.dart';
+import '../state/search_filters.dart';
 import 'account_admin.dart';
 import 'maintenance_admin.dart';
 import 'sync_state.dart';
@@ -558,19 +559,12 @@ class EngineMailSource implements MailSource {
   }
 
   @override
-  Future<List<Mail>> search(String query) async {
+  Future<List<Mail>> search(String query, SearchFilters filters) async {
     final raw = await client.call(
       req('search', 'search', {
         'query': query,
         'filters': {
-          'common': {
-            'unread_only': false,
-            'flagged_only': false,
-            'has_attachments': false,
-            'from_contains': null,
-            'since': null,
-            'until': null,
-          },
+          'common': filters.engineCommon(nowMs()),
           'to_contains': null,
           'mailbox': null,
         },

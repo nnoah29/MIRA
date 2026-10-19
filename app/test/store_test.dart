@@ -9,6 +9,7 @@ import 'package:mira/state/assistant.dart';
 import 'package:mira/state/rich_controller.dart';
 import 'package:mira/i18n/en.dart';
 import 'package:mira/i18n/i18n.dart';
+import 'package:mira/state/search_filters.dart';
 import 'package:mira/state/store.dart';
 import 'package:mira/theme/wall_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -170,6 +171,27 @@ void main() {
       expect(s.localLabels.defs, isEmpty);
       s.dispose();
     });
+
+    test(
+      'filtres de recherche sans texte : seuls les messages retenus restent',
+      () async {
+        final s = await newStore();
+        expect(s.searching, isFalse);
+        s.setSearchFilters(const SearchFilters(unread: true));
+        expect(s.searching, isTrue);
+        final shown = s.visible();
+        expect(shown, isNotEmpty);
+        expect(shown.every((m) => m.unread), isTrue);
+        s.setSearchFilters(
+          const SearchFilters(unread: true, from: 'zzz-aucun'),
+        );
+        expect(s.visible(), isEmpty);
+        s.clearQuery();
+        expect(s.searchFilters.isEmpty, isTrue);
+        expect(s.searching, isFalse);
+        s.dispose();
+      },
+    );
 
     test('reporter déplace dans « Reportés »', () async {
       final s = await newStore();

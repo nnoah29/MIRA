@@ -14,7 +14,7 @@ import 'maintenance_admin.dart';
 import 'sync_state.dart';
 import 'account_setup.dart';
 import 'compose_admin.dart';
-import 'css_inliner.dart';
+import 'mail_layout.dart';
 import 'inline_images.dart';
 import 'label_admin.dart';
 import 'message_actions.dart';
@@ -723,7 +723,9 @@ class EngineMailSource implements MailSource {
           .cast<String, dynamic>();
       m.blocked = [for (final b in (safe['blocked_resources'] as List)) '$b'];
       final html = (parts[1] as String?) ?? '${safe['html']}';
-      m.html = html.trim().isEmpty ? null : await compute(inlineStyles, html);
+      m.html = html.trim().isEmpty
+          ? null
+          : await compute(prepareMailHtml, html);
     } on EngineException {
       m.html = null;
     }

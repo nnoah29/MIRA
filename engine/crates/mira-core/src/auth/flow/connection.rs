@@ -8,12 +8,12 @@ use tokio::net::TcpStream;
 use tokio::time::timeout;
 
 use super::callback::{AuthorizationCode, parse_callback};
+use super::pages::{failure_page, policy, success_page};
 use super::state_check::is_state_mismatch;
 
 const REQUEST_LIMIT: usize = 8192;
 const READ_PATIENCE: Duration = Duration::from_secs(5);
 const CONNECTION_PATIENCE: Duration = Duration::from_secs(10);
-const DONE_PAGE: &str = "<!doctype html><html lang=\"fr\"><head><meta charset=\"utf-8\"><title>MIRA</title></head><body><p>Autorisation reçue : vous pouvez revenir à MIRA.</p></body></html>";
 
 /// Traite une connexion ; ne rend un résultat que pour une redirection portant le bon `state`
 pub(super) async fn serve_connection(
@@ -26,7 +26,7 @@ pub(super) async fn serve_connection(
         .flatten()
 }
 
-/// Lit la requête puis répond : 404 hors `/callback`, 400 si `state` est faux, 200 sinon
+/// Lit la requête puis répond : 404 hors `/callback`, 400 si `state` est faux, 200 sinon (page de succès ou d'échec)
 async fn answer_request(
     mut stream: TcpStream,
     state: &str,
@@ -41,7 +41,12 @@ async fn answer_request(
         respond(&mut stream, "400 Bad Request", "").await;
         return None;
     }
-    respond(&mut stream, "200 OK", DONE_PAGE).await;
+    let page = if result.is_ok() {
+        success_page()
+    } else {
+        failure_page()
+    };
+    respond(&mut stream, "200 OK", &page).await;
     Some(result)
 }
 
@@ -67,8 +72,9 @@ async fn read_request_target(stream: &mut TcpStream) -> Option<String> {
 /// Écrit une réponse HTTP minimale (sans JavaScript) puis ferme la connexion
 async fn respond(stream: &mut TcpStream, status: &str, body: &str) {
     let reply = format!(
-        "HTTP/1.1 {status}\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nCache-Control: no-store\r\nReferrer-Policy: no-referrer\r\nContent-Security-Policy: default-src 'none'\r\nConnection: close\r\n\r\n{body}",
-        body.len()
+        "HTTP/1.1 {status}\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nCache-Control: no-store\r\nReferrer-Policy: no-referrer\r\nContent-Security-Policy: {}\r\nConnection: close\r\n\r\n{body}",
+        body.len(),
+        policy()
     );
     let _ = stream.write_all(reply.as_bytes()).await;
     let _ = stream.shutdown().await;

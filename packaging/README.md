@@ -19,6 +19,17 @@ Tout est produit dans `packaging/out/` (ignoré par git).
 | Flatpak | dépôt local / Flathub | `flatpak/io.github.nnoah29.Mira.yml` | non : demande `flatpak-builder` et le runtime Freedesktop 24.08 |
 | Snap | `mira-mail_<v>_amd64.snap` | `cd packaging && snapcraft` | non : demande `snapcraft` |
 
+## Installer ou mettre à jour sur sa machine
+
+```bash
+packaging/install.sh              # installe la dernière release, ou la met à jour si elle est plus récente
+packaging/install.sh 1.0.0        # une version précise
+packaging/install.sh --force      # réinstalle même si la version est déjà là
+packaging/install.sh --uninstall  # retire l'application (comptes et mails conservés)
+```
+
+Installation pour l'utilisateur courant, sans `sudo`, quelle que soit la distribution : l'archive `.tar.gz` de la release est vérifiée avec `SHA256SUMS`, puis extraite dans `~/.local/share/mira-mail/<version>/` ; `current` pointe vers la version active, la précédente est gardée pour revenir en arrière. Commande `~/.local/bin/mira-mail`, lanceur et icônes dans `~/.local/share`. Le dépôt étant privé, le script passe par `gh` s'il est connecté, sinon par `curl` (dépôt public seulement).
+
 ## Android
 
 ```bash

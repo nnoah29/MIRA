@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Écrit les aperçus HTML (succès, échec) de la page de retour OAuth dans target/apercu/, sans aucune connexion.
+set -euo pipefail
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+template="$root/engine/crates/mira-core/src/auth/flow/redirect_page.html"
+out="$root/target/apercu"
+mkdir -p "$out"
+
+render() {
+  sed -e "s|{{title}}|$1|" -e "s|{{fr}}|$2|" -e "s|{{en}}|$3|" "$template" > "$out/$4"
+}
+
+render "Autorisation reçue" "Vous pouvez fermer cet onglet et revenir à MIRA." \
+  "Authorisation received. You can close this tab and go back to MIRA." retour-oauth-succes.html
+render "Autorisation non aboutie" "L'accès n'a pas été accordé. Revenez à MIRA pour réessayer." \
+  "Access was not granted. Go back to MIRA to try again." retour-oauth-echec.html
+
+echo "file://$out/retour-oauth-succes.html"
+echo "file://$out/retour-oauth-echec.html"

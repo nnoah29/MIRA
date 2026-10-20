@@ -717,11 +717,13 @@ class EngineMailSource implements MailSource {
           .cast<String, dynamic>();
       m.blocked = [for (final b in (safe['blocked_resources'] as List)) '$b'];
       final html = (parts[1] as String?) ?? '${safe['html']}';
+      m.htmlRaw = html.trim().isEmpty ? null : html;
       m.html = html.trim().isEmpty
           ? null
           : await compute(prepareMailHtml, html);
     } on EngineException {
       m.html = null;
+      m.htmlRaw = null;
     }
   }
 

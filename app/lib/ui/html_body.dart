@@ -11,10 +11,15 @@ import '../state/image_policy.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import 'body_skeleton.dart';
+import 'web_mail_body.dart';
 
 /// Au-delà, l'analyse du HTML part dans un isolat (le surcoût ne vaut que pour les gros courriels).
 const _asyncAbove = 30000;
 const _paper = Color(0xFFFFFFFF);
+
+/// Essai : la vue web remplace le moteur de widgets quand `MIRA_WEBVIEW=1` (Linux seulement).
+final bool webViewEnabled =
+    Platform.isLinux && Platform.environment['MIRA_WEBVIEW'] == '1';
 const _ink = Color(0xFF1A1A1A);
 
 /// Le HTML impose-t-il ses propres couleurs (il doit alors rester sur fond clair) ?
@@ -120,6 +125,10 @@ class _MailHtmlState extends State<MailHtml> {
       ImageAction.never => false,
       ImageAction.ask => msg.blocked.isEmpty,
     };
+    final raw = msg.htmlRaw;
+    if (webViewEnabled && raw != null) {
+      return _webBody(raw, remoteOk, action);
+    }
     final onPaper = imposesColors(msg.html!);
     final html = _htmlBody(p, remoteOk, onPaper);
     final card = onPaper
@@ -138,6 +147,24 @@ class _MailHtmlState extends State<MailHtml> {
         if (msg.blocked.isNotEmpty && action == ImageAction.ask)
           _RemoteBanner(msg: msg),
         _faded(card),
+      ],
+    );
+  }
+
+  /// Vue web : bandeau des images distantes, puis le message dans une zone qui défile d'elle-même.
+  Widget _webBody(String raw, bool remoteOk, ImageAction action) {
+    final screen = MediaQuery.sizeOf(context).height;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (msg.blocked.isNotEmpty && action == ImageAction.ask)
+          _RemoteBanner(msg: msg),
+        WebMailBody(
+          html: raw,
+          inline: msg.inline,
+          remoteImages: remoteOk,
+          height: (screen * 0.8).clamp(420.0, 1000.0),
+        ),
       ],
     );
   }

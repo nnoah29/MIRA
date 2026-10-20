@@ -85,6 +85,9 @@ class Msg {
   /// HTML déjà assaini par le moteur (`null` : message en texte seul).
   String? html;
 
+  /// HTML d'origine, sans retouche (pour la vue web, qui l'affiche tel que reçu sous une politique de contenu stricte).
+  String? htmlRaw;
+
   /// Ressources distantes retirées par le moteur tant que l'utilisateur ne les autorise pas.
   List<String> blocked = const [];
 

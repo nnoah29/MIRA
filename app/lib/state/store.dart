@@ -1250,6 +1250,7 @@ class MailStore extends ChangeNotifier {
           x.body = p.body;
           x.att = p.att;
           x.html = p.html;
+          x.htmlRaw = p.htmlRaw;
           x.blocked = p.blocked;
           x.inline = p.inline;
           x.hydrated = true;

@@ -3021,7 +3021,7 @@ class MailStore extends ChangeNotifier {
     var i = 0;
     void tick() {
       i = (i + rand(2, 5).round()).clamp(0, msg.text.length);
-      msg.shown = msg.text.substring(0, i);
+      msg.shown = clipText(msg.text, i);
       if (i >= msg.text.length) {
         msg.done = true;
         busy = false;

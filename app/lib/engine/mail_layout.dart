@@ -18,6 +18,10 @@ final _boxRule = RegExp(
   r'^(border(?!-collapse|-spacing)|overflow|background|padding)',
   caseSensitive: false,
 );
+final _textAlign = RegExp(
+  r'(?<![-\w])text-align\s*:\s*(\w+)',
+  caseSensitive: false,
+);
 final _widthRule = RegExp(r'(?<![-\w])width\s*:');
 final _percentWidth = RegExp(r'^\s*(\d+(?:\.\d+)?)\s*%\s*$');
 final _minWidth = RegExp(
@@ -86,7 +90,7 @@ void _sizeTable(dom.Element table) {
   table.attributes['style'] = 'width:${found.group(1)}%;$style';
 }
 
-/// Le moteur partage une table de largeur imposée en colonnes égales : on ne l'impose qu'aux tables à une colonne et à celles qui poussent une cellule à droite.
+/// Le moteur partage une table de largeur imposée en colonnes égales : on ne l'impose qu'aux tables à une colonne et à celles dont une cellule est alignée à droite ou centrée (un alignement n'a de sens que dans une table plus large que son contenu).
 bool _spreads(dom.Element table) {
   final rows = [
     for (final part in table.children)
@@ -94,22 +98,17 @@ bool _spreads(dom.Element table) {
   ];
   final cells = [for (final row in rows) row.children.where(_isCell).toList()];
   final widest = cells.fold<int>(0, (most, row) => max(most, row.length));
-  final all = cells.expand((row) => row).toList();
-  return widest <= 1 || (all.any(_pushesRight) && !all.any(_hasFixedWidth));
+  return widest <= 1 || cells.expand((row) => row).any(_alignsAway);
 }
-
-/// Une cellule à largeur fixe garde sa largeur : l'autre prend le reste, sans qu'on étire la table.
-bool _hasFixedWidth(dom.Element cell) =>
-    cell.attributes.containsKey('width') ||
-    _widthRule.hasMatch(cell.attributes['style'] ?? '');
 
 bool _isCell(dom.Element e) => e.localName == 'td' || e.localName == 'th';
 
-/// Une cellule dont l'unique contenu est une table de 100 % prend l'espace restant de sa ligne (l'astuce qui pousse un élément à droite).
-bool _pushesRight(dom.Element cell) {
-  final only = cell.children.length == 1 ? cell.children.first : null;
-  return only?.localName == 'table' &&
-      _percentWidth.hasMatch(only?.attributes['width'] ?? '');
+/// Une cellule alignée à droite ou centrée, par `align` ou `text-align`.
+bool _alignsAway(dom.Element cell) {
+  final styled = _textAlign.firstMatch(cell.attributes['style'] ?? '');
+  final value = (cell.attributes['align'] ?? styled?.group(1) ?? '')
+      .toLowerCase();
+  return value == 'right' || value == 'center';
 }
 
 void _boundOutside(dom.Element table) {

@@ -158,7 +158,8 @@ class _MailHtmlState extends State<MailHtml> {
 
   Widget? _image(dom.Element e, bool remoteOk) {
     final src = (e.attributes['src'] ?? '').trim();
-    final width = double.tryParse(e.attributes['width'] ?? '');
+    final width = _pixels(e, 'width');
+    final height = _pixels(e, 'height');
     final image = _provider(src, remoteOk);
     if (image == null) return const SizedBox.shrink();
     final picture = Image(
@@ -167,7 +168,10 @@ class _MailHtmlState extends State<MailHtml> {
       errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined),
     );
     final sized = ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: width ?? double.infinity),
+      constraints: BoxConstraints(
+        maxWidth: width ?? double.infinity,
+        maxHeight: height ?? double.infinity,
+      ),
       child: _rounded(e, picture, width),
     );
     return Align(
@@ -195,6 +199,17 @@ class _MailHtmlState extends State<MailHtml> {
     }
     return null;
   }
+}
+
+/// Dimension en pixels de l'image : le style en ligne l'emporte sur l'attribut, comme dans un navigateur.
+double? _pixels(dom.Element e, String name) {
+  final rule = RegExp(
+    '(?<![-\\w])$name\\s*:\\s*([\\d.]+)px',
+    caseSensitive: false,
+  );
+  final styled = rule.firstMatch(e.attributes['style'] ?? '')?.group(1);
+  return double.tryParse(styled ?? '') ??
+      double.tryParse(e.attributes[name] ?? '');
 }
 
 final _textAlignRule = RegExp(

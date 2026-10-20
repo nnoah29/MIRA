@@ -379,3 +379,9 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - **À savoir (à dire à l'utilisateur)** : un alias doit être **déclaré chez le fournisseur** pour que le serveur accepte d'envoyer sous cette adresse (Gmail réécrit sinon l'expéditeur) ; et **l'envoi réel n'est pas encore branché sur le moteur** (l'app le refuse, AG-45) : choisir une identité n'a donc pas encore d'effet sur un courrier envoyé.
 - **Option non faite** : importer les alias Gmail par l'API Gmail (portée `gmail.settings.basic`, hors IMAP) — demande un client OAuth Google et un appel HTTP du moteur.
 - **Retour arrière** : `senderChoices` → comptes seuls ; retirer `_hints` de `identities_box.dart`.
+
+## AG-56 — Assainissement HTML borné en taille et en profondeur (corrige AG-34)
+- **Contexte** : `sanitize_html` était quadratique en profondeur d'imbrication (10 000 `<div>` : 5 s ; 100 000 : plus de 10 min). Un message piégé gelait l'affichage.
+- **Choix** : `html/limits.rs` mesure l'entrée **avant** `ammonia`. Au-delà de 2 Mio ou de 512 balises ouvertes en même temps, le message est rendu en texte tronqué et échappé dans un `<pre>`, sans balise active ni ressource distante. En deçà, le chemin d'origine est inchangé. La profondeur est estimée sans analyseur HTML (balises vides exclues, une fermeture décrémente).
+- **Limites** : un vrai message avec plus de 512 balises non fermées (`<p>`, `<li>`) serait affiché en texte brut ; la mise en forme est alors perdue, jamais la sécurité.
+- **Retour arrière** : retirer le garde `is_within_limits` de `sanitize_html`.

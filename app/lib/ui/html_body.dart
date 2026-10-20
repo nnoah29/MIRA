@@ -161,13 +161,20 @@ class _MailHtmlState extends State<MailHtml> {
     final width = double.tryParse(e.attributes['width'] ?? '');
     final image = _provider(src, remoteOk);
     if (image == null) return const SizedBox.shrink();
-    return ConstrainedBox(
+    final picture = Image(
+      image: image,
+      fit: BoxFit.contain,
+      errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined),
+    );
+    final sized = ConstrainedBox(
       constraints: BoxConstraints(maxWidth: width ?? double.infinity),
-      child: Image(
-        image: image,
-        fit: BoxFit.contain,
-        errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined),
-      ),
+      child: _rounded(e, picture, width),
+    );
+    return Align(
+      alignment: _alignmentOf(e),
+      widthFactor: 1,
+      heightFactor: 1,
+      child: sized,
     );
   }
 
@@ -188,6 +195,46 @@ class _MailHtmlState extends State<MailHtml> {
     }
     return null;
   }
+}
+
+final _textAlignRule = RegExp(
+  r'(?<![-\w])text-align\s*:\s*(\w+)',
+  caseSensitive: false,
+);
+
+/// Place l'image comme un navigateur : selon l'`align` ou le `text-align` du premier conteneur qui en porte un, à gauche sinon.
+Alignment _alignmentOf(dom.Element e) {
+  for (var parent = e.parent; parent != null; parent = parent.parent) {
+    final style = _textAlignRule.firstMatch(parent.attributes['style'] ?? '');
+    final named = parent.attributes['align'] ?? style?.group(1);
+    final value = parent.localName == 'center' ? 'center' : named;
+    switch (value?.toLowerCase()) {
+      case 'center':
+        return Alignment.topCenter;
+      case 'right':
+        return Alignment.topRight;
+      case 'left':
+        return Alignment.topLeft;
+    }
+  }
+  return Alignment.topLeft;
+}
+
+final _radiusRule = RegExp(
+  r'(?<![-\w])border-radius\s*:\s*([\d.]+)\s*(%|px)',
+  caseSensitive: false,
+);
+
+/// Applique l'arrondi du style en ligne : cercle à partir de 50 % (ou d'un rayon couvrant l'image), coins en pixels sinon.
+Widget _rounded(dom.Element e, Widget image, double? width) {
+  final match = _radiusRule.firstMatch(e.attributes['style'] ?? '');
+  final value = double.tryParse(match?.group(1) ?? '');
+  if (match == null || value == null || value <= 0) return image;
+  final percent = match.group(2) == '%';
+  final circle = percent ? value >= 50 : value >= (width ?? 2000) / 2;
+  if (circle) return ClipOval(child: image);
+  if (percent) return image;
+  return ClipRRect(borderRadius: BorderRadius.circular(value), child: image);
 }
 
 String _hex(Color c) =>

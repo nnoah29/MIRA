@@ -22,6 +22,14 @@ final _textAlign = RegExp(
   r'(?<![-\w])text-align\s*:\s*(\w+)',
   caseSensitive: false,
 );
+final _widthDeclaration = RegExp(
+  r'(?<![-\w])width\s*:\s*[^;]+;?',
+  caseSensitive: false,
+);
+final _cellPixelWidth = RegExp(
+  r'(?<![-\w])width\s*:\s*\d+(\.\d+)?px',
+  caseSensitive: false,
+);
 final _widthRule = RegExp(r'(?<![-\w])width\s*:');
 final _percentWidth = RegExp(r'^\s*(\d+(?:\.\d+)?)\s*%\s*$');
 final _minWidth = RegExp(
@@ -45,6 +53,7 @@ String fixLayout(String html) {
   if (!styled && !attributes) return html;
   final doc = html_parser.parse(html);
   doc.querySelectorAll('table[align]').forEach(_placeTable);
+  doc.querySelectorAll('table').forEach(_fixedColumns);
   doc.querySelectorAll('table[width]').forEach(_sizeTable);
   doc.querySelectorAll('td[style], th[style]').forEach(_roundCell);
   for (final e in doc.querySelectorAll('[style]')) {
@@ -63,6 +72,34 @@ void _placeTable(dom.Element table) {
   };
   if (margin.isEmpty) return;
   table.attributes['style'] = '$margin${table.attributes['style'] ?? ''}';
+}
+
+/// Quand toutes les cellules d'une ligne ont une largeur fixe, elles fixent la table : sa largeur déclarée est redondante, et le moteur en ferait des colonnes égales.
+void _fixedColumns(dom.Element table) {
+  if (!_rowsOf(table).any(_isFixedRow)) return;
+  table.attributes.remove('width');
+  final style = table.attributes['style'];
+  if (style != null) {
+    table.attributes['style'] = style.replaceAll(_widthDeclaration, '');
+  }
+}
+
+List<dom.Element> _rowsOf(dom.Element table) => [
+  for (final part in table.children)
+    ...(part.localName == 'tr' ? [part] : part.children),
+];
+
+/// Une ligne de plusieurs cellules dont chacune déclare une largeur en pixels.
+bool _isFixedRow(dom.Element row) {
+  final cells = row.children.where(_isCell).toList();
+  return cells.length > 1 && cells.every(_hasPixelWidth);
+}
+
+bool _hasPixelWidth(dom.Element cell) {
+  final declared = _cellPixelWidth.hasMatch(cell.attributes['style'] ?? '');
+  return declared ||
+      RegExp(r'^\s*\d+(\.\d+)?\s*(px)?\s*$')
+          .hasMatch(cell.attributes['width'] ?? '');
 }
 
 /// Le moteur ne dessine pas `border-radius` sur une cellule : le cadre (bordure, arrondi, fond, marges) passe sur un bloc qui enveloppe son contenu.
@@ -92,11 +129,9 @@ void _sizeTable(dom.Element table) {
 
 /// Le moteur partage une table de largeur imposée en colonnes égales : on ne l'impose qu'aux tables à une colonne et à celles dont une cellule est alignée à droite ou centrée (un alignement n'a de sens que dans une table plus large que son contenu).
 bool _spreads(dom.Element table) {
-  final rows = [
-    for (final part in table.children)
-      ...(part.localName == 'tr' ? [part] : part.children),
+  final cells = [
+    for (final row in _rowsOf(table)) row.children.where(_isCell).toList(),
   ];
-  final cells = [for (final row in rows) row.children.where(_isCell).toList()];
   final widest = cells.fold<int>(0, (most, row) => max(most, row.length));
   return widest <= 1 || cells.expand((row) => row).any(_alignsAway);
 }

@@ -157,29 +157,28 @@ class _MailHtmlState extends State<MailHtml> {
   }
 
   Widget? _image(dom.Element e, bool remoteOk) {
-    final src = (e.attributes['src'] ?? '').trim();
-    final width = _pixels(e, 'width');
-    final height = _pixels(e, 'height');
-    final image = _provider(src, remoteOk);
+    final image = _provider((e.attributes['src'] ?? '').trim(), remoteOk);
     if (image == null) return const SizedBox.shrink();
-    final picture = Image(
-      image: image,
-      fit: BoxFit.contain,
-      errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined),
-    );
-    final sized = ConstrainedBox(
-      constraints: BoxConstraints(
-        maxWidth: width ?? double.infinity,
-        maxHeight: height ?? double.infinity,
+    final width = _length(e, 'width');
+    final height = _length(e, 'height');
+    final picture = _rounded(
+      e,
+      Image(
+        image: image,
+        width: width,
+        height: height,
+        fit: width != null && height != null ? BoxFit.fill : BoxFit.contain,
+        errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined),
       ),
-      child: _rounded(e, picture, width),
+      width,
     );
-    return Align(
+    final loose = Align(
       alignment: _alignmentOf(e),
       widthFactor: 1,
       heightFactor: 1,
-      child: sized,
+      child: picture,
     );
+    return _isBlock(e) ? loose : InlineCustomWidget(child: loose);
   }
 
   ImageProvider? _provider(String src, bool remoteOk) {
@@ -201,15 +200,44 @@ class _MailHtmlState extends State<MailHtml> {
   }
 }
 
-/// Dimension en pixels de l'image : le style en ligne l'emporte sur l'attribut, comme dans un navigateur.
-double? _pixels(dom.Element e, String name) {
-  final rule = RegExp(
-    '(?<![-\\w])$name\\s*:\\s*([\\d.]+)px',
-    caseSensitive: false,
-  );
-  final styled = rule.firstMatch(e.attributes['style'] ?? '')?.group(1);
-  return double.tryParse(styled ?? '') ??
-      double.tryParse(e.attributes[name] ?? '');
+final _displayBlock = RegExp(
+  r'(?<![-\w])display\s*:\s*block',
+  caseSensitive: false,
+);
+
+/// Une image est en ligne, comme dans un navigateur, sauf `display:block`.
+bool _isBlock(dom.Element e) =>
+    _displayBlock.hasMatch(e.attributes['style'] ?? '');
+
+({double value, bool percent})? _measure(String? raw) {
+  final found = RegExp(r'^\s*([\d.]+)\s*(px|%)?\s*$').firstMatch(raw ?? '');
+  final value = double.tryParse(found?.group(1) ?? '');
+  return value == null ? null : (value: value, percent: found?.group(2) == '%');
+}
+
+String? _declared(dom.Element e, String name) => RegExp(
+  '(?<![-\\w])$name\\s*:\\s*([^;]+)',
+  caseSensitive: false,
+).firstMatch(e.attributes['style'] ?? '')?.group(1);
+
+/// Dimension voulue de l'image : le style en ligne l'emporte sur l'attribut. Un pourcentage de largeur se calcule sur la largeur déclarée du conteneur ; sans conteneur déclaré, l'image garde sa taille naturelle.
+double? _length(dom.Element e, String name) {
+  final measure = _measure(_declared(e, name)) ?? _measure(e.attributes[name]);
+  if (measure == null) return null;
+  if (!measure.percent) return measure.value;
+  final base = name == 'width' ? _containerWidth(e) : null;
+  return base == null ? null : base * measure.value / 100;
+}
+
+/// Largeur en pixels déclarée par le plus proche ancêtre qui en a une (cellule, table, bloc).
+double? _containerWidth(dom.Element e) {
+  for (var parent = e.parent; parent != null; parent = parent.parent) {
+    final width =
+        _measure(_declared(parent, 'width')) ??
+        _measure(parent.attributes['width']);
+    if (width != null && !width.percent) return width.value;
+  }
+  return null;
 }
 
 final _textAlignRule = RegExp(

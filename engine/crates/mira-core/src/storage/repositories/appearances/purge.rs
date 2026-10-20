@@ -31,6 +31,11 @@ impl Tx<'_> {
         Ok(orphans)
     }
 
+    /// Messages d'un compte sans aucune apparition, que le ménage de fin de passe supprimerait
+    pub fn orphan_messages(&self, account: &AccountId) -> Result<Vec<MessageId>, MiraError> {
+        self.message_ids(ORPHANS_OF_ACCOUNT, account.as_str())
+    }
+
     /// Lit une colonne d'identifiants de messages pour un paramètre texte
     fn message_ids(&self, sql: &str, parameter: &str) -> Result<Vec<MessageId>, MiraError> {
         let mut statement = self.sql().prepare(sql).map_err(storage_error)?;

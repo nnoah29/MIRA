@@ -6,6 +6,7 @@ use super::mailbox_list::sync_mailbox_list;
 use super::order::sync_order;
 use super::orphans::delete_orphans;
 use super::prefetch::prefetch_bodies;
+use super::twins::merge_moved_twins;
 use crate::sync::session::SyncSession;
 use crate::sync::strategy::sync_mailbox;
 
@@ -58,6 +59,7 @@ pub(super) async fn run_steps(session: &mut SyncSession) -> Result<(), MiraError
         session.ctx.diagnose(LogLevel::Info, "sync.orphans", text);
         return Ok(());
     }
+    merge_moved_twins(&session.ctx, &session.created_in_pass)?;
     delete_orphans(&session.ctx)
 }
 

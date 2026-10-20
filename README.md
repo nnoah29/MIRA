@@ -46,6 +46,8 @@ I looked for a mail client on Linux and none of them appealed to me: too austere
   <img src="docs/screenshots/mira-settings.webp" alt="MIRA settings: language, theme, main colour and list density" width="900">
 </p>
 
+> **NB:** following your wallpaper colours is a Linux-only option and needs [ShellArie](https://github.com/Arch-Noah/ShellArie), my Quickshell shell for Hyprland. MIRA reads the colours ShellArie extracts from your wallpaper and updates live. Without ShellArie, or on Android, the option does nothing: pick an accent colour in the settings instead. Everything else in MIRA works without it.
+
 ## Install
 
 **Linux, no sudo** (installs and updates):

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy · MIRA</title>
+<meta name="description" content="MIRA is a free, open-source mail client for Linux and Android. A mail client like any other, just prettier and more fun to use.">
+<meta name="theme-color" content="#1b1b1b">
+<meta property="og:title" content="Privacy · MIRA">
+<meta property="og:description" content="MIRA is a free, open-source mail client for Linux and Android. A mail client like any other, just prettier and more fun to use.">
+<link rel="icon" href="../assets/img/mira-icon.svg" type="image/svg+xml">
+<link rel="alternate" hreflang="fr" href="../fr/privacy.html">
+<link rel="preload" href="../assets/fonts/Anton-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<a class="skip" href="#mira-contenu">Skip to content</a>
+<header class="top"><div class="wrap">
+  <a class="brand" href="index.html" aria-label="MIRA"><svg class="logo-mark" viewBox="0 0 200 200" aria-hidden="true"><path d="M30 118V30H170V170H82" fill="none" stroke="currentColor" stroke-width="12"/><path d="M75.21 124V60.41H94.58L99.93 99.18L105.24 60.41H124.79V124H113.15V78.18L105.85 124H94.44L86.7 78.18V124Z" fill="currentColor"/></svg><span>MI<em>RA</em></span></a>
+  <nav aria-label="Main">
+    <a class="hide-sm" href="index.html#atouts">Features</a>
+    <a class="hide-sm" href="index.html#comptes">Accounts</a>
+    <a href="privacy.html" class="active" aria-current="page">Privacy</a>
+  </nav>
+  <a class="lang" href="../fr/privacy.html" hreflang="fr" aria-label="Voir cette page en français">FR</a>
+  <a class="cta" href="index.html#telecharger"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg></span> Download</a>
+</div></header>
+<main id="mira-contenu">
+<article class="doc"><div class="wrap">
+  <nav class="doc-tabs" aria-label="Documents">
+    <a href="privacy.html" class="active" aria-current="page">Privacy</a>
+    <a href="terms.html">Terms of use</a>
+  </nav>
+<h1>Privacy<span class="caret"></span></h1>
+<p class="updated">In effect as of 19 October 2026.</p>
+
+<p>MIRA is a mail client that runs entirely on your device. This page explains what data MIRA handles, where it is stored and how to delete it.</p>
+
+<h2>In short</h2>
+<ul>
+<li>MIRA has <strong>no server</strong>. Your mail, credentials and settings are never sent to us.</li>
+<li>MIRA contains <strong>no ads, no analytics and no telemetry</strong>.</li>
+<li>MIRA talks directly to your mail provider (Gmail, Outlook, Yahoo or your own IMAP and SMTP server), and only to it.</li>
+</ul>
+
+<h2>Data stored on your device</h2>
+<ul>
+<li><strong>Your mail</strong>: a copy of your messages, downloaded attachments and drafts, in MIRA's data folder, so that MIRA can display them without a network.</li>
+<li><strong>Your credentials</strong>: passwords and OAuth access tokens. On Linux they are kept in the system keyring (GNOME Keyring, KWallet). On Android, in a file encrypted with AES-256-GCM whose key is protected by the Android Keystore.</li>
+<li><strong>Your settings</strong>: theme, language, configured accounts, image permissions per sender.</li>
+</ul>
+<p>This data leaves your device only to be synchronised with your own mail provider.</p>
+
+<h2>Google account data</h2>
+<p>When you connect a Gmail account, MIRA asks Google for the <code>https://mail.google.com/</code> scope. This access is used only for what you do in the app: downloading and displaying your mail, searching it, organising it (archive, labels, trash), and sending the messages you write.</p>
+<ul>
+<li>Google data is not shared with anyone: not with MIRA's developer, nor with any third party.</li>
+<li>It is not used for advertising, for building a profile, or for training an artificial intelligence model.</li>
+<li>No person reads it. It is processed by the app, on your device.</li>
+</ul>
+<p>MIRA's use of information received from Google APIs complies with the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+
+<h2>Network connections made by MIRA</h2>
+<ul>
+<li>To your mail provider, to synchronise and send.</li>
+<li>To Google or Microsoft, for OAuth authorisation and token renewal.</li>
+<li>To a sender's website, only when you ask: showing remote images, or unsubscribing from a mailing list in one click.</li>
+</ul>
+<p>Remote images are blocked by default, because they let a sender know that you opened their message.</p>
+
+<h2>Deleting your data</h2>
+<ul>
+<li><strong>An account</strong>: remove it in MIRA's settings. Its mail and credentials are erased from the device. The mail stays on your provider's server.</li>
+<li><strong>Google access</strong>: remove MIRA from the <a href="https://myaccount.google.com/permissions">third-party apps with access to your account</a> page. The stored tokens then stop working.</li>
+<li><strong>Everything</strong>: uninstall MIRA, then delete its data folder.</li>
+</ul>
+
+<h2>Changes</h2>
+<p>If this policy changes, the new version will be published on this page with its effective date.</p>
+
+<h2>Contact</h2>
+<p>For any question: <a href="mailto:iam@toffanoah.com">iam@toffanoah.com</a>.</p>
+</div></article>
+</main>
+<footer class="foot"><div class="wrap">
+  <span>MIRA · Noah Toffa · MIT licence</span>
+  <nav aria-label="Footer">
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+    <a href="https://github.com/nnoah29/MIRA">Source code</a>
+    <a href="mailto:iam@toffanoah.com">Contact</a>
+  </nav>
+</div></footer>
+
+</body>
+</html>

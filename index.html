@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MIRA, le client mail pour Linux et Android</title>
+<meta name="description" content="MIRA lit et envoie vos mails, sur Linux et sur Android. Un client mail soigné, gratuit, qui garde votre courrier sur votre machine et fonctionne hors ligne.">
+<meta name="theme-color" content="#1b1b1b">
+<meta property="og:title" content="MIRA lit et envoie vos mails">
+<meta property="og:description" content="Sur Linux et sur Android. Gratuit, soigné, et pas coincé dans un navigateur.">
+<meta property="og:image" content="assets/mira-boite-de-reception.png">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/Anton-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+
+<header class="nav">
+  <a class="brand" href="#top" aria-label="MIRA, accueil">
+    <img src="assets/logo.svg" alt="" width="34" height="34">
+    <span class="brand-name">MIRA</span>
+  </a>
+  <nav aria-label="Principal">
+    <a href="#pourquoi">Pourquoi</a>
+    <a href="#fonctions">Fonctions</a>
+    <a href="#telecharger">Télécharger</a>
+    <a href="https://github.com/nnoah29/MIRA" rel="noopener">Code source</a>
+  </nav>
+  <button class="theme" type="button" aria-label="Changer de thème" data-theme-toggle>
+    <span class="theme-dot" aria-hidden="true"></span>
+  </button>
+</header>
+
+<main id="contenu">
+
+<section class="hero" id="top">
+  <div class="hero-text">
+    <h1>MIRA lit et envoie <span class="nowrap">vos mails<i class="cursor" aria-hidden="true"></i></span></h1>
+    <p class="lede">Sur Linux et sur Android. Gratuit, soigné, et pas coincé dans un navigateur.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="#telecharger">Télécharger MIRA</a>
+      <a class="btn" href="https://github.com/nnoah29/MIRA" rel="noopener">Voir le code source</a>
+    </div>
+  </div>
+  <figure class="hero-shot">
+    <img src="assets/mira-boite-de-reception.png" width="1909" height="1024"
+         alt="La boîte de réception de MIRA : colonne des dossiers à gauche, liste des messages au centre, et un message ouvert à droite, sur fond sombre avec des accents orange.">
+  </figure>
+</section>
+
+<section class="why" id="pourquoi">
+  <div class="wrap why-grid">
+    <div class="rejects" aria-label="Ce que je n'ai pas trouvé">
+      <p>Trop austères.</p>
+      <p>Payants.</p>
+      <p>Coincés dans un navigateur.</p>
+    </div>
+    <div class="why-text">
+      <h2>Je l'ai faite parce que les autres ne me plaisaient pas.</h2>
+      <p>J'ai cherché un client mail pour Linux. Ceux que j'ai trouvés étaient trop austères, payants, ou coincés dans un navigateur. Aucun ne me donnait envie d'ouvrir ma boîte.</p>
+      <p>MIRA est le client que je voulais utiliser : une interface sombre et nette, des courriels lisibles, et votre courrier chez vous, sur votre machine.</p>
+    </div>
+  </div>
+</section>
+
+<section class="features" id="fonctions">
+  <div class="wrap features-grid">
+    <div class="features-head">
+      <h2>Tout ce qu'il faut pour lire, écrire et ranger.</h2>
+      <figure class="detail">
+        <img src="assets/mira-boite-de-reception.png" width="1909" height="1024" loading="lazy"
+             alt="Détail de MIRA : dossiers, libellés et liste des messages d'une boîte de réception.">
+      </figure>
+    </div>
+    <dl class="rows">
+      <div class="row">
+        <dt>Instantané</dt>
+        <dd>MIRA garde une copie de votre courrier sur votre ordinateur. Les messages s'ouvrent tout de suite, sans attendre le réseau.</dd>
+      </div>
+      <div class="row">
+        <dt>Hors ligne</dt>
+        <dd>Lisez, répondez, archivez et classez sans connexion. Tout part et se synchronise au retour du réseau.</dd>
+      </div>
+      <div class="row">
+        <dt>Privé</dt>
+        <dd>Votre courrier reste sur votre machine. Les images distantes et les pisteurs sont bloqués jusqu'à ce que vous les autorisiez.</dd>
+      </div>
+      <div class="row">
+        <dt>Tous vos comptes</dt>
+        <dd>Gmail, Outlook, Yahoo ou tout compte mail standard. Passez de l'un à l'autre, ou lisez-les ensemble dans une seule boîte de réception.</dd>
+      </div>
+      <div class="row">
+        <dt>Recherche</dt>
+        <dd>Une recherche rapide dans tous vos messages, avec des filtres : non lus, favoris, pièces jointes, expéditeur, période, compte et libellé.</dd>
+      </div>
+      <div class="row">
+        <dt>Libellés locaux</dt>
+        <dd>Vos libellés valent pour tous vos comptes et ne sont jamais envoyés au serveur.</dd>
+      </div>
+      <div class="row">
+        <dt>À votre goût</dt>
+        <dd>Thème clair ou sombre, couleur principale au choix, français et anglais, raccourcis clavier.</dd>
+      </div>
+    </dl>
+  </div>
+</section>
+
+<section class="download" id="telecharger">
+  <div class="wrap">
+    <h2>Télécharger MIRA</h2>
+    <p class="download-lede">Gratuit et libre, sous licence MIT. Choisissez votre système.</p>
+
+    <div class="platforms">
+      <div class="platform">
+        <h3>Linux</h3>
+        <p>Un paquet pour chaque famille de distributions.</p>
+        <ul class="formats">
+          <li>AppImage</li><li>deb</li><li>rpm</li><li>Flatpak</li><li>Snap</li><li>Arch</li>
+        </ul>
+        <a class="btn btn-primary" href="https://github.com/nnoah29/MIRA/releases/latest" rel="noopener">Télécharger pour Linux</a>
+      </div>
+      <div class="platform">
+        <h3>Android</h3>
+        <p>L'application en APK, pour téléphones ARM 64 bits et x86 64 bits.</p>
+        <ul class="formats">
+          <li>APK</li>
+        </ul>
+        <a class="btn btn-primary" href="https://github.com/nnoah29/MIRA/releases/latest" rel="noopener">Télécharger pour Android</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <a class="brand" href="#top" aria-label="MIRA, haut de page">
+      <img src="assets/logo.svg" alt="" width="28" height="28">
+      <span class="brand-name">MIRA</span>
+    </a>
+    <p>Votre courrier, toujours à portée de main. Même hors ligne.</p>
+    <p class="foot-links"><a href="https://github.com/nnoah29/MIRA" rel="noopener">GitHub</a> <a href="https://github.com/nnoah29/MIRA/releases" rel="noopener">Versions</a> <a href="https://github.com/nnoah29/MIRA/blob/main/LICENSE" rel="noopener">Licence MIT</a></p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  try {
+    var saved = localStorage.getItem('mira-theme');
+    if (saved) root.setAttribute('data-theme', saved);
+  } catch (e) {}
+  var btn = document.querySelector('[data-theme-toggle]');
+  btn.addEventListener('click', function () {
+    var dark = root.getAttribute('data-theme') !== 'light';
+    var next = dark ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('mira-theme', next); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>

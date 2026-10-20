@@ -47,7 +47,7 @@ Tous les tests réseau tournent contre les faux serveurs du crate `mira-testkit`
 ```
 CLAUDE.md  Makefile  ci.sh
 tools/      garde-fous : check-norms, check-architecture, check-forbidden-patterns (+ leurs auto-tests)
-docs/       référence, décisions (DECISIONS-AGENT.md), specs/ par jalon, ETAT/ (journal, plan, invariants, tests)
+docs/       référence, décisions (DECISIONS-AGENT.md), specs/ par jalon
 engine/     workspace Cargo (toolchain 1.99.0, édition 2024)
   crates/mira-vocabulary   types du domaine, erreurs et événements du contrat, interface Provider (serde + thiserror seulement)
   crates/mira-core         le moteur : stockage SQLite/FTS5, profil et verrou, client IMAP, analyse MIME, SMTP,
@@ -360,5 +360,4 @@ Si le réseau tombe pendant l'étape 4, les actions restent en file ; `mira queu
 | `docs/PROPOSITIONS-REFERENCE.md` | Corrections proposées à la référence |
 | `docs/PASSATION.md`, `docs/RAPPORT-FINAL.md` | Passation et bilan de la session de développement |
 | `docs/specs/` | Spécifications par jalon (dont `J8-J9-facade-cli.md` pour le CLI) |
-| `docs/ETAT/` | Journal, plan, invariants et scénarios, résultats de tests, décisions de départ |
 | `docs/GIT_WORKFLOW.md` | Conventions Git (lecture seule) |

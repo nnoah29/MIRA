@@ -1,6 +1,7 @@
 //! Support des tests de la façade : configuration avec faux trousseau, horloge et identifiants.
 #![allow(dead_code)]
 
+pub mod endpoints;
 pub mod files;
 pub mod fixture;
 pub mod oauth;

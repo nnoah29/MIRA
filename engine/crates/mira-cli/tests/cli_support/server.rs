@@ -9,6 +9,7 @@ use mira_assembly::mira_vocabulary::{
 use mira_assembly::ports::{MemorySecretStore, SecretStore};
 use mira_testkit::Credentials;
 use mira_testkit::imap::{CapabilitySet, FakeImapServer, FakeMailStore};
+use mira_testkit::smtp::FakeSmtpServer;
 use tempfile::TempDir;
 
 use super::{CliResult, account_id_of, run_with, test_deps};
@@ -21,10 +22,11 @@ pub struct Bench {
     pub home: TempDir,
     pub secrets: Arc<MemorySecretStore>,
     pub imap: FakeImapServer,
+    pub smtp: FakeSmtpServer,
 }
 
-/// Serveurs en clair sur la boucle locale (le SMTP n'est pas utilisé).
-pub fn local_servers(imap_port: u16) -> ServerSettings {
+/// Serveurs en clair sur la boucle locale.
+pub fn local_servers(imap_port: u16, smtp_port: u16) -> ServerSettings {
     let endpoint = |port: u16| ServerEndpoint {
         host: "127.0.0.1".to_string(),
         port,
@@ -32,7 +34,7 @@ pub fn local_servers(imap_port: u16) -> ServerSettings {
     };
     ServerSettings {
         imap: endpoint(imap_port),
-        smtp: endpoint(1),
+        smtp: endpoint(smtp_port),
     }
 }
 
@@ -41,6 +43,7 @@ pub async fn start_bench() -> Bench {
     let credentials = Credentials::default();
     credentials.add_password(USER, PASSWORD);
     let store = FakeMailStore::new();
+    let smtp = FakeSmtpServer::start(credentials.clone()).await.unwrap();
     let imap = FakeImapServer::start(store, credentials, CapabilitySet::full())
         .await
         .unwrap();
@@ -48,6 +51,7 @@ pub async fn start_bench() -> Bench {
         home: tempfile::tempdir().unwrap(),
         secrets: Arc::new(MemorySecretStore::new()),
         imap,
+        smtp,
     }
 }
 
@@ -55,9 +59,10 @@ impl Bench {
     /// Exécute une commande avec `stdin` ; le domaine `folders.test` vise le faux serveur.
     pub async fn run(&self, stdin: &str, arguments: &[&str]) -> CliResult {
         let mut network = NetworkPolicy::default();
-        network
-            .server_overrides
-            .insert("folders.test".to_string(), local_servers(self.imap.port()));
+        network.server_overrides.insert(
+            "folders.test".to_string(),
+            local_servers(self.imap.port(), self.smtp.port()),
+        );
         let mut deps = test_deps(self.home.path(), Arc::clone(&self.secrets), network, stdin);
         run_with(&mut deps, arguments).await
     }

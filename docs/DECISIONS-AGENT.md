@@ -385,3 +385,9 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - **Choix** : `html/limits.rs` mesure l'entrée **avant** `ammonia`. Au-delà de 2 Mio ou de 512 balises ouvertes en même temps, le message est rendu en texte tronqué et échappé dans un `<pre>`, sans balise active ni ressource distante. En deçà, le chemin d'origine est inchangé. La profondeur est estimée sans analyseur HTML (balises vides exclues, une fermeture décrémente).
 - **Limites** : un vrai message avec plus de 512 balises non fermées (`<p>`, `<li>`) serait affiché en texte brut ; la mise en forme est alors perdue, jamais la sécurité.
 - **Retour arrière** : retirer le garde `is_within_limits` de `sanitize_html`.
+
+## AG-57 — Lectures explicites : jeton OAuth rafraîchi par `ImapAccess` (corrige la limite d'AG-22/AG-27)
+- **Contexte** : la synchro et le rejeu rafraîchissaient déjà le jeton d'accès, mais `ImapAccess` (corps, pièces jointes, recherche serveur) utilisait le jeton rangé tel quel : une fois expiré, ces commandes échouaient en `authentication.token_expired` jusqu'à la prochaine synchro.
+- **Choix** : `ImapAccess` détient la configuration du moteur et la base, et se connecte comme le rejeu : `renew_access_token` si le jeton est expiré, puis, sur un refus d'authentification, un rafraîchissement forcé et une seule nouvelle tentative. Sans effet pour les comptes à mot de passe.
+- **Limites** : le fournisseur d'identifiants reste dupliqué entre le rejeu (`ProductionCredentials`), la synchro (`ProfileCredentials`) et `ImapAccess` ; les unifier (AG-27) reste à faire.
+- **Retour arrière** : restaurer l'ancienne `ImapAccess::connect` (lecture directe du coffre).

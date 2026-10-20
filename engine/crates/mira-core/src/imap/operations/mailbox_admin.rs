@@ -4,24 +4,24 @@ use mira_vocabulary::MiraError;
 
 use crate::imap::client::ImapClient;
 use crate::imap::errors::status::Operation;
-use crate::imap::protocol::quoting::quote;
+use crate::imap::protocol::quoting::quote_mailbox;
 
 impl ImapClient {
     /// Crée une boîte.
     pub async fn create_mailbox(&mut self, name: &str) -> Result<(), MiraError> {
-        let line = format!("CREATE {}", quote(name)?);
+        let line = format!("CREATE {}", quote_mailbox(name)?);
         self.run(&line, Operation::Plain).await.map(|_| ())
     }
 
     /// Renomme une boîte (et ses sous-boîtes).
     pub async fn rename_mailbox(&mut self, from: &str, to: &str) -> Result<(), MiraError> {
-        let line = format!("RENAME {} {}", quote(from)?, quote(to)?);
+        let line = format!("RENAME {} {}", quote_mailbox(from)?, quote_mailbox(to)?);
         self.run(&line, Operation::Plain).await.map(|_| ())
     }
 
     /// Supprime une boîte.
     pub async fn delete_mailbox(&mut self, name: &str) -> Result<(), MiraError> {
-        let line = format!("DELETE {}", quote(name)?);
+        let line = format!("DELETE {}", quote_mailbox(name)?);
         self.run(&line, Operation::Plain).await.map(|_| ())
     }
 }

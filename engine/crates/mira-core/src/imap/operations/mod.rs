@@ -12,6 +12,7 @@ mod list_mailboxes;
 mod logout;
 mod mailbox_admin;
 mod search;
+mod search_utf8;
 mod select;
 mod store_flags;
 mod transfer;

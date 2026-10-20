@@ -3,10 +3,12 @@
 use mira_vocabulary::error::codes::invalid_input;
 use mira_vocabulary::{ErrorCategory, MiraError};
 
+use super::mailbox_name::encode_mailbox_name;
+
 const UIDS_PER_COMMAND: usize = 500;
 
-/// Met un texte entre guillemets en échappant `"` et `\` ; refuse les sauts de ligne.
-pub(crate) fn quote(text: &str) -> Result<String, MiraError> {
+/// Refuse un texte qui contient un saut de ligne ou un octet nul.
+pub(crate) fn reject_control_characters(text: &str) -> Result<(), MiraError> {
     if text.chars().any(|c| matches!(c, '\r' | '\n' | '\0')) {
         return Err(MiraError::new(
             ErrorCategory::InvalidInput,
@@ -14,6 +16,18 @@ pub(crate) fn quote(text: &str) -> Result<String, MiraError> {
             "argument IMAP contenant un caractère de contrôle",
         ));
     }
+    Ok(())
+}
+
+/// Cite un nom de boîte lisible : encodé en UTF-7 modifié puis mis entre guillemets.
+pub(crate) fn quote_mailbox(name: &str) -> Result<String, MiraError> {
+    reject_control_characters(name)?;
+    quote(&encode_mailbox_name(name))
+}
+
+/// Met un texte entre guillemets en échappant `"` et `\` ; refuse les sauts de ligne.
+pub(crate) fn quote(text: &str) -> Result<String, MiraError> {
+    reject_control_characters(text)?;
     let escaped = text.replace('\\', "\\\\").replace('"', "\\\"");
     Ok(format!("\"{escaped}\""))
 }

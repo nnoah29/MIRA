@@ -206,7 +206,16 @@ class LabelDef {
 
   /// Boîte « tous les messages » ou « favoris » : rattachable, mais ni renommée ni supprimée.
   final bool system;
-  const LabelDef(this.n, this.c, {this.account, this.system = false});
+
+  /// Libellé purement local : jamais envoyé au serveur, valable pour tous les comptes.
+  final bool local;
+  const LabelDef(
+    this.n,
+    this.c, {
+    this.account,
+    this.system = false,
+    this.local = false,
+  });
 }
 
 class FolderDef {

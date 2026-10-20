@@ -3,9 +3,11 @@
 
 pub mod composition;
 pub mod engine_config;
+pub mod oauth_embedded;
 pub mod oauth_file_load;
 pub mod oauth_file_parse;
 pub mod oauth_file_path;
+pub mod oauth_overlay;
 
 pub use composition::build_registry;
 pub use engine_config::{production_config, production_config_with_oauth};

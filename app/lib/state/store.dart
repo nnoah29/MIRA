@@ -14,6 +14,8 @@ import '../engine/blocks_html.dart';
 import '../engine/compose_admin.dart';
 import '../engine/engine_client.dart';
 import '../engine/label_admin.dart';
+import 'local_labels.dart';
+import 'search_filters.dart';
 import '../engine/message_actions.dart';
 import '../engine/mail_source.dart';
 import '../engine/sync_state.dart';
@@ -190,8 +192,10 @@ class MailStore extends ChangeNotifier {
       _applyIdentities();
       _boxes.addAll(source!.boxes);
       _loadSnoozes();
+      localLabels = LocalLabels.decode(prefs.getString('localLabels'));
       for (final l in _boxes.values) {
         _applySnoozes(l);
+        localLabels.apply(l);
       }
       _changeSub = source!.changes.listen(_reloadAccount);
       _syncSub = source!.syncEvents.listen((_) {
@@ -281,6 +285,8 @@ class MailStore extends ChangeNotifier {
   String? label;
   String pill = 'all';
   String q = '';
+  SearchFilters searchFilters = const SearchFilters();
+  bool filtersOpen = false;
   String sort = 'new';
   final Set<String> sel = <String>{};
   String? open;
@@ -417,6 +423,9 @@ class MailStore extends ChangeNotifier {
   // ---- recherche dans l'index du moteur ----
   List<Mail> _hits = const [];
   String _hitsFor = '';
+
+  /// Clé d'un jeu de résultats : le texte et les filtres qui l'ont produit.
+  String _hitsKey(String v) => '$v|${searchFilters.hashCode}';
   Timer? _searchTimer;
 
   /// Recherche sur le serveur en cours, et son bilan une fois finie (`null` : pas lancée pour cette requête).
@@ -444,7 +453,7 @@ class MailStore extends ChangeNotifier {
         for (final m in r.found)
           if (!have.contains(m.id)) loaded[m.id] ?? m,
       ];
-      _hitsFor = asked;
+      _hitsFor = _hitsKey(asked);
       serverNote = _serverNoteOf(r);
     } catch (_) {
       if (q == asked) serverNote = t('Recherche sur le serveur impossible.');
@@ -469,21 +478,22 @@ class MailStore extends ChangeNotifier {
   void _scheduleSearch(String v) {
     _searchTimer?.cancel();
     final src = source;
-    if (src == null || v.trim().length < 2) {
+    if (src == null || (v.trim().length < 2 && !searchFilters.engineActive)) {
       _hits = const [];
       _hitsFor = '';
       return;
     }
     _searchTimer = Timer(const Duration(milliseconds: 250), () async {
       try {
-        final found = await src.search(v.trim());
-        if (q != v) return;
+        final asked = _hitsKey(v);
+        final found = await src.search(v.trim(), searchFilters);
+        if (q != v || asked != _hitsKey(v)) return;
         final loaded = {
           for (final l in _boxes.values)
             for (final m in l) m.id: m,
         };
         _hits = [for (final m in found) loaded[m.id] ?? m];
-        _hitsFor = v;
+        _hitsFor = asked;
         notifyListeners();
       } catch (_) {
         /* recherche indisponible : le filtre local continue */
@@ -584,13 +594,14 @@ class MailStore extends ChangeNotifier {
   List<Mail> _searchResults(String qq) {
     final seen = <String>{};
     final inScope = [
-      if (_hitsFor == q) ..._hits,
+      if (_hitsFor == _hitsKey(q)) ..._hits,
       ...mails.where((m) => _matchesLocally(m, qq)),
     ];
     return [
       for (final m in inScope)
         if ((!hidden(m) || m.folder == folder) &&
             (unified || m.account == activeId) &&
+            searchFilters.matches(m, nowMs()) &&
             seen.add(m.id))
           m,
     ];
@@ -598,7 +609,7 @@ class MailStore extends ChangeNotifier {
 
   List<Mail> visible() {
     final qq = q.trim().toLowerCase();
-    var l = qq.isEmpty ? scope() : _searchResults(qq);
+    var l = !searching ? scope() : _searchResults(qq);
     if (pill != 'all') l = l.where((m) => m.flags.contains(pill)).toList();
     if (only != null) l = l.where(_matchesOnly).toList();
     l.sort(switch (sort) {
@@ -747,8 +758,7 @@ class MailStore extends ChangeNotifier {
     folder = 'inbox';
     label = null;
     pill = 'all';
-    q = '';
-    searchCtl.clear();
+    _resetSearch();
     sort = 'new';
     sel.clear();
     open = null;
@@ -820,8 +830,7 @@ class MailStore extends ChangeNotifier {
     only = null;
     _deep = const [];
     _deepFor = '';
-    q = '';
-    searchCtl.clear();
+    _resetSearch();
     sel.clear();
     open = null;
     view = PaneView.empty;
@@ -1011,10 +1020,35 @@ class MailStore extends ChangeNotifier {
   }
 
   void clearQuery() {
-    q = '';
-    searchCtl.clear();
+    _resetSearch();
     notifyListeners();
     searchFocus.requestFocus();
+  }
+
+  /// Efface le texte cherché et les filtres de recherche.
+  void _resetSearch() {
+    q = '';
+    searchCtl.clear();
+    searchFilters = const SearchFilters();
+    filtersOpen = false;
+    _hits = const [];
+    _hitsFor = '';
+  }
+
+  /// Une recherche est en cours : du texte, ou au moins un filtre.
+  bool get searching => q.trim().isNotEmpty || !searchFilters.isEmpty;
+
+  /// Remplace les filtres de recherche et relance la recherche du moteur.
+  void setSearchFilters(SearchFilters f) {
+    if (f == searchFilters) return;
+    searchFilters = f;
+    _scheduleSearch(q);
+    notifyListeners();
+  }
+
+  void toggleFiltersBar() {
+    filtersOpen = !filtersOpen;
+    notifyListeners();
   }
 
   void toggleNav() {
@@ -1164,6 +1198,7 @@ class MailStore extends ChangeNotifier {
     try {
       final fresh = _withOutgoing(id, await src.reload(acc));
       _applySnoozes(fresh);
+      localLabels.apply(fresh);
       _keepLocalState(id, fresh);
       if (_signature(fresh) == _signature(_boxes[id] ?? const [])) return;
       final arrived = newArrivals(
@@ -1305,8 +1340,7 @@ class MailStore extends ChangeNotifier {
       view == PaneView.settings ? closePane() : showView(PaneView.settings);
 
   void reveal(Mail m) {
-    q = '';
-    searchCtl.clear();
+    _resetSearch();
     pill = 'all';
     if (!visible().contains(m) || !scope().contains(m)) {
       label = null;
@@ -1401,6 +1435,8 @@ class MailStore extends ChangeNotifier {
       /* reports illisibles : on repart de zéro */
     }
   }
+
+  LocalLabels localLabels = LocalLabels();
 
   Timer? _wake;
 
@@ -1604,15 +1640,18 @@ class MailStore extends ChangeNotifier {
   /// Libellés connus (moteur, ou démonstration) ; ceux du compte actif en vue simple.
   Map<String, LabelDef> get labelDefs {
     final all = source?.labels ?? seedLabelDefs;
-    if (source == null || unified) return all;
+    if (source == null) return all;
+    if (unified) return {...all, ...localLabels.defs};
     return {
       for (final e in all.entries)
         if (e.value.account == activeId) e.key: e.value,
+      ...localLabels.defs,
     };
   }
 
   /// Libellé d'identifiant donné (`null` : supprimé ou d'un autre compte).
-  LabelDef? labelDef(String k) => (source?.labels ?? seedLabelDefs)[k];
+  LabelDef? labelDef(String k) =>
+      localLabels.defs[k] ?? (source?.labels ?? seedLabelDefs)[k];
 
   /// Nom affiché d'un libellé ; en vue unifiée, suivi du compte (« Factures · Perso »).
   String labelTitle(String k) {
@@ -1631,6 +1670,7 @@ class MailStore extends ChangeNotifier {
     return {
       for (final e in all.entries)
         if (accs.isEmpty || accs.contains(e.value.account)) e.key: e.value,
+      ...localLabels.defs,
     };
   }
 
@@ -1640,6 +1680,7 @@ class MailStore extends ChangeNotifier {
     final all0 = ids.map((i) => byId(i)!).toList();
     final def = labelDef(k);
     if (def == null) return;
+    if (def.local) return _toggleLocalLabel(k, all0);
     final admin = source?.labelAdmin;
     final ms = admin == null
         ? all0
@@ -1665,6 +1706,53 @@ class MailStore extends ChangeNotifier {
           : '$done · ${t('{0} d’un autre compte ignorée(s)', [skipped])}',
     );
     if (admin != null) _pushLabel(admin, ms, k, !all);
+  }
+
+  /// Pose ou retire un libellé local sur les conversations, tous comptes confondus.
+  void _toggleLocalLabel(String k, List<Mail> ms) {
+    final all = ms.every((m) => m.labels.contains(k));
+    localLabels.set(ms.map((m) => m.id), k, !all);
+    localLabels.apply(ms);
+    _saveLocalLabels();
+    toast(
+      t(all ? 'Libellé « {0} » retiré' : 'Libellé « {0} » ajouté', [
+        labelTitle(k),
+      ]),
+    );
+  }
+
+  void _saveLocalLabels() {
+    prefs.setString('localLabels', localLabels.encode());
+    notifyListeners();
+  }
+
+  /// Crée un libellé local ; `false` si le nom est vide ou déjà pris.
+  bool addLocalLabel(String name) {
+    if (localLabels.create(name) == null) return false;
+    _saveLocalLabels();
+    return true;
+  }
+
+  /// Renomme un libellé local ; `false` si le nom est vide ou déjà pris.
+  bool renameLocalLabel(String key, String name) {
+    if (!localLabels.rename(key, name)) return false;
+    _saveLocalLabels();
+    return true;
+  }
+
+  void recolorLocalLabel(String key) {
+    localLabels.recolor(key);
+    _saveLocalLabels();
+  }
+
+  /// Supprime un libellé local ; si on le consultait, retour à la réception.
+  void deleteLocalLabel(String key) {
+    localLabels.delete(key);
+    for (final l in _boxes.values) {
+      localLabels.apply(l);
+    }
+    if (label == key) selectFolder('inbox');
+    _saveLocalLabels();
   }
 
   /// Envoie la pose du libellé au moteur ; en cas d'échec, rétablit l'état précédent.

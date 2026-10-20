@@ -9,12 +9,13 @@ import 'package:flutter/foundation.dart';
 import '../data/format.dart';
 import '../data/html_lite.dart';
 import '../data/models.dart';
+import '../state/search_filters.dart';
 import 'account_admin.dart';
 import 'maintenance_admin.dart';
 import 'sync_state.dart';
 import 'account_setup.dart';
 import 'compose_admin.dart';
-import 'css_inliner.dart';
+import 'mail_layout.dart';
 import 'inline_images.dart';
 import 'label_admin.dart';
 import 'message_actions.dart';
@@ -558,19 +559,12 @@ class EngineMailSource implements MailSource {
   }
 
   @override
-  Future<List<Mail>> search(String query) async {
+  Future<List<Mail>> search(String query, SearchFilters filters) async {
     final raw = await client.call(
       req('search', 'search', {
         'query': query,
         'filters': {
-          'common': {
-            'unread_only': false,
-            'flagged_only': false,
-            'has_attachments': false,
-            'from_contains': null,
-            'since': null,
-            'until': null,
-          },
+          'common': filters.engineCommon(nowMs()),
           'to_contains': null,
           'mailbox': null,
         },
@@ -723,7 +717,9 @@ class EngineMailSource implements MailSource {
           .cast<String, dynamic>();
       m.blocked = [for (final b in (safe['blocked_resources'] as List)) '$b'];
       final html = (parts[1] as String?) ?? '${safe['html']}';
-      m.html = html.trim().isEmpty ? null : await compute(inlineStyles, html);
+      m.html = html.trim().isEmpty
+          ? null
+          : await compute(prepareMailHtml, html);
     } on EngineException {
       m.html = null;
     }

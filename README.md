@@ -1,75 +1,89 @@
 <p align="center">
-  <img src="docs/logo/mira-logo-512.png" alt="MIRA" width="160">
+  <img src="docs/logo/mira-logo-512.png" alt="MIRA" width="140">
 </p>
 
 <h1 align="center">MIRA</h1>
 
-<p align="center"><strong>Your mail, always at hand. Even offline.</strong></p>
+<p align="center"><strong>MIRA reads and sends your mail, on Linux and on Android.</strong></p>
 
----
+<p align="center">Free, open source, and a bit nicer to look at than the usual mail client.</p>
 
-MIRA is a desktop mail client for people who live in their inbox. It keeps a full copy of your mail on your own computer, so everything opens instantly, works on a train or a plane, and stays yours.
+<p align="center">
+  <a href="https://toffanoah.com/en/mira">Website</a> ·
+  <a href="https://github.com/nnoah29/MIRA/releases/latest">Download</a> ·
+  <a href="docs/ENGINE.md">Build it</a>
+</p>
 
-Connect Gmail, Outlook, Yahoo or any standard mail account, and read, sort, search and write from a single, calm interface.
+<p align="center">
+  <img src="docs/screenshots/mira-message.webp" alt="MIRA: folders on the left, the inbox in the middle, an open message on the right" width="900">
+</p>
 
-## Why MIRA
+## Why I made it
 
-- **Instant.** Messages open the moment you click. No spinners, no waiting on the network.
-- **Works offline.** Read, reply, archive and organise without a connection. MIRA sends and syncs everything as soon as you're back online.
-- **Private by default.** Your mail lives on your machine. Remote images and trackers stay blocked until you choose to allow them.
-- **All your accounts, one place.** Switch between accounts or see them all together in a unified inbox.
+I looked for a mail client on Linux and none of them appealed to me: too austere, paid, or stuck in a browser. So I made the one I wanted to use. Big headlines, square corners, one bright colour, and your mail on your own machine.
 
-## Features
+## What you get
 
-**Reading**
-- Conversations grouped by thread
-- Unified inbox across all your accounts
-- Built-in viewer for PDFs and images
-- Remote content blocked, with permissions per sender or domain
-- One-click unsubscribe from mailing lists
+- **Looks like something.** A dark theme with real character, or a light one. Pick your own accent colour, or let MIRA take the colours of your wallpaper. English and French.
+- **All your accounts in one place.** Gmail, Outlook / Microsoft 365, Yahoo or any IMAP/SMTP server, with a unified inbox if you want one.
+- **Works offline.** Your mail is copied to your device. Read, reply, archive and sort on a train or a plane; everything goes out when the network is back.
+- **Private by default.** There is no MIRA server and no telemetry. Remote images and trackers stay blocked until you allow them.
+- **Fast.** Messages open the moment you click, with no spinners.
 
-**Writing**
-- Drafts saved as you type and synced with your server
-- Undo send, and schedule messages for later
-- Several sender identities per account, each with its own signature
-- Address suggestions from the people you write to
+<p align="center">
+  <img src="docs/screenshots/mira-inbox.webp" alt="The MIRA inbox with its folders, labels and quick filters" width="900">
+</p>
 
-**Organising**
-- Archive, trash, spam and labels, synced with your server
-- Snooze a conversation until you're ready for it
-- Star important messages and find them all in Favourites
-- Quick filters for unread messages and attachments
-- Empty Trash or Spam in one step
+### Day to day
 
-**Finding**
-- Fast full-text search across all your mail
-- Extend any search to the server when needed
-- Fetch older mail from the server on demand
+- **Read:** conversations grouped by thread, a built-in viewer for PDFs and images, one-click unsubscribe from mailing lists.
+- **Write:** drafts saved as you type, undo send, scheduled sending, several sender identities with their own signature, address suggestions.
+- **Organise:** archive, trash, spam and labels, snooze, stars. Labels are local: they work across all your accounts and are never sent to the server.
+- **Find:** full-text search with filters (unread, starred, attachments, sender, period, account, label). Extend a search to the server, or fetch older mail, when you need to.
+- **Stay in control:** a clear status when you're offline or a sync fails, pending changes you can retry or cancel, a choice of which folders to sync, keyboard shortcuts.
 
-**Staying in control**
-- Clear status when you're offline or a sync fails, with one-click retry
-- See pending changes waiting to reach the server, and retry or cancel them
-- Choose which folders to keep in sync
-- Storage overview, cache cleanup and diagnostics in Settings
+<p align="center">
+  <img src="docs/screenshots/mira-settings.webp" alt="MIRA settings: language, theme, main colour and list density" width="900">
+</p>
 
-**Making it yours**
-- Light and dark themes, with an accent colour of your choice
-- Can follow your desktop wallpaper colours
-- Available in English and French
-- Keyboard shortcuts for common actions
+> **NB:** following your wallpaper colours is a Linux-only option and needs [ShellArie](https://github.com/Arch-Noah/ShellArie), my Quickshell shell for Hyprland. MIRA reads the colours ShellArie extracts from your wallpaper and updates live. Without ShellArie, or on Android, the option does nothing: pick an accent colour in the settings instead. Everything else in MIRA works without it.
+
+## Install
+
+**Linux, no sudo** (installs and updates):
+
+```bash
+curl -fsSL https://github.com/nnoah29/MIRA/releases/latest/download/install.sh | bash
+```
+
+Or take a package from the [latest release](https://github.com/nnoah29/MIRA/releases/latest): `.deb` (Debian, Ubuntu, Mint), `.rpm` (Fedora, openSUSE), AppImage (any distribution) or a `.tar.gz`.
+
+**Android 7 and later:** download the `.apk` from the same release.
+
+Linux needs glibc 2.34 or newer (Ubuntu 22.04, Debian 12, Fedora 35 and later) and GTK 3. To store your passwords, use a keyring such as GNOME Keyring or KWallet. Checksums are published with each release.
+
+## Try it without an account
+
+MIRA can run on sample data, with nothing sent anywhere:
+
+```bash
+cd app
+MIRA_DEMO=1 flutter run -d linux
+```
 
 ## Supported accounts
 
-Gmail · Outlook / Microsoft 365 · Yahoo · any IMAP/SMTP provider
+| Provider | Sign-in |
+| --- | --- |
+| Gmail | Google sign-in |
+| Outlook, Microsoft 365 | Microsoft sign-in |
+| Yahoo | App password |
+| Any IMAP/SMTP account | Server and password |
 
-## Status
+## For developers
 
-MIRA is in active development. It is built for the Linux desktop first.
+MIRA is a Rust engine (`engine/`) with a Flutter interface (`app/`). Building and contributing: see [`docs/ENGINE.md`](docs/ENGINE.md) and [`app/README.md`](app/README.md).
 
 ## License
 
 MIRA is released under the [MIT License](LICENSE).
-
-## For developers
-
-Building and contributing: see [`docs/ENGINE.md`](docs/ENGINE.md).

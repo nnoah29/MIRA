@@ -18,14 +18,17 @@ impl Tx<'_> {
         filters: &SearchFilters,
         request: &PageRequest,
     ) -> Result<Page<MessageSummary>, MiraError> {
-        let Some(expression) = escape_match_query(query) else {
+        let expression = escape_match_query(query);
+        if expression.is_none() && filters.is_empty() {
             return Ok(finish_page(Vec::new(), request.bounded_limit()));
-        };
+        }
         let mut builder = QueryBuilder::new("messages m");
-        let found = builder.bind(expression);
-        builder.require(format!(
-            "m.id IN (SELECT message_id FROM messages_fts WHERE messages_fts MATCH {found})"
-        ));
+        if let Some(expression) = expression {
+            let found = builder.bind(expression);
+            builder.require(format!(
+                "m.id IN (SELECT message_id FROM messages_fts WHERE messages_fts MATCH {found})"
+            ));
+        }
         let names: Vec<&str> = accounts.iter().map(AccountId::as_str).collect();
         let list = builder.bind_list(&names);
         builder.require(format!("+m.account_id IN {list}"));

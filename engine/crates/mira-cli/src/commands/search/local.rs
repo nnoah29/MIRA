@@ -5,14 +5,14 @@ use mira_assembly::api::SearchRequest;
 use mira_assembly::mira_vocabulary::{MailboxId, MiraError};
 use mira_assembly::reading::SearchFilters;
 
+use crate::argument_error::invalid_argument;
 use crate::commands::filter_args::FilterArgs;
 use crate::commands::paging::PageArgs;
 
 /// Options de `mira search local`.
 #[derive(Debug, Args)]
 pub struct LocalArgs {
-    /// Mots cherchés (tous doivent être présents).
-    #[arg(required = true)]
+    /// Mots cherchés (tous doivent être présents) ; sans mot, seuls les filtres s'appliquent.
     pub words: Vec<String>,
     /// Ne cherche que dans cette boîte.
     #[arg(long)]
@@ -28,13 +28,17 @@ pub struct LocalArgs {
 
 /// Construit la requête de recherche locale.
 pub fn request(args: &LocalArgs) -> Result<SearchRequest, MiraError> {
+    let filters = SearchFilters {
+        common: args.filters.message_filters()?,
+        to_contains: args.to.clone(),
+        mailbox: args.mailbox.as_deref().map(MailboxId::from_raw),
+    };
+    if args.words.is_empty() && filters.is_empty() {
+        return Err(invalid_argument("indiquer des mots ou au moins un filtre"));
+    }
     Ok(SearchRequest::Search {
         query: args.words.join(" "),
-        filters: SearchFilters {
-            common: args.filters.message_filters()?,
-            to_contains: args.to.clone(),
-            mailbox: args.mailbox.as_deref().map(MailboxId::from_raw),
-        },
+        filters,
         page: args.page.page_request(),
     })
 }

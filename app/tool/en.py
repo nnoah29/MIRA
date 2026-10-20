@@ -91,4 +91,9 @@ EN = {
 # raccourcis
 'Raccourcis clavier':'Keyboard shortcuts','RACCOURCIS CLAVIER':'KEYBOARD SHORTCUTS','Message suivant / précédent':'Next / previous message','Ouvrir le message':'Open message',
 'Répondre à tous':'Reply all','Lu / non lu':'Read / unread','Rechercher':'Search','Envoyer le message':'Send message','Entrée':'Enter','Échap':'Esc','Ctrl + Entrée':'Ctrl + Enter','Favori ':'Star',
+# libellés locaux
+'Libellés locaux':'Local labels','Rangés sur cet appareil seulement, valables pour tous les comptes. Le serveur n’en sait rien.':'Stored on this device only, shared by all accounts. The server knows nothing about them.',
+'Aucun libellé local.':'No local labels.','Nouveau libellé local':'New local label','Saisis un nom, différent de ceux déjà utilisés.':'Enter a name that is not already used.','Changer la couleur':'Change colour',
+# filtres de recherche
+'Filtres de recherche':'Search filters','Toute période':'Any time','Dernières 24 h':'Last 24 h','7 derniers jours':'Last 7 days','30 derniers jours':'Last 30 days','Pièces jointes':'Attachments','Période':'Period','Libellé':'Label','Tous les comptes':'All accounts','Tous les libellés':'All labels','De : expéditeur':'From: sender',
 }

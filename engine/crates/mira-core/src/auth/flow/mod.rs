@@ -5,6 +5,7 @@ mod callback;
 mod client_secret;
 mod complete;
 mod connection;
+mod pages;
 mod pending;
 mod pending_debug;
 mod phase;

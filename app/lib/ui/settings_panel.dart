@@ -9,6 +9,7 @@ import '../theme/wall_source.dart';
 import 'accounts_settings.dart';
 import 'contacts_settings.dart';
 import 'image_rules_section.dart';
+import 'local_labels_section.dart';
 import 'maintenance_settings.dart';
 import 'notification_settings.dart';
 import 'widgets.dart';
@@ -329,6 +330,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
             ], s.prefs.getString('poll') ?? ''),
           ),
         const ImageRulesSection(),
+        if (s.source != null) ...[
+          Divider(height: 1, color: p.lineSoft),
+          const LocalLabelsSection(),
+        ],
         Divider(height: 1, color: p.lineSoft),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),

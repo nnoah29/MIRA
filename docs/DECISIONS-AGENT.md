@@ -422,3 +422,10 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - **Limites** : un compte ne peut plus être ajouté tant que son SMTP ne répond pas, même pour ne faire que lire (réseau qui bloque les ports d'envoi). Retour arrière simple si ce choix déplaît (ci-dessous). Un jeton OAuth2 obtenu sans la portée d'envoi du provider échouera ici plutôt qu'à l'envoi (cas voulu).
 - **Tests** : `smtp_check_login.rs`, `api_accounts_smtp_check.rs`. La fixture de la façade démarre désormais un faux SMTP (identifiants partagés avec l'IMAP) ; `local_servers(imap, smtp)` prend les deux ports.
 - **Retour arrière** : remettre `check_imap_login` dans les trois handlers.
+
+## AG-63 — Retrait du CLI (`mira-cli`) et du TUI (`mira-tui`)
+- **Contexte** : l'application Flutter, par le pont FFI, est le seul client utilisé ; le CLI et le TUI n'étaient plus développés et leurs tests de bout en bout pesaient lourd en mémoire et en temps de compilation pour la CI.
+- **Choix** : décision de l'utilisateur (2026-10-21). Les deux crates sont supprimés du workspace, avec les cibles `make tui` et `make cli` et la règle A4 de `tools/check-architecture` (dépendances des clients CLI/TUI). La façade `Engine` et son contrat versionné ne changent pas.
+- **Couverture** : les scénarios S1–S14 restent testés au niveau du moteur (`scenario_s*` de `mira-core/tests`). Disparaissent : l'invariant 6 (« chaque variante de `Request` a une commande CLI », sans objet sans CLI), les tests du CLI (codes de sortie, enveloppe `--json`, secrets par stdin) et les bancs de performance qui passaient par lui (`cli_support/*_bench`).
+- **Écart à la référence** : la référence demande un moteur utilisable sans interface, en ligne de commande, pour tout tester sans écran (§ objectifs 6, D-04). Les tests automatiques de `mira-core` et du pont tiennent ce rôle ; proposition PR-19.
+- **Retour arrière** : restaurer `engine/crates/mira-cli` et `engine/crates/mira-tui` depuis le commit précédant ce retrait, la ligne `mira-tui` des dépendances du workspace, la règle A4 et ses deux auto-tests.

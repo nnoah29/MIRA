@@ -5,9 +5,8 @@ fonctionnalités, mêmes **données fictives** (aucun backend, rien n'est envoy�
 
 ## Données réelles (moteur Rust par FFI)
 
-L'app lit comptes, boîtes et messages dans le moteur MIRA (`../bridge`, flutter_rust_bridge ; AG-45).
-**Lecture seule pour l'instant** : archiver, supprimer, étoile, lu/non lu restent locaux à l'écran,
-l'envoi est refusé, l'ajout de compte de l'interface est fictif (utiliser `mira account add` ou le TUI).
+L'app passe par le moteur MIRA (`../bridge`, flutter_rust_bridge ; AG-45) pour les comptes, les boîtes,
+les messages, les actions et l'envoi. C'est le seul client du moteur (CLI et TUI retirés, AG-63).
 
 ```bash
 make run                                      # (à la racine) pont + flutter run en profile ; make help pour le reste
@@ -17,7 +16,7 @@ MIRA_DEMO=1 flutter run -d linux             # données fictives d'origine
 MIRA_HOME=$(mktemp -d) flutter test          # dont test/rust_bridge_test.dart (vrai moteur par FFI)
 ```
 
-Le profil est verrouillé par le processus qui l'ouvre : fermer le TUI avant de lancer l'app.
+Le profil est verrouillé par le processus qui l'ouvre : une seule instance de l'app par profil.
 Si le moteur ne s'ouvre pas, l'app affiche les données de démonstration (message sur stderr).
 
 ## Lancer

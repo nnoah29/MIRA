@@ -4,13 +4,13 @@ use mira_vocabulary::MiraError;
 
 use crate::imap::client::ImapClient;
 use crate::imap::errors::status::Operation;
-use crate::imap::protocol::quoting::quote;
+use crate::imap::protocol::quoting::quote_mailbox;
 use crate::imap::protocol::response::Response;
 use crate::imap::types::ImapFlag;
 
 /// Début de la commande APPEND : boîte et drapeaux éventuels.
 fn append_prefix(mailbox: &str, flags: &[ImapFlag]) -> Result<String, MiraError> {
-    let name = quote(mailbox)?;
+    let name = quote_mailbox(mailbox)?;
     if flags.is_empty() {
         return Ok(format!("APPEND {name}"));
     }

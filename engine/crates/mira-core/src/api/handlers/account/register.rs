@@ -4,7 +4,7 @@ use mira_vocabulary::{Account, IdempotencyKey, IdentityId, MiraError};
 
 use super::credential_login::StagedCredential;
 use super::draft_plan::DraftPlan;
-use crate::accounts::{NewAccountParts, build_account, build_default_identity, check_imap_login};
+use crate::accounts::{NewAccountParts, build_account, build_default_identity, check_mail_login};
 use crate::api::contract::AccountDraft;
 use crate::api::engine::Engine;
 
@@ -17,7 +17,7 @@ pub(super) async fn register_account(
     key: &IdempotencyKey,
 ) -> Result<Account, MiraError> {
     let budget = engine.budget_for(staged.account.as_str(), plan.provider.as_ref());
-    check_imap_login(&plan.servers.connect, &staged.login, &budget).await?;
+    check_mail_login(&plan.servers.connect, &staged.login, &budget).await?;
     let parts = NewAccountParts {
         id: staged.account.clone(),
         identity_id: IdentityId::from_raw(engine.config.ids.next_id()),

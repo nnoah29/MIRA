@@ -37,12 +37,12 @@ pub(crate) fn remove_account_cache_files(
     Ok(())
 }
 
-/// Jette le miroir du compte (D-18) et les fichiers de cache de ses pièces jointes ; configuration et intentions restent
+/// Jette le miroir du compte (D-18), ses traces et les fichiers de cache de ses pièces jointes ; configuration et intentions restent
 pub fn discard_mirror_and_cache(
     database: &Database,
     account: &AccountId,
     cache_directory: &Path,
 ) -> Result<(), MiraError> {
     remove_account_cache_files(database, account, cache_directory)?;
-    database.write(|tx| tx.discard_account_mirror(account))
+    database.discard_mirror_of(account)
 }

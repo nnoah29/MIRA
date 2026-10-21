@@ -4,13 +4,13 @@ use mira_vocabulary::MiraError;
 
 use crate::imap::client::ImapClient;
 use crate::imap::errors::status::Operation;
-use crate::imap::protocol::quoting::{quote, uid_sets};
+use crate::imap::protocol::quoting::{quote_mailbox, uid_sets};
 
 impl ImapClient {
     /// Envoie `UID COPY` ou `UID MOVE` pour chaque lot d'UID.
     async fn transfer(&mut self, verb: &str, uids: &[u32], to: &str) -> Result<(), MiraError> {
         self.require_selected()?;
-        let target = quote(to)?;
+        let target = quote_mailbox(to)?;
         for set in uid_sets(uids) {
             let line = format!("UID {verb} {set} {target}");
             self.run(&line, Operation::Plain).await?;

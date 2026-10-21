@@ -4,7 +4,7 @@ use mira_vocabulary::MiraError;
 
 use super::credential_login::test_credential;
 use super::draft_plan::plan_draft;
-use crate::accounts::check_imap_login;
+use crate::accounts::check_mail_login;
 use crate::api::contract::{AccountDraft, CredentialInput, Response};
 use crate::api::engine::Engine;
 
@@ -18,6 +18,6 @@ pub(crate) async fn handle_test_connection(
     let login = test_credential(engine, &plan, credential)?;
     let key = format!("candidate:{}", plan.address.as_str());
     let budget = engine.budget_for(&key, plan.provider.as_ref());
-    check_imap_login(&plan.servers.connect, &login, &budget).await?;
+    check_mail_login(&plan.servers.connect, &login, &budget).await?;
     Ok(Response::Done)
 }

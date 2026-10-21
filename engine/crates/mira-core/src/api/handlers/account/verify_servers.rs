@@ -2,7 +2,7 @@
 
 use mira_vocabulary::{AccountId, MiraError, ServerSettings};
 
-use crate::accounts::{check_imap_login, imap_login_of, require_active_account, resolve_servers};
+use crate::accounts::{check_mail_login, imap_login_of, require_active_account, resolve_servers};
 use crate::api::engine::Engine;
 use crate::auth::renewal::renew_access_token;
 use crate::registry::resolve_account_provider;
@@ -30,5 +30,5 @@ pub(super) async fn verify_new_servers(
         .vault()
         .load_login(&account.profile, id, account.auth, user)?;
     let budget = engine.budget_for(id.as_str(), provider.as_ref());
-    check_imap_login(&servers.connect, &imap_login_of(secret), &budget).await
+    check_mail_login(&servers.connect, &imap_login_of(secret), &budget).await
 }

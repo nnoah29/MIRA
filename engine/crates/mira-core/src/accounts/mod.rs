@@ -10,7 +10,7 @@ mod servers;
 mod signature;
 mod state_change;
 
-pub use connection_check::{check_imap_login, imap_login_of};
+pub use connection_check::{check_imap_login, check_mail_login, imap_login_of, smtp_login_of};
 pub use deletion::{erase_account, finish_interrupted_deletions};
 pub use lookup::{require_account, require_active_account, require_identity};
 pub use network_policy::NetworkPolicy;

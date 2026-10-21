@@ -5,6 +5,7 @@ mod support_api;
 
 use mira_core::api::{AccountRequest, CredentialInput, Request, Response, SecretInput};
 use mira_vocabulary::{AccountState, AuthMethodKind, EventKind, SecretKind};
+use support_api::endpoints;
 use support_api::fixture::{self, LABELS_PASSWORD, LABELS_USER};
 use support_api::queries::{accounts, event_kinds, identities};
 use support_api::requests::{add_account, draft, manual_draft, prepare};
@@ -40,7 +41,7 @@ async fn scenario_s2_add_app_password_account() {
 async fn scenario_s3_add_other_account_with_manual_servers() {
     let f = fixture::start().await;
     f.credentials.add_password("carol@other.test", "other-pass");
-    let servers = fixture::local_servers(f.imap.port());
+    let servers = endpoints::local_servers(f.imap.port(), f.smtp.port());
     let other = manual_draft("carol@other.test", servers.clone(), "fake_fallback");
     let tested = f
         .engine

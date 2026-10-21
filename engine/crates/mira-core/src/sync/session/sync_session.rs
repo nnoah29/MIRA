@@ -1,6 +1,6 @@
 //! Une synchronisation en cours : contexte, connexion de travail et identifiant d'opération.
 
-use mira_vocabulary::OperationId;
+use mira_vocabulary::{MessageId, OperationId};
 
 use super::connection::Connection;
 use crate::sync::context::SyncContext;
@@ -13,6 +13,7 @@ pub struct SyncSession {
     pub conn: Connection,
     pub operation: OperationId,
     pub report: ReportHandle,
+    pub created_in_pass: Vec<MessageId>,
     forced_operation: Option<OperationId>,
 }
 
@@ -25,6 +26,7 @@ impl SyncSession {
             conn,
             operation,
             report: ReportHandle::default(),
+            created_in_pass: Vec::new(),
             forced_operation: None,
         }
     }
@@ -44,6 +46,7 @@ impl SyncSession {
     pub fn begin_pass(&mut self) {
         let fresh = OperationId::from_raw(self.ctx.new_id());
         self.operation = self.forced_operation.take().unwrap_or(fresh);
+        self.created_in_pass.clear();
         let id = self.ctx.account.id.clone();
         if let Ok(Some(fresh)) = self.ctx.db.read(|tx| tx.get_account(&id)) {
             self.ctx.account = fresh;

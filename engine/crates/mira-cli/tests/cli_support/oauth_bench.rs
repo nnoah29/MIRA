@@ -12,6 +12,7 @@ use mira_cli::{CliDeps, CliIo, run};
 use mira_testkit::Credentials;
 use mira_testkit::imap::{CapabilitySet, FakeImapServer, FakeMailStore};
 use mira_testkit::oauth::FakeOAuthServer;
+use mira_testkit::smtp::FakeSmtpServer;
 use tempfile::TempDir;
 
 use super::fake_oauth_provider::{FakeOAuthProvider, OAUTH_PROVIDER_ID};
@@ -28,6 +29,7 @@ pub struct OauthBench {
     pub secrets: Arc<MemorySecretStore>,
     pub store: FakeMailStore,
     pub imap: FakeImapServer,
+    pub smtp: FakeSmtpServer,
     pub oauth: FakeOAuthServer,
 }
 
@@ -39,12 +41,14 @@ impl OauthBench {
         let imap = FakeImapServer::start(store.clone(), credentials.clone(), CapabilitySet::full())
             .await
             .unwrap();
+        let smtp = FakeSmtpServer::start(credentials.clone()).await.unwrap();
         let oauth = FakeOAuthServer::start(credentials).await.unwrap();
         Self {
             home: tempfile::tempdir().unwrap(),
             secrets: Arc::new(MemorySecretStore::new()),
             store,
             imap,
+            smtp,
             oauth,
         }
     }
@@ -52,7 +56,7 @@ impl OauthBench {
     /// Dépendances du CLI : faux provider, adresses OAuth du faux serveur, synchro permise.
     pub fn deps(&self) -> CliDeps {
         let mut network = NetworkPolicy::default();
-        let servers = super::server::local_servers(self.imap.port());
+        let servers = super::server::local_servers(self.imap.port(), self.smtp.port());
         network
             .server_overrides
             .insert("oauth.test".to_string(), servers);

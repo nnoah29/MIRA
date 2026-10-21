@@ -6,6 +6,7 @@ use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
 
+use super::limits::{escaped_text_fallback, is_within_limits};
 use super::remote::{is_blocked_until_allowed, is_data_link};
 
 /// HTML sûr à afficher, avec la liste des ressources distantes retirées.
@@ -17,6 +18,12 @@ pub struct SafeHtml {
 
 /// Assainit un HTML reçu ; les ressources distantes ne sont gardées que si `allow_remote`
 pub fn sanitize_html(input: &str, allow_remote: bool) -> SafeHtml {
+    if !is_within_limits(input) {
+        return SafeHtml {
+            html: escaped_text_fallback(input),
+            blocked_resources: Vec::new(),
+        };
+    }
     let blocked = Arc::new(Mutex::new(Vec::new()));
     let html = builder(allow_remote, Arc::clone(&blocked))
         .clean(input)

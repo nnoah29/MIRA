@@ -19,6 +19,7 @@ use mira_assembly::sync::{BackgroundSync, SupervisorConfig};
 use mira_bridge::runtime;
 use mira_testkit::Credentials;
 use mira_testkit::imap::{CapabilitySet, FakeImapServer, FakeMailStore};
+use mira_testkit::smtp::FakeSmtpServer;
 use serde_json::{Value, json};
 
 const USER: &str = "alice@bridge.test";
@@ -50,8 +51,8 @@ fn html_mail() -> Vec<u8> {
     .into_bytes()
 }
 
-/// Configuration de test : tout sous un dossier jetable, le domaine `bridge.test` vise le faux serveur.
-fn config(home: &std::path::Path, port: u16) -> EngineConfig {
+/// Configuration de test : tout sous un dossier jetable, le domaine `bridge.test` vise les faux serveurs.
+fn config(home: &std::path::Path, port: u16, smtp_port: u16) -> EngineConfig {
     let endpoint = |port| ServerEndpoint {
         host: "127.0.0.1".into(),
         port,
@@ -62,7 +63,7 @@ fn config(home: &std::path::Path, port: u16) -> EngineConfig {
         "bridge.test".into(),
         ServerSettings {
             imap: endpoint(port),
-            smtp: endpoint(1),
+            smtp: endpoint(smtp_port),
         },
     );
     network.background_sync = BackgroundSync::On(SupervisorConfig::default());
@@ -144,8 +145,8 @@ async fn list_messages(mailbox: &str) -> Value {
     .await
 }
 
-/// Démarre un faux serveur garni et ouvre le moteur dessus ; rend ce qui doit rester en vie.
-async fn start() -> (tempfile::TempDir, FakeImapServer) {
+/// Démarre les faux serveurs (IMAP garni, SMTP) et ouvre le moteur dessus ; rend ce qui doit rester en vie.
+async fn start() -> (tempfile::TempDir, FakeImapServer, FakeSmtpServer) {
     let credentials = Credentials::default();
     credentials.add_password(USER, PASSWORD);
     let store = FakeMailStore::new();
@@ -162,20 +163,25 @@ async fn start() -> (tempfile::TempDir, FakeImapServer) {
         &raw_mail("Second", "Texte du second."),
         &["\\Seen"],
     );
-    let imap = FakeImapServer::start(store, credentials, CapabilitySet::full())
+    let imap = FakeImapServer::start(store, credentials.clone(), CapabilitySet::full())
         .await
         .unwrap();
+    let smtp = FakeSmtpServer::start(credentials).await.unwrap();
     let home = tempfile::tempdir().unwrap();
-    let opened: Value =
-        serde_json::from_str(&runtime::open(config(home.path(), imap.port()))).unwrap();
+    let opened: Value = serde_json::from_str(&runtime::open(config(
+        home.path(),
+        imap.port(),
+        smtp.port(),
+    )))
+    .unwrap();
     assert_eq!(opened["ok"], true, "{opened}");
-    (home, imap)
+    (home, imap, smtp)
 }
 
 /// Comptes, boîtes, messages et corps arrivent en JSON du contrat, sans secret.
 #[tokio::test(flavor = "multi_thread")]
 async fn the_bridge_serves_real_engine_values_as_json() {
-    let (_home, _imap) = start().await;
+    let (_home, _imap, _smtp) = start().await;
     let account = add_account().await;
     let started =
         send(&json!({"domain": "sync", "request": {"op": "start_sync", "scope": {"type": "all"}}}))

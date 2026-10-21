@@ -11,11 +11,15 @@ import '../state/image_policy.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import 'body_skeleton.dart';
+import 'web_mail_body.dart';
 
 /// Au-delà, l'analyse du HTML part dans un isolat (le surcoût ne vaut que pour les gros courriels).
 const _asyncAbove = 30000;
 const _paper = Color(0xFFFFFFFF);
 const _ink = Color(0xFF1A1A1A);
+
+/// Sous Linux, le corps HTML s'affiche dans une vraie vue web (WebKitGTK) ; ailleurs, par le moteur de widgets.
+final bool webViewEnabled = Platform.isLinux;
 
 /// Le HTML impose-t-il ses propres couleurs (il doit alors rester sur fond clair) ?
 bool imposesColors(String html) => RegExp(
@@ -120,6 +124,10 @@ class _MailHtmlState extends State<MailHtml> {
       ImageAction.never => false,
       ImageAction.ask => msg.blocked.isEmpty,
     };
+    final raw = msg.htmlRaw;
+    if (webViewEnabled && raw != null) {
+      return _webBody(raw, remoteOk, action);
+    }
     final onPaper = imposesColors(msg.html!);
     final html = _htmlBody(p, remoteOk, onPaper);
     final card = onPaper
@@ -142,6 +150,18 @@ class _MailHtmlState extends State<MailHtml> {
     );
   }
 
+  /// Vue web : bandeau des images distantes, puis le message à sa hauteur complète, qui défile avec le lecteur.
+  Widget _webBody(String raw, bool remoteOk, ImageAction action) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (msg.blocked.isNotEmpty && action == ImageAction.ask)
+          _RemoteBanner(msg: msg),
+        WebMailBody(html: raw, inline: msg.inline, remoteImages: remoteOk),
+      ],
+    );
+  }
+
   Map<String, String>? _styleOf(dom.Element e, Pal p, bool onPaper) {
     if (e.localName == 'a' && !onPaper) {
       return {'color': _hex(p.accent)};
@@ -157,18 +177,28 @@ class _MailHtmlState extends State<MailHtml> {
   }
 
   Widget? _image(dom.Element e, bool remoteOk) {
-    final src = (e.attributes['src'] ?? '').trim();
-    final width = double.tryParse(e.attributes['width'] ?? '');
-    final image = _provider(src, remoteOk);
+    final image = _provider((e.attributes['src'] ?? '').trim(), remoteOk);
     if (image == null) return const SizedBox.shrink();
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: width ?? double.infinity),
-      child: Image(
+    final width = _length(e, 'width');
+    final height = _length(e, 'height');
+    final picture = _rounded(
+      e,
+      Image(
         image: image,
-        fit: BoxFit.contain,
+        width: width,
+        height: height,
+        fit: width != null && height != null ? BoxFit.fill : BoxFit.contain,
         errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined),
       ),
+      width,
     );
+    final loose = Align(
+      alignment: _alignmentOf(e),
+      widthFactor: 1,
+      heightFactor: 1,
+      child: picture,
+    );
+    return _isBlock(e) ? loose : InlineCustomWidget(child: loose);
   }
 
   ImageProvider? _provider(String src, bool remoteOk) {
@@ -188,6 +218,86 @@ class _MailHtmlState extends State<MailHtml> {
     }
     return null;
   }
+}
+
+final _displayBlock = RegExp(
+  r'(?<![-\w])display\s*:\s*block',
+  caseSensitive: false,
+);
+
+/// Une image est en ligne, comme dans un navigateur, sauf `display:block`.
+bool _isBlock(dom.Element e) =>
+    _displayBlock.hasMatch(e.attributes['style'] ?? '');
+
+({double value, bool percent})? _measure(String? raw) {
+  final found = RegExp(r'^\s*([\d.]+)\s*(px|%)?\s*$').firstMatch(raw ?? '');
+  final value = double.tryParse(found?.group(1) ?? '');
+  return value == null ? null : (value: value, percent: found?.group(2) == '%');
+}
+
+String? _declared(dom.Element e, String name) => RegExp(
+  '(?<![-\\w])$name\\s*:\\s*([^;]+)',
+  caseSensitive: false,
+).firstMatch(e.attributes['style'] ?? '')?.group(1);
+
+/// Dimension voulue de l'image : le style en ligne l'emporte sur l'attribut. Un pourcentage de largeur se calcule sur la largeur déclarée du conteneur ; sans conteneur déclaré, l'image garde sa taille naturelle.
+double? _length(dom.Element e, String name) {
+  final measure = _measure(_declared(e, name)) ?? _measure(e.attributes[name]);
+  if (measure == null) return null;
+  if (!measure.percent) return measure.value;
+  final base = name == 'width' ? _containerWidth(e) : null;
+  return base == null ? null : base * measure.value / 100;
+}
+
+/// Largeur en pixels déclarée par le plus proche ancêtre qui en a une (cellule, table, bloc).
+double? _containerWidth(dom.Element e) {
+  for (var parent = e.parent; parent != null; parent = parent.parent) {
+    final width =
+        _measure(_declared(parent, 'width')) ??
+        _measure(parent.attributes['width']);
+    if (width != null && !width.percent) return width.value;
+  }
+  return null;
+}
+
+final _textAlignRule = RegExp(
+  r'(?<![-\w])text-align\s*:\s*(\w+)',
+  caseSensitive: false,
+);
+
+/// Place l'image comme un navigateur : selon l'`align` ou le `text-align` du premier conteneur qui en porte un, à gauche sinon.
+Alignment _alignmentOf(dom.Element e) {
+  for (var parent = e.parent; parent != null; parent = parent.parent) {
+    final style = _textAlignRule.firstMatch(parent.attributes['style'] ?? '');
+    final named = parent.attributes['align'] ?? style?.group(1);
+    final value = parent.localName == 'center' ? 'center' : named;
+    switch (value?.toLowerCase()) {
+      case 'center':
+        return Alignment.topCenter;
+      case 'right':
+        return Alignment.topRight;
+      case 'left':
+        return Alignment.topLeft;
+    }
+  }
+  return Alignment.topLeft;
+}
+
+final _radiusRule = RegExp(
+  r'(?<![-\w])border-radius\s*:\s*([\d.]+)\s*(%|px)',
+  caseSensitive: false,
+);
+
+/// Applique l'arrondi du style en ligne : cercle à partir de 50 % (ou d'un rayon couvrant l'image), coins en pixels sinon.
+Widget _rounded(dom.Element e, Widget image, double? width) {
+  final match = _radiusRule.firstMatch(e.attributes['style'] ?? '');
+  final value = double.tryParse(match?.group(1) ?? '');
+  if (match == null || value == null || value <= 0) return image;
+  final percent = match.group(2) == '%';
+  final circle = percent ? value >= 50 : value >= (width ?? 2000) / 2;
+  if (circle) return ClipOval(child: image);
+  if (percent) return image;
+  return ClipRRect(borderRadius: BorderRadius.circular(value), child: image);
 }
 
 String _hex(Color c) =>

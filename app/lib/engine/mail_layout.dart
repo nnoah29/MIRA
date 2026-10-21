@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
 
@@ -8,6 +10,28 @@ final _maxWidth = RegExp(
   r'(?<![-\w])max-width\s*:\s*([^;]+);?',
   caseSensitive: false,
 );
+final _radiusRule = RegExp(
+  r'(?<![-\w])border-radius\s*:\s*[^;]*[1-9]',
+  caseSensitive: false,
+);
+final _boxRule = RegExp(
+  r'^(border(?!-collapse|-spacing)|overflow|background|padding)',
+  caseSensitive: false,
+);
+final _textAlign = RegExp(
+  r'(?<![-\w])text-align\s*:\s*(\w+)',
+  caseSensitive: false,
+);
+final _widthDeclaration = RegExp(
+  r'(?<![-\w])width\s*:\s*[^;]+;?',
+  caseSensitive: false,
+);
+final _cellPixelWidth = RegExp(
+  r'(?<![-\w])width\s*:\s*\d+(\.\d+)?px',
+  caseSensitive: false,
+);
+final _widthRule = RegExp(r'(?<![-\w])width\s*:');
+final _percentWidth = RegExp(r'^\s*(\d+(?:\.\d+)?)\s*%\s*$');
 final _minWidth = RegExp(
   r'(?<![-\w])min-width\s*:[^;]*;?',
   caseSensitive: false,
@@ -16,16 +40,110 @@ final _minWidth = RegExp(
 /// Prépare le HTML d'un courriel pour le rendu : styles reportés, puis mise en page corrigée.
 String prepareMailHtml(String html) => fixLayout(inlineStyles(html));
 
-/// Neutralise ce qui écrase les colonnes dans le moteur de rendu : `word-break` et bornes de largeur des tableaux.
+/// Neutralise ce qui écrase les colonnes dans le moteur de rendu : `word-break`, bornes de largeur et `align` des tableaux.
 String fixLayout(String html) {
   final lower = html.toLowerCase();
-  if (!lower.contains('word-break') && !lower.contains('width:')) return html;
+  final styled =
+      lower.contains('word-break') ||
+      lower.contains('width:') ||
+      lower.contains('border-radius');
+  final attributes =
+      lower.contains('<table') &&
+      (lower.contains('align=') || lower.contains('width='));
+  if (!styled && !attributes) return html;
   final doc = html_parser.parse(html);
+  doc.querySelectorAll('table[align]').forEach(_placeTable);
+  doc.querySelectorAll('table').forEach(_fixedColumns);
+  doc.querySelectorAll('table[width]').forEach(_sizeTable);
+  doc.querySelectorAll('td[style], th[style]').forEach(_roundCell);
   for (final e in doc.querySelectorAll('[style]')) {
     e.attributes['style'] = e.attributes['style']!.replaceAll(_wordBreak, '');
   }
   doc.querySelectorAll('table[style]').forEach(_boundOutside);
   return doc.outerHtml;
+}
+
+/// `<table align>` place la table dans la page ; le moteur de rendu en ferait un `text-align` hérité par tout son contenu.
+void _placeTable(dom.Element table) {
+  final margin = switch (table.attributes.remove('align')?.toLowerCase()) {
+    'center' => 'margin-left:auto;margin-right:auto;',
+    'right' => 'margin-left:auto;',
+    _ => '',
+  };
+  if (margin.isEmpty) return;
+  table.attributes['style'] = '$margin${table.attributes['style'] ?? ''}';
+}
+
+/// Quand toutes les cellules d'une ligne ont une largeur fixe, elles fixent la table : sa largeur déclarée est redondante, et le moteur en ferait des colonnes égales.
+void _fixedColumns(dom.Element table) {
+  if (!_rowsOf(table).any(_isFixedRow)) return;
+  table.attributes.remove('width');
+  final style = table.attributes['style'];
+  if (style != null) {
+    table.attributes['style'] = style.replaceAll(_widthDeclaration, '');
+  }
+}
+
+List<dom.Element> _rowsOf(dom.Element table) => [
+  for (final part in table.children)
+    ...(part.localName == 'tr' ? [part] : part.children),
+];
+
+/// Une ligne de plusieurs cellules dont chacune déclare une largeur en pixels.
+bool _isFixedRow(dom.Element row) {
+  final cells = row.children.where(_isCell).toList();
+  return cells.length > 1 && cells.every(_hasPixelWidth);
+}
+
+bool _hasPixelWidth(dom.Element cell) {
+  final declared = _cellPixelWidth.hasMatch(cell.attributes['style'] ?? '');
+  return declared ||
+      RegExp(r'^\s*\d+(\.\d+)?\s*(px)?\s*$')
+          .hasMatch(cell.attributes['width'] ?? '');
+}
+
+/// Le moteur ne dessine pas `border-radius` sur une cellule : le cadre (bordure, arrondi, fond, marges) passe sur un bloc qui enveloppe son contenu.
+void _roundCell(dom.Element cell) {
+  final style = cell.attributes['style'] ?? '';
+  if (!_radiusRule.hasMatch(style)) return;
+  final declarations = style.split(';').map((d) => d.trim()).where(_filled);
+  final frame = declarations.where(_boxRule.hasMatch).toList();
+  final rest = declarations.where((d) => !_boxRule.hasMatch(d)).toList();
+  final wrapper = dom.Element.tag('div')..attributes['style'] = frame.join(';');
+  for (final child in cell.nodes.toList()) {
+    wrapper.append(child);
+  }
+  cell.append(wrapper);
+  cell.attributes['style'] = rest.join(';');
+}
+
+bool _filled(String text) => text.isNotEmpty;
+
+/// L'attribut `width` en pourcentage d'une table devient une largeur CSS, que le moteur de rendu applique (les largeurs fixes restent ignorées).
+void _sizeTable(dom.Element table) {
+  final style = table.attributes['style'] ?? '';
+  final found = _percentWidth.firstMatch(table.attributes['width'] ?? '');
+  if (found == null || _widthRule.hasMatch(style) || !_spreads(table)) return;
+  table.attributes['style'] = 'width:${found.group(1)}%;$style';
+}
+
+/// Le moteur partage une table de largeur imposée en colonnes égales : on ne l'impose qu'aux tables à une colonne et à celles dont une cellule est alignée à droite ou centrée (un alignement n'a de sens que dans une table plus large que son contenu).
+bool _spreads(dom.Element table) {
+  final cells = [
+    for (final row in _rowsOf(table)) row.children.where(_isCell).toList(),
+  ];
+  final widest = cells.fold<int>(0, (most, row) => max(most, row.length));
+  return widest <= 1 || cells.expand((row) => row).any(_alignsAway);
+}
+
+bool _isCell(dom.Element e) => e.localName == 'td' || e.localName == 'th';
+
+/// Une cellule alignée à droite ou centrée, par `align` ou `text-align`.
+bool _alignsAway(dom.Element cell) {
+  final styled = _textAlign.firstMatch(cell.attributes['style'] ?? '');
+  final value = (cell.attributes['align'] ?? styled?.group(1) ?? '')
+      .toLowerCase();
+  return value == 'right' || value == 'center';
 }
 
 void _boundOutside(dom.Element table) {

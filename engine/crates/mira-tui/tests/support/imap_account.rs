@@ -9,14 +9,15 @@ use mira_assembly::mira_vocabulary::{
 };
 use mira_testkit::Credentials;
 use mira_testkit::imap::{CapabilitySet, FakeImapServer, FakeMailStore};
+use mira_testkit::smtp::FakeSmtpServer;
 
 use super::world::TestWorld;
 
 pub const USER: &str = "alice@folders.test";
 pub const PASSWORD: &str = "pa55-SECRET-xyz";
 
-/// Réseau de test : le domaine `folders.test` vise le faux serveur, en clair.
-fn network_for(imap_port: u16) -> NetworkPolicy {
+/// Réseau de test : le domaine `folders.test` vise les faux serveurs, en clair.
+fn network_for(imap_port: u16, smtp_port: u16) -> NetworkPolicy {
     let endpoint = |port: u16| ServerEndpoint {
         host: "127.0.0.1".to_string(),
         port,
@@ -24,7 +25,7 @@ fn network_for(imap_port: u16) -> NetworkPolicy {
     };
     let settings = ServerSettings {
         imap: endpoint(imap_port),
-        smtp: endpoint(1),
+        smtp: endpoint(smtp_port),
     };
     let mut network = NetworkPolicy::default();
     network
@@ -56,33 +57,40 @@ pub(super) async fn add_test_account(engine: &Engine) -> Option<AccountId> {
     }
 }
 
+/// Faux serveurs IMAP (boîte vide) et SMTP qui acceptent `USER` (l'ajout d'un compte vérifie les deux).
+async fn fake_servers() -> (FakeImapServer, FakeSmtpServer) {
+    let credentials = Credentials::default();
+    credentials.add_password(USER, PASSWORD);
+    let store = FakeMailStore::new();
+    let imap = FakeImapServer::start(store, credentials.clone(), CapabilitySet::full())
+        .await
+        .unwrap();
+    let smtp = FakeSmtpServer::start(credentials).await.unwrap();
+    (imap, smtp)
+}
+
 impl TestWorld {
-    /// Monde avec un faux serveur IMAP et le compte `alice@folders.test` déjà ajouté.
+    /// Monde avec les faux serveurs et le compte `alice@folders.test` déjà ajouté.
     pub async fn with_imap_account() -> Self {
-        let credentials = Credentials::default();
-        credentials.add_password(USER, PASSWORD);
-        let imap = FakeImapServer::start(FakeMailStore::new(), credentials, CapabilitySet::full())
-            .await
-            .unwrap();
-        let network = network_for(imap.port());
+        let (imap, smtp) = fake_servers().await;
+        let network = network_for(imap.port(), smtp.port());
         let home = tempfile::tempdir().unwrap();
         let mut world = Self::open_in(home, network, Some(imap));
+        world.smtp = Some(smtp);
         world.account = add_test_account(&world.engine).await;
         world
     }
 
-    /// Monde avec un faux serveur IMAP prêt pour `USER` mais sans compte au moteur.
+    /// Monde avec les faux serveurs prêts pour `USER` mais sans compte au moteur.
     pub async fn with_empty_imap() -> Self {
-        let credentials = Credentials::default();
-        credentials.add_password(USER, PASSWORD);
-        let imap = FakeImapServer::start(FakeMailStore::new(), credentials, CapabilitySet::full())
-            .await
-            .unwrap();
-        let mut network = network_for(imap.port());
+        let (imap, smtp) = fake_servers().await;
+        let mut network = network_for(imap.port(), smtp.port());
         network.background_sync = mira_assembly::sync::BackgroundSync::On(
             mira_assembly::sync::SupervisorConfig::default(),
         );
         let home = tempfile::tempdir().unwrap();
-        Self::open_in(home, network, Some(imap))
+        let mut world = Self::open_in(home, network, Some(imap));
+        world.smtp = Some(smtp);
+        world
     }
 }

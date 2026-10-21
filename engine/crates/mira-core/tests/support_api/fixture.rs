@@ -8,13 +8,14 @@ use mira_core::sync::BackgroundSync;
 use mira_testkit::Credentials;
 use mira_testkit::imap::{CapabilitySet, FakeImapServer, FakeMailStore};
 use mira_testkit::oauth::FakeOAuthServer;
+use mira_testkit::smtp::FakeSmtpServer;
 use mira_vocabulary::{
-    AccountId, AuthMethodKind, CONTRACT_VERSION, ProfileId, SecretKind, SecretRef, Security,
-    ServerEndpoint, ServerSettings,
+    AccountId, AuthMethodKind, CONTRACT_VERSION, ProfileId, SecretKind, SecretRef,
 };
 use tempfile::TempDir;
 
 use super::config_with_secrets;
+use super::endpoints::redirect_domains;
 use super::requests::{add_account, draft};
 
 pub const FOLDERS_USER: &str = "alice@folders.test";
@@ -29,6 +30,7 @@ pub struct Fixture {
     pub config: EngineConfig,
     pub secrets: Arc<MemorySecretStore>,
     pub imap: FakeImapServer,
+    pub smtp: FakeSmtpServer,
     pub store: FakeMailStore,
     pub oauth: FakeOAuthServer,
     pub credentials: Credentials,
@@ -55,28 +57,12 @@ impl Fixture {
     }
 }
 
-/// Serveurs en clair sur la boucle locale (le port SMTP n'est pas utilisé par ces tests)
-pub fn local_servers(imap_port: u16) -> ServerSettings {
-    let endpoint = |port: u16| ServerEndpoint {
-        host: "127.0.0.1".to_string(),
-        port,
-        security: Security::Plaintext,
-    };
-    ServerSettings {
-        imap: endpoint(imap_port),
-        smtp: endpoint(1),
+/// Règle la synchro de fond ; l'horloge est réelle quand elle est active
+fn apply_sync_mode(config: &mut EngineConfig, sync: BackgroundSync) {
+    if matches!(sync, BackgroundSync::On(_)) {
+        config.clock = Arc::new(SystemClock);
     }
-}
-
-/// Redirige les domaines de test vers le faux serveur IMAP
-fn redirect_domains(config: &mut EngineConfig, imap_port: u16) {
-    for domain in ["folders.test", "labels.test", "oauth.test"] {
-        let servers = local_servers(imap_port);
-        config
-            .network
-            .server_overrides
-            .insert(domain.to_string(), servers);
-    }
+    config.network.background_sync = sync;
 }
 
 /// Démarre le faux serveur et un moteur sans synchronisation en arrière-plan
@@ -93,15 +79,13 @@ pub async fn start_with(sync: BackgroundSync) -> Fixture {
     let imap = FakeImapServer::start(store.clone(), credentials.clone(), CapabilitySet::full())
         .await
         .unwrap();
+    let smtp = FakeSmtpServer::start(credentials.clone()).await.unwrap();
     let oauth = FakeOAuthServer::start(credentials.clone()).await.unwrap();
     let home = tempfile::tempdir().unwrap();
     let secrets = Arc::new(MemorySecretStore::new());
     let mut config = config_with_secrets(home.path(), Arc::clone(&secrets));
-    redirect_domains(&mut config, imap.port());
-    if matches!(sync, BackgroundSync::On(_)) {
-        config.clock = Arc::new(SystemClock);
-    }
-    config.network.background_sync = sync;
+    redirect_domains(&mut config, imap.port(), smtp.port());
+    apply_sync_mode(&mut config, sync);
     super::oauth::point_oauth_at(&mut config, &oauth);
     let engine = Engine::open(config.clone(), CONTRACT_VERSION).unwrap();
     Fixture {
@@ -110,6 +94,7 @@ pub async fn start_with(sync: BackgroundSync) -> Fixture {
         config,
         secrets,
         imap,
+        smtp,
         store,
         oauth,
         credentials,

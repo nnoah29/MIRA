@@ -5,7 +5,7 @@ use mira_vocabulary::{MiraError, Timestamp};
 use crate::imap::client::ImapClient;
 use crate::imap::errors::status::Operation;
 use crate::imap::parse::dates::format_search_date;
-use crate::imap::parse::search::parse_search;
+use crate::imap::parse::search::collect_uids;
 use crate::imap::protocol::quoting::quote;
 
 impl ImapClient {
@@ -15,15 +15,7 @@ impl ImapClient {
         let response = self
             .run(&format!("UID SEARCH {criteria}"), Operation::Plain)
             .await?;
-        let mut found: Vec<u32> = response
-            .untagged
-            .iter()
-            .filter_map(|line| parse_search(line))
-            .flatten()
-            .collect();
-        found.sort_unstable();
-        found.dedup();
-        Ok(found)
+        Ok(collect_uids(&response.untagged))
     }
 
     /// UID des messages reçus depuis le jour de l'instant donné (granularité d'un jour, UTC).
@@ -45,6 +37,9 @@ impl ImapClient {
 
     /// UID des messages dont le texte contient la requête (recherche du serveur).
     pub async fn search_text(&mut self, query: &str) -> Result<Vec<u32>, MiraError> {
+        if !query.is_ascii() {
+            return self.search_text_utf8(query).await;
+        }
         self.search_uids(&format!("TEXT {}", quote(query)?)).await
     }
 

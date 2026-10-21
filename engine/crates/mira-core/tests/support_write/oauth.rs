@@ -10,12 +10,14 @@ use mira_core::storage::Database;
 use mira_testkit::Credentials;
 use mira_testkit::imap::{CapabilitySet, FakeImapServer, FakeMailStore};
 use mira_testkit::oauth::FakeOAuthServer;
+use mira_testkit::smtp::FakeSmtpServer;
 use mira_vocabulary::{AccountId, CONTRACT_VERSION, Timestamp};
 
 use super::START_MILLIS;
 use super::seed::{seed_mirror, seed_server};
 use crate::support_api::config_with_secrets;
-use crate::support_api::fixture::{Fixture as ApiFixture, local_servers};
+use crate::support_api::endpoints::local_servers;
+use crate::support_api::fixture::Fixture as ApiFixture;
 use crate::support_api::oauth::{OAUTH_USER, add_oauth_account, point_oauth_at};
 
 /// Banc de la façade avec un compte OAuth2 et l'horloge que le test pilote.
@@ -31,21 +33,27 @@ fn oauth_config(
     home: &std::path::Path,
     secrets: &Arc<MemorySecretStore>,
     clock: &Arc<ManualClock>,
-    servers: (&FakeImapServer, &FakeOAuthServer),
+    servers: (&FakeImapServer, &FakeSmtpServer, &FakeOAuthServer),
 ) -> EngineConfig {
     let mut config = config_with_secrets(home, Arc::clone(secrets));
     config.clock = Arc::clone(clock) as Arc<dyn Clock>;
-    let wiring = local_servers(servers.0.port());
+    let wiring = local_servers(servers.0.port(), servers.1.port());
     config
         .network
         .server_overrides
         .insert("oauth.test".to_string(), wiring);
-    point_oauth_at(&mut config, servers.1);
+    point_oauth_at(&mut config, servers.2);
     config
 }
 
 /// Faux serveurs de l'essai : courrier, identifiants, IMAP et autorisation OAuth
-type Servers = (FakeMailStore, Credentials, FakeImapServer, FakeOAuthServer);
+type Servers = (
+    FakeMailStore,
+    Credentials,
+    FakeImapServer,
+    FakeSmtpServer,
+    FakeOAuthServer,
+);
 
 /// Démarre les faux serveurs et garnit le courrier de l'utilisateur OAuth
 async fn start_servers() -> Servers {
@@ -56,16 +64,17 @@ async fn start_servers() -> Servers {
     let imap = FakeImapServer::start(store.clone(), credentials.clone(), caps)
         .await
         .unwrap();
+    let smtp = FakeSmtpServer::start(credentials.clone()).await.unwrap();
     let oauth = FakeOAuthServer::start(credentials.clone()).await.unwrap();
-    (store, credentials, imap, oauth)
+    (store, credentials, imap, smtp, oauth)
 }
 
 /// Ouvre le moteur sur ces serveurs et rend le banc de la façade avec le chemin de la base du profil
 fn open_api(servers: Servers, clock: &Arc<ManualClock>) -> (ApiFixture, PathBuf) {
-    let (store, credentials, imap, oauth) = servers;
+    let (store, credentials, imap, smtp, oauth) = servers;
     let home = tempfile::tempdir().unwrap();
     let secrets = Arc::new(MemorySecretStore::new());
-    let config = oauth_config(home.path(), &secrets, clock, (&imap, &oauth));
+    let config = oauth_config(home.path(), &secrets, clock, (&imap, &smtp, &oauth));
     let paths = ProfilePaths::resolve(&config.profile, &config.environment).unwrap();
     let engine = Engine::open(config.clone(), CONTRACT_VERSION).unwrap();
     let api = ApiFixture {
@@ -74,6 +83,7 @@ fn open_api(servers: Servers, clock: &Arc<ManualClock>) -> (ApiFixture, PathBuf)
         config,
         secrets,
         imap,
+        smtp,
         store,
         oauth,
         credentials,

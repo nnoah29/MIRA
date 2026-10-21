@@ -58,7 +58,7 @@ fn connection_lost() -> MiraError {
 }
 
 /// Refuse le clair vers un hôte qui n'est pas la boucle locale (AG-03)
-fn refuse_remote_plaintext(endpoint: &ServerEndpoint) -> Result<(), MiraError> {
+pub(super) fn refuse_remote_plaintext(endpoint: &ServerEndpoint) -> Result<(), MiraError> {
     if endpoint.security == Security::Plaintext && !is_loopback_host(&endpoint.host) {
         return Err(MiraError::new(
             ErrorCategory::Tls,

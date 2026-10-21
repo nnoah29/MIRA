@@ -61,6 +61,8 @@ pub async fn ingest_batch(
         .extra_fetch_attributes;
     let fetched = session.conn.client.fetch_headers(batch, &extra).await?;
     let outcomes = store_batch(&session.ctx, mailbox, validity, fetched)?;
+    let created = outcomes.iter().filter_map(Ingested::created_id);
+    session.created_in_pass.extend(created.cloned());
     announce_batch(&session.ctx, mailbox, &outcomes, announce);
     Ok(())
 }

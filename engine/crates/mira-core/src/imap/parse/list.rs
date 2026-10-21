@@ -4,6 +4,7 @@ use mira_vocabulary::RawMailbox;
 
 use super::token::Token;
 use super::tokenizer::tokenize;
+use crate::imap::protocol::mailbox_name::decode_mailbox_name;
 
 /// Lit une ligne `LIST (attributs) "séparateur" nom` ; `None` si ce n'est pas un LIST.
 pub(crate) fn parse_list(line: &[u8]) -> Option<RawMailbox> {
@@ -16,7 +17,7 @@ pub(crate) fn parse_list(line: &[u8]) -> Option<RawMailbox> {
         .filter_map(Token::text)
         .collect();
     let delimiter = tokens.next()?.text();
-    let name = tokens.next()?.text()?;
+    let name = decode_mailbox_name(&tokens.next()?.text()?);
     Some(RawMailbox {
         name,
         delimiter,

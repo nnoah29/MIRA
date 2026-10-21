@@ -9,6 +9,7 @@ use mira_cli::CliDeps;
 use mira_testkit::Credentials;
 use mira_testkit::imap::{CapabilitySet, FakeImapServer, FakeMailStore};
 use mira_testkit::oauth::FakeOAuthServer;
+use mira_testkit::smtp::FakeSmtpServer;
 use tempfile::TempDir;
 
 use super::sync_bench::quick_sync;
@@ -23,6 +24,7 @@ pub struct GmailWorld {
     pub secrets: Arc<MemorySecretStore>,
     pub store: FakeMailStore,
     pub imap: FakeImapServer,
+    pub smtp: FakeSmtpServer,
     pub oauth: FakeOAuthServer,
     pub profile: &'static str,
     pub transcript: Mutex<Vec<String>>,
@@ -37,6 +39,7 @@ impl GmailWorld {
             FakeImapServer::start(store.clone(), credentials.clone(), CapabilitySet::gmail())
                 .await
                 .unwrap();
+        let smtp = FakeSmtpServer::start(credentials.clone()).await.unwrap();
         let oauth = FakeOAuthServer::start(credentials).await.unwrap();
         let home = tempfile::tempdir().unwrap();
         let secrets = Arc::new(MemorySecretStore::new());
@@ -46,6 +49,7 @@ impl GmailWorld {
             secrets,
             store,
             imap,
+            smtp,
             oauth,
             profile,
             transcript,
@@ -55,7 +59,7 @@ impl GmailWorld {
     /// Dépendances du CLI : `gmail.com` vise le faux IMAP, les adresses OAuth de Gmail visent le faux serveur.
     pub fn deps(&self) -> CliDeps {
         let mut network = mira_assembly::accounts::NetworkPolicy::default();
-        let servers = super::server::local_servers(self.imap.port());
+        let servers = super::server::local_servers(self.imap.port(), self.smtp.port());
         network
             .server_overrides
             .insert("gmail.com".to_string(), servers);

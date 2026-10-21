@@ -19,6 +19,16 @@ pub enum Ingested {
     Unchanged(MessageId),
 }
 
+impl Ingested {
+    /// Identifiant du message, seulement s'il vient d'être créé.
+    pub fn created_id(&self) -> Option<&MessageId> {
+        match self {
+            Ingested::Created(message) => Some(message),
+            Ingested::Updated(_) | Ingested::Unchanged(_) => None,
+        }
+    }
+}
+
 /// Reconnaît le message ou le crée ; un message reconnu reçoit les drapeaux du serveur.
 pub fn ingest_header(
     tx: &Tx<'_>,

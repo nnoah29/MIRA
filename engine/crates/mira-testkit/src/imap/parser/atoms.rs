@@ -38,6 +38,9 @@ pub(crate) fn parse_quoted(cursor: &mut Cursor) -> Result<String, ParseError> {
             None => return Err(ParseError::new("unterminated quoted string")),
             Some(b'\\') => bytes.extend(cursor.bump()),
             Some(b'"') => break,
+            Some(byte) if !byte.is_ascii() => {
+                return Err(ParseError::new("non-ASCII byte in quoted string"));
+            }
             Some(byte) => bytes.push(byte),
         }
     }

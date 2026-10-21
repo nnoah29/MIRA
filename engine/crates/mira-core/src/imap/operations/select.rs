@@ -6,7 +6,7 @@ use mira_vocabulary::{ErrorCategory, MiraError};
 use crate::imap::client::ImapClient;
 use crate::imap::errors::status::Operation;
 use crate::imap::parse::select::parse_select;
-use crate::imap::protocol::quoting::quote;
+use crate::imap::protocol::quoting::quote_mailbox;
 use crate::imap::types::{ResyncFrom, SelectedMailbox};
 
 /// Erreur lorsque QRESYNC est demandé sans avoir été activé.
@@ -21,7 +21,7 @@ fn qresync_not_enabled() -> MiraError {
 impl ImapClient {
     /// Écrit la commande SELECT adaptée aux extensions disponibles.
     fn select_line(&self, mailbox: &str, resync: Option<ResyncFrom>) -> Result<String, MiraError> {
-        let name = quote(mailbox)?;
+        let name = quote_mailbox(mailbox)?;
         match resync {
             Some(_) if !self.qresync => Err(qresync_not_enabled()),
             Some(from) => Ok(format!(

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Vérifie les normes de codage du §11 sur les sources Rust du moteur.
 
-Règles contrôlées (voir CLAUDE.md et docs/ETAT/DECISIONS-DE-DEPART.md, décision 37) :
+Règles contrôlées (voir CLAUDE.md) :
   N1  une fonction avec corps fait au plus 30 lignes (de la ligne `fn` à l'accolade fermante) ;
   N2  un fichier contient au plus 6 fonctions avec corps ;
   N4  aucun commentaire (`//`, `/* */`, doc comprise) dans le corps d'une fonction ;

@@ -14,10 +14,8 @@ impl Engine {
     /// Accès IMAP aux comptes du profil, selon la politique réseau et le trousseau du moteur
     pub(crate) fn imap_access(&self) -> ImapAccess {
         ImapAccess::new(
-            self.config.profile.clone(),
-            self.vault(),
-            self.config.network.clone(),
-            self.config.registry.clone(),
+            self.config.clone(),
+            Arc::clone(&self.database),
             self.budgets.clone(),
         )
     }

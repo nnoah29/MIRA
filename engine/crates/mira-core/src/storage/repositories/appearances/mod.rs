@@ -2,6 +2,7 @@
 
 mod add;
 mod local;
+mod merge;
 mod purge;
 mod read;
 mod rows;

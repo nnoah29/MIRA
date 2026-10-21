@@ -6,18 +6,20 @@ use mira_assembly::accounts::NetworkPolicy;
 use mira_assembly::api::{Engine, EngineConfig};
 use mira_assembly::mira_vocabulary::AccountId;
 use mira_testkit::imap::FakeImapServer;
+use mira_testkit::smtp::FakeSmtpServer;
 use mira_tui::app::{TuiError, close_engine, open_engine};
 use tempfile::TempDir;
 
 use super::config::test_config;
 
-/// Profil jetable et moteur ouvert dessus ; le faux serveur IMAP et le compte sont optionnels.
+/// Profil jetable et moteur ouvert dessus ; les faux serveurs IMAP et SMTP et le compte sont optionnels.
 pub struct TestWorld {
     pub(super) home: TempDir,
     pub(super) config: EngineConfig,
     pub(super) engine: Arc<Engine>,
     pub(super) account: Option<AccountId>,
     pub(super) imap: Option<FakeImapServer>,
+    pub(super) smtp: Option<FakeSmtpServer>,
 }
 
 impl TestWorld {
@@ -41,6 +43,7 @@ impl TestWorld {
             engine,
             account: None,
             imap,
+            smtp: None,
         }
     }
 

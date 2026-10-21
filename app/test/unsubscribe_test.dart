@@ -67,11 +67,68 @@ void main() {
     s.dispose();
   });
 
-  test('mailto seul : un message prérempli s\'ouvre', () async {
+  test('un clic accepté : l\'expéditeur est retenu comme désabonné', () async {
     final s = await start();
-    await s.unsubscribe(_mail({'mailto': 'leave@x.org?subject=stop'}));
-    expect(s.c!.to.single.email, 'leave@x.org');
-    expect(s.c!.subject.text, 'stop');
+    s.unsubscriber.postOneClick = (u) async => true;
+    final m = _mail({'https_url': 'https://x.org/u', 'one_click': true});
+    await s.unsubscribe(m);
+    expect(s.isUnsubscribed(m), isTrue);
+    expect(s.prefs.getStringList('unsubscribed'), ['news@x.org']);
     s.dispose();
+  });
+
+  test('un clic refusé : rien n\'est retenu, l\'échec est signalé', () async {
+    final s = await start();
+    s.unsubscriber.postOneClick = (u) async => false;
+    final m = _mail({'https_url': 'https://x.org/u', 'one_click': true});
+    await s.unsubscribe(m);
+    expect(s.isUnsubscribed(m), isFalse);
+    expect(s.toasts.last.msg, 'Désabonnement impossible');
+    s.dispose();
+  });
+
+  test(
+    'page seule : rien n\'est retenu (le désabonnement se finit sur le site)',
+    () async {
+      final s = await start();
+      s.unsubscriber.openPage = (u) async => true;
+      final m = _mail({'https_url': 'https://x.org/u', 'one_click': false});
+      await s.unsubscribe(m);
+      expect(s.isUnsubscribed(m), isFalse);
+      s.dispose();
+    },
+  );
+
+  test('mailto : le message part sans ouvrir la rédaction', () async {
+    final s = await start();
+    final m = _mail({'mailto': 'leave@x.org?subject=stop'});
+    await s.unsubscribe(m);
+    expect(s.c, isNull);
+    expect(s.isUnsubscribed(m), isTrue);
+    expect(s.toasts.last.msg, 'Désabonnement envoyé');
+    s.dispose();
+  });
+
+  test(
+    'mailto préféré à une page sans un clic : tout se fait dans l\'app',
+    () async {
+      final s = await start();
+      s.unsubscriber.openPage = (u) async => fail('page ouverte');
+      final m = _mail({
+        'https_url': 'https://x.org/u',
+        'one_click': false,
+        'mailto': 'leave@x.org',
+      });
+      await s.unsubscribe(m);
+      expect(s.isUnsubscribed(m), isTrue);
+      s.dispose();
+    },
+  );
+
+  test('désabonnement dans l\'app : un clic ou une adresse exploitable', () {
+    expect(const Unsub(url: 'https://x.org', oneClick: true).inApp, isTrue);
+    expect(const Unsub(mailto: 'leave@x.org').inApp, isTrue);
+    expect(const Unsub(url: 'https://x.org').inApp, isFalse);
+    expect(const Unsub(mailto: 'mailto:').inApp, isFalse);
   });
 }

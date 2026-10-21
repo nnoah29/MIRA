@@ -143,10 +143,14 @@ class _ReaderState extends State<Reader> {
                         ),
                         const SizedBox(width: 8),
                         if (s.unsubFor(m) != null) ...[
-                          IBtn(
-                            'x',
+                          Btn(
+                            label: s.isUnsubscribed(m)
+                                ? t('Désabonné')
+                                : t('Se désabonner'),
                             tip: t('Se désabonner'),
-                            onTap: () => s.unsubscribe(m),
+                            onTap: s.isUnsubscribed(m)
+                                ? null
+                                : () => _confirmUnsubscribe(context, m),
                           ),
                           const SizedBox(width: 8),
                         ],
@@ -459,6 +463,68 @@ class _Thread extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Demande confirmation avant de se désabonner, en disant comment cela se fera.
+Future<void> _confirmUnsubscribe(BuildContext context, Mail mail) async {
+  final s = context.read<MailStore>();
+  final p = context.pal;
+  final u = s.unsubFor(mail);
+  if (u == null) return;
+  final name = s.shown(mail.from);
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => Dialog(
+      backgroundColor: p.bgSide,
+      shape: RoundedRectangleBorder(side: BorderSide(color: p.line)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                t('Se désabonner de {0} ?', [name]),
+                style: Fonts.sans(size: 16, w: FontWeight.w600, color: p.text),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                u.inApp
+                    ? t(
+                        'MIRA envoie la demande de désabonnement à {0} ; tu ne devrais plus recevoir ses envois à cette adresse.',
+                        [mail.from.email],
+                      )
+                    : t(
+                        '{0} demande de finir le désabonnement sur son site : la page va s’ouvrir dans ton navigateur.',
+                        [name],
+                      ),
+                style: Fonts.sans(size: 14, color: p.dim, height: 1.5),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Btn(
+                    label: t('Annuler'),
+                    onTap: () => Navigator.pop(ctx, false),
+                  ),
+                  const SizedBox(width: 10),
+                  Btn(
+                    label: t('Se désabonner'),
+                    go: true,
+                    onTap: () => Navigator.pop(ctx, true),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+  if (ok == true) await s.unsubscribe(mail);
 }
 
 /// Corps d'un message : squelette pendant le chargement, puis fondu vers le texte ou le HTML.

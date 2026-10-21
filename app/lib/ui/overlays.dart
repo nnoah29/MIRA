@@ -6,6 +6,7 @@ import '../data/models.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
+import 'native_cover.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
 
@@ -14,11 +15,14 @@ import '../i18n/i18n.dart';
 class _PopLayout extends SingleChildLayoutDelegate {
   final Rect anchor;
   final bool alignRight;
-  _PopLayout(this.anchor, this.alignRight);
+  final double maxWidth;
+  _PopLayout(this.anchor, this.alignRight, this.maxWidth);
 
   @override
-  BoxConstraints getConstraintsForChild(BoxConstraints c) =>
-      BoxConstraints(maxWidth: 320, maxHeight: c.maxHeight - 16);
+  BoxConstraints getConstraintsForChild(BoxConstraints c) => BoxConstraints(
+    maxWidth: maxWidth.clamp(0, c.maxWidth - 16),
+    maxHeight: c.maxHeight - 16,
+  );
 
   @override
   Offset getPositionForChild(Size size, Size child) {
@@ -35,7 +39,8 @@ class _PopLayout extends SingleChildLayoutDelegate {
   }
 
   @override
-  bool shouldRelayout(_PopLayout o) => o.anchor != anchor;
+  bool shouldRelayout(_PopLayout o) =>
+      o.anchor != anchor || o.maxWidth != maxWidth;
 }
 
 class Pops {
@@ -56,6 +61,7 @@ class Pops {
     String key,
     Widget Function(BuildContext ctx, VoidCallback close) builder, {
     bool alignRight = false,
+    double maxWidth = 320,
   }) {
     if (_key == key) return close();
     close();
@@ -76,8 +82,10 @@ class Pops {
           ),
           Positioned.fill(
             child: CustomSingleChildLayout(
-              delegate: _PopLayout(rect, alignRight),
-              child: _PopBox(child: builder(ctx, close)),
+              delegate: _PopLayout(rect, alignRight, maxWidth),
+              child: CoversNativeViews(
+                child: _PopBox(child: builder(ctx, close)),
+              ),
             ),
           ),
         ],
@@ -241,7 +249,7 @@ void showSortPop(BuildContext anchor) {
         );
       },
     );
-  });
+  }, alignRight: true);
 }
 
 void showSnoozePop(BuildContext anchor) {
@@ -269,7 +277,7 @@ void showSnoozePop(BuildContext anchor) {
           ),
       ],
     );
-  });
+  }, alignRight: true);
 }
 
 void showSchedPop(BuildContext anchor) {
@@ -496,72 +504,77 @@ class HelpModal extends StatelessWidget {
     ];
     final w = MediaQuery.sizeOf(context).width;
     return Positioned.fill(
-      child: GestureDetector(
-        onTap: s.closeHelp,
-        child: Container(
-          color: const Color(0x8c000000),
-          alignment: Alignment.center,
-          child: GestureDetector(
-            onTap: () {},
-            child: FadeSlideIn(
-              from: const Offset(0, 14),
-              child: Material(
-                type: MaterialType.transparency,
-                child: Container(
-                  width: (w * .92).clamp(0, 560).toDouble(),
-                  padding: const EdgeInsets.all(28),
-                  decoration: BoxDecoration(
-                    color: p.bgSide,
-                    border: Border.all(color: p.line),
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 18),
-                          child: Text(
-                            t('RACCOURCIS CLAVIER'),
-                            style: Fonts.display(size: 28, color: p.text),
+      child: CoversNativeViews(
+        modal: true,
+        child: GestureDetector(
+          onTap: s.closeHelp,
+          child: Container(
+            color: const Color(0x8c000000),
+            alignment: Alignment.center,
+            child: GestureDetector(
+              onTap: () {},
+              child: FadeSlideIn(
+                from: const Offset(0, 14),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: Container(
+                    width: (w * .92).clamp(0, 560).toDouble(),
+                    padding: const EdgeInsets.all(28),
+                    decoration: BoxDecoration(
+                      color: p.bgSide,
+                      border: Border.all(color: p.line),
+                    ),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 18),
+                            child: Text(
+                              t('RACCOURCIS CLAVIER'),
+                              style: Fonts.display(size: 28, color: p.text),
+                            ),
                           ),
-                        ),
-                        Table(
-                          defaultColumnWidth: const IntrinsicColumnWidth(),
-                          columnWidths: const {1: FlexColumnWidth()},
-                          defaultVerticalAlignment:
-                              TableCellVerticalAlignment.middle,
-                          children: [
-                            for (final (k, d) in rows)
-                              TableRow(
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                      right: 22,
-                                      bottom: 10,
-                                    ),
-                                    child: Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: Kbd(k),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
-                                    child: Text(
-                                      d,
-                                      style: Fonts.sans(
-                                        size: 14.5,
-                                        color: p.muted,
+                          Table(
+                            defaultColumnWidth: const IntrinsicColumnWidth(),
+                            columnWidths: const {1: FlexColumnWidth()},
+                            defaultVerticalAlignment:
+                                TableCellVerticalAlignment.middle,
+                            children: [
+                              for (final (k, d) in rows)
+                                TableRow(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        right: 22,
+                                        bottom: 10,
+                                      ),
+                                      child: Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Kbd(k),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Btn(label: t('Fermer'), onTap: s.closeHelp),
-                      ],
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 10,
+                                      ),
+                                      child: Text(
+                                        d,
+                                        style: Fonts.sans(
+                                          size: 14.5,
+                                          color: p.muted,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Btn(label: t('Fermer'), onTap: s.closeHelp),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -600,147 +613,190 @@ class AccountAvatar extends StatelessWidget {
   );
 }
 
+/// Entrées du popover des comptes : hauteur, nombre au plus par colonne, largeur d'une colonne.
+const _accountRowHeight = 52.0;
+const _accountRowsPerColumn = 3;
+const _accountColumnWidth = 260.0;
+
+/// Entrées rangées en colonnes de trois au plus (autant de colonnes que l'écran en permet) : le popover s'élargit au lieu de s'allonger.
+class _AccountColumns extends StatelessWidget {
+  final List<Widget> children;
+  const _AccountColumns({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    final room = ((MediaQuery.sizeOf(context).width - 40) / _accountColumnWidth)
+        .floor()
+        .clamp(1, 1 << 10);
+    final wanted =
+        (children.length + _accountRowsPerColumn - 1) ~/ _accountRowsPerColumn;
+    final columns = wanted.clamp(1, room);
+    final perColumn = (children.length + columns - 1) ~/ columns;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var c = 0; c < columns; c++)
+          SizedBox(
+            width: _accountColumnWidth,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: children.skip(c * perColumn).take(perColumn).toList(),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 /// Liste déroulante des comptes (le compte actif est coché) + « Ajouter un compte ».
 void showAccountPop(BuildContext anchor) {
-  Pops.show(anchor, 'account', (ctx, close) {
-    return ListenableBuilder(
-      listenable: ctx.read<MailStore>(),
-      builder: (ctx, _) {
-        final s = ctx.read<MailStore>();
-        final p = ctx.pal;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            PopTitle(t('Comptes')),
-            Hov(
-              onTap: () {
-                close();
-                s.showAllAccounts();
-              },
-              builder: (_, h) => Container(
-                color: h ? p.surface : Colors.transparent,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 28,
-                      height: 28,
-                      alignment: Alignment.center,
-                      color: p.accent,
-                      child: Ico('inbox', size: 16, color: p.onAccent),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+  Pops.show(
+    anchor,
+    'account',
+    (ctx, close) {
+      return ListenableBuilder(
+        listenable: ctx.read<MailStore>(),
+        builder: (ctx, _) {
+          final s = ctx.read<MailStore>();
+          final p = ctx.pal;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PopTitle(t('Comptes')),
+              _AccountColumns(
+                children: [
+                  Hov(
+                    onTap: () {
+                      close();
+                      s.showAllAccounts();
+                    },
+                    builder: (_, h) => Container(
+                      color: h ? p.surface : Colors.transparent,
+                      height: _accountRowHeight,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
                         children: [
-                          Text(
-                            t('Toutes les boîtes'),
-                            style: Fonts.sans(
-                              size: 14,
-                              w: FontWeight.w500,
-                              color: s.unified ? p.accent : p.text,
-                              height: 1.3,
+                          Container(
+                            width: 28,
+                            height: 28,
+                            alignment: Alignment.center,
+                            color: p.accent,
+                            child: Ico('inbox', size: 16, color: p.onAccent),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  t('Toutes les boîtes'),
+                                  style: Fonts.sans(
+                                    size: 14,
+                                    w: FontWeight.w500,
+                                    color: s.unified ? p.accent : p.text,
+                                    height: 1.3,
+                                  ),
+                                ),
+                                Text(
+                                  t('Boîte unifiée · {0} comptes', [
+                                    s.accounts.length,
+                                  ]),
+                                  style: Fonts.sans(
+                                    size: 12.5,
+                                    color: p.dim,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          Text(
-                            t('Boîte unifiée · {0} comptes', [
-                              s.accounts.length,
-                            ]),
-                            style: Fonts.sans(
-                              size: 12.5,
-                              color: p.dim,
-                              height: 1.3,
-                            ),
+                          const SizedBox(width: 12),
+                          Opacity(
+                            opacity: s.unified ? 1 : 0,
+                            child: Ico('check', size: 14, color: p.accent),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Opacity(
-                      opacity: s.unified ? 1 : 0,
-                      child: Ico('check', size: 14, color: p.accent),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            for (final a in s.accounts)
-              Hov(
-                onTap: () {
-                  close();
-                  s.switchAccount(a.id);
-                },
-                builder: (_, h) {
-                  final on = !s.unified && a.id == s.activeId;
-                  return Container(
-                    color: h ? p.surface : Colors.transparent,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    child: Row(
-                      children: [
-                        AccountAvatar(a, size: 28),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                  for (final a in s.accounts)
+                    Hov(
+                      onTap: () {
+                        close();
+                        s.switchAccount(a.id);
+                      },
+                      builder: (_, h) {
+                        final on = !s.unified && a.id == s.activeId;
+                        return Container(
+                          color: h ? p.surface : Colors.transparent,
+                          height: _accountRowHeight,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Row(
                             children: [
-                              Text(
-                                a.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Fonts.sans(
-                                  size: 14,
-                                  w: FontWeight.w500,
-                                  color: on ? p.accent : p.text,
-                                  height: 1.3,
+                              AccountAvatar(a, size: 28),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      a.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Fonts.sans(
+                                        size: 14,
+                                        w: FontWeight.w500,
+                                        color: on ? p.accent : p.text,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                    Text(
+                                      a.email,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Fonts.sans(
+                                        size: 12.5,
+                                        color: p.dim,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              Text(
-                                a.email,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Fonts.sans(
-                                  size: 12.5,
-                                  color: p.dim,
-                                  height: 1.3,
-                                ),
+                              const SizedBox(width: 12),
+                              Opacity(
+                                opacity: on ? 1 : 0,
+                                child: Ico('check', size: 14, color: p.accent),
                               ),
                             ],
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Opacity(
-                          opacity: on ? 1 : 0,
-                          child: Ico('check', size: 14, color: p.accent),
-                        ),
-                      ],
+                        );
+                      },
                     ),
-                  );
+                ],
+              ),
+              PopSep(),
+              PopItem(
+                leading: popIco('plus', ctx),
+                label: t('Ajouter un compte'),
+                onTap: () {
+                  close();
+                  s.source != null
+                      ? s.openAddAccount()
+                      : showAddAccountDialog(anchor);
                 },
               ),
-            PopSep(),
-            PopItem(
-              leading: popIco('plus', ctx),
-              label: t('Ajouter un compte'),
-              onTap: () {
-                close();
-                s.source != null
-                    ? s.openAddAccount()
-                    : showAddAccountDialog(anchor);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }, alignRight: true);
+            ],
+          );
+        },
+      );
+    },
+    alignRight: true,
+    maxWidth: double.infinity,
+  );
 }
 
 final _mailRe = RegExp(r'^[^\s@<>,;]+@[^\s@<>,;]+\.[^\s@<>,;]+$');

@@ -59,6 +59,17 @@ class Unsub {
   final String? url, mailto;
   final bool oneClick;
   const Unsub({this.url, this.mailto, this.oneClick = false});
+
+  /// Adresse de désabonnement (`mailto:`), si elle est exploitable.
+  Uri? get mailtoUri {
+    final raw = mailto;
+    if (raw == null) return null;
+    final uri = Uri.tryParse(raw.startsWith('mailto:') ? raw : 'mailto:$raw');
+    return uri == null || uri.path.isEmpty ? null : uri;
+  }
+
+  /// Le désabonnement se fait depuis l'app (appel en un clic ou message), sans page à ouvrir.
+  bool get inApp => (oneClick && url != null) || mailtoUri != null;
 }
 
 class Msg {

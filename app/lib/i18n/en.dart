@@ -291,6 +291,12 @@ const Map<String, String> enStrings = {
   'Synchronisation impossible': 'Sync failed',
   'Désabonnement envoyé': 'Unsubscribe request sent',
   'Désabonnement impossible': 'Could not unsubscribe',
+  'Désabonné': 'Unsubscribed',
+  'Se désabonner de {0} ?': 'Unsubscribe from {0}?',
+  'MIRA envoie la demande de désabonnement à {0} ; tu ne devrais plus recevoir ses envois à cette adresse.': 'MIRA sends the unsubscribe request to {0}; you should stop receiving its emails at this address.',
+  '{0} demande de finir le désabonnement sur son site : la page va s’ouvrir dans ton navigateur.': '{0} asks you to finish unsubscribing on its website: the page will open in your browser.',
+  'Termine le désabonnement sur la page de l’expéditeur':
+      'Finish unsubscribing on the sender’s page',
   'marqué comme lu': 'marked as read',
   'marqués comme lus': 'marked as read',
   'marqué comme non lu': 'marked as unread',

@@ -1,5 +1,5 @@
 //! Composition root : seul bloc qui connaît le cœur et tous les providers (5.4).
-//! Réexporte ce dont les clients (CLI) ont besoin, pour qu'ils ne dépendent que d'ici.
+//! Réexporte ce dont les clients (pont Flutter) ont besoin, pour qu'ils ne dépendent que d'ici.
 
 pub mod composition;
 pub mod engine_config;

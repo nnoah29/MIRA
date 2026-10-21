@@ -1,6 +1,6 @@
 # MIRA — mémoire de session de l'agent
 
-Moteur Rust (backend) de MIRA, un client mail Linux offline-first, utilisable en CLI. Session autonome de nuit.
+Moteur Rust (backend) de MIRA, un client mail Linux offline-first ; son seul client est l'application Flutter, par le pont FFI (CLI et TUI retirés, AG-63). Session autonome de nuit.
 **Source de vérité** : `docs/MIRA-architecture-reference.md` (lecture seule). **Vérité de départ** : `docs/ETAT/DECISIONS-DE-DEPART.md`.
 
 ## Reprise (début de chaque cycle et après chaque compaction)
@@ -26,7 +26,7 @@ Moteur Rust (backend) de MIRA, un client mail Linux offline-first, utilisable en
 
 - Fonction ≤ 30 lignes (de `fn` à `}`). Fichier ≤ 6 fonctions avec corps (tests compris ; tests dans des fichiers séparés).
 - **Aucun commentaire dans un corps de fonction.** Une seule ligne `///` en français avant chaque `fn` (intention, pas implémentation). `//!` de 1–3 lignes autorisé en tête de fichier.
-- Responsabilité unique ; interdits : `utils.rs`, `helpers.rs`, `common.rs`, `misc.rs`. Arborescence métier (comptes, boîtes, messages, synchro, file d'actions, stockage, secrets, providers, api, cli).
+- Responsabilité unique ; interdits : `utils.rs`, `helpers.rs`, `common.rs`, `misc.rs`. Arborescence métier (comptes, boîtes, messages, synchro, file d'actions, stockage, secrets, providers, api).
 - Noms explicites, un handler par intention/opération, routage par `match` exhaustif.
 - Refactoring sans changement de comportement ; les tests ne s'adaptent pas au refactoring (sauf chemins d'import).
 - Identifiants en anglais. Justifications dans `docs/DECISIONS-AGENT.md`, pas dans le code.
@@ -41,7 +41,6 @@ engine/  workspace Cargo (toolchain 1.99.0, édition 2024)
   crates/mira-core              moteur : api, accounts, auth, secrets, imap, smtp, mime, html, storage, sync, actions, events, registry
   crates/mira-provider-{gmail,outlook,yahoo,generic}   purs, dépendent seulement de mira-vocabulary
   crates/mira-assembly          composition root : registre + providers + moteur
-  crates/mira-cli               binaire `mira`, sortie humaine ou `--json` versionné
   crates/mira-testkit           faux serveurs IMAP / SMTP / OAuth sur 127.0.0.1
 .claude/agents/  définitions des sous-agents
 ```
@@ -74,4 +73,4 @@ engine/  workspace Cargo (toolchain 1.99.0, édition 2024)
 
 ## Définition de « terminé » (et écoulé ≥ 4 h)
 
-`./ci.sh` vert ; J0–J9 FAIT (J10 au mieux) ou BLOQUÉ justifié ; 33 invariants et S1–S14 testés chacun ; contrat d'API (ch. 12) exposé par la façade et le CLI `--json` avec test de contrat ; reprise sur crash (synchro, envoi), idempotence, absence de secrets testées ; zéro `unwrap`/`expect`/`panic!` hors tests ; `ARCHITECTURE-IMPLEMENTEE.md`, `README.md`, `PROPOSITIONS-REFERENCE.md` écrits ; tout commité ; `tools/check-norms` vert. Puis `docs/RAPPORT-FINAL.md`.
+`./ci.sh` vert ; J0–J9 FAIT (J10 au mieux) ou BLOQUÉ justifié ; 33 invariants et S1–S14 testés chacun ; contrat d'API (ch. 12) exposé par la façade avec test de contrat ; reprise sur crash (synchro, envoi), idempotence, absence de secrets testées ; zéro `unwrap`/`expect`/`panic!` hors tests ; `ARCHITECTURE-IMPLEMENTEE.md`, `README.md`, `PROPOSITIONS-REFERENCE.md` écrits ; tout commité ; `tools/check-norms` vert. Puis `docs/RAPPORT-FINAL.md`.

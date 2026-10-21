@@ -2079,37 +2079,68 @@ class MailStore extends ChangeNotifier {
   /// Moyen de désabonnement de la conversation ouverte (`null` : l'expéditeur n'en annonce pas).
   Unsub? unsubFor(Mail m) => Unsubscriber.of(m.msgs);
 
-  /// Se désabonne : en un clic si possible, sinon page web ou message de désabonnement prérempli.
+  /// Expéditeurs dont on s'est désabonné depuis MIRA (adresses en minuscules).
+  late final Set<String> unsubscribed = {
+    ...?prefs.getStringList('unsubscribed'),
+  };
+
+  bool isUnsubscribed(Mail m) =>
+      unsubscribed.contains(m.from.email.toLowerCase());
+
+  /// Se désabonne sans quitter MIRA quand l'expéditeur le permet : appel en un clic (RFC 8058), sinon message
+  /// envoyé à son adresse de désabonnement ; à défaut, sa page de désabonnement s'ouvre dans le navigateur.
   Future<void> unsubscribe(Mail m) async {
     final u = unsubFor(m);
     if (u == null) return;
     final url = u.url == null ? null : Uri.tryParse(u.url!);
+    final mailto = u.mailtoUri;
     if (url != null && u.oneClick) {
-      final ok = await unsubscriber.postOneClick(url);
-      toast(
-        ok ? t('Désabonnement envoyé') : t('Désabonnement impossible'),
-        err: !ok,
-      );
+      _afterUnsubscribe(m, await unsubscriber.postOneClick(url));
+    } else if (mailto != null) {
+      _afterUnsubscribe(m, await _sendUnsubscribe(m, mailto));
     } else if (url != null) {
       await unsubscriber.openPage(url);
-    } else if (u.mailto != null) {
-      _mailtoUnsubscribe(m, u.mailto!);
+      toast(t('Termine le désabonnement sur la page de l’expéditeur'));
     }
   }
 
-  void _mailtoUnsubscribe(Mail m, String mailto) {
-    final uri = Uri.tryParse(
-      mailto.startsWith('mailto:') ? mailto : 'mailto:$mailto',
+  void _afterUnsubscribe(Mail m, bool ok) {
+    if (ok) {
+      unsubscribed.add(m.from.email.toLowerCase());
+      prefs.setStringList('unsubscribed', unsubscribed.toList());
+      notifyListeners();
+    }
+    toast(
+      ok ? t('Désabonnement envoyé') : t('Désabonnement impossible'),
+      err: !ok,
     );
-    if (uri == null || uri.path.isEmpty) return;
-    openCompose(
-      ComposeInit(
-        from: fromFor(m),
-        to: [Person('', uri.path)],
-        subject: uri.queryParameters['subject'] ?? 'unsubscribe',
-        text: uri.queryParameters['body'],
-      ),
-    );
+  }
+
+  /// Envoie le message de désabonnement par le moteur, sans passer par la rédaction (sans moteur : tenu pour envoyé).
+  Future<bool> _sendUnsubscribe(Mail m, Uri mailto) async {
+    final admin = source?.composer;
+    if (admin == null) return true;
+    final from = fromFor(m);
+    final account = accountByEmail(from)?.id ?? m.account;
+    final identity = _identityFor(from, account);
+    final text = mailto.queryParameters['body'] ?? 'unsubscribe';
+    try {
+      final draft = await admin.create(account, identity: identity);
+      await admin.update(
+        draft.id,
+        identity: identity,
+        to: [Person(mailto.path, mailto.path)],
+        cc: const [],
+        bcc: const [],
+        subject: mailto.queryParameters['subject'] ?? 'unsubscribe',
+        text: text,
+        html: '<p>${const HtmlEscape().convert(text)}</p>',
+      );
+      await admin.send(draft.id);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Vide la corbeille ou le spam : le moteur vide chaque boîte entière, y compris ce qui n'est pas chargé.

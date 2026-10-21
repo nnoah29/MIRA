@@ -1,4 +1,4 @@
-# MIRA — point d'entrée unique : moteur Rust, CLI, TUI, pont FFI et application Flutter.
+# MIRA — point d'entrée unique : moteur Rust, pont FFI et application Flutter.
 # `make` ou `make help` liste les cibles. Variables : MODE, BUILD_MODE, MIRA_HOME, DEVICE, JOBS, FRB_CODEGEN.
 
 SHELL        := /bin/bash
@@ -31,7 +31,7 @@ help: ## Affiche cette aide
 	@awk 'BEGIN{FS=":.*## "} /^[a-zA-Z0-9_-]+:.*## /{printf "  \033[1m%-16s\033[0m %s\n",$$1,$$2} /^##@/{printf "\n%s\n",substr($$0,5)}' $(MAKEFILE_LIST)
 
 ##@ Lancer
-.PHONY: run run-debug run-release demo tui cli
+.PHONY: run run-debug run-release demo
 run: bridge app-deps ## Lance l'application Flutter sur le moteur réel (MODE=profile|debug|release)
 	cd $(APP) && flutter run --$(MODE) -d $(DEVICE)
 
@@ -44,15 +44,9 @@ run-release: ## Lance l'application en release
 demo: app-deps ## Lance l'application sur les données de démonstration (sans moteur)
 	cd $(APP) && MIRA_DEMO=1 flutter run --$(MODE) -d $(DEVICE)
 
-tui: ## Lance le client plein écran (TUI) ; ferme-le avant l'application : le profil est verrouillé
-	cd $(ENGINE) && cargo run --release -p mira-tui
-
-cli: ## Lance le CLI : make cli ARGS="account list --json"
-	cd $(ENGINE) && cargo run --release -p mira-cli -- $(ARGS)
-
 ##@ Construire
 .PHONY: build engine bridge app-deps app-build install-linux
-build: engine bridge ## Construit le moteur, le CLI, le TUI et le pont
+build: engine bridge ## Construit le moteur et le pont
 
 engine: ## Construit tout le workspace du moteur (release)
 	cd $(ENGINE) && cargo build --workspace --release

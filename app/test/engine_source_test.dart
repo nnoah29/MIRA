@@ -1837,6 +1837,45 @@ void main() {
       expect(fake.drafts, isNotEmpty);
       store.dispose();
     });
+
+    test(
+      'se désabonner par mailto envoie le message sans toucher la rédaction',
+      () async {
+        final (store, fake) = await start();
+        final news = Mail(
+          id: 'acc1/inbox/news',
+          folder: 'inbox',
+          from: const Person('News', 'news@x.org'),
+          to: const [Person('Alice', 'alice@example.org')],
+          subject: 'Lettre',
+          date: 1,
+          account: 'acc1',
+          msgs: [
+            Msg(
+              from: const Person('News', 'news@x.org'),
+              date: 1,
+              body: const [],
+              att: const [],
+              unsub: const Unsub(mailto: 'leave@x.org?subject=stop'),
+            ),
+          ],
+        );
+        await store.unsubscribe(news);
+        expect(fake.composed.map((c) => c['op']), [
+          'create_draft',
+          'update_draft',
+          'send_draft',
+        ]);
+        final changes = last(fake, 'update_draft')['changes'] as Map;
+        expect(changes['to'], [
+          {'name': null, 'address': 'leave@x.org'},
+        ]);
+        expect(changes['subject'], 'stop');
+        expect(store.c!.subject.text, 'Salut');
+        expect(store.isUnsubscribed(news), isTrue);
+        store.dispose();
+      },
+    );
   });
 
   test('le contenu d\'une pièce jointe est lu une fois puis gardé', () async {

@@ -60,7 +60,7 @@ pub enum OperationRequest {
     CancelOperation { operation: OperationId },
 }
 
-/// Lecture des événements par numéro (clients sans abonnement, comme le CLI).
+/// Lecture des événements par numéro (clients sans abonnement).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum EventRequest {

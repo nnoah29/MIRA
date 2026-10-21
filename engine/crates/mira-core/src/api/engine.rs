@@ -1,4 +1,4 @@
-//! Le moteur ouvert sur un profil : point d'entrée unique des clients (CLI, Flutter, agent).
+//! Le moteur ouvert sur un profil : point d'entrée unique des clients (pont Flutter, agent).
 
 use std::sync::Arc;
 use std::time::Duration;

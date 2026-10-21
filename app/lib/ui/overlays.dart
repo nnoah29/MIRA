@@ -244,7 +244,7 @@ void showSortPop(BuildContext anchor) {
         );
       },
     );
-  });
+  }, alignRight: true);
 }
 
 void showSnoozePop(BuildContext anchor) {
@@ -272,7 +272,7 @@ void showSnoozePop(BuildContext anchor) {
           ),
       ],
     );
-  });
+  }, alignRight: true);
 }
 
 void showSchedPop(BuildContext anchor) {

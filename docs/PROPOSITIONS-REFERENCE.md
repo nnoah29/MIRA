@@ -95,3 +95,9 @@ Les propositions PR-07 à PR-17 ont été ajoutées le 2026-10-14, après J9 : e
 **Proposition.** Ajouter `last_event_seq: Option<EventSeq>` à `Response::Status` (`EngineStatus`), ou une option `from_now` au filtre d'abonnement, pour s'abonner « à partir de maintenant » en une requête.
 **Raison.** Évite une lecture linéaire du journal à chaque ouverture d'un client et le risque de rejouer d'anciens événements comme s'ils étaient récents.
 **Renvoi.** AG-41 ; `mira-tui/src/app/event_cursor.rs`, `mira-tui/src/app/event_feed.rs`.
+
+## PR-19 — Plus de client en ligne de commande (objectif 6, D-04, 12.8)
+**Contexte.** La référence fait du CLI le premier client (D-04) et le moyen de « tout tester sans écran ». Le projet n'a plus qu'un client, l'application Flutter par le pont FFI ; le CLI et le TUI sont retirés (AG-63).
+**Proposition.** Remplacer, dans l'objectif 6 et D-04, « utilisable en ligne de commande » par « utilisable sans interface par sa façade (`Engine`) et son contrat sérialisé, testé de bout en bout contre le testkit » ; rendre sans objet l'invariant 6 (correspondance `Request` ↔ commande CLI) et PR-16 ; garder S1–S14 comme scénarios de la façade.
+**Raison.** Le contrat reste la seule frontière publique ; un CLI n'apporte plus rien qu'un test de façade ne vérifie, et coûte en maintenance et en ressources de CI.
+**Renvoi.** AG-63 ; `mira-core/tests/scenario_s*`.

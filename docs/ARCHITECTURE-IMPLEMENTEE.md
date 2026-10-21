@@ -4,6 +4,8 @@
 
 Ce document décrit ce qui **existe**. Quand une décision n'a pas de code, ou qu'un comportement diffère de la référence, c'est écrit.
 
+> **Mise à jour du 2026-10-21 :** le CLI (`mira-cli`) et le TUI (`mira-tui`) ont été retirés du workspace (AG-63, PR-19) ; le seul client du moteur est l'application Flutter, par le pont FFI (`bridge/`). Les passages des §5, §6 et §10 qui citent le CLI (commandes `mira …`, codes de sortie, `--wait`, tests `mira-cli/tests/`) décrivent l'état du 2026-10-14 : chaque commande citée correspond à la requête `Request` du même nom, que le pont envoie aujourd'hui. Les scénarios S1–S14 restent testés au niveau du moteur (`mira-core/tests`).
+
 ## 1. Vue d'ensemble
 
 Workspace Cargo `engine/` (toolchain `1.99.0` épinglée, édition 2024, resolver 3). Neuf crates ; environ 38 600 lignes de Rust hors dossiers `tests/` ; 1 433 fichiers `.rs` ; 1 080 tests réussis, 1 ignoré (voir §10).
@@ -13,11 +15,10 @@ Workspace Cargo `engine/` (toolchain `1.99.0` épinglée, édition 2024, resolve
 | `mira-vocabulary` | Types du domaine, erreurs à code stable, événements, version du contrat, interface `Provider` | `serde`, `thiserror` seulement (A1) | 32 |
 | `mira-core` | Le moteur : 26 modules de premier niveau (§2) | `mira-vocabulary` + bibliothèques externes encapsulées | 716 |
 | `mira-provider-gmail`, `-outlook`, `-yahoo`, `-generic` | Descriptions pures de services (données du §6.7, **non vérifiées en ligne**) | `mira-vocabulary` seulement (A2) | 13 / 8 / 8 / 4 |
-| `mira-assembly` | Composition root : `build_registry()`, `production_config(profil)`, réexports pour le CLI | tout | 4 |
-| `mira-cli` | Binaire `mira` : 72 commandes, sortie humaine ou `--json` versionné | `mira-assembly` seulement (A4) | 191 |
+| `mira-assembly` | Composition root : `build_registry()`, `production_config(profil)`, réexports pour les clients (pont Flutter) | tout | 4 |
 | `mira-testkit` | Faux serveurs IMAP / SMTP / OAuth2 sur `127.0.0.1` ; boîte noire | aucun crate `mira-*` (A5) | 105 |
 
-Sens des dépendances : `mira-cli` → `mira-assembly` → `mira-core` et providers → `mira-vocabulary`. Le cœur ne nomme aucun provider ; seul `mira-assembly/src/composition.rs` les connaît tous (une ligne par provider, repli `generic` en premier).
+Sens des dépendances : pont FFI (`bridge/`, hors workspace) → `mira-assembly` → `mira-core` et providers → `mira-vocabulary`. Le cœur ne nomme aucun provider ; seul `mira-assembly/src/composition.rs` les connaît tous (une ligne par provider, repli `generic` en premier).
 
 Données d'un profil (`C/profile/paths.rs`) : `$MIRA_HOME/profiles/<profil>/`, sinon `$XDG_DATA_HOME/mira/profiles/<profil>/`, sinon `~/.local/share/mira/profiles/<profil>/`, droits `0700`. Contenu : `mira.sqlite3` (WAL), `engine.lock` (verrou exclusif D-27), `attachments/` (cache des pièces jointes), `tmp/`. Un nom de profil vide, `.`, `..` ou contenant `/`, `\`, NUL est refusé.
 
@@ -181,7 +182,7 @@ Les invariants 1–33 et les scénarios S1–S14 sont reliés à leurs tests nom
 |---|---|
 | `tools/test-check-norms`, `tools/test-check-architecture` | auto-tests des garde-fous (fixtures `tools/fixtures/{ok,bad}`, workspace saboté) |
 | `tools/check-norms` | N1 fonction ≤ 30 lignes ; N2 ≤ 6 fonctions avec corps par fichier (tests compris) ; N3 noms `utils`/`helpers`/`common`/`misc` ; N4 aucun commentaire dans un corps ; N5 exactement une ligne `///` avant chaque `fn` (dernier relevé : 1 433 fichiers, 0 violation) |
-| `tools/check-architecture` | A0 crates attendus présents ; A1 vocabulaire = `serde` + `thiserror` ; A2 providers = vocabulaire seul ; A3 cœur sans provider, assemblage ni CLI ; A4 le CLI ne dépend que de l'assemblage ; A5 testkit sans crate `mira-*` ; A6 aucun nom de provider dans le cœur, tests compris ; A7 pas de chargement dynamique ; A8 chaque bibliothèque externe dans son module (table `ENCAPSULATED`) ; A9 aucune notion d'écran |
+| `tools/check-architecture` | A0 crates attendus présents ; A1 vocabulaire = `serde` + `thiserror` ; A2 providers = vocabulaire seul ; A3 cœur sans provider ni assemblage ; (A4, règle des clients CLI/TUI, retirée avec eux) ; A5 testkit sans crate `mira-*` ; A6 aucun nom de provider dans le cœur, tests compris ; A7 pas de chargement dynamique ; A8 chaque bibliothèque externe dans son module (table `ENCAPSULATED`) ; A9 aucune notion d'écran |
 | `tools/check-forbidden-patterns` | `unwrap`/`expect`/`panic!`/`todo!`/`unimplemented!`/`dbg!`/`unsafe` hors tests ; `TODO` non référencé ; marqueurs de conflit git ; `libloading`/`dlopen` dans un `Cargo.toml` |
 | `cargo fmt --check`, `cargo clippy -D warnings` | lints du workspace : `unsafe_code = forbid`, `unwrap_used`/`expect_used`/`panic`/`todo` = deny |
 | `cargo test --workspace` | `cargo-nextest` ne s'installe pas (BLOQUÉ-01) ; `ci.sh` bascule sur `cargo test` |

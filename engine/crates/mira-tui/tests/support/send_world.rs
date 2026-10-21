@@ -64,6 +64,7 @@ impl SendWorld {
             engine,
             account: None,
             imap: Some(imap),
+            smtp: None,
         };
         world.account = add_test_account(&world.engine).await;
         SendWorld { world, smtp, clock }

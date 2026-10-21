@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'body_skeleton.dart';
 import 'html_body.dart';
+import 'native_cover.dart';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -329,134 +330,154 @@ class _Thread extends StatelessWidget {
       ],
     );
     final time = Mono(fullDate(msg.date), ls: .08, height: null);
-    final chev = AnimatedRotation(
-      turns: old ? -.25 : 0,
+    final nativeBody = webViewEnabled && msg.htmlRaw != null;
+    Widget chev(bool folded) => AnimatedRotation(
+      turns: folded ? -.25 : 0,
       duration: const Duration(milliseconds: 150),
       child: Ico('chev', size: 14, color: p.dim),
     );
 
-    return Container(
-      margin: const EdgeInsets.only(top: 20),
-      decoration: BoxDecoration(
-        color: p.surface,
-        border: Border.all(color: p.line),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Hov(
-            onTap: toggle,
-            builder: (_, _) => Opacity(
-              opacity: old ? .75 : 1,
-              child: Padding(
-                padding: const EdgeInsets.all(16).copyWith(left: 20, right: 20),
-                child: mobile
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+    // Corps affiché par une vue native (posée par-dessus Flutter) : un popover qui la chevauche replie la carte (comme un clic sur l'en-tête) ;
+    // une boîte de dialogue la masque le temps d'être ouverte, sans démonter la vue.
+    return NativeCoverBuilder(
+      onOverlapped: nativeBody && !old ? toggle : null,
+      builder: (context, covered) {
+        final hidden = nativeBody && covered;
+        return Container(
+          margin: const EdgeInsets.only(top: 20),
+          decoration: BoxDecoration(
+            color: p.surface,
+            border: Border.all(color: p.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Hov(
+                onTap: toggle,
+                builder: (_, _) => Opacity(
+                  opacity: old ? .75 : 1,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16)
+                        .copyWith(left: 20, right: 20),
+                    child: mobile
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Avatar(fromName, size: 40, font: 11),
+                                  const SizedBox(width: 14),
+                                  Expanded(child: info),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              chev(old || hidden),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 52,
+                                  top: 2,
+                                ),
+                                child: time,
+                              ),
+                            ],
+                          )
+                        : Row(
                             children: [
                               Avatar(fromName, size: 40, font: 11),
                               const SizedBox(width: 14),
                               Expanded(child: info),
+                              const SizedBox(width: 14),
+                              time,
+                              const SizedBox(width: 14),
+                              chev(old || hidden),
                             ],
                           ),
-                          const SizedBox(height: 2),
-                          chev,
-                          Padding(
-                            padding: const EdgeInsets.only(left: 52, top: 2),
-                            child: time,
-                          ),
-                        ],
-                      )
-                    : Row(
-                        children: [
-                          Avatar(fromName, size: 40, font: 11),
-                          const SizedBox(width: 14),
-                          Expanded(child: info),
-                          const SizedBox(width: 14),
-                          time,
-                          const SizedBox(width: 14),
-                          chev,
-                        ],
-                      ),
+                  ),
+                ),
               ),
-            ),
-          ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            alignment: Alignment.topCenter,
-            child: ClipRect(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (!old) ...[
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(bodyLeft, 2, 24, 24),
-                      child: _BodySwitch(msg: msg, p: p),
-                    ),
-                    if (msg.att.isNotEmpty)
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(bodyLeft, 0, 24, 22),
-                        child: Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: [
-                            for (final (fi, f) in msg.att.indexed)
-                              Hov(
-                                tip: t('Lire le document'),
-                                onTap: () =>
-                                    showAttachmentViewer(context, msg.att, fi),
-                                builder: (_, h) => DashedBox(
-                                  color: h ? p.accent : p.line,
-                                  fill: p.bg,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 10,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Ico(
-                                        f.t == 'PNG' ? 'img' : 'file',
-                                        color: h ? p.text : p.muted,
+              AnimatedSize(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topCenter,
+                child: ClipRect(
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    heightFactor: hidden ? 0 : 1,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (!old) ...[
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(bodyLeft, 2, 24, 24),
+                            child: _BodySwitch(msg: msg, p: p),
+                          ),
+                          if (msg.att.isNotEmpty)
+                            Padding(
+                              padding: EdgeInsets.fromLTRB(bodyLeft, 0, 24, 22),
+                              child: Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: [
+                                  for (final (fi, f) in msg.att.indexed)
+                                    Hov(
+                                      tip: t('Lire le document'),
+                                      onTap: () => showAttachmentViewer(
+                                        context,
+                                        msg.att,
+                                        fi,
                                       ),
-                                      const SizedBox(width: 12),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            f.n,
-                                            style: Fonts.sans(
-                                              size: 15,
+                                      builder: (_, h) => DashedBox(
+                                        color: h ? p.accent : p.line,
+                                        fill: p.bg,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 10,
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Ico(
+                                              f.t == 'PNG' ? 'img' : 'file',
                                               color: h ? p.text : p.muted,
                                             ),
-                                          ),
-                                          Mono(
-                                            '${f.t} · ${f.s}',
-                                            size: 10,
-                                            ls: .12,
-                                            height: null,
-                                          ),
-                                        ],
+                                            const SizedBox(width: 12),
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  f.n,
+                                                  style: Fonts.sans(
+                                                    size: 15,
+                                                    color: h ? p.text : p.muted,
+                                                  ),
+                                                ),
+                                                Mono(
+                                                  '${f.t} · ${f.s}',
+                                                  size: 10,
+                                                  ls: .12,
+                                                  height: null,
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ],
-                                  ),
-                                ),
+                                    ),
+                                ],
                               ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ],
+                            ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

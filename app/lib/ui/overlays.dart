@@ -6,6 +6,7 @@ import '../data/models.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
+import 'native_cover.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
 
@@ -77,7 +78,9 @@ class Pops {
           Positioned.fill(
             child: CustomSingleChildLayout(
               delegate: _PopLayout(rect, alignRight),
-              child: _PopBox(child: builder(ctx, close)),
+              child: CoversNativeViews(
+                child: _PopBox(child: builder(ctx, close)),
+              ),
             ),
           ),
         ],
@@ -496,72 +499,77 @@ class HelpModal extends StatelessWidget {
     ];
     final w = MediaQuery.sizeOf(context).width;
     return Positioned.fill(
-      child: GestureDetector(
-        onTap: s.closeHelp,
-        child: Container(
-          color: const Color(0x8c000000),
-          alignment: Alignment.center,
-          child: GestureDetector(
-            onTap: () {},
-            child: FadeSlideIn(
-              from: const Offset(0, 14),
-              child: Material(
-                type: MaterialType.transparency,
-                child: Container(
-                  width: (w * .92).clamp(0, 560).toDouble(),
-                  padding: const EdgeInsets.all(28),
-                  decoration: BoxDecoration(
-                    color: p.bgSide,
-                    border: Border.all(color: p.line),
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 18),
-                          child: Text(
-                            t('RACCOURCIS CLAVIER'),
-                            style: Fonts.display(size: 28, color: p.text),
+      child: CoversNativeViews(
+        modal: true,
+        child: GestureDetector(
+          onTap: s.closeHelp,
+          child: Container(
+            color: const Color(0x8c000000),
+            alignment: Alignment.center,
+            child: GestureDetector(
+              onTap: () {},
+              child: FadeSlideIn(
+                from: const Offset(0, 14),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: Container(
+                    width: (w * .92).clamp(0, 560).toDouble(),
+                    padding: const EdgeInsets.all(28),
+                    decoration: BoxDecoration(
+                      color: p.bgSide,
+                      border: Border.all(color: p.line),
+                    ),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 18),
+                            child: Text(
+                              t('RACCOURCIS CLAVIER'),
+                              style: Fonts.display(size: 28, color: p.text),
+                            ),
                           ),
-                        ),
-                        Table(
-                          defaultColumnWidth: const IntrinsicColumnWidth(),
-                          columnWidths: const {1: FlexColumnWidth()},
-                          defaultVerticalAlignment:
-                              TableCellVerticalAlignment.middle,
-                          children: [
-                            for (final (k, d) in rows)
-                              TableRow(
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                      right: 22,
-                                      bottom: 10,
-                                    ),
-                                    child: Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: Kbd(k),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
-                                    child: Text(
-                                      d,
-                                      style: Fonts.sans(
-                                        size: 14.5,
-                                        color: p.muted,
+                          Table(
+                            defaultColumnWidth: const IntrinsicColumnWidth(),
+                            columnWidths: const {1: FlexColumnWidth()},
+                            defaultVerticalAlignment:
+                                TableCellVerticalAlignment.middle,
+                            children: [
+                              for (final (k, d) in rows)
+                                TableRow(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        right: 22,
+                                        bottom: 10,
+                                      ),
+                                      child: Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Kbd(k),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Btn(label: t('Fermer'), onTap: s.closeHelp),
-                      ],
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 10,
+                                      ),
+                                      child: Text(
+                                        d,
+                                        style: Fonts.sans(
+                                          size: 14.5,
+                                          color: p.muted,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Btn(label: t('Fermer'), onTap: s.closeHelp),
+                        ],
+                      ),
                     ),
                   ),
                 ),

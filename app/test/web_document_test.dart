@@ -35,29 +35,32 @@ void main() {
     expect(doc, isNot(contains('script-src')));
   });
 
-  test('la politique est placée dans le head existant, en premier', () {
+  test(
+    'la politique précède tout le contenu, même un script avant le head',
+    () {
+      final doc = webDocument(
+        '<html><script>alert(1)</script><head><title>t</title></head><body>b</body></html>',
+        remoteImages: false,
+      );
+      expect(doc, startsWith('<meta http-equiv="Content-Security-Policy"'));
+      expect(
+        doc.indexOf('Content-Security-Policy'),
+        lessThan(doc.indexOf('<script>')),
+      );
+    },
+  );
+
+  test('le doctype reste en tête, la politique juste après', () {
     final doc = webDocument(
-      '<html><head><title>t</title></head><body>b</body></html>',
+      '<!DOCTYPE html><html><head></head><body>b</body></html>',
       remoteImages: false,
     );
-    expect(
-      doc.indexOf('Content-Security-Policy'),
-      lessThan(doc.indexOf('<title>')),
-    );
-    expect('<head'.allMatches(doc).length, 1);
+    expect(doc, startsWith('<!DOCTYPE html><meta http-equiv='));
   });
 
-  test('un document sans head en reçoit un', () {
-    final doc = webDocument('<html><body>b</body></html>', remoteImages: false);
-    expect(
-      doc.indexOf('Content-Security-Policy'),
-      lessThan(doc.indexOf('<body>')),
-    );
-  });
-
-  test('un fragment sans html ni head est enveloppé', () {
+  test('la page ne défile pas elle-même', () {
     final doc = webDocument('texte', remoteImages: false);
-    expect(doc, contains('<head>'));
+    expect(doc, contains('overflow-y:hidden'));
     expect(doc, contains('texte'));
   });
 

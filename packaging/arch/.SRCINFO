@@ -6,6 +6,7 @@ pkgbase = mira-mail-bin
 	arch = x86_64
 	license = MIT
 	depends = gtk3
+	depends = webkit2gtk-4.1
 	depends = libepoxy
 	depends = fontconfig
 	depends = glibc

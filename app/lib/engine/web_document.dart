@@ -2,36 +2,33 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 final _cid = RegExp(r'cid:<?([^"\s>]+)>?', caseSensitive: false);
-final _head = RegExp(r'<head(\s[^>]*)?>', caseSensitive: false);
-final _html = RegExp(r'<html(\s[^>]*)?>', caseSensitive: false);
+final _doctype = RegExp(r'^\s*<!doctype[^>]*>', caseSensitive: false);
 
-/// Politique de contenu du document : rien ne se charge, sauf les images incorporées (et distantes si autorisées).
+/// Politique de contenu du document : rien ne se charge ni ne s'exécute, sauf les images incorporées (et distantes si autorisées).
 String contentPolicy({required bool remoteImages}) {
   final images = remoteImages ? 'data: https: http:' : 'data:';
   return "default-src 'none'; img-src $images; style-src 'unsafe-inline'; font-src data:";
 }
 
-/// Document à afficher dans la vue web : le HTML reçu, tel quel, sous une politique de contenu stricte, avec les images `cid:` remplacées par leurs données.
+/// La page ne défile pas elle-même : c'est le lecteur qui la fait défiler, à sa hauteur complète.
+/// Ses hauteurs ne suivent pas celle de la vue (`height:100%`, fréquent dans les courriels) : la vue prend la hauteur du contenu, qui sinon grandirait avec elle sans fin.
+const _noOwnScroll =
+    '<style>html{overflow-y:hidden !important}'
+    'html,body{height:auto !important;min-height:0 !important}</style>';
+
+/// Document à afficher dans la vue web : le HTML reçu, tel quel, avec les images `cid:` remplacées par leurs données.
+/// La politique de contenu est la toute première balise, avant tout script que contiendrait le courriel (seul le `doctype` la précède, pour garder le mode de rendu).
 String webDocument(
   String html, {
   required bool remoteImages,
   Map<String, Uint8List> inline = const {},
 }) {
   final meta =
-      '<meta http-equiv="Content-Security-Policy" content="${contentPolicy(remoteImages: remoteImages)}">';
-  return _withHead(_inlineImages(html, inline), meta);
-}
-
-String _withHead(String html, String meta) {
-  final head = _head.firstMatch(html);
-  if (head != null) {
-    return html.replaceRange(head.end, head.end, meta);
-  }
-  final root = _html.firstMatch(html);
-  if (root != null) {
-    return html.replaceRange(root.end, root.end, '<head>$meta</head>');
-  }
-  return '<html><head>$meta</head><body>$html</body></html>';
+      '<meta http-equiv="Content-Security-Policy" content="${contentPolicy(remoteImages: remoteImages)}">$_noOwnScroll';
+  final body = _inlineImages(html, inline);
+  final doctype = _doctype.firstMatch(body);
+  final at = doctype?.end ?? 0;
+  return body.replaceRange(at, at, meta);
 }
 
 String _inlineImages(String html, Map<String, Uint8List> inline) {

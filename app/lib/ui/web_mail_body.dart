@@ -8,6 +8,7 @@ import 'package:webview_all/webview_all.dart';
 import '../engine/web_document.dart';
 import 'body_skeleton.dart';
 import 'html_body.dart';
+import 'native_cover.dart';
 import 'wheel_fling.dart';
 
 /// Canal par lequel notre script de page parle à Flutter.
@@ -214,17 +215,19 @@ class _WebMailBodyState extends State<WebMailBody>
   /// La vue à sa taille réelle, montrée seulement sur `shownWidth` × `shownHeight` en haut à gauche.
   Widget _view(double shownHeight, double shownWidth) => Align(
     alignment: Alignment.topLeft,
-    child: SizedBox(
-      width: shownWidth,
-      height: shownHeight,
-      child: ClipRect(
-        child: OverflowBox(
-          alignment: Alignment.topLeft,
-          minWidth: _width ?? 1,
-          maxWidth: _width ?? 1,
-          minHeight: _height,
-          maxHeight: _height,
-          child: WebViewWidget(controller: _controller),
+    child: NativeViewArea(
+      child: SizedBox(
+        width: shownWidth,
+        height: shownHeight,
+        child: ClipRect(
+          child: OverflowBox(
+            alignment: Alignment.topLeft,
+            minWidth: _width ?? 1,
+            maxWidth: _width ?? 1,
+            minHeight: _height,
+            maxHeight: _height,
+            child: WebViewWidget(controller: _controller),
+          ),
         ),
       ),
     ),

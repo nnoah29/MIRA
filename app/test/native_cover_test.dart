@@ -10,11 +10,13 @@ class _Seen {
   var overlapped = 0;
 }
 
-/// Écran de 800 × 600 : un bouton en haut à gauche, une vue « native » à `area`, affichée ou non (`onScreen`).
+/// Écran de 800 × 600 : un bouton en haut à gauche, une carte à `area` dont la vue « native » occupe le bas à partir de `nativeTop`,
+/// affichée ou non (`onScreen`).
 Future<(BuildContext, _Seen)> _screen(
   WidgetTester tester,
   Rect area, {
   bool onScreen = true,
+  double nativeTop = 0,
 }) async {
   late BuildContext anchor;
   final seen = _Seen();
@@ -43,7 +45,10 @@ Future<(BuildContext, _Seen)> _screen(
                 onOverlapped: () => seen.overlapped++,
                 builder: (_, covered) {
                   seen.covered.add(covered);
-                  return const SizedBox.expand();
+                  return Padding(
+                    padding: EdgeInsets.only(top: nativeTop),
+                    child: const NativeViewArea(child: SizedBox.expand()),
+                  );
                 },
               ),
             ),
@@ -91,6 +96,19 @@ void main() {
     await _popover(tester, anchor);
     expect(seen.overlapped, 0);
   });
+
+  testWidgets(
+    'un popover qui ne touche que l\'en-tête de la carte la laisse dépliée',
+    (tester) async {
+      final (anchor, seen) = await _screen(
+        tester,
+        const Rect.fromLTWH(0, 50, 800, 550),
+        nativeTop: 300,
+      );
+      await _popover(tester, anchor);
+      expect(seen.overlapped, 0);
+    },
+  );
 
   testWidgets('une vue gardée hors écran ignore les popovers', (tester) async {
     final (anchor, seen) = await _screen(

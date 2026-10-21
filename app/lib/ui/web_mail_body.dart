@@ -8,6 +8,7 @@ import 'package:webview_all/webview_all.dart';
 import '../engine/web_document.dart';
 import 'body_skeleton.dart';
 import 'html_body.dart';
+import 'wheel_fling.dart';
 
 /// Canal par lequel notre script de page parle à Flutter.
 const _channel = 'MiraMail';
@@ -40,7 +41,7 @@ const _pageScript =
     if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
     event.preventDefault();
     var unit = event.deltaMode === 1 ? 40 : event.deltaMode === 2 ? window.innerHeight : 1;
-    post({wheel: event.deltaY * unit});
+    post({wheel: event.deltaY * unit, at: event.timeStamp, notch: event.wheelDeltaY !== 0 && event.wheelDeltaY % 120 === 0});
   }, {passive: false, capture: true});
   document.addEventListener('DOMContentLoaded', function() {
     measure();
@@ -81,6 +82,7 @@ class _WebMailBodyState extends State<WebMailBody>
   );
   Timer? _fallback;
   bool _revealed = false;
+  final _wheel = WheelFling();
   double _height = _initialHeight;
   double? _width;
 
@@ -94,6 +96,7 @@ class _WebMailBodyState extends State<WebMailBody>
   @override
   void dispose() {
     _fallback?.cancel();
+    _wheel.dispose();
     _curtain.dispose();
     super.dispose();
   }
@@ -159,7 +162,15 @@ class _WebMailBodyState extends State<WebMailBody>
       if ((next - _height).abs() > _jitter) setState(() => _height = next);
       if (data['loaded'] == true) _reveal();
     } else if (wheel is num && wheel.isFinite) {
-      Scrollable.maybeOf(context)?.position.pointerScroll(wheel.toDouble());
+      final position = Scrollable.maybeOf(context)?.position;
+      if (position == null) return;
+      final at = data['at'];
+      _wheel.scroll(
+        position,
+        wheel.toDouble(),
+        precise: data['notch'] != true,
+        at: at is num ? at.toDouble() : 0,
+      );
     }
   }
 

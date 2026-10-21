@@ -4,7 +4,7 @@
 # Bibliothèques privées livrées avec l'application : ni fournies au système, ni réclamées.
 %global __provides_exclude_from ^%{_prefix}/lib/mira-mail/.*$
 # libc GLIBC_2.39 : références faibles de la bibliothèque standard Rust, utilisées seulement si présentes.
-%global __requires_exclude ^(lib(app|flutter_linux_gtk|pdfium|mira_bridge|url_launcher_linux_plugin)\\.so.*|libc\\.so\\.6\\(GLIBC_2\\.(3[5-9]|4[0-9])\\).*)$
+%global __requires_exclude ^(lib(app|flutter_linux_gtk|pdfium|mira_bridge|url_launcher_linux_plugin|webview_all_linux_plugin)\\.so.*|libc\\.so\\.6\\(GLIBC_2\\.(3[5-9]|4[0-9])\\).*)$
 
 Name:           mira-mail
 Version:        %{mira_version}
@@ -14,6 +14,7 @@ License:        MIT
 URL:            https://github.com/nnoah29/MIRA
 ExclusiveArch:  x86_64
 Requires:       gtk3
+Requires:       (webkit2gtk4.1 or libwebkit2gtk-4_1-0)
 Recommends:     (zenity or kdialog)
 Recommends:     xdg-utils
 

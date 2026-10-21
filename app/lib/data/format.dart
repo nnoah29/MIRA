@@ -90,12 +90,25 @@ int colorOf(String s) {
   return avatarPalette[h % avatarPalette.length];
 }
 
+/// Coupe un texte à `max` unités UTF-16 au plus, sans séparer une paire de substitution (emoji).
+String clipText(String text, int max) {
+  if (text.length <= max) return text;
+  final cutsPair = max > 0 && _isHighSurrogate(text.codeUnitAt(max - 1));
+  return text.substring(0, cutsPair ? max - 1 : max);
+}
+
+bool _isHighSurrogate(int unit) => unit >= 0xD800 && unit <= 0xDBFF;
+
+/// Les `count` premiers caractères (points de code) d'un texte, entiers même hors du plan de base.
+String firstChars(String text, int count) =>
+    String.fromCharCodes(text.runes.take(count));
+
 String initials(String n) {
   final cleaned = n.replaceAll(RegExp(r'[^\p{L}\s]', unicode: true), '').trim();
   final w = cleaned.split(RegExp(r'\s+')).where((x) => x.isNotEmpty).toList();
   final s = w.length > 1
-      ? w[0][0] + w[1][0]
-      : (w.isEmpty ? '?' : (w[0].length >= 2 ? w[0].substring(0, 2) : w[0]));
+      ? firstChars(w[0], 1) + firstChars(w[1], 1)
+      : (w.isEmpty ? '?' : firstChars(w[0], 2));
   return s.toUpperCase();
 }
 

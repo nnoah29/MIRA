@@ -66,7 +66,7 @@ Le bundle demande **glibc 2.34** au minimum : Ubuntu 22.04+, Debian 12+, Fedora 
 
 `libdartjni.so` (pont Java d'un plugin Android) est retiré du bundle : jamais chargé sous Linux, il ferait dépendre les paquets de `libjvm`.
 
-Dépendances à l'exécution : GTK 3. Recommandées : `zenity` ou `kdialog` (fenêtres d'ouverture et d'enregistrement de fichiers), `xdg-utils` (liens), un service *Secret Service* comme GNOME Keyring ou KWallet (mots de passe des comptes).
+Dépendances à l'exécution : GTK 3 et WebKitGTK 4.1 (`libwebkit2gtk-4.1`, corps HTML des messages). Recommandées : `zenity` ou `kdialog` (fenêtres d'ouverture et d'enregistrement de fichiers), `xdg-utils` (liens), un service *Secret Service* comme GNOME Keyring ou KWallet (mots de passe des comptes).
 
 ## Publier
 

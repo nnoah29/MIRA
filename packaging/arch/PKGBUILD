@@ -7,7 +7,7 @@ pkgdesc='Desktop mail client that works offline'
 arch=('x86_64')
 url='https://github.com/nnoah29/MIRA'
 license=('MIT')
-depends=('gtk3' 'libepoxy' 'fontconfig' 'glibc' 'gcc-libs')
+depends=('gtk3' 'webkit2gtk-4.1' 'libepoxy' 'fontconfig' 'glibc' 'gcc-libs')
 optdepends=('zenity: file dialogs on GNOME and others'
             'kdialog: file dialogs on KDE'
             'xdg-utils: open links in the browser'

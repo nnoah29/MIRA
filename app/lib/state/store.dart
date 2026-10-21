@@ -1250,6 +1250,7 @@ class MailStore extends ChangeNotifier {
           x.body = p.body;
           x.att = p.att;
           x.html = p.html;
+          x.htmlRaw = p.htmlRaw;
           x.blocked = p.blocked;
           x.inline = p.inline;
           x.hydrated = true;
@@ -3021,7 +3022,7 @@ class MailStore extends ChangeNotifier {
     var i = 0;
     void tick() {
       i = (i + rand(2, 5).round()).clamp(0, msg.text.length);
-      msg.shown = msg.text.substring(0, i);
+      msg.shown = clipText(msg.text, i);
       if (i >= msg.text.length) {
         msg.done = true;
         busy = false;

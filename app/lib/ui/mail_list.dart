@@ -569,7 +569,7 @@ class MailRow extends StatelessWidget {
     final dense = s.dense;
     final read = !m.unread;
     final snipText = plainOf(last.body);
-    final snip = snipText.length > 170 ? snipText.substring(0, 170) : snipText;
+    final snip = clipText(snipText, 170);
     String? tag;
     final o = m.outbox;
     if (o != null) {

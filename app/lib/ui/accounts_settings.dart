@@ -127,27 +127,37 @@ class _AccountsSettingsState extends State<AccountsSettings> {
     }
   }
 
-  /// Un onglet par compte, puis l'ajout d'un compte.
+  /// Un onglet par compte, sur une seule ligne qui défile vers la droite ; l'ajout d'un compte reste épinglé au bout.
   Widget _tabs(List<AccountDetail> list, AccountDetail? current) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
-      child: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.end,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          for (final a in list)
-            KeyedSubtree(
-              key: ValueKey('account-head-${a.id}'),
-              child: AccountTab(
-                account: a,
-                stateText: stateLabel(a).$1,
-                bad: stateLabel(a).$2,
-                selected: !adding && a.id == current?.id,
-                onTap: () => setState(() {
-                  adding = false;
-                  selectedId = a.id;
-                }),
+          Flexible(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  for (final a in list)
+                    KeyedSubtree(
+                      key: ValueKey('account-head-${a.id}'),
+                      child: AccountTab(
+                        account: a,
+                        stateText: stateLabel(a).$1,
+                        bad: stateLabel(a).$2,
+                        selected: !adding && a.id == current?.id,
+                        onTap: () => setState(() {
+                          adding = false;
+                          selectedId = a.id;
+                        }),
+                      ),
+                    ),
+                ],
               ),
             ),
+          ),
           AddAccountTab(
             key: const ValueKey('settings-add-account'),
             selected: adding,

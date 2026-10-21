@@ -68,7 +68,8 @@ class _CoversNativeViewsState extends State<CoversNativeViews> {
   Widget build(BuildContext context) => widget.child;
 }
 
-/// Construit son enfant selon qu'une modale (boîte de dialogue, aide) couvre la page, et signale (`onOverlapped`) chaque superposition qui s'ouvre par-dessus lui.
+/// Construit son enfant selon qu'une modale (boîte de dialogue, aide) couvre la page, et signale (`onOverlapped`) chaque superposition
+/// qui s'ouvre par-dessus une des vues natives qu'il contient (marquées par `NativeViewArea`).
 /// Un widget hors écran (mail gardé monté mais pas affiché, `TickerMode` coupé) n'est pas concerné.
 class NativeCoverBuilder extends StatefulWidget {
   final Widget Function(BuildContext context, bool covered) builder;
@@ -85,6 +86,7 @@ class NativeCoverBuilder extends StatefulWidget {
 
 class _NativeCoverBuilderState extends State<NativeCoverBuilder> {
   final _seen = <Object>{};
+  final _areas = <_NativeViewAreaState>{};
   bool _onScreen = true;
 
   @override
@@ -110,12 +112,9 @@ class _NativeCoverBuilderState extends State<NativeCoverBuilder> {
     _seen
       ..retainAll(covers.keys)
       ..addAll(covers.keys);
-    final box = context.findRenderObject();
-    if (!_onScreen || box is! RenderBox || !box.hasSize || !box.attached) {
-      return;
-    }
-    final area = box.localToGlobal(Offset.zero) & box.size;
-    if (opened.any(area.overlaps)) widget.onOverlapped?.call();
+    if (!_onScreen) return;
+    final areas = [for (final a in _areas) ?a.visible()];
+    if (opened.any((o) => areas.any(o.overlaps))) widget.onOverlapped?.call();
   }
 
   @override
@@ -128,4 +127,50 @@ class _NativeCoverBuilderState extends State<NativeCoverBuilder> {
           widget.builder(context, !current || modals > 0),
     );
   }
+}
+
+/// Marque la place d'une vue native : seul un chevauchement de cette place (sa partie visible) replie le `NativeCoverBuilder` englobant.
+class NativeViewArea extends StatefulWidget {
+  final Widget child;
+  const NativeViewArea({super.key, required this.child});
+
+  @override
+  State<NativeViewArea> createState() => _NativeViewAreaState();
+}
+
+class _NativeViewAreaState extends State<NativeViewArea> {
+  _NativeCoverBuilderState? _owner;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _owner?._areas.remove(this);
+    _owner = context.findAncestorStateOfType<_NativeCoverBuilderState>();
+    _owner?._areas.add(this);
+  }
+
+  @override
+  void dispose() {
+    _owner?._areas.remove(this);
+    super.dispose();
+  }
+
+  /// Place à l'écran, réduite à ce qu'en laisse voir la zone de défilement qui la contient (`null` : rien de visible).
+  Rect? visible() {
+    final rect = _rectOf(context);
+    if (rect == null) return null;
+    final scroll = Scrollable.maybeOf(context);
+    final view = scroll == null ? null : _rectOf(scroll.context);
+    final shown = view == null ? rect : rect.intersect(view);
+    return shown.width > 0 && shown.height > 0 ? shown : null;
+  }
+
+  static Rect? _rectOf(BuildContext context) {
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.hasSize || !box.attached) return null;
+    return box.localToGlobal(Offset.zero) & box.size;
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

@@ -303,7 +303,7 @@ class MailStore extends ChangeNotifier {
   late String theme;
 
   /// Ce que le compteur de chaque libellé affiche dans la barre latérale, pour tous les libellés.
-  late CounterMode labelCounter;
+  CounterMode labelCounter = CounterMode.unread;
 
   /// Langue de l'interface.
   late AppLang lang;

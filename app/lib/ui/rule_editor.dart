@@ -37,6 +37,25 @@ class _RuleEditorState extends State<RuleEditor> {
   RulePreview? preview;
   String? error;
   bool _saving = false;
+  final _conditionsScroll = ScrollController();
+  final _actionsScroll = ScrollController();
+
+  @override
+  void dispose() {
+    _conditionsScroll.dispose();
+    _actionsScroll.dispose();
+    super.dispose();
+  }
+
+  void _scrollToEnd(ScrollController c) =>
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!c.hasClients) return;
+        c.animateTo(
+          c.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+        );
+      });
 
   bool get _single => rule.scope.isSingleAccount;
 
@@ -89,6 +108,7 @@ class _RuleEditorState extends State<RuleEditor> {
       ConditionGroup([Condition(test: defaultsFor(first))]),
     );
     _touch();
+    _scrollToEnd(_conditionsScroll);
   }
 
   void _addCondition(int group) {
@@ -98,6 +118,7 @@ class _RuleEditorState extends State<RuleEditor> {
       Condition(test: defaultsFor(first)),
     );
     _touch();
+    _scrollToEnd(_conditionsScroll);
   }
 
   void _addAction() {
@@ -105,6 +126,7 @@ class _RuleEditorState extends State<RuleEditor> {
     if (first == null) return;
     rule.actions.add(RuleAction(defaultsFor(first)));
     _touch();
+    _scrollToEnd(_actionsScroll);
   }
 
   void _setAccounts(List<String>? ids) {
@@ -307,9 +329,17 @@ class _RuleEditorState extends State<RuleEditor> {
           RuleLabel(t('Portée')),
           _scope(),
           RuleLabel(t('Quand le message correspond à')),
-          _alternatives(),
+          RuleScroll(
+            maxHeight: 340,
+            controller: _conditionsScroll,
+            child: _alternatives(),
+          ),
           RuleLabel(t('Alors')),
-          _actions(),
+          RuleScroll(
+            maxHeight: 220,
+            controller: _actionsScroll,
+            child: _actions(),
+          ),
           _preview(),
           if (error != null)
             Padding(

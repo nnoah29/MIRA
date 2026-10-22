@@ -297,3 +297,29 @@ class RuleOrDivider extends StatelessWidget {
     );
   }
 }
+
+/// Zone à hauteur bornée qui défile au-delà ; garde sa taille naturelle quand elle tient.
+class RuleScroll extends StatelessWidget {
+  final double maxHeight;
+  final ScrollController controller;
+  final Widget child;
+  const RuleScroll({
+    super.key,
+    required this.maxHeight,
+    required this.controller,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) => ConstrainedBox(
+    constraints: BoxConstraints(maxHeight: maxHeight),
+    child: Scrollbar(
+      controller: controller,
+      child: SingleChildScrollView(
+        controller: controller,
+        padding: const EdgeInsets.only(right: 12),
+        child: child,
+      ),
+    ),
+  );
+}

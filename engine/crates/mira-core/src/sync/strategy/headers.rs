@@ -69,8 +69,8 @@ pub async fn ingest_batch(
     Ok(())
 }
 
-/// Intègre un lot d'en-têtes dans une seule transaction.
-fn store_batch(
+/// Intègre un lot d'en-têtes dans une seule transaction ; en direct, inscrit les messages créés en attente des règles.
+pub fn store_batch(
     ctx: &SyncContext,
     mailbox: &Mailbox,
     validity: u32,

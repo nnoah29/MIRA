@@ -39,6 +39,9 @@ class ImportReport {
   const ImportReport(this.labels, this.assignments, this.ignored);
 }
 
+/// Nombre maximal de conversations que le moteur accepte dans une seule pose.
+const maxThreadsPerCall = 1000;
+
 /// Libellés locaux portés par le moteur : lecture, écritures idempotentes, poses, reprise.
 class LocalLabelAdmin {
   final EngineClient client;
@@ -93,11 +96,18 @@ class LocalLabelAdmin {
   /// Supprime un libellé et toutes ses poses.
   Future<void> delete(String id) => _send('delete_local_label', {'label': id});
 
-  /// Pose (`on`) ou retire un libellé sur des conversations, tout ou rien.
-  Future<void> set(String id, List<String> threads, bool on) => _send(
-    'set_local_label',
-    {'label': id, 'threads': threads, 'on': on, 'idempotency_key': _key('set')},
-  );
+  /// Pose (`on`) ou retire un libellé sur des conversations, par lots que le moteur accepte (tout ou rien par lot).
+  Future<void> set(String id, List<String> threads, bool on) async {
+    for (var i = 0; i < threads.length; i += maxThreadsPerCall) {
+      final end = min(i + maxThreadsPerCall, threads.length);
+      await _send('set_local_label', {
+        'label': id,
+        'threads': threads.sublist(i, end),
+        'on': on,
+        'idempotency_key': _key('set'),
+      });
+    }
+  }
 
   /// Reprend les libellés de l'app et leurs poses ; rend le bilan.
   Future<ImportReport> importLabels(List<LocalLabelImport> labels) async {

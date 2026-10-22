@@ -136,4 +136,24 @@ void main() {
       expect((report.labels, report.assignments, report.ignored), (1, 2, 1));
     },
   );
+
+  test(
+    'set découpe les très grosses sélections en lots de 1000 conversations',
+    () async {
+      final threads = [for (var i = 0; i < 2500; i++) 't$i'];
+      await admin.set('l1', threads, true);
+      final sizes = [
+        for (final r in engine.sent)
+          ((r['request'] as Map)['threads'] as List).length,
+      ];
+      expect(sizes, [1000, 1000, 500]);
+      final keys = {
+        for (final r in engine.sent) (r['request'] as Map)['idempotency_key'],
+      };
+      expect(keys.length, 3);
+      engine.sent.clear();
+      await admin.set('l1', [], true);
+      expect(engine.sent, isEmpty);
+    },
+  );
 }

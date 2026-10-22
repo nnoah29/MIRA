@@ -28,7 +28,6 @@ class LabelRow extends StatelessWidget {
   final void Function(int delta) onMove;
   final void Function(String name) onRename;
   final VoidCallback onDelete;
-  final VoidCallback onRule;
   const LabelRow({
     super.key,
     required this.label,
@@ -38,7 +37,6 @@ class LabelRow extends StatelessWidget {
     required this.onMove,
     required this.onRename,
     required this.onDelete,
-    required this.onRule,
   });
 
   Widget _option(String id, String text, bool on, VoidCallback tap) => RuleChip(
@@ -280,12 +278,6 @@ class LabelRow extends StatelessWidget {
               ),
               _counter(context),
               if (!label.local) LabelMapButton(id: label.id),
-              Btn(
-                key: ValueKey('rule-${label.key}'),
-                icon: 'plus',
-                label: t('Créer une règle'),
-                onTap: onRule,
-              ),
             ],
           ),
         ],

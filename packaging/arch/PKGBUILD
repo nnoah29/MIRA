@@ -1,7 +1,7 @@
 # Maintainer: nnoah29 <toffanoah@gmail.com>
 # Paquet AUR « -bin » : installe l'archive précompilée publiée sur GitHub.
 pkgname=mira-mail-bin
-pkgver=1.0.3
+pkgver=1.1.0
 pkgrel=1
 pkgdesc='Desktop mail client that works offline'
 arch=('x86_64')

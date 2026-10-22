@@ -489,9 +489,9 @@ const Map<String, String> enStrings = {
   'OU': 'OR',
   'ET': 'AND',
   'NON': 'NOT',
-  '+ ET (ajouter une condition)': '+ AND (add a condition)',
-  '+ OU (ajouter une alternative)': '+ OR (add an alternative)',
-  '+ Ajouter une action': '+ Add an action',
+  'Ajouter une condition': 'Add a condition',
+  'Ajouter une alternative (OU)': 'Add an alternative (OR)',
+  'Ajouter une action': 'Add an action',
   'Retirer la condition': 'Remove the condition',
   "Retirer l'action": 'Remove the action',
   '{0} messages touchés sur {1} examinés.':

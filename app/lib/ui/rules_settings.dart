@@ -7,6 +7,8 @@ import '../engine/rule_admin.dart';
 import '../i18n/i18n.dart';
 import '../theme/app_theme.dart';
 import 'rule_editor.dart';
+import 'rule_widgets.dart';
+import '../theme/icons.dart';
 import 'widgets.dart';
 
 /// Règles « condition → action » : liste réordonnable, activation, édition, suppression.
@@ -103,21 +105,49 @@ class _RulesSettingsState extends State<RulesSettings> {
   }
 
   Future<void> _confirmDelete(Rule rule) async {
+    final p = context.pal;
     final ok = await showDialog<bool>(
       context: context,
-      builder: (c) => AlertDialog(
-        title: Text(t('Supprimer la règle « {0} » ?', [rule.name])),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c, false),
-            child: Text(t('Annuler')),
+      builder: (c) => Dialog(
+        backgroundColor: p.bgSide,
+        shape: RoundedRectangleBorder(side: BorderSide(color: p.line)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  t('Supprimer la règle « {0} » ?', [rule.name]),
+                  style: Fonts.sans(
+                    size: 16,
+                    w: FontWeight.w600,
+                    color: p.text,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Btn(
+                      label: t('Annuler'),
+                      onTap: () => Navigator.pop(c, false),
+                    ),
+                    const SizedBox(width: 10),
+                    Btn(
+                      key: const ValueKey('confirm-delete-rule'),
+                      label: t('Supprimer'),
+                      go: true,
+                      onTap: () => Navigator.pop(c, true),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          TextButton(
-            key: const ValueKey('confirm-delete-rule'),
-            onPressed: () => Navigator.pop(c, true),
-            child: Text(t('Supprimer')),
-          ),
-        ],
+        ),
       ),
     );
     if (ok == true) await _run(() => widget.admin.delete(rule.id));
@@ -126,35 +156,70 @@ class _RulesSettingsState extends State<RulesSettings> {
   Widget _row(int i) {
     final v = views[i];
     final p = context.pal;
-    return ListTile(
+    return Container(
       key: ValueKey('rule-row-${v.rule.id}'),
-      leading: ReorderableDragStartListener(
-        index: i,
-        child: const Icon(Icons.drag_handle),
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: p.lineSoft)),
       ),
-      title: Text(v.rule.name),
-      subtitle: v.status.valid
-          ? null
-          : Text(
-              key: ValueKey('rule-invalid-${v.rule.id}'),
-              '${t('Invalide')} : ${v.status.reason}',
-              style: Fonts.sans(size: 12.5, color: p.dim),
-            ),
-      onTap: () => setState(() => editing = v.rule),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Row(
         children: [
-          Switch(
+          ReorderableDragStartListener(
+            key: ValueKey('rule-handle-${v.rule.id}'),
+            index: i,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 14),
+              child: Ico('list', size: 16, color: p.dim),
+            ),
+          ),
+          Expanded(
+            child: Hov(
+              onTap: () => setState(() => editing = v.rule),
+              builder: (_, h) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    v.rule.name,
+                    style: Fonts.sans(
+                      size: 15,
+                      color: !v.rule.enabled ? p.dim : (h ? p.accent : p.text),
+                    ),
+                  ),
+                  if (!v.status.valid)
+                    Padding(
+                      key: ValueKey('rule-invalid-${v.rule.id}'),
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Ico('warn', size: 14, color: p.accent),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${t('Invalide')} : ${v.status.reason}',
+                              style: Fonts.sans(size: 13, color: p.accent),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          RuleToggle(
             key: ValueKey('rule-enabled-${v.rule.id}'),
             value: v.rule.enabled,
             onChanged: (on) =>
                 _run(() => widget.admin.setEnabled(v.rule.id, on)),
           ),
-          IconButton(
+          const SizedBox(width: 6),
+          IBtn(
+            'trash',
             key: ValueKey('rule-delete-${v.rule.id}'),
-            tooltip: t('Supprimer'),
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => _confirmDelete(v.rule),
+            tip: t('Supprimer'),
+            onTap: () => _confirmDelete(v.rule),
           ),
         ],
       ),
@@ -180,7 +245,13 @@ class _RulesSettingsState extends State<RulesSettings> {
             style: Fonts.sans(size: 13.5, color: p.dim),
           ),
           if (error != null)
-            Text(error!, style: Fonts.sans(size: 13, color: p.dim)),
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                error!,
+                style: Fonts.sans(size: 13.5, color: p.accent),
+              ),
+            ),
           const SizedBox(height: 10),
           if (views.isEmpty)
             Text(
@@ -193,6 +264,8 @@ class _RulesSettingsState extends State<RulesSettings> {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: views.length,
             onReorderItem: _reorder,
+            proxyDecorator: (child, _, _) =>
+                Material(color: p.surface, child: child),
             itemBuilder: (_, i) => _row(i),
           ),
           const SizedBox(height: 10),
@@ -200,6 +273,7 @@ class _RulesSettingsState extends State<RulesSettings> {
             alignment: Alignment.centerLeft,
             child: Btn(
               key: const ValueKey('add-rule'),
+              icon: 'plus',
               label: t('Ajouter une règle'),
               onTap: () => setState(
                 () => editing = Rule(id: '', name: t('Nouvelle règle')),

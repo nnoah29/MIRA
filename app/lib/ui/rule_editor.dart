@@ -5,6 +5,7 @@ import '../i18n/i18n.dart';
 import '../theme/app_theme.dart';
 import 'rule_condition_row.dart';
 import 'rule_labels.dart';
+import 'rule_widgets.dart';
 import 'widgets.dart';
 
 /// Éditeur d'une règle : nom, portée, blocs « ET » séparés par « OU », actions, aperçu.
@@ -151,22 +152,22 @@ class _RuleEditorState extends State<RuleEditor> {
     final chosen = rule.scope.accounts;
     return Wrap(
       spacing: 8,
-      crossAxisAlignment: WrapCrossAlignment.center,
+      runSpacing: 8,
       children: [
-        ChoiceChip(
+        RuleChip(
           key: const ValueKey('scope-all'),
-          label: Text(t('Tous les comptes')),
+          label: t('Tous les comptes'),
           selected: rule.scope.isAll,
-          onSelected: (_) => _setAccounts(null),
+          onTap: () => _setAccounts(null),
         ),
         for (final id in ids)
-          FilterChip(
+          RuleChip(
             key: ValueKey('scope-account-$id'),
-            label: Text(widget.accounts[id] ?? id),
+            label: widget.accounts[id] ?? id,
             selected: chosen?.contains(id) ?? false,
-            onSelected: (on) {
+            onTap: () {
               final next = [...?chosen];
-              on ? next.add(id) : next.remove(id);
+              next.contains(id) ? next.remove(id) : next.add(id);
               _setAccounts(next);
             },
           ),
@@ -176,14 +177,7 @@ class _RuleEditorState extends State<RuleEditor> {
 
   Widget _group(int g) {
     final group = rule.alternatives[g];
-    final p = context.pal;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 4),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        border: Border.all(color: p.lineSoft),
-        borderRadius: BorderRadius.circular(8),
-      ),
+    return RuleBlock(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -204,10 +198,11 @@ class _RuleEditorState extends State<RuleEditor> {
             ),
           Align(
             alignment: Alignment.centerLeft,
-            child: TextButton(
+            child: Btn(
               key: ValueKey('add-condition-$g'),
-              onPressed: () => _addCondition(g),
-              child: Text(t('+ ET (ajouter une condition)')),
+              icon: 'plus',
+              label: t('Ajouter une condition'),
+              onTap: () => _addCondition(g),
             ),
           ),
         ],
@@ -216,24 +211,21 @@ class _RuleEditorState extends State<RuleEditor> {
   }
 
   Widget _alternatives() {
-    final p = context.pal;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (var g = 0; g < rule.alternatives.length; g++) ...[
-          if (g > 0)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text(t('OU'), style: Fonts.sans(size: 12, color: p.dim)),
-            ),
+          if (g > 0) RuleOrDivider(t('OU')),
           KeyedSubtree(key: ObjectKey(rule.alternatives[g]), child: _group(g)),
         ],
+        const SizedBox(height: 12),
         Align(
           alignment: Alignment.centerLeft,
-          child: TextButton(
+          child: Btn(
             key: const ValueKey('add-alternative'),
-            onPressed: _addAlternative,
-            child: Text(t('+ OU (ajouter une alternative)')),
+            icon: 'plus',
+            label: t('Ajouter une alternative (OU)'),
+            onTap: _addAlternative,
           ),
         ),
       ],
@@ -258,10 +250,11 @@ class _RuleEditorState extends State<RuleEditor> {
         ),
       Align(
         alignment: Alignment.centerLeft,
-        child: TextButton(
+        child: Btn(
           key: const ValueKey('add-action'),
-          onPressed: _addAction,
-          child: Text(t('+ Ajouter une action')),
+          icon: 'plus',
+          label: t('Ajouter une action'),
+          onTap: _addAction,
         ),
       ),
     ],
@@ -270,9 +263,14 @@ class _RuleEditorState extends State<RuleEditor> {
   Widget _preview() {
     final p = preview;
     if (p == null) return const SizedBox.shrink();
-    return Padding(
+    final c = context.pal;
+    return Container(
       key: const ValueKey('preview-result'),
-      padding: const EdgeInsets.only(top: 8),
+      margin: const EdgeInsets.only(top: 18),
+      padding: const EdgeInsets.fromLTRB(12, 4, 0, 4),
+      decoration: BoxDecoration(
+        border: Border(left: BorderSide(color: c.accent, width: 2)),
+      ),
       child: Text(
         p.samples.isEmpty
             ? t('{0} messages touchés sur {1} examinés.', [
@@ -284,63 +282,68 @@ class _RuleEditorState extends State<RuleEditor> {
                 p.scanned,
                 p.samples.join(', '),
               ]),
-        style: Fonts.sans(size: 13, color: context.pal.dim),
+        style: Fonts.sans(size: 13.5, color: c.muted),
       ),
     );
   }
 
-  Widget _heading(String text) => Padding(
-    padding: const EdgeInsets.only(top: 14, bottom: 6),
-    child: Text(
-      text,
-      style: Fonts.sans(
-        size: 13.5,
-        w: FontWeight.w500,
-        color: context.pal.text,
-      ),
-    ),
-  );
-
   @override
   Widget build(BuildContext context) {
+    final p = context.pal;
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextFormField(
-            key: const ValueKey('rule-name'),
+          RuleLabel(
+            t('Nom de la règle'),
+            padding: const EdgeInsets.only(bottom: 10),
+          ),
+          RuleField(
+            fieldKey: const ValueKey('rule-name'),
             initialValue: rule.name,
-            decoration: InputDecoration(labelText: t('Nom de la règle')),
             onChanged: (v) => rule.name = v,
           ),
-          _heading(t('Portée')),
+          RuleLabel(t('Portée')),
           _scope(),
-          _heading(t('Quand le message correspond à')),
+          RuleLabel(t('Quand le message correspond à')),
           _alternatives(),
-          _heading(t('Alors')),
+          RuleLabel(t('Alors')),
           _actions(),
           _preview(),
           if (error != null)
-            Text(error!, style: Fonts.sans(size: 13, color: context.pal.text)),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            children: [
-              Btn(
-                key: const ValueKey('preview-rule'),
-                label: t('Aperçu'),
-                onTap: _runPreview,
+            Padding(
+              padding: const EdgeInsets.only(top: 14),
+              child: Text(
+                error!,
+                style: Fonts.sans(size: 13.5, color: p.accent),
               ),
-              Btn(
-                key: const ValueKey('save-rule'),
-                label: t('Enregistrer'),
-                go: true,
-                onTap: _save,
-              ),
-              if (widget.onCancel != null)
-                Btn(label: t('Annuler'), onTap: widget.onCancel),
-            ],
+            ),
+          const SizedBox(height: 22),
+          Container(
+            padding: const EdgeInsets.only(top: 18),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: p.lineSoft)),
+            ),
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                Btn(
+                  key: const ValueKey('save-rule'),
+                  label: t('Enregistrer'),
+                  go: true,
+                  onTap: _save,
+                ),
+                Btn(
+                  key: const ValueKey('preview-rule'),
+                  label: t('Aperçu'),
+                  onTap: _runPreview,
+                ),
+                if (widget.onCancel != null)
+                  Btn(label: t('Annuler'), onTap: widget.onCancel),
+              ],
+            ),
           ),
         ],
       ),

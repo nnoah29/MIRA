@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/rule_models.dart';
 import '../i18n/i18n.dart';
+import 'rule_widgets.dart';
 
 const _choices = <String, List<String>>{
   'field': ['address', 'name', 'domain'],
@@ -68,17 +69,13 @@ class RuleParam extends StatelessWidget {
     String current,
     List<String> options,
     void Function(String) set,
-  ) => DropdownButton<String>(
+  ) => RuleSelect(
     value: options.contains(current) ? current : null,
-    items: [
-      for (final o in options)
-        DropdownMenuItem(value: o, child: Text(_choiceLabel(o))),
-    ],
+    hint: _choiceLabel(current),
+    options: [for (final o in options) RuleOption(o, _choiceLabel(o))],
     onChanged: (v) {
-      if (v != null) {
-        set(v);
-        onChanged();
-      }
+      set(v);
+      onChanged();
     },
   );
 
@@ -86,24 +83,18 @@ class RuleParam extends StatelessWidget {
   /// affichée, signalée « introuvable ».
   Widget _choice(String current, List<RuleChoice> choices) {
     final known = choices.any((c) => c.id == current);
-    return DropdownButton<String>(
+    return RuleSelect(
       key: ValueKey('$keyPrefix-$name'),
       value: current.isEmpty ? null : current,
-      hint: Text(t('Choisir…')),
-      items: [
-        for (final c in choices)
-          DropdownMenuItem(value: c.id, child: Text(c.label)),
+      hint: t('Choisir…'),
+      options: [
+        for (final c in choices) RuleOption(c.id, c.label),
         if (!known && current.isNotEmpty)
-          DropdownMenuItem(
-            value: current,
-            child: Text(t('{0} (introuvable)', [current])),
-          ),
+          RuleOption(current, t('{0} (introuvable)', [current])),
       ],
       onChanged: (v) {
-        if (v != null) {
-          data[name] = v;
-          onChanged();
-        }
+        data[name] = v;
+        onChanged();
       },
     );
   }
@@ -113,14 +104,14 @@ class RuleParam extends StatelessWidget {
     void Function(String) set, {
     bool number = false,
     String variant = '',
-  }) => SizedBox(
-    width: 180,
-    child: TextFormField(
-      key: ValueKey('${identityHashCode(data)}-${data['type']}-$name$variant'),
-      initialValue: initial,
-      keyboardType: number ? TextInputType.number : TextInputType.text,
-      onChanged: (v) => set(v),
+  }) => RuleField(
+    width: 200,
+    fieldKey: ValueKey(
+      '${identityHashCode(data)}-${data['type']}-$name$variant',
     ),
+    initialValue: initial,
+    number: number,
+    onChanged: set,
   );
 
   Widget _matcher() {
@@ -128,6 +119,7 @@ class RuleParam extends StatelessWidget {
     final values = (m['values'] as List).map((v) => '$v').toList();
     return Wrap(
       spacing: 8,
+      runSpacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         _dropdown('${m['op']}', _matcherOps, (op) {
@@ -154,7 +146,7 @@ class RuleParam extends StatelessWidget {
       return _dropdown('$v', _choices[name]!, (s) => data[name] = s);
     }
     if (v is bool) {
-      return Switch(
+      return RuleToggle(
         value: v,
         onChanged: (b) {
           data[name] = b;

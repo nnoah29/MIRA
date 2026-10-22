@@ -152,7 +152,7 @@ void main() {
     t,
   ) async {
     final engine = await pumpList(t);
-    final handle = find.byIcon(Icons.drag_handle).first;
+    final handle = find.byKey(const ValueKey('rule-handle-a'));
     final gesture = await t.startGesture(t.getCenter(handle));
     await t.pump(kLongPressTimeout);
     for (var i = 0; i < 10; i++) {

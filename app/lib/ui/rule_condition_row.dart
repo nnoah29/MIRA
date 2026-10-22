@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../data/rule_models.dart';
 import '../i18n/i18n.dart';
-import '../theme/app_theme.dart';
 import 'rule_labels.dart';
 import 'rule_params.dart';
+import 'rule_widgets.dart';
+import 'widgets.dart';
 
 /// Choix de la variante (condition ou action) d'une ligne, puis ses paramètres.
 class RuleKindPicker extends StatelessWidget {
@@ -35,22 +36,23 @@ class RuleKindPicker extends StatelessWidget {
     final current = '${data['type']}';
     final entry = entries.where((e) => e.kind == current).firstOrNull;
     return Wrap(
-      spacing: 10,
+      spacing: 8,
+      runSpacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        DropdownButton<String>(
+        RuleSelect(
           key: ValueKey('$keyPrefix-kind'),
           value: entry == null ? null : current,
-          hint: Text(ruleKindLabel(current)),
-          items: [
+          hint: ruleKindLabel(current),
+          options: [
             for (final e in entries)
-              DropdownMenuItem(
+              RuleOption(
+                e.kind,
+                ruleKindLabel(e.kind),
                 key: ValueKey('$keyPrefix-option-${e.kind}'),
-                value: e.kind,
-                child: Text(ruleKindLabel(e.kind)),
               ),
           ],
-          onChanged: (k) => k == null ? null : _switchTo(k),
+          onChanged: _switchTo,
         ),
         for (final f in entry?.fields ?? const <String>[])
           RuleParam(
@@ -86,40 +88,51 @@ class ConditionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final p = context.pal;
-    return Row(
-      children: [
-        Text(
-          index == 0 ? '' : t('ET'),
-          style: Fonts.sans(size: 12, color: p.dim),
-        ),
-        const SizedBox(width: 8),
-        FilterChip(
-          key: ValueKey('negate-$group-$index'),
-          label: Text(t('NON')),
-          selected: condition.negated,
-          onSelected: (v) {
-            condition.negated = v;
-            onChanged();
-          },
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: RuleKindPicker(
-            keyPrefix: 'condition-$group-$index',
-            entries: entries,
-            data: condition.test,
-            options: options,
-            onChanged: onChanged,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 30,
+            height: 38,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Mono(
+                index == 0 ? '' : t('ET'),
+                size: 10.5,
+                ls: .16,
+                height: null,
+              ),
+            ),
           ),
-        ),
-        IconButton(
-          key: ValueKey('remove-condition-$group-$index'),
-          tooltip: t('Retirer la condition'),
-          icon: const Icon(Icons.close, size: 18),
-          onPressed: onRemove,
-        ),
-      ],
+          RuleChip(
+            key: ValueKey('negate-$group-$index'),
+            label: t('NON'),
+            selected: condition.negated,
+            onTap: () {
+              condition.negated = !condition.negated;
+              onChanged();
+            },
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: RuleKindPicker(
+              keyPrefix: 'condition-$group-$index',
+              entries: entries,
+              data: condition.test,
+              options: options,
+              onChanged: onChanged,
+            ),
+          ),
+          IBtn(
+            'x',
+            key: ValueKey('remove-condition-$group-$index'),
+            tip: t('Retirer la condition'),
+            onTap: onRemove,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -143,24 +156,28 @@ class ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: RuleKindPicker(
-            keyPrefix: 'action-$index',
-            entries: entries,
-            data: action.data,
-            options: options,
-            onChanged: onChanged,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: RuleKindPicker(
+              keyPrefix: 'action-$index',
+              entries: entries,
+              data: action.data,
+              options: options,
+              onChanged: onChanged,
+            ),
           ),
-        ),
-        IconButton(
-          key: ValueKey('remove-action-$index'),
-          tooltip: t('Retirer l\'action'),
-          icon: const Icon(Icons.close, size: 18),
-          onPressed: onRemove,
-        ),
-      ],
+          IBtn(
+            'x',
+            key: ValueKey('remove-action-$index'),
+            tip: t('Retirer l\'action'),
+            onTap: onRemove,
+          ),
+        ],
+      ),
     );
   }
 }

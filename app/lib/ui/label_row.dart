@@ -40,17 +40,12 @@ class LabelRow extends StatelessWidget {
     required this.onRule,
   });
 
-  Widget _switch(BuildContext context, String text, bool on, VoidCallback tap) {
-    final p = context.pal;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        RuleToggle(value: on, onChanged: (_) => tap()),
-        const SizedBox(width: 10),
-        Text(text, style: Fonts.sans(size: 13.5, color: p.muted)),
-      ],
-    );
-  }
+  Widget _option(String id, String text, bool on, VoidCallback tap) => RuleChip(
+    key: ValueKey('$id-${label.key}'),
+    label: text,
+    selected: on,
+    onTap: tap,
+  );
 
   Widget _counter(BuildContext context) => Wrap(
     spacing: 6,
@@ -250,11 +245,9 @@ class LabelRow extends StatelessWidget {
     final p = context.pal;
     final prefs = label.prefs;
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
-        color: p.bg,
-        border: Border.all(color: p.lineSoft),
+        border: Border(top: BorderSide(color: p.lineSoft)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -262,36 +255,27 @@ class LabelRow extends StatelessWidget {
           _head(context),
           const SizedBox(height: 14),
           Wrap(
-            spacing: 24,
-            runSpacing: 12,
+            spacing: 8,
+            runSpacing: 10,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              KeyedSubtree(
-                key: ValueKey('sidebar-${label.key}'),
-                child: _switch(
-                  context,
-                  t('Dans la barre latérale'),
-                  !prefs.hidden,
-                  () => onSet(hidden: !prefs.hidden),
-                ),
+              _option(
+                'sidebar',
+                t('Dans la barre latérale'),
+                !prefs.hidden,
+                () => onSet(hidden: !prefs.hidden),
               ),
-              KeyedSubtree(
-                key: ValueKey('inbox-${label.key}'),
-                child: _switch(
-                  context,
-                  t('Masquer de la Réception'),
-                  prefs.hideFromInbox,
-                  () => onSet(hideFromInbox: !prefs.hideFromInbox),
-                ),
+              _option(
+                'inbox',
+                t('Masquer de la Réception'),
+                prefs.hideFromInbox,
+                () => onSet(hideFromInbox: !prefs.hideFromInbox),
               ),
-              KeyedSubtree(
-                key: ValueKey('notify-${label.key}'),
-                child: _switch(
-                  context,
-                  t('Notifications'),
-                  prefs.notifications,
-                  () => onSet(notifications: !prefs.notifications),
-                ),
+              _option(
+                'notify',
+                t('Notifications'),
+                prefs.notifications,
+                () => onSet(notifications: !prefs.notifications),
               ),
               _counter(context),
               Btn(

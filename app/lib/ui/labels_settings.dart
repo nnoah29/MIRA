@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -7,6 +9,7 @@ import '../i18n/i18n.dart';
 import '../state/local_labels.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
+import '../theme/icons.dart';
 import 'label_row.dart';
 import 'rule_widgets.dart';
 import 'widgets.dart';
@@ -24,6 +27,7 @@ class _LabelsSettingsState extends State<LabelsSettings> {
   final name = TextEditingController();
   String where = 'local';
   bool invalid = false;
+  final collapsed = <String>{};
 
   @override
   void dispose() {
@@ -170,35 +174,79 @@ class _LabelsSettingsState extends State<LabelsSettings> {
     );
   }
 
-  List<Widget> _group(MailStore s, String title, List<LabelOverview> items) {
+  /// Cadre d'un groupe (locaux ou un compte), pliable : titre, nombre de libellés, puis ses lignes.
+  Widget _group(
+    MailStore s,
+    String id,
+    String title,
+    List<LabelOverview> items,
+  ) {
     final p = context.pal;
-    return [
-      Padding(
-        padding: const EdgeInsets.only(top: 22, bottom: 10),
-        child: Mono(title, size: 10.5, ls: .2, height: null, color: p.dim),
+    final open = !collapsed.contains(id);
+    return Container(
+      key: ValueKey('group-$id'),
+      margin: const EdgeInsets.only(top: 16),
+      decoration: BoxDecoration(
+        color: p.bg,
+        border: Border.all(color: p.line),
       ),
-      for (final (i, l) in items.indexed)
-        LabelRow(
-          key: ValueKey('label-${l.key}'),
-          label: l,
-          canUp: i > 0,
-          canDown: i < items.length - 1,
-          onSet: ({hidden, hideFromInbox, notifications, counter, color}) =>
-              _set(
-                s,
-                l,
-                hidden: hidden,
-                hideFromInbox: hideFromInbox,
-                notifications: notifications,
-                counter: counter,
-                color: color,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Hov(
+            key: ValueKey('fold-$id'),
+            onTap: () =>
+                setState(() => open ? collapsed.add(id) : collapsed.remove(id)),
+            builder: (_, h) => Container(
+              color: h ? p.surface : p.surface2,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Transform.rotate(
+                    angle: open ? 0 : -math.pi / 2,
+                    child: Ico('chev', size: 14, color: h ? p.text : p.muted),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Mono(
+                      title,
+                      size: 11,
+                      ls: .16,
+                      height: null,
+                      color: h ? p.text : p.muted,
+                    ),
+                  ),
+                  Mono('${items.length}', size: 11, height: null),
+                ],
               ),
-          onMove: (d) => _move(s, l, d),
-          onRename: (to) => _rename(s, l, to),
-          onDelete: () => _delete(s, l),
-          onRule: () => _rule(l),
-        ),
-    ];
+            ),
+          ),
+          if (open)
+            for (final (i, l) in items.indexed)
+              LabelRow(
+                key: ValueKey('label-${l.key}'),
+                label: l,
+                canUp: i > 0,
+                canDown: i < items.length - 1,
+                onSet:
+                    ({hidden, hideFromInbox, notifications, counter, color}) =>
+                        _set(
+                          s,
+                          l,
+                          hidden: hidden,
+                          hideFromInbox: hideFromInbox,
+                          notifications: notifications,
+                          counter: counter,
+                          color: color,
+                        ),
+                onMove: (d) => _move(s, l, d),
+                onRename: (to) => _rename(s, l, to),
+                onDelete: () => _delete(s, l),
+                onRule: () => _rule(l),
+              ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -238,10 +286,11 @@ class _LabelsSettingsState extends State<LabelsSettings> {
                 style: Fonts.sans(size: 13.5, color: p.dim),
               ),
             ),
-          if (locals.isNotEmpty) ..._group(s, t('Locaux'), locals),
+          if (locals.isNotEmpty) _group(s, 'local', t('Locaux'), locals),
           for (final e in byAccount.entries)
-            ..._group(
+            _group(
               s,
+              e.key,
               s.accounts.where((a) => a.id == e.key).firstOrNull?.email ??
                   e.key,
               e.value,

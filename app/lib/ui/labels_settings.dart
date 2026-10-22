@@ -25,6 +25,7 @@ class _LabelsSettingsState extends State<LabelsSettings> {
   final name = TextEditingController();
   String where = 'local';
   bool invalid = false;
+  int fieldGen = 0;
   final collapsed = <String>{};
 
   @override
@@ -43,8 +44,11 @@ class _LabelsSettingsState extends State<LabelsSettings> {
       await src!.labelAdmin!.create(where, text);
       await s.refreshLabelSettings();
     }
-    setState(() => invalid = !ok);
     if (ok) name.clear();
+    setState(() {
+      invalid = !ok;
+      if (ok) fieldGen++;
+    });
   }
 
   /// Échange le libellé avec son voisin dans le même groupe et fixe le nouvel ordre.
@@ -117,12 +121,15 @@ class _LabelsSettingsState extends State<LabelsSettings> {
           runSpacing: 10,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            RuleField(
-              fieldKey: const ValueKey('new-label-name'),
-              initialValue: '',
-              width: 240,
-              hint: t('Nom du libellé'),
-              onChanged: (v) => name.text = v,
+            KeyedSubtree(
+              key: ValueKey('new-label-field-$fieldGen'),
+              child: RuleField(
+                fieldKey: const ValueKey('new-label-name'),
+                initialValue: '',
+                width: 240,
+                hint: t('Nom du libellé'),
+                onChanged: (v) => name.text = v,
+              ),
             ),
             RuleSelect(
               key: const ValueKey('new-label-where'),

@@ -1940,6 +1940,7 @@ class MailStore extends ChangeNotifier {
     } catch (_) {
       /* lecture impossible : on garde l'affichage actuel */
     }
+    await refreshLabelSettings();
   }
 
   /// Crée un libellé local ; `false` si le nom est vide ou déjà pris.

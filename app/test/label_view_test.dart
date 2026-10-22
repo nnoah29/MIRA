@@ -56,4 +56,22 @@ void main() {
       store.dispose();
     },
   );
+
+  test(
+    'créer un libellé local relit aussitôt les réglages des libellés',
+    () async {
+      final fake = FakeEngine()..settingsOn = true;
+      final (store, _) = await open(fake);
+      final before = fake.calls
+          .where((c) => c == 'label_settings.list_labels')
+          .length;
+      expect(store.addLocalLabel('Urgent'), true);
+      await settle();
+      final after = fake.calls
+          .where((c) => c == 'label_settings.list_labels')
+          .length;
+      expect(after, greaterThan(before));
+      store.dispose();
+    },
+  );
 }

@@ -1316,6 +1316,7 @@ dependencies = [
  "mira-vocabulary",
  "proptest",
  "rand 0.9.5",
+ "regex",
  "reqwest",
  "rusqlite",
  "rustls",

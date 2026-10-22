@@ -46,6 +46,19 @@ pub struct OperationMarker;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ViewMarker;
 
+/// Marqueur des identifiants de règle.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct RuleMarker;
+
+/// Identifiant de règle.
+pub type RuleId = Id<RuleMarker>;
+
+/// Marqueur des identifiants de libellé local.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct LocalLabelMarker;
+
+/// Identifiant de libellé local.
+pub type LocalLabelId = Id<LocalLabelMarker>;
 /// Identifiant de profil.
 pub type ProfileId = Id<ProfileMarker>;
 /// Identifiant de compte.

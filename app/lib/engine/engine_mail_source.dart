@@ -18,6 +18,9 @@ import 'compose_admin.dart';
 import 'mail_layout.dart';
 import 'inline_images.dart';
 import 'label_admin.dart';
+import 'label_settings_admin.dart';
+import 'local_label_admin.dart';
+import 'rule_admin.dart';
 import 'message_actions.dart';
 import 'engine_client.dart';
 import 'mail_builder.dart';
@@ -115,6 +118,39 @@ class EngineMailSource implements MailSource {
   LabelAdmin get labelAdmin => LabelAdmin(client);
 
   @override
+  RuleAdmin get ruleAdmin => RuleAdmin(client);
+
+  @override
+  LocalLabelAdmin get localLabelAdmin => LocalLabelAdmin(client);
+
+  @override
+  LabelSettingsAdmin get labelSettingsAdmin => LabelSettingsAdmin(client);
+
+  final StreamController<void> _settingsChanges = StreamController.broadcast();
+  final StreamController<void> _labelChanges = StreamController.broadcast();
+  final StreamController<void> _ruleChanges = StreamController.broadcast();
+  final Map<String, bool> _verdicts = {};
+
+  @override
+  Stream<void> get ruleChanges => _ruleChanges.stream;
+
+  @override
+  Stream<void> get localLabelChanges => _labelChanges.stream;
+
+  @override
+  Stream<void> get labelSettingsChanges => _settingsChanges.stream;
+
+  @override
+  bool? arrivalVerdict(String messageRef) => _verdicts[messageRef];
+
+  @override
+  void forgetVerdicts(Iterable<String> messageRefs) {
+    for (final r in messageRefs) {
+      _verdicts.remove(r);
+    }
+  }
+
+  @override
   MaintenanceAdmin get maintenance => MaintenanceAdmin(client);
 
   @override
@@ -177,9 +213,26 @@ class EngineMailSource implements MailSource {
     _events = client.events().listen((e) {
       final kind = (e['kind'] as Map?)?.cast<String, dynamic>() ?? const {};
       final account = kind['account'];
+      _trackRules('${kind['type']}', kind);
       if (account is String && _isChange('${kind['type']}')) _schedule(account);
       if (account is String) _trackSync(account, '${kind['type']}', kind);
     }, onError: (_) {});
+  }
+
+  void _trackRules(String type, Map<String, dynamic> kind) {
+    if (type == 'rule_changed' && !_ruleChanges.isClosed) {
+      _ruleChanges.add(null);
+    }
+    if (type == 'local_labels_changed' && !_labelChanges.isClosed) {
+      _labelChanges.add(null);
+    }
+    if (type == 'label_settings_changed' && !_settingsChanges.isClosed) {
+      _settingsChanges.add(null);
+    }
+    if (type == 'new_message_received') {
+      _verdicts['${kind['message']}'] = kind['silenced'] == true;
+      if (_verdicts.length > 1000) _verdicts.remove(_verdicts.keys.first);
+    }
   }
 
   void _trackSync(String account, String type, Map<String, dynamic> kind) {
@@ -786,6 +839,9 @@ class EngineMailSource implements MailSource {
     }
     unawaited(_events?.cancel() ?? Future<void>.value());
     await _changes.close();
+    await _ruleChanges.close();
+    await _labelChanges.close();
+    await _settingsChanges.close();
     await _syncEvents.close();
   }
 }

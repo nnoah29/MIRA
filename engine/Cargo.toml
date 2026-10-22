@@ -25,6 +25,7 @@ tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "net", "io-
 base64 = "0.22"
 sha2 = "0.10"
 rand = "0.9"
+regex = "1"
 ring = "0.17"
 uuid = { version = "1.28", features = ["v7"] }
 rusqlite = { version = "0.40", features = ["bundled"] }

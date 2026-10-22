@@ -6,6 +6,9 @@ import 'account_admin.dart';
 import 'account_setup.dart';
 import 'compose_admin.dart';
 import 'label_admin.dart';
+import 'label_settings_admin.dart';
+import 'local_label_admin.dart';
+import 'rule_admin.dart';
 import 'maintenance_admin.dart';
 import 'message_actions.dart';
 import 'sync_state.dart';
@@ -61,6 +64,31 @@ abstract class MailSource {
 
   /// Création, renommage, suppression et pose des libellés (`null` : démonstration).
   LabelAdmin? get labelAdmin;
+
+  /// Règles « condition → action » (`null` : démonstration).
+  RuleAdmin? get ruleAdmin;
+
+  /// Signale chaque changement de règle côté moteur.
+  Stream<void> get ruleChanges;
+
+  /// Libellés locaux portés par le moteur (`null` : démonstration).
+  LocalLabelAdmin? get localLabelAdmin;
+
+  /// Signale chaque changement des libellés locaux côté moteur.
+  Stream<void> get localLabelChanges;
+
+  /// Réglages des libellés (masquage, ordre, compteur…) portés par le moteur (`null` : démonstration).
+  LabelSettingsAdmin? get labelSettingsAdmin;
+
+  /// Signale chaque changement des réglages des libellés côté moteur.
+  Stream<void> get labelSettingsChanges;
+
+  /// Verdict des règles sur un message arrivé : `true` muet (aucune notification),
+  /// `false` à annoncer, `null` pas encore connu.
+  bool? arrivalVerdict(String messageRef);
+
+  /// Oublie les verdicts de ces messages, une fois l'annonce décidée.
+  void forgetVerdicts(Iterable<String> messageRefs);
 
   /// Contenu d'une pièce jointe du moteur (`null` : illisible ou sans identifiant).
   Future<Uint8List?> attachmentBytes(Attachment a);

@@ -22,3 +22,9 @@ pub const PROVIDER: ErrorCode = ErrorCode("not_found.provider");
 pub const ATTACHMENT: ErrorCode = ErrorCode("not_found.attachment");
 /// Fil inconnu.
 pub const THREAD: ErrorCode = ErrorCode("not_found.thread");
+/// Règle inconnue.
+pub const RULE: ErrorCode = ErrorCode("not_found.rule");
+/// Libellé local inconnu.
+pub const LOCAL_LABEL: ErrorCode = ErrorCode("not_found.local_label");
+/// Libellé inconnu.
+pub const LABEL: ErrorCode = ErrorCode("not_found.label");

@@ -7,6 +7,7 @@ use super::builder::QueryBuilder;
 use super::clauses::apply_filters;
 use super::filters::MessageFilters;
 use crate::storage::Tx;
+use crate::storage::repositories::label_settings::hidden::hidden_from_inbox;
 
 const VISIBLE: &str =
     "EXISTS (SELECT 1 FROM appearances a WHERE a.message_id = m.id AND a.deleted = 0)";
@@ -37,7 +38,10 @@ fn standard_builder(accounts: &[AccountId], view: StandardView) -> QueryBuilder 
     let list = builder.bind_list(&names);
     builder.require(format!("+m.account_id IN {list}"));
     match view {
-        StandardView::Unified => builder.require(IN_INBOX),
+        StandardView::Unified => {
+            builder.require(IN_INBOX);
+            builder.require(format!("NOT {}", hidden_from_inbox()));
+        }
         StandardView::Unread => {
             builder.require("m.seen = 0");
             builder.require(VISIBLE);

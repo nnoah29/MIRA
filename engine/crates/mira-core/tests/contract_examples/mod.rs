@@ -6,6 +6,8 @@ pub mod actions;
 pub mod compose;
 pub mod compose_drafts;
 pub mod compose_sending;
+pub mod label_settings_domain;
+pub mod local_label_domain;
 pub mod mailbox_domain;
 pub mod maintenance_domain;
 pub mod message_domain;
@@ -14,6 +16,7 @@ pub mod response_names;
 pub mod response_samples;
 pub mod responses_legacy;
 pub mod responses_read;
+pub mod rule_domain;
 pub mod search_domain;
 pub mod small_domains;
 pub mod snapshot;
@@ -44,6 +47,9 @@ pub fn request_name(request: &Request) -> &'static str {
         Request::Maintenance(inner) => maintenance_domain::maintenance_name(inner),
         Request::Action(_) | Request::Compose(_) | Request::Queue(_) => "write",
         Request::Sync(_) => "sync",
+        Request::Rule(_) => "rule",
+        Request::LocalLabel(_) => "local_label",
+        Request::LabelSettings(_) => "label_settings",
     }
 }
 

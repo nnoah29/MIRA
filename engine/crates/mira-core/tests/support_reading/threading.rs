@@ -68,3 +68,12 @@ pub fn thread_of(db: &Database, id: &str) -> Option<ThreadId> {
         .unwrap()
         .thread
 }
+
+/// Conversation de deux messages du compte acc-1 (une racine et sa réponse) ; rend son fil
+pub fn conversation(db: &Database) -> ThreadId {
+    let root = threaded("root", "Plan", Some("<root>"), None, &[]);
+    let reply = threaded("a", "Re: Plan", Some("<a>"), Some("<root>"), &["<root>"]);
+    store_and_assign(db, &root, 1_000, None);
+    store_and_assign(db, &reply, 2_000, None);
+    thread_of(db, "a").unwrap()
+}

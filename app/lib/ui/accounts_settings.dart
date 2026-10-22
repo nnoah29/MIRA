@@ -14,7 +14,6 @@ import 'account_tabs.dart';
 import 'add_account_panel.dart';
 import 'html_body.dart';
 import 'identities_box.dart';
-import 'labels_box.dart';
 import 'pending_actions.dart';
 import 'sync_status_line.dart';
 import 'synced_mailboxes.dart';
@@ -407,7 +406,6 @@ class _AccountCardState extends State<AccountCard> {
           ),
           if (a.imap != null) _serversBlock(p),
           IdentitiesBox(account: a, admin: widget.admin),
-          LabelsBox(accountId: a.id),
           _dangerBlock(p),
           if (busy)
             Padding(

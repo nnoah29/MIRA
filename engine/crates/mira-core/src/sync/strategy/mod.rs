@@ -11,4 +11,6 @@ mod plan;
 
 pub use dispatch::sync_mailbox;
 pub use finish::finish_mailbox;
-pub use headers::{Announce, HEADER_BATCH, ingest_batch, ingest_headers, newest_first, updated};
+pub use headers::{
+    Announce, HEADER_BATCH, ingest_batch, ingest_headers, newest_first, store_batch, updated,
+};

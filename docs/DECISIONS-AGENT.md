@@ -429,3 +429,71 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - **Couverture** : les scénarios S1–S14 restent testés au niveau du moteur (`scenario_s*` de `mira-core/tests`). Disparaissent : l'invariant 6 (« chaque variante de `Request` a une commande CLI », sans objet sans CLI), les tests du CLI (codes de sortie, enveloppe `--json`, secrets par stdin) et les bancs de performance qui passaient par lui (`cli_support/*_bench`).
 - **Écart à la référence** : la référence demande un moteur utilisable sans interface, en ligne de commande, pour tout tester sans écran (§ objectifs 6, D-04). Les tests automatiques de `mira-core` et du pont tiennent ce rôle ; proposition PR-19.
 - **Retour arrière** : restaurer `engine/crates/mira-cli` et `engine/crates/mira-tui` depuis le commit précédant ce retrait, la ligne `mira-tui` des dépendances du workspace, la règle A4 et ses deux auto-tests.
+
+## AG-64 — Règles : idempotence des actions et reprise sur crash
+- **Contexte** : les règles (spec R1) soumettent des actions à la file à l'arrivée d'un message ; un arrêt brutal entre l'intégration du message et l'évaluation ne doit ni perdre ni doubler ces actions (invariant 18).
+- **Choix** : `store_batch` inscrit chaque message créé en direct (`Announce::Live`, boîte non exclue) dans `rule_pending` **dans la même transaction** que le message ; l'évaluation soumet chaque action sous la clé `rule:{message}:{rang}` (rang = index de l'action dans la liste fusionnée des règles déclenchées), puis retire la ligne. Au démarrage, `replay_pending_rules` rejoue les lignes restantes ; les clés rendent le rejeu idempotent. Test de bout en bout de l'inscription : `sync_rules_pending.rs` (neutraliser `tx.add_pending` le fait échouer).
+- **Limites** : (1) si les règles changent entre la tentative et la reprise, les rangs ne désignent plus les mêmes actions (une action peut manquer ou être ajoutée) ; (2) `RuleApplied` peut être émis deux fois pour un même message après un crash (les actions, elles, ne sont pas doublées) ; (3) si l'évaluation échoue, la ligne `rule_pending` reste jusqu'au prochain démarrage et, si l'échec est permanent, elle est rejouée à chaque démarrage (compteur de tentatives et abandon à prévoir).
+- **Retour arrière** : retirer l'inscription dans `store_batch` et l'appel de `replay_pending_rules` au démarrage.
+
+## AG-65 — Règles : stockage de la portée, clés d'idempotence des écritures (migrations v006, v007)
+- **Contexte** : une règle limitée à un compte dont le compte est supprimé ne doit jamais devenir une règle « tous les comptes » (la cascade vide `rule_accounts`).
+- **Choix** : v006 crée `rules` (définition JSON + colonne `scope_all`), `rule_accounts` (cascade sur la suppression du compte) et `rule_pending`. `scope_all = 0` avec une portée vide est une règle **invalide** (statut calculé à la lecture), jamais exécutée. create/update trient et dédoublonnent la portée avant validation, si bien que la réponse (construite en mémoire, sans relecture) est égale à ce qu'une lecture rend. v007 crée `rule_idempotency` (clé, opération, empreinte de la requête, règle) : la même clé rejouée avec la même requête rend le même effet ; avec une autre requête, elle est refusée.
+- **Limites** : les clés de `rule_idempotency` ne sont jamais purgées (une ligne par écriture de l'app ; volume faible). La réponse de create/update n'est pas relue en base : un écart futur entre écriture et lecture ne serait vu que par les tests (`repeated_scope_account_is_deduplicated`).
+- **Retour arrière** : nouvelles migrations qui suppriment les tables ; retirer `with_normalized_scope`.
+
+## AG-66 — Règles : validation à l'enregistrement et statut à la lecture
+- **Contexte** : une règle incorrecte doit être refusée avec une erreur structurée et statique (aucune valeur saisie reprise), et une règle devenue incorrecte (boîte ou compte disparu) ne doit plus s'exécuter.
+- **Choix** : plafonds — 20 alternatives, 20 conditions par alternative, 20 actions, valeur de filtre 512 octets, regex 256 octets (et compilation bornée à 1 Mio, la même que l'évaluateur), 50 valeurs par filtre, nom 200 octets. Un filtre sans valeur ou dont une valeur est vide ou faite d'espaces est refusé (« un filtre a une valeur vide ») : `contains ""` correspondait à tout. Les conditions `InMailbox` et `FromAccount` doivent viser une boîte ou un compte qui existe **et** relève de la portée (sinon `NOT InMailbox{…}` serait toujours vrai) ; ce contrôle fait partie de `check_world`, donc aussi de `rule_status` à la lecture. `ValidateRule` rend un statut (`valid` / `invalid` + raison) plutôt qu'une erreur.
+- **Limites** : les regex sont recompilées à chaque évaluation (coût accepté en v1, pré-compilation à prévoir). Ne sont pas détectées comme contradictoires : `AddToMailbox` + `RemoveFromMailbox` sur la même boîte, `Trash` + `MarkSpam{false}`.
+- **Retour arrière** : retirer `check_blank_values` et `condition_targets.rs`.
+
+## AG-67 — Règles : aperçu borné
+- **Contexte** : l'aperçu (« combien de messages cette règle toucherait ») ne doit pas parcourir tout le miroir.
+- **Choix** : `PreviewRule` évalue au plus les 1000 messages les plus récents (hors boîtes exclues) et rend au plus 50 exemples ; la réponse porte `scanned` (messages examinés) en plus de `matched`, pour que l'app dise « N touchés sur M examinés ». L'aperçu applique `validate_shape` (plafonds, valeurs vides, regex) mais pas les contrôles du monde ni l'exigence d'une action.
+- **Retour arrière** : changer `PREVIEW_SCAN_LIMIT` et `MAX_PREVIEW_SAMPLES`.
+
+## AG-68 — Règles : événements et contrat
+- **Contexte** : l'app doit relire les règles quand elles changent et savoir quand une règle a rendu un message muet.
+- **Choix** : nouvelle catégorie `EventCategory::Rule` (`RuleChanged`, `RuleApplied`) ; `NewMessageReceived` porte `silenced`. `RuleChanged` est émis **après** le commit de l'écriture.
+- **Limites** : si l'émission de `RuleChanged` échoue, la requête rend une erreur alors que la règle est écrite (l'app relit de toute façon la liste après chaque écriture).
+- **Retour arrière** : retirer la catégorie et les deux variantes (contrat majeur).
+
+## AG-69 — Règles : test du pont dans un fichier dédié
+- **Contexte** : `bridge/tests/engine_bridge.rs` a déjà 14 fonctions, au-delà de la norme d'un fichier.
+- **Choix** : le test de bout en bout des règles par le pont est dans `bridge/tests/rules_bridge.rs` (création, liste avec nom et statut, suppression, fermeture du moteur).
+- **Retour arrière** : sans objet.
+
+## AG-70 — App : notifications et règles muettes
+- **Contexte** : l'app notifie les nouveaux fils trouvés en relisant la boîte après un événement (rebond 150 ms). Une règle peut demander le silence (`silenced` de `NewMessageReceived`). Ne comparer que le dernier message du fil par date était faux (fil à deux nouveaux messages dont un seul muet ; message muet qui n'est pas le plus récent) et une relecture faite avant l'arrivée de l'événement notifiait quand même.
+- **Choix** : `MailSource.arrivalVerdict(ref)` rend `true` (muet), `false` (à annoncer) ou `null` (pas encore connu) ; `ArrivalGate` (`app/lib/state/arrival_gate.dart`) retient chaque nouveau fil avec ses références nouvelles (absentes de l'état précédent) jusqu'à ce que toutes aient un verdict, l'annonce si au moins une n'est pas muette (et si le fil est encore là et non lu), puis oublie les verdicts (`forgetVerdicts`). Les verdicts sans suite sont plafonnés à 1000 dans la source.
+- **Limites** : un fil sans verdict au bout de 10 minutes est abandonné **sans** notification (le moteur émet un verdict pour toute arrivée en direct ; les messages intégrés en mode silencieux — première synchro, resynchronisation — ne sont donc plus notifiés, ce qui suit l'intention du mode silencieux). Le délai n'est vérifié qu'à une relecture du compte.
+- **Retour arrière** : revenir au filtre sur le dernier message dans `_announce`.
+
+## AG-71 — App : éditeur de règles, boîtes et comptes en listes
+- **Contexte** : les identifiants de boîte et de compte sont opaques ; les saisir à la main rendait inutilisables MoveTo/AddToMailbox/RemoveFromMailbox/InMailbox/FromAccount. L'éditeur pouvait aussi afficher une valeur différente de la donnée (état de champ attaché à la position).
+- **Choix** : lignes clées par l'objet (`ObjectKey`), champs clés par donnée + variante + paramètre (+ opérateur pour les filtres). Les boîtes de chaque compte sont lues par `list_mailboxes` à l'ouverture des réglages des règles ; conditions = comptes et boîtes de la portée (libellé « compte · boîte » s'il y a plusieurs comptes), actions = boîtes du seul compte de la portée. Une valeur enregistrée absente de la liste reste affichée « … (introuvable) ». La saisie d'un filtre n'est découpée sur la virgule que pour « dans la liste », sans valeur vide. Garde contre le double clic sur « Enregistrer ».
+- **Retour arrière** : retirer `options` de `RuleParam` (retour au texte libre).
+
+## AG-72 — Libellés locaux : dans le moteur, par conversation
+- **Contexte** : les libellés locaux (étiquettes propres à MIRA, jamais envoyées au serveur) vivaient dans les préférences de l'app, posés sur des conversations. Les règles ne pouvaient donc ni les poser, ni les tester. Spec `docs/specs/R2-libelles-locaux.md`.
+- **Choix** : les libellés (nom unique sans tenir compte de la casse, couleur ARGB, communs à tous les comptes) et leurs poses sont stockés par le moteur (migration v008). Le libellé se pose sur une **conversation** : un nouveau mail d'une conversation étiquetée l'hérite sans rien faire. Une pose est rattachée à `(compte, clé du fil)` et **non** à l'identifiant du fil : `recompute_threads` efface puis recrée les fils d'un compte, et le rejet du miroir fait de même ; la clé du fil, calculée à partir des en-têtes, redonne le même fil. Aucune clé étrangère vers `threads` ; les poses disparaissent avec le libellé (cascade) ou avec le compte.
+- **Limites** : à la fusion de deux conversations, la conversation qui reste garde les libellés de sa propre clé ; les poses de l'autre clé restent en base sans effet visible et réapparaîtraient si la conversation se scindait de nouveau.
+- **Retour arrière** : supprimer le domaine `local_label` et les tables ; l'app retomberait sur ses préférences.
+
+## AG-73 — Libellés locaux : API, idempotence, reprise
+- **Contexte** : l'app doit créer, renommer, recolorer, supprimer, poser et reprendre ses libellés actuels.
+- **Choix** : domaine `local_label` (liste, création, renommage, couleur, suppression, pose par lot « tout ou rien », liste des poses par conversation existante, reprise `ImportLocalLabels`). Plafonds : nom 64 octets, 200 libellés, 1000 conversations par pose, 50 000 clés par reprise. Création, pose et reprise sont idempotentes par clé : table `local_label_idempotency` (migration v009) qui garde l'empreinte de la commande et son résultat JSON, rejoué à l'identique ; une même clé pour une autre commande est un conflit. La reprise reprend un libellé de même nom s'il existe, résout chaque clé de conversation comme un fil, sinon comme un message (rattaché à son fil), sinon l'ignore et la compte. `LocalLabelsChanged` (catégorie `local_label`) est émis après chaque écriture qui change quelque chose, jamais au rejeu.
+- **Limites** : les clés d'idempotence ne sont pas purgées. Renommer, recolorer et supprimer n'ont pas de clé : les rejouer donne le même état, sauf supprimer deux fois (`not_found.local_label`).
+- **Retour arrière** : retirer le domaine, la table v009 et l'événement.
+
+## AG-74 — Libellés locaux dans les règles
+- **Contexte** : une règle doit pouvoir poser ou retirer un libellé local et tester la présence d'un libellé.
+- **Choix** : condition `HasLocalLabel`, actions `AddLocalLabel` et `RemoveLocalLabel`, utilisables avec « Tous les comptes ». L'évaluateur travaille sur une copie du contexte dont les libellés courants sont mis à jour par chaque action de libellé : une règle voit l'effet des précédentes ; les changements sont rendus dans l'ordre (le dernier l'emporte à l'application). Ils s'appliquent directement en base, sans file d'actions (aucun effet sur le serveur), dans la même transaction que le retrait du message de la file d'attente ; `LocalLabelsChanged` n'est émis que si les libellés de la conversation ont réellement changé, donc pas lors d'un rejeu après crash. Le libellé visé doit exister (`RuleWorld::local_label_exists`) ; s'il est supprimé ensuite, la règle devient invalide. L'aperçu et l'exécution lisent les libellés réels de la conversation.
+- **Retour arrière** : retirer les trois variantes (contrat majeur).
+
+## AG-75 — App : libellés locaux portés par le moteur
+- **Contexte** : l'app identifie une conversation par `compte/dossier/fil`, le moteur par le fil.
+- **Choix** : les libellés locaux de l'app sont portés par la **clé du fil** (`threadKeyOf`). En mode moteur, au démarrage, l'app reprend ses libellés des préférences par `ImportLocalLabels` (une seule fois ; drapeau `localLabelsMigrated`, copie effacée seulement après succès), puis lit libellés et poses du moteur et les relit à chaque `local_labels_changed`. La création n'est pas optimiste (le libellé apparaît à la relecture) ; renommage, couleur, suppression et pose le sont, puis sont relus. Si la reprise ou la lecture échoue (moteur sans libellés locaux), l'app garde les préférences pour la session et réessaie au lancement suivant. Sans moteur (démonstration), comportement inchangé. Les actions de boîte « libellé » du serveur s'appellent désormais « … un libellé du compte » pour les distinguer des libellés locaux.
+- **Limites** : un libellé posé sur une conversation vaut pour ses copies dans d'autres dossiers (clé de fil commune).
+- **Retour arrière** : retirer `localLabelsOnEngine` et la reprise ; les préférences redeviennent la seule source.

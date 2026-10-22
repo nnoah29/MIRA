@@ -199,7 +199,8 @@ class MailStore extends ChangeNotifier {
       _applyIdentities();
       _boxes.addAll(source!.boxes);
       _loadSnoozes();
-      localLabels = LocalLabels.decode(prefs.getString('localLabels'));
+      localLabels = LocalLabels.decode(prefs.getString('localLabels'))
+        ..mapped = decodeLabelMap(prefs.getString('labelMap'));
       for (final l in _boxes.values) {
         _applySnoozes(l);
         localLabels.apply(l);
@@ -1686,13 +1687,20 @@ class MailStore extends ChangeNotifier {
   Map<String, LabelDef> get labelDefs {
     final all = source?.labels ?? seedLabelDefs;
     if (source == null) return all;
-    if (unified) return {...all, ...localLabels.defs};
-    return {
+    final shown = {
       for (final e in all.entries)
+        if (!localLabels.mapped.containsKey(e.key)) e.key: e.value,
+    };
+    if (unified) return {...shown, ...localLabels.defs};
+    return {
+      for (final e in shown.entries)
         if (e.value.account == activeId) e.key: e.value,
       ...localLabels.defs,
     };
   }
+
+  /// Faux si le libellé de compte est affiché comme un libellé local : sa pastille serait en double.
+  bool labelShown(String k) => !localLabels.mapped.containsKey(k);
 
   /// Libellé d'identifiant donné (`null` : supprimé ou d'un autre compte).
   LabelDef? labelDef(String k) =>
@@ -1984,6 +1992,8 @@ class MailStore extends ChangeNotifier {
   /// Supprime un libellé local ; si on le consultait, retour à la réception.
   void deleteLocalLabel(String key) {
     localLabels.delete(key);
+    localLabels.mapped.removeWhere((_, v) => v == key);
+    prefs.setString('labelMap', encodeLabelMap(localLabels.mapped));
     for (final l in _boxes.values) {
       localLabels.apply(l);
     }
@@ -2013,6 +2023,24 @@ class MailStore extends ChangeNotifier {
     }
   }
 
+  /// Fait afficher une boîte du serveur comme un libellé local (`null` : redevient un libellé du compte).
+  Future<void> mapLabel(String mailboxId, String? localKey) async {
+    if (localKey != null && source?.folderMap.containsKey(mailboxId) == true) {
+      await mapFolder(mailboxId, null);
+    }
+    if (localKey == null) {
+      localLabels.mapped.remove(mailboxId);
+    } else {
+      localLabels.mapped[mailboxId] = localKey;
+    }
+    await prefs.setString('labelMap', encodeLabelMap(localLabels.mapped));
+    for (final l in _boxes.values) {
+      localLabels.apply(l);
+    }
+    if (label == mailboxId) selectFolder('inbox');
+    notifyListeners();
+  }
+
   /// Rattache une boîte du serveur à un dossier de l'interface (`null` : redevient un libellé).
   Future<void> mapFolder(String mailboxId, String? folder) async {
     final src = source;
@@ -2022,6 +2050,8 @@ class MailStore extends ChangeNotifier {
       src.folderMap.remove(mailboxId);
     } else {
       src.folderMap[mailboxId] = folder;
+      localLabels.mapped.remove(mailboxId);
+      await prefs.setString('labelMap', encodeLabelMap(localLabels.mapped));
     }
     await prefs.setString('folderMap', encodeFolderMap(src.folderMap));
     if (label == mailboxId) selectFolder('inbox');

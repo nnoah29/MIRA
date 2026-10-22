@@ -92,4 +92,42 @@ void main() {
       store.dispose();
     },
   );
+
+  group('libellé de compte affiché comme libellé local', () {
+    test(
+      'ses messages portent le libellé local, la boîte quitte la liste',
+      () async {
+        final fake = FakeEngine()..labelOnly = true;
+        seedEngineLabel(fake);
+        final (store, prefs) = await open(fake);
+        final key = '${localLabelPrefix}l1';
+        final facture = store.mails.firstWhere((m) => m.subject == 'Facture');
+        expect(facture.labels, isNot(contains(key)));
+        await store.mapLabel('mb-other', key);
+        expect(facture.labels, contains(key));
+        expect(store.labelDefs.containsKey('mb-other'), false);
+        expect(store.labelShown('mb-other'), false);
+        expect(prefs.getString('labelMap'), '{"mb-other":"$key"}');
+        await store.mapLabel('mb-other', null);
+        expect(store.labelDefs.containsKey('mb-other'), true);
+        store.dispose();
+      },
+    );
+
+    test(
+      'rattacher à un dossier retire le rattachement au libellé local',
+      () async {
+        final fake = FakeEngine()..labelOnly = true;
+        seedEngineLabel(fake);
+        final (store, prefs) = await open(fake);
+        await store.mapLabel('mb-other', '${localLabelPrefix}l1');
+        await store.mapFolder('mb-other', 'sent');
+        expect(store.localLabels.mapped, isEmpty);
+        expect(prefs.getString('labelMap'), '{}');
+        await store.mapLabel('mb-other', '${localLabelPrefix}l1');
+        expect(store.source!.folderMap, isEmpty);
+        store.dispose();
+      },
+    );
+  });
 }

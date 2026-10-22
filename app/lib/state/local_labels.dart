@@ -28,6 +28,9 @@ class LocalLabels {
   final Map<String, LabelDef> defs = {};
   final Map<String, Set<String>> _tags = {};
 
+  /// Libellés de compte (identifiant de boîte) affichés comme un libellé local (clé du libellé local).
+  Map<String, String> mapped = {};
+
   LocalLabels();
 
   /// Relit l'état enregistré ; un contenu illisible donne un état vide.
@@ -119,15 +122,19 @@ class LocalLabels {
     }
   }
 
-  /// Reporte les libellés locaux dans `labels` des conversations données.
+  /// Reporte les libellés locaux dans `labels` des conversations données, y compris ceux de leurs libellés de compte rattachés.
   void apply(Iterable<Mail> mails) {
     for (final m in mails) {
       final keys = _tags[threadKeyOf(m.id)];
-      m.labels = [
+      final base = [
         for (final k in m.labels)
           if (!isLocalLabel(k)) k,
-        ...?keys,
       ];
+      final viaAccount = [
+        for (final k in base)
+          if (defs.containsKey(mapped[k])) mapped[k]!,
+      ];
+      m.labels = {...base, ...?keys, ...viaAccount}.toList();
     }
   }
 

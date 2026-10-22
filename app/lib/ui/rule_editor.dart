@@ -270,6 +270,17 @@ class _RuleEditorState extends State<RuleEditor> {
             _touch();
           },
         ),
+      if (!_single)
+        Padding(
+          key: const ValueKey('actions-need-account'),
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(
+            t(
+              'Pour classer dans une boîte ou poser un libellé, choisis un seul compte dans la portée.',
+            ),
+            style: Fonts.sans(size: 13, color: context.pal.dim),
+          ),
+        ),
       Align(
         alignment: Alignment.centerLeft,
         child: Btn(

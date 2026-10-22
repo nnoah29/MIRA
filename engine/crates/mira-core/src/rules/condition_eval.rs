@@ -3,35 +3,34 @@
 use super::context::MessageContext;
 use super::{address_eval as addr, compare_eval as compare, content_eval as content};
 use super::{date_eval as date, own_address_eval as own};
-use mira_vocabulary::ConditionTest as Test;
+use mira_vocabulary::ConditionTest;
 
 /// Évalue un test élémentaire sur le message, sans tenir compte de l'inversion.
-pub fn test_holds(test: &Test, ctx: &MessageContext) -> bool {
+pub fn test_holds(test: &ConditionTest, ctx: &MessageContext) -> bool {
     match test {
-        Test::Sender { field, matcher } => addr::sender(ctx, *field, matcher),
-        #[rustfmt::skip]
-        Test::Recipient { which, field, matcher } => addr::recipient(ctx, *which, *field, matcher),
-        Test::ReplyTo { field, matcher } => addr::reply_to(ctx, *field, matcher),
-        Test::MeInTo => own::me_in_to(ctx),
-        Test::MeInCcOnly => own::me_in_cc_only(ctx),
-        Test::RecipientCount { cmp, n } => compare::recipient_count(ctx, *cmp, *n),
-        Test::SizeCompare { cmp, bytes } => compare::size(ctx, *cmp, *bytes),
-        Test::Subject { matcher } => content::subject(ctx, matcher),
-        Test::Preview { matcher } => content::preview(ctx, matcher),
-        Test::HasAttachment => content::has_attachment(ctx),
-        Test::AttachmentName { matcher } => content::attachment_name(ctx, matcher),
-        Test::AttachmentType { matcher } => content::attachment_type(ctx, matcher),
-        Test::ReceivedBefore { at } => date::received_before(ctx, *at),
-        Test::ReceivedAfter { at } => date::received_after(ctx, *at),
-        Test::OlderThanDays { days } => date::older_than_days(ctx, *days),
-        Test::IsRead => ctx.summary.flags.seen,
-        Test::IsFlagged => ctx.summary.flags.flagged,
-        Test::IsAnswered => ctx.summary.flags.answered,
-        Test::IsForwarded => ctx.summary.flags.forwarded,
-        Test::IsNewsletter => ctx.summary.unsubscribe.is_some(),
-        Test::IsReply => ctx.summary.in_reply_to.is_some(),
-        Test::InExistingThread => ctx.in_existing_thread,
-        Test::InMailbox { mailbox } => ctx.summary.mailboxes.contains(mailbox),
-        Test::FromAccount { account } => ctx.summary.account == *account,
+        ConditionTest::Sender { .. }
+        | ConditionTest::Recipient { .. }
+        | ConditionTest::ReplyTo { .. } => addr::holds(test, ctx).unwrap_or(false),
+        ConditionTest::MeInTo => own::me_in_to(ctx),
+        ConditionTest::MeInCcOnly => own::me_in_cc_only(ctx),
+        ConditionTest::RecipientCount { cmp, n } => compare::recipient_count(ctx, *cmp, *n),
+        ConditionTest::SizeCompare { cmp, bytes } => compare::size(ctx, *cmp, *bytes),
+        ConditionTest::Subject { matcher } => content::subject(ctx, matcher),
+        ConditionTest::Preview { matcher } => content::preview(ctx, matcher),
+        ConditionTest::HasAttachment => content::has_attachment(ctx),
+        ConditionTest::AttachmentName { matcher } => content::attachment_name(ctx, matcher),
+        ConditionTest::AttachmentType { matcher } => content::attachment_type(ctx, matcher),
+        ConditionTest::ReceivedBefore { at } => date::received_before(ctx, *at),
+        ConditionTest::ReceivedAfter { at } => date::received_after(ctx, *at),
+        ConditionTest::OlderThanDays { days } => date::older_than_days(ctx, *days),
+        ConditionTest::IsRead => ctx.summary.flags.seen,
+        ConditionTest::IsFlagged => ctx.summary.flags.flagged,
+        ConditionTest::IsAnswered => ctx.summary.flags.answered,
+        ConditionTest::IsForwarded => ctx.summary.flags.forwarded,
+        ConditionTest::IsNewsletter => ctx.summary.unsubscribe.is_some(),
+        ConditionTest::IsReply => ctx.summary.in_reply_to.is_some(),
+        ConditionTest::InExistingThread => ctx.in_existing_thread,
+        ConditionTest::InMailbox { mailbox } => ctx.summary.mailboxes.contains(mailbox),
+        ConditionTest::FromAccount { account } => ctx.summary.account == *account,
     }
 }

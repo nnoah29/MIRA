@@ -2,7 +2,21 @@
 
 use super::context::MessageContext;
 use super::text_match::matches_text;
-use mira_vocabulary::{AddressEntry, AddressField, RecipientKind, TextMatcher};
+use mira_vocabulary::{AddressEntry, AddressField, ConditionTest, RecipientKind, TextMatcher};
+
+/// Résultat d'un test d'adresse (expéditeur, destinataire, réponse), ou rien pour un autre test.
+pub fn holds(test: &ConditionTest, ctx: &MessageContext) -> Option<bool> {
+    match test {
+        ConditionTest::Sender { field, matcher } => Some(sender(ctx, *field, matcher)),
+        ConditionTest::Recipient {
+            which,
+            field,
+            matcher,
+        } => Some(recipient(ctx, *which, *field, matcher)),
+        ConditionTest::ReplyTo { field, matcher } => Some(reply_to(ctx, *field, matcher)),
+        _ => None,
+    }
+}
 
 /// L'expéditeur correspond au filtre sur le champ donné.
 pub fn sender(ctx: &MessageContext, field: AddressField, matcher: &TextMatcher) -> bool {

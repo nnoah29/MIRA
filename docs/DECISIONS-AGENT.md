@@ -429,3 +429,48 @@ Format : **AG-xx — titre** · contexte · options · choix · raison · retour
 - **Couverture** : les scénarios S1–S14 restent testés au niveau du moteur (`scenario_s*` de `mira-core/tests`). Disparaissent : l'invariant 6 (« chaque variante de `Request` a une commande CLI », sans objet sans CLI), les tests du CLI (codes de sortie, enveloppe `--json`, secrets par stdin) et les bancs de performance qui passaient par lui (`cli_support/*_bench`).
 - **Écart à la référence** : la référence demande un moteur utilisable sans interface, en ligne de commande, pour tout tester sans écran (§ objectifs 6, D-04). Les tests automatiques de `mira-core` et du pont tiennent ce rôle ; proposition PR-19.
 - **Retour arrière** : restaurer `engine/crates/mira-cli` et `engine/crates/mira-tui` depuis le commit précédant ce retrait, la ligne `mira-tui` des dépendances du workspace, la règle A4 et ses deux auto-tests.
+
+## AG-64 — Règles : idempotence des actions et reprise sur crash
+- **Contexte** : les règles (spec R1) soumettent des actions à la file à l'arrivée d'un message ; un arrêt brutal entre l'intégration du message et l'évaluation ne doit ni perdre ni doubler ces actions (invariant 18).
+- **Choix** : `store_batch` inscrit chaque message créé en direct (`Announce::Live`, boîte non exclue) dans `rule_pending` **dans la même transaction** que le message ; l'évaluation soumet chaque action sous la clé `rule:{message}:{rang}` (rang = index de l'action dans la liste fusionnée des règles déclenchées), puis retire la ligne. Au démarrage, `replay_pending_rules` rejoue les lignes restantes ; les clés rendent le rejeu idempotent. Test de bout en bout de l'inscription : `sync_rules_pending.rs` (neutraliser `tx.add_pending` le fait échouer).
+- **Limites** : (1) si les règles changent entre la tentative et la reprise, les rangs ne désignent plus les mêmes actions (une action peut manquer ou être ajoutée) ; (2) `RuleApplied` peut être émis deux fois pour un même message après un crash (les actions, elles, ne sont pas doublées) ; (3) si l'évaluation échoue, la ligne `rule_pending` reste jusqu'au prochain démarrage et, si l'échec est permanent, elle est rejouée à chaque démarrage (compteur de tentatives et abandon à prévoir).
+- **Retour arrière** : retirer l'inscription dans `store_batch` et l'appel de `replay_pending_rules` au démarrage.
+
+## AG-65 — Règles : stockage de la portée, clés d'idempotence des écritures (migrations v006, v007)
+- **Contexte** : une règle limitée à un compte dont le compte est supprimé ne doit jamais devenir une règle « tous les comptes » (la cascade vide `rule_accounts`).
+- **Choix** : v006 crée `rules` (définition JSON + colonne `scope_all`), `rule_accounts` (cascade sur la suppression du compte) et `rule_pending`. `scope_all = 0` avec une portée vide est une règle **invalide** (statut calculé à la lecture), jamais exécutée. create/update trient et dédoublonnent la portée avant validation, si bien que la réponse (construite en mémoire, sans relecture) est égale à ce qu'une lecture rend. v007 crée `rule_idempotency` (clé, opération, empreinte de la requête, règle) : la même clé rejouée avec la même requête rend le même effet ; avec une autre requête, elle est refusée.
+- **Limites** : les clés de `rule_idempotency` ne sont jamais purgées (une ligne par écriture de l'app ; volume faible). La réponse de create/update n'est pas relue en base : un écart futur entre écriture et lecture ne serait vu que par les tests (`repeated_scope_account_is_deduplicated`).
+- **Retour arrière** : nouvelles migrations qui suppriment les tables ; retirer `with_normalized_scope`.
+
+## AG-66 — Règles : validation à l'enregistrement et statut à la lecture
+- **Contexte** : une règle incorrecte doit être refusée avec une erreur structurée et statique (aucune valeur saisie reprise), et une règle devenue incorrecte (boîte ou compte disparu) ne doit plus s'exécuter.
+- **Choix** : plafonds — 20 alternatives, 20 conditions par alternative, 20 actions, valeur de filtre 512 octets, regex 256 octets (et compilation bornée à 1 Mio, la même que l'évaluateur), 50 valeurs par filtre, nom 200 octets. Un filtre sans valeur ou dont une valeur est vide ou faite d'espaces est refusé (« un filtre a une valeur vide ») : `contains ""` correspondait à tout. Les conditions `InMailbox` et `FromAccount` doivent viser une boîte ou un compte qui existe **et** relève de la portée (sinon `NOT InMailbox{…}` serait toujours vrai) ; ce contrôle fait partie de `check_world`, donc aussi de `rule_status` à la lecture. `ValidateRule` rend un statut (`valid` / `invalid` + raison) plutôt qu'une erreur.
+- **Limites** : les regex sont recompilées à chaque évaluation (coût accepté en v1, pré-compilation à prévoir). Ne sont pas détectées comme contradictoires : `AddToMailbox` + `RemoveFromMailbox` sur la même boîte, `Trash` + `MarkSpam{false}`.
+- **Retour arrière** : retirer `check_blank_values` et `condition_targets.rs`.
+
+## AG-67 — Règles : aperçu borné
+- **Contexte** : l'aperçu (« combien de messages cette règle toucherait ») ne doit pas parcourir tout le miroir.
+- **Choix** : `PreviewRule` évalue au plus les 1000 messages les plus récents (hors boîtes exclues) et rend au plus 50 exemples ; la réponse porte `scanned` (messages examinés) en plus de `matched`, pour que l'app dise « N touchés sur M examinés ». L'aperçu applique `validate_shape` (plafonds, valeurs vides, regex) mais pas les contrôles du monde ni l'exigence d'une action.
+- **Retour arrière** : changer `PREVIEW_SCAN_LIMIT` et `MAX_PREVIEW_SAMPLES`.
+
+## AG-68 — Règles : événements et contrat
+- **Contexte** : l'app doit relire les règles quand elles changent et savoir quand une règle a rendu un message muet.
+- **Choix** : nouvelle catégorie `EventCategory::Rule` (`RuleChanged`, `RuleApplied`) ; `NewMessageReceived` porte `silenced`. `RuleChanged` est émis **après** le commit de l'écriture.
+- **Limites** : si l'émission de `RuleChanged` échoue, la requête rend une erreur alors que la règle est écrite (l'app relit de toute façon la liste après chaque écriture).
+- **Retour arrière** : retirer la catégorie et les deux variantes (contrat majeur).
+
+## AG-69 — Règles : test du pont dans un fichier dédié
+- **Contexte** : `bridge/tests/engine_bridge.rs` a déjà 14 fonctions, au-delà de la norme d'un fichier.
+- **Choix** : le test de bout en bout des règles par le pont est dans `bridge/tests/rules_bridge.rs` (création, liste avec nom et statut, suppression, fermeture du moteur).
+- **Retour arrière** : sans objet.
+
+## AG-70 — App : notifications et règles muettes
+- **Contexte** : l'app notifie les nouveaux fils trouvés en relisant la boîte après un événement (rebond 150 ms). Une règle peut demander le silence (`silenced` de `NewMessageReceived`). Ne comparer que le dernier message du fil par date était faux (fil à deux nouveaux messages dont un seul muet ; message muet qui n'est pas le plus récent) et une relecture faite avant l'arrivée de l'événement notifiait quand même.
+- **Choix** : `MailSource.arrivalVerdict(ref)` rend `true` (muet), `false` (à annoncer) ou `null` (pas encore connu) ; `ArrivalGate` (`app/lib/state/arrival_gate.dart`) retient chaque nouveau fil avec ses références nouvelles (absentes de l'état précédent) jusqu'à ce que toutes aient un verdict, l'annonce si au moins une n'est pas muette (et si le fil est encore là et non lu), puis oublie les verdicts (`forgetVerdicts`). Les verdicts sans suite sont plafonnés à 1000 dans la source.
+- **Limites** : un fil sans verdict au bout de 10 minutes est abandonné **sans** notification (le moteur émet un verdict pour toute arrivée en direct ; les messages intégrés en mode silencieux — première synchro, resynchronisation — ne sont donc plus notifiés, ce qui suit l'intention du mode silencieux). Le délai n'est vérifié qu'à une relecture du compte.
+- **Retour arrière** : revenir au filtre sur le dernier message dans `_announce`.
+
+## AG-71 — App : éditeur de règles, boîtes et comptes en listes
+- **Contexte** : les identifiants de boîte et de compte sont opaques ; les saisir à la main rendait inutilisables MoveTo/AddToMailbox/RemoveFromMailbox/InMailbox/FromAccount. L'éditeur pouvait aussi afficher une valeur différente de la donnée (état de champ attaché à la position).
+- **Choix** : lignes clées par l'objet (`ObjectKey`), champs clés par donnée + variante + paramètre (+ opérateur pour les filtres). Les boîtes de chaque compte sont lues par `list_mailboxes` à l'ouverture des réglages des règles ; conditions = comptes et boîtes de la portée (libellé « compte · boîte » s'il y a plusieurs comptes), actions = boîtes du seul compte de la portée. Une valeur enregistrée absente de la liste reste affichée « … (introuvable) ». La saisie d'un filtre n'est découpée sur la virgule que pour « dans la liste », sans valeur vide. Garde contre le double clic sur « Enregistrer ».
+- **Retour arrière** : retirer `options` de `RuleParam` (retour au texte libre).

@@ -17,12 +17,14 @@ class RulesSettings extends StatefulWidget {
   final Map<String, String> accounts;
   final Stream<void> changes;
   final List<RuleChoice> labels;
+  final ValueNotifier<Rule?>? draft;
   const RulesSettings({
     super.key,
     required this.admin,
     required this.accounts,
     required this.changes,
     this.labels = const [],
+    this.draft,
   });
 
   @override
@@ -41,6 +43,8 @@ class _RulesSettingsState extends State<RulesSettings> {
   void initState() {
     super.initState();
     _sub = widget.changes.listen((_) => _load());
+    widget.draft?.addListener(_takeDraft);
+    _takeDraft();
     _load();
     _loadMailboxes();
   }
@@ -58,8 +62,17 @@ class _RulesSettingsState extends State<RulesSettings> {
     if (mounted) setState(() => mailboxes = found);
   }
 
+  /// Ouvre l'éditeur sur le brouillon de règle déposé par l'onglet des libellés, une seule fois.
+  void _takeDraft() {
+    final d = widget.draft?.value;
+    if (d == null) return;
+    widget.draft!.value = null;
+    setState(() => editing = d);
+  }
+
   @override
   void dispose() {
+    widget.draft?.removeListener(_takeDraft);
     _sub?.cancel();
     super.dispose();
   }

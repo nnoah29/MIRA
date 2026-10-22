@@ -14,6 +14,7 @@ import '../engine/blocks_html.dart';
 import '../engine/compose_admin.dart';
 import '../engine/engine_client.dart';
 import '../engine/label_admin.dart';
+import '../engine/label_settings_admin.dart';
 import '../engine/local_label_admin.dart';
 import 'local_label_migration.dart';
 import 'local_labels.dart';
@@ -148,6 +149,7 @@ class MailStore extends ChangeNotifier {
   StreamSubscription<String>? _changeSub;
   StreamSubscription<void>? _syncSub;
   StreamSubscription<void>? _labelSub;
+  StreamSubscription<void>? _settingsSub;
 
   /// Historique des destinataires et noms choisis.
   late final ContactBook contactBook;
@@ -202,6 +204,7 @@ class MailStore extends ChangeNotifier {
         localLabels.apply(l);
       }
       localLabelsReady = _initLocalLabels();
+      unawaited(_initLabelSettings());
       _changeSub = source!.changes.listen(_reloadAccount);
       _syncSub = source!.syncEvents.listen((_) {
         _extensionProgress();
@@ -371,6 +374,7 @@ class MailStore extends ChangeNotifier {
     _changeSub?.cancel();
     _syncSub?.cancel();
     _labelSub?.cancel();
+    _settingsSub?.cancel();
     _searchTimer?.cancel();
     _wake?.cancel();
     _wallSub?.cancel();
@@ -1781,6 +1785,71 @@ class MailStore extends ChangeNotifier {
     } catch (_) {
       /* moteur sans libellés locaux : on garde les préférences */
     }
+  }
+
+  /// Libellés avec leurs réglages (moteur), dans l'ordre d'affichage.
+  List<LabelOverview> labelOverviews = [];
+  Map<String, LabelOverview> _overviewByKey = {};
+
+  /// Lit les réglages des libellés du moteur et les relit à chaque signal du moteur.
+  Future<void> _initLabelSettings() async {
+    final src = source;
+    if (src?.labelSettingsAdmin == null) return;
+    _settingsSub = src!.labelSettingsChanges.listen(
+      (_) => refreshLabelSettings(),
+    );
+    await refreshLabelSettings();
+  }
+
+  /// Relit libellés et réglages ; en cas d'échec, garde l'affichage actuel.
+  Future<void> refreshLabelSettings() async {
+    final admin = source?.labelSettingsAdmin;
+    if (admin == null) return;
+    try {
+      final fresh = await admin.list();
+      labelOverviews = fresh;
+      _overviewByKey = {for (final o in fresh) o.key: o};
+      notifyListeners();
+    } catch (_) {
+      /* moteur sans réglages de libellés : affichage par défaut */
+    }
+  }
+
+  /// Réglages d'un libellé de l'interface (`null` : inconnu du moteur).
+  LabelOverview? labelOverview(String key) => _overviewByKey[key];
+
+  /// Libellés de la barre latérale : les non masqués, dans l'ordre des réglages.
+  List<MapEntry<String, LabelDef>> sidebarLabels() {
+    final shown = [
+      for (final e in labelDefs.entries)
+        if (_overviewByKey[e.key]?.prefs.hidden != true) e,
+    ];
+    int rank(String k) {
+      final i = labelOverviews.indexWhere((o) => o.key == k);
+      return i < 0 ? labelOverviews.length : i;
+    }
+
+    final order = {for (final (i, e) in shown.indexed) e.key: i};
+    shown.sort((a, b) {
+      final byRank = rank(a.key).compareTo(rank(b.key));
+      return byRank != 0 ? byRank : order[a.key]!.compareTo(order[b.key]!);
+    });
+    return shown;
+  }
+
+  /// Couleur d'un libellé : celle des réglages, sinon `fallback`.
+  int labelColor(String key, int fallback) =>
+      _overviewByKey[key]?.color ?? fallback;
+
+  /// Nombre affiché à côté d'un libellé selon son compteur (0 : rien à afficher).
+  int labelCount(String key) {
+    final mode = _overviewByKey[key]?.prefs.counter ?? CounterMode.unread;
+    final mine = mails.where((m) => m.labels.contains(key) && !hidden(m));
+    return switch (mode) {
+      CounterMode.none => 0,
+      CounterMode.total => mine.length,
+      CounterMode.unread => nonRead(mine),
+    };
   }
 
   /// Remplace libellés et poses par ceux du moteur et, s'ils ont changé, les reporte sur les conversations.

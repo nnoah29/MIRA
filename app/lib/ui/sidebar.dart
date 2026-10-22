@@ -158,20 +158,16 @@ class Sidebar extends StatelessWidget {
                       count: s.navCount(f.id),
                     ),
                 _NavTitle(t('Libellés')),
-                for (final e in s.labelDefs.entries)
+                for (final e in s.sidebarLabels())
                   _NavItem(
                     on: s.label == e.key,
                     onTap: () => s.selectLabel(e.key),
                     leading: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Square(8, Color(e.value.c)),
+                      child: Square(8, Color(s.labelColor(e.key, e.value.c))),
                     ),
                     label: s.labelTitle(e.key),
-                    count: s.nonRead(
-                      s.mails.where(
-                        (m) => m.labels.contains(e.key) && !s.hidden(m),
-                      ),
-                    ),
+                    count: s.labelCount(e.key),
                   ),
               ],
             ),

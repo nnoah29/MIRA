@@ -11,7 +11,7 @@ import '../theme/wall_source.dart';
 import 'accounts_settings.dart';
 import 'contacts_settings.dart';
 import 'image_rules_section.dart';
-import 'local_labels_section.dart';
+import 'labels_settings.dart';
 import 'maintenance_settings.dart';
 import 'notification_settings.dart';
 import 'rules_settings.dart';
@@ -36,6 +36,7 @@ List<String> _tabs(bool engine) => [
   t('Notifications'),
   t('Comptes'),
   t('Contacts'),
+  if (engine) t('Libellés'),
   if (engine) t('Règles'),
   if (engine) t('Stockage'),
 ];
@@ -48,6 +49,7 @@ class SettingsPanel extends StatefulWidget {
 
 class _SettingsPanelState extends State<SettingsPanel> {
   int tab = 0;
+  final ruleDraft = ValueNotifier<Rule?>(null);
   late final TextEditingController sigCtl;
 
   @override
@@ -59,6 +61,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
   @override
   void dispose() {
     sigCtl.dispose();
+    ruleDraft.dispose();
     super.dispose();
   }
 
@@ -334,10 +337,6 @@ class _SettingsPanelState extends State<SettingsPanel> {
             ], s.prefs.getString('poll') ?? ''),
           ),
         const ImageRulesSection(),
-        if (s.source != null) ...[
-          Divider(height: 1, color: p.lineSoft),
-          const LocalLabelsSection(),
-        ],
         Divider(height: 1, color: p.lineSoft),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
@@ -353,8 +352,17 @@ class _SettingsPanelState extends State<SettingsPanel> {
       ]),
       2 => box([const NotificationSettings()]),
       4 => box([const ContactsSettings()]),
-      5 when s.source?.ruleAdmin != null => box([
+      5 when s.source?.labelSettingsAdmin != null => box([
+        LabelsSettings(
+          onCreateRule: (draft) => setState(() {
+            ruleDraft.value = draft;
+            tab = 6;
+          }),
+        ),
+      ]),
+      6 when s.source?.ruleAdmin != null => box([
         RulesSettings(
+          draft: ruleDraft,
           admin: s.source!.ruleAdmin!,
           accounts: {for (final a in s.accounts) a.id: a.email},
           changes: s.source!.ruleChanges,
@@ -365,7 +373,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
           ],
         ),
       ]),
-      6 when s.source != null => box([const MaintenanceSettings()]),
+      7 when s.source != null => box([const MaintenanceSettings()]),
       _ when s.source != null => box([const AccountsSettings()]),
       _ => box([
         srow(me.name, me.email, const SizedBox.shrink()),

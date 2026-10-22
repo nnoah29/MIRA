@@ -6,6 +6,7 @@ use mira_vocabulary::{StandardView, ViewRef};
 use super::builder::QueryBuilder;
 use super::clauses::apply_filters;
 use super::filters::MessageFilters;
+use super::local_label::local_label_builder;
 use crate::storage::Tx;
 use crate::storage::repositories::label_settings::hidden::hidden_from_inbox;
 
@@ -24,6 +25,7 @@ impl Tx<'_> {
     ) -> Result<Page<MessageSummary>, MiraError> {
         let mut builder = match view {
             ViewRef::Mailbox { mailbox } => self.mailbox_builder(mailbox)?,
+            ViewRef::LocalLabel { label } => local_label_builder(accounts, label),
             ViewRef::Standard { view } => standard_builder(accounts, *view),
         };
         apply_filters(&mut builder, filters);

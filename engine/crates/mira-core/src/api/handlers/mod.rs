@@ -13,6 +13,7 @@ pub(crate) mod message;
 pub(crate) mod operation;
 pub(crate) mod provider;
 pub(crate) mod queue;
+pub(crate) mod rule;
 pub(crate) mod search;
 pub(crate) mod sync;
 pub(crate) mod thread;

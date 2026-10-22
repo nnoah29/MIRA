@@ -598,6 +598,239 @@
         "op": "retry_action"
       }
     },
+    "rule.create_rule": {
+      "domain": "rule",
+      "request": {
+        "idempotency_key": "key-1",
+        "op": "create_rule",
+        "rule": {
+          "actions": [
+            {
+              "read": true,
+              "type": "mark_read"
+            },
+            {
+              "type": "suppress_notification"
+            }
+          ],
+          "alternatives": [
+            {
+              "conditions": [
+                {
+                  "negated": false,
+                  "test": {
+                    "field": "domain",
+                    "matcher": {
+                      "op": "equals",
+                      "values": [
+                        "example.org"
+                      ]
+                    },
+                    "type": "sender"
+                  }
+                }
+              ]
+            }
+          ],
+          "enabled": true,
+          "id": "rule-1",
+          "name": "Lettres",
+          "schema_version": 1,
+          "scope": {
+            "accounts": [
+              "account-1"
+            ],
+            "type": "accounts"
+          }
+        }
+      }
+    },
+    "rule.delete_rule": {
+      "domain": "rule",
+      "request": {
+        "idempotency_key": "key-1",
+        "op": "delete_rule",
+        "rule": "rule-1"
+      }
+    },
+    "rule.get_rule": {
+      "domain": "rule",
+      "request": {
+        "op": "get_rule",
+        "rule": "rule-1"
+      }
+    },
+    "rule.list_rule_catalog": {
+      "domain": "rule",
+      "request": {
+        "op": "list_rule_catalog"
+      }
+    },
+    "rule.list_rules": {
+      "domain": "rule",
+      "request": {
+        "op": "list_rules"
+      }
+    },
+    "rule.preview_rule": {
+      "domain": "rule",
+      "request": {
+        "limit": 20,
+        "op": "preview_rule",
+        "rule": {
+          "actions": [
+            {
+              "read": true,
+              "type": "mark_read"
+            },
+            {
+              "type": "suppress_notification"
+            }
+          ],
+          "alternatives": [
+            {
+              "conditions": [
+                {
+                  "negated": false,
+                  "test": {
+                    "field": "domain",
+                    "matcher": {
+                      "op": "equals",
+                      "values": [
+                        "example.org"
+                      ]
+                    },
+                    "type": "sender"
+                  }
+                }
+              ]
+            }
+          ],
+          "enabled": true,
+          "id": "rule-1",
+          "name": "Lettres",
+          "schema_version": 1,
+          "scope": {
+            "accounts": [
+              "account-1"
+            ],
+            "type": "accounts"
+          }
+        }
+      }
+    },
+    "rule.reorder_rules": {
+      "domain": "rule",
+      "request": {
+        "idempotency_key": "key-1",
+        "op": "reorder_rules",
+        "order": [
+          "rule-1"
+        ]
+      }
+    },
+    "rule.set_rule_enabled": {
+      "domain": "rule",
+      "request": {
+        "enabled": false,
+        "idempotency_key": "key-1",
+        "op": "set_rule_enabled",
+        "rule": "rule-1"
+      }
+    },
+    "rule.update_rule": {
+      "domain": "rule",
+      "request": {
+        "idempotency_key": "key-1",
+        "op": "update_rule",
+        "rule": {
+          "actions": [
+            {
+              "read": true,
+              "type": "mark_read"
+            },
+            {
+              "type": "suppress_notification"
+            }
+          ],
+          "alternatives": [
+            {
+              "conditions": [
+                {
+                  "negated": false,
+                  "test": {
+                    "field": "domain",
+                    "matcher": {
+                      "op": "equals",
+                      "values": [
+                        "example.org"
+                      ]
+                    },
+                    "type": "sender"
+                  }
+                }
+              ]
+            }
+          ],
+          "enabled": true,
+          "id": "rule-1",
+          "name": "Lettres",
+          "schema_version": 1,
+          "scope": {
+            "accounts": [
+              "account-1"
+            ],
+            "type": "accounts"
+          }
+        }
+      }
+    },
+    "rule.validate_rule": {
+      "domain": "rule",
+      "request": {
+        "op": "validate_rule",
+        "rule": {
+          "actions": [
+            {
+              "read": true,
+              "type": "mark_read"
+            },
+            {
+              "type": "suppress_notification"
+            }
+          ],
+          "alternatives": [
+            {
+              "conditions": [
+                {
+                  "negated": false,
+                  "test": {
+                    "field": "domain",
+                    "matcher": {
+                      "op": "equals",
+                      "values": [
+                        "example.org"
+                      ]
+                    },
+                    "type": "sender"
+                  }
+                }
+              ]
+            }
+          ],
+          "enabled": true,
+          "id": "rule-1",
+          "name": "Lettres",
+          "schema_version": 1,
+          "scope": {
+            "accounts": [
+              "account-1"
+            ],
+            "type": "accounts"
+          }
+        }
+      }
+    },
     "search.get_server_search_result": {
       "domain": "search",
       "request": {
@@ -1093,6 +1326,173 @@
         "size": 3
       },
       "type": "raw_source"
+    },
+    "rule.catalog": {
+      "data": {
+        "data": {
+          "actions": [
+            {
+              "family": "filing",
+              "fields": [
+                "mailbox"
+              ],
+              "kind": "move_to",
+              "needs_mailbox": true,
+              "single_account": true
+            }
+          ],
+          "conditions": [
+            {
+              "family": "sender",
+              "fields": [
+                "field",
+                "matcher"
+              ],
+              "kind": "sender",
+              "needs_mailbox": false,
+              "single_account": false
+            }
+          ]
+        },
+        "type": "catalog"
+      },
+      "type": "rule"
+    },
+    "rule.preview": {
+      "data": {
+        "data": {
+          "matched": 2,
+          "samples": [
+            "message-1"
+          ],
+          "scanned": 40
+        },
+        "type": "preview"
+      },
+      "type": "rule"
+    },
+    "rule.rule": {
+      "data": {
+        "data": {
+          "rule": {
+            "actions": [
+              {
+                "read": true,
+                "type": "mark_read"
+              },
+              {
+                "type": "suppress_notification"
+              }
+            ],
+            "alternatives": [
+              {
+                "conditions": [
+                  {
+                    "negated": false,
+                    "test": {
+                      "field": "domain",
+                      "matcher": {
+                        "op": "equals",
+                        "values": [
+                          "example.org"
+                        ]
+                      },
+                      "type": "sender"
+                    }
+                  }
+                ]
+              }
+            ],
+            "enabled": true,
+            "id": "rule-1",
+            "name": "Lettres",
+            "schema_version": 1,
+            "scope": {
+              "accounts": [
+                "account-1"
+              ],
+              "type": "accounts"
+            }
+          },
+          "status": {
+            "type": "valid"
+          }
+        },
+        "type": "rule"
+      },
+      "type": "rule"
+    },
+    "rule.rules": {
+      "data": {
+        "data": [
+          {
+            "rule": {
+              "actions": [
+                {
+                  "read": true,
+                  "type": "mark_read"
+                },
+                {
+                  "type": "suppress_notification"
+                }
+              ],
+              "alternatives": [
+                {
+                  "conditions": [
+                    {
+                      "negated": false,
+                      "test": {
+                        "field": "domain",
+                        "matcher": {
+                          "op": "equals",
+                          "values": [
+                            "example.org"
+                          ]
+                        },
+                        "type": "sender"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "enabled": true,
+              "id": "rule-1",
+              "name": "Lettres",
+              "schema_version": 1,
+              "scope": {
+                "accounts": [
+                  "account-1"
+                ],
+                "type": "accounts"
+              }
+            },
+            "status": {
+              "type": "valid"
+            }
+          }
+        ],
+        "type": "rules"
+      },
+      "type": "rule"
+    },
+    "rule.status": {
+      "data": {
+        "data": {
+          "type": "valid"
+        },
+        "type": "status"
+      },
+      "type": "rule"
+    },
+    "rule.status.2": {
+      "data": {
+        "data": {
+          "reason": "la portée de la règle est vide",
+          "type": "invalid"
+        },
+        "type": "status"
+      },
+      "type": "rule"
     },
     "safe_html": {
       "data": {

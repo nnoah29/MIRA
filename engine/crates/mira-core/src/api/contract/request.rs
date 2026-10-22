@@ -9,6 +9,7 @@ use super::identity_requests::IdentityRequest;
 use super::mailbox_requests::MailboxRequest;
 use super::maintenance_requests::MaintenanceRequest;
 use super::message_requests::MessageRequest;
+use super::rule_requests::RuleRequest;
 use super::search_requests::SearchRequest;
 use super::sync_requests::SyncRequest;
 use super::thread_requests::ThreadRequest;
@@ -34,6 +35,7 @@ pub enum Request {
     Compose(ComposeRequest),
     Queue(QueueRequest),
     Sync(SyncRequest),
+    Rule(RuleRequest),
 }
 
 /// Requêtes sur le moteur lui-même.

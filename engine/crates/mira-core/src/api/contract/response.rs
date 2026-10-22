@@ -7,6 +7,7 @@ use mira_vocabulary::{
 use serde::{Deserialize, Serialize};
 
 use super::read_responses::{ExportReport, IntegrityReport, RawSourceView, ThreadView};
+use super::rule_responses::RuleResponse;
 use super::sync_response::SyncResponse;
 use super::write::WriteResponse;
 use crate::fetching::ServerSearchResult;
@@ -84,4 +85,5 @@ pub enum Response {
     Events(Vec<Event>),
     Write(WriteResponse),
     Sync(SyncResponse),
+    Rule(RuleResponse),
 }

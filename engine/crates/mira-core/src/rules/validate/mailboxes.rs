@@ -6,7 +6,7 @@ use super::world::RuleWorld;
 use crate::actions::errors::input::invalid_parameter;
 
 /// Boîte nommée par l'action, s'il y en a une.
-fn named_mailbox(action: &RuleAction) -> Option<&MailboxId> {
+pub(crate) fn named_mailbox(action: &RuleAction) -> Option<&MailboxId> {
     match action {
         RuleAction::MoveTo { mailbox }
         | RuleAction::AddToMailbox { mailbox }
@@ -16,7 +16,7 @@ fn named_mailbox(action: &RuleAction) -> Option<&MailboxId> {
 }
 
 /// Vrai si l'action dépend d'une boîte du compte (boîte nommée ou boîte d'archive).
-fn depends_on_account_mailbox(action: &RuleAction) -> bool {
+pub(crate) fn depends_on_account_mailbox(action: &RuleAction) -> bool {
     named_mailbox(action).is_some() || matches!(action, RuleAction::Archive)
 }
 

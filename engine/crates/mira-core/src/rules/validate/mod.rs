@@ -14,6 +14,7 @@ use mira_vocabulary::{MiraError, Rule};
 pub use limits::{
     MAX_ACTIONS, MAX_ALTERNATIVES, MAX_CONDITIONS_PER_GROUP, MAX_REGEX_LEN, MAX_VALUE_LEN,
 };
+pub(crate) use mailboxes::{depends_on_account_mailbox, named_mailbox};
 pub use status::{RuleStatus, rule_status};
 pub use world::RuleWorld;
 

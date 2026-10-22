@@ -12,6 +12,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("v004_reading_indexes.sql"),
     include_str!("v005_account_idempotency.sql"),
     include_str!("v006_rules.sql"),
+    include_str!("v007_rule_idempotency.sql"),
 ];
 
 /// Applique, dans une transaction, les migrations pas encore appliquées

@@ -36,6 +36,9 @@ class FakeEngine implements EngineClient {
   final localPoses = <Map<String, dynamic>>[];
   final labelWrites = <Map<String, dynamic>>[];
   bool importFails = false;
+  bool hideInbox = false;
+  bool settingsOn = false;
+  final labelViews = <Map<String, dynamic>>[];
 
   Map<String, dynamic> _msg(
     String id,
@@ -124,6 +127,19 @@ class FakeEngine implements EngineClient {
         limits.add(limit);
         final view = r['view'] as Map;
         final filters = r['filters'] as Map;
+        if (view['type'] == 'local_label') {
+          labelViews.add({...view});
+          return {
+            'type': 'messages',
+            'data': {
+              'items': [
+                _msg('h1', 'Masqué', thread: 'th1', date: 800)
+                  ..['mailboxes'] = ['mb-inbox'],
+              ],
+              'next_cursor': null,
+            },
+          };
+        }
         if (view['type'] == 'standard' || filters['unread_only'] == true) {
           filteredAsked.add(r);
           final deep = view['type'] == 'standard'
@@ -451,6 +467,31 @@ class FakeEngine implements EngineClient {
           d['state'] = {'type': 'editing'};
         }
         return {'type': 'done'};
+      case 'label_settings.list_labels':
+        if (!settingsOn) throw EngineException('internal.bug', 'absent');
+        return {
+          'type': 'label_settings',
+          'data': {
+            'type': 'labels',
+            'data': [
+              {
+                'label': {'kind': 'local', 'id': 'l1'},
+                'account': null,
+                'name': 'À payer',
+                'color': 1,
+                'messages': 1,
+                'unused': false,
+                'settings': {'hide_from_inbox': hideInbox, 'counter': 'total'},
+              },
+            ],
+          },
+        };
+      case 'label_settings.set_label_settings':
+        hideInbox = r['hide_from_inbox'] == true;
+        return {
+          'type': 'label_settings',
+          'data': {'type': 'done', 'data': null},
+        };
       case 'local_label.list_local_labels':
         return _labelAnswer('labels', localLabels);
       case 'local_label.list_local_label_assignments':
@@ -535,10 +576,11 @@ class FakeEngine implements EngineClient {
           ),
         _msg('m1', 'Premier', thread: 't1', seen: false, date: 1000),
         _msg('m2', 'Re: Premier', thread: 't1', date: 2000, attachments: true),
-        {
-          ..._msg('m3', 'Seul', date: 3000),
-          'mailboxes': ['mb-inbox', 'mb-other'],
-        },
+        if (!hideInbox)
+          {
+            ..._msg('m3', 'Seul', date: 3000),
+            'mailboxes': ['mb-inbox', 'mb-other'],
+          },
       ],
       'mb-junk' => [_msg('m4', 'Pourriel', date: 500)],
       'mb-drafts' => [

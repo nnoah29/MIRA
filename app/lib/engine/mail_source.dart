@@ -129,6 +129,9 @@ abstract class MailSource {
     bool attachments = false,
   });
 
+  /// Messages qui portent ce libellé (clé de l'interface), même masqués de la Réception.
+  Future<List<Mail>> inLabel(String key);
+
   /// Recherche plein texte dans tout l'index local du moteur (tous comptes, toute l'ancienneté).
   Future<List<Mail>> search(String query, SearchFilters filters);
 

@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import '../data/format.dart';
 import '../data/html_lite.dart';
 import '../data/models.dart';
+import '../state/local_labels.dart' show localLabelPrefix;
 import '../state/search_filters.dart';
 import 'account_admin.dart';
 import 'maintenance_admin.dart';
@@ -419,13 +420,23 @@ class EngineMailSource implements MailSource {
     Set<String> seen,
     String account,
   ) async {
+    final placed = {
+      for (final b in boxes)
+        if (_folderOf(b) != null) '${b['id']}',
+    };
     for (final box in boxes) {
       if (!labelBoxes.containsKey('${box['id']}')) continue;
       final msgs = await _summaries('${box['id']}', account);
-      final fresh = msgs.where((m) => seen.add('${m['id']}')).toList();
+      final fresh = msgs
+          .where((m) => !_inFolder(m, placed) && seen.add('${m['id']}'))
+          .toList();
       byFolder.putIfAbsent('archive', () => []).addAll(fresh);
     }
   }
+
+  /// Vrai si le message est déjà dans une boîte rattachée à un dossier (masqué de la Réception, il n'est pas pour autant orphelin).
+  bool _inFolder(Map<String, dynamic> m, Set<String> placed) =>
+      (m['mailboxes'] as List? ?? const []).any((b) => placed.contains('$b'));
 
   /// Dossier d'une boîte : rattachement choisi par l'utilisateur, sinon son rôle.
   String? _folderOf(Map<String, dynamic> box) =>
@@ -554,6 +565,21 @@ class EngineMailSource implements MailSource {
   static List<Map<String, dynamic>> _items(Map data) => [
     for (final m in data['items'] as List) (m as Map).cast<String, dynamic>(),
   ];
+
+  @override
+  Future<List<Mail>> inLabel(String key) async {
+    final local = key.startsWith(localLabelPrefix);
+    final data = await _list(
+      local
+          ? {
+              'type': 'local_label',
+              'label': key.substring(localLabelPrefix.length),
+            }
+          : {'type': 'mailbox', 'mailbox': key},
+      filterLimit,
+    );
+    return _mailsOfHits(_items(data));
+  }
 
   /// Plafond des messages lus pour un filtre : assez pour une boîte chargée, borné pour rester rapide.
   static const filterLimit = 1000;

@@ -190,6 +190,12 @@ class CatalogEntry {
   };
 }
 
+/// Un choix proposé pour un paramètre opaque (boîte ou compte) : identifiant et libellé lisible.
+class RuleChoice {
+  final String id, label;
+  const RuleChoice(this.id, this.label);
+}
+
 /// Conditions et actions connues du moteur.
 class RuleCatalog {
   final List<CatalogEntry> conditions, actions;

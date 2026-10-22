@@ -11,12 +11,14 @@ class RuleKindPicker extends StatelessWidget {
   final String keyPrefix;
   final List<CatalogEntry> entries;
   final Map<String, dynamic> data;
+  final Map<String, List<RuleChoice>> options;
   final VoidCallback onChanged;
   const RuleKindPicker({
     super.key,
     required this.keyPrefix,
     required this.entries,
     required this.data,
+    this.options = const {},
     required this.onChanged,
   });
 
@@ -51,7 +53,14 @@ class RuleKindPicker extends StatelessWidget {
           onChanged: (k) => k == null ? null : _switchTo(k),
         ),
         for (final f in entry?.fields ?? const <String>[])
-          RuleParam(name: f, data: data, onChanged: onChanged),
+          RuleParam(
+            key: ValueKey('${identityHashCode(data)}-$current-$f'),
+            keyPrefix: keyPrefix,
+            name: f,
+            data: data,
+            options: options,
+            onChanged: onChanged,
+          ),
       ],
     );
   }
@@ -62,6 +71,7 @@ class ConditionRow extends StatelessWidget {
   final int group, index;
   final Condition condition;
   final List<CatalogEntry> entries;
+  final Map<String, List<RuleChoice>> options;
   final VoidCallback onChanged, onRemove;
   const ConditionRow({
     super.key,
@@ -69,6 +79,7 @@ class ConditionRow extends StatelessWidget {
     required this.index,
     required this.condition,
     required this.entries,
+    this.options = const {},
     required this.onChanged,
     required this.onRemove,
   });
@@ -98,6 +109,7 @@ class ConditionRow extends StatelessWidget {
             keyPrefix: 'condition-$group-$index',
             entries: entries,
             data: condition.test,
+            options: options,
             onChanged: onChanged,
           ),
         ),
@@ -117,12 +129,14 @@ class ActionRow extends StatelessWidget {
   final int index;
   final RuleAction action;
   final List<CatalogEntry> entries;
+  final Map<String, List<RuleChoice>> options;
   final VoidCallback onChanged, onRemove;
   const ActionRow({
     super.key,
     required this.index,
     required this.action,
     required this.entries,
+    this.options = const {},
     required this.onChanged,
     required this.onRemove,
   });
@@ -136,6 +150,7 @@ class ActionRow extends StatelessWidget {
             keyPrefix: 'action-$index',
             entries: entries,
             data: action.data,
+            options: options,
             onChanged: onChanged,
           ),
         ),

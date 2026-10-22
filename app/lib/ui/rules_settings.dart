@@ -28,6 +28,7 @@ class RulesSettings extends StatefulWidget {
 class _RulesSettingsState extends State<RulesSettings> {
   List<RuleView> views = [];
   RuleCatalog catalog = const RuleCatalog([], []);
+  Map<String, List<RuleChoice>> mailboxes = {};
   Rule? editing;
   String? error;
   StreamSubscription<void>? _sub;
@@ -37,6 +38,20 @@ class _RulesSettingsState extends State<RulesSettings> {
     super.initState();
     _sub = widget.changes.listen((_) => _load());
     _load();
+    _loadMailboxes();
+  }
+
+  /// Boîtes de chaque compte, pour les listes de l'éditeur ; un compte illisible n'en propose aucune.
+  Future<void> _loadMailboxes() async {
+    final found = <String, List<RuleChoice>>{};
+    for (final id in widget.accounts.keys) {
+      try {
+        found[id] = await widget.admin.mailboxes(id);
+      } catch (_) {
+        found[id] = const [];
+      }
+    }
+    if (mounted) setState(() => mailboxes = found);
   }
 
   @override
@@ -205,6 +220,7 @@ class _RulesSettingsState extends State<RulesSettings> {
       rule: rule,
       catalog: catalog,
       accounts: widget.accounts,
+      mailboxes: mailboxes,
       onSave: _save,
       onPreview: widget.admin.preview,
       onCancel: () => setState(() => editing = null),

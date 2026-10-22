@@ -77,6 +77,20 @@ class RuleAdmin {
     return RulePreview.fromJson(_inner(r));
   }
 
+  /// Boîtes d'un compte, à proposer aux conditions et actions qui en désignent une.
+  Future<List<RuleChoice>> mailboxes(String account) async {
+    final r = await client.call(
+      req('mailbox', 'list_mailboxes', {'account': account}),
+    );
+    return [
+      for (final b in (r['data'] as List).cast<Map>())
+        RuleChoice(
+          '${b['id']}',
+          '${b['display_name'] ?? b['name'] ?? b['id']}',
+        ),
+    ];
+  }
+
   /// Conditions et actions connues du moteur.
   Future<RuleCatalog> catalog() async {
     final r = await client.call(req('rule', 'list_rule_catalog'));

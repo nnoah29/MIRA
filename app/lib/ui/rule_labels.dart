@@ -53,10 +53,7 @@ dynamic defaultParam(String field) => switch (field) {
   'bytes' => 1000,
   'at' => 0,
   'read' || 'flagged' || 'spam' => true,
-  'matcher' => {
-    'op': 'contains',
-    'values': [''],
-  },
+  'matcher' => {'op': 'contains', 'values': <String>[]},
   _ => '',
 };
 

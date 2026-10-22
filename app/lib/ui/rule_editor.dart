@@ -12,6 +12,7 @@ class RuleEditor extends StatefulWidget {
   final Rule rule;
   final RuleCatalog catalog;
   final Map<String, String> accounts;
+  final Map<String, List<RuleChoice>> mailboxes;
   final Future<void> Function(Rule) onSave;
   final Future<RulePreview> Function(Rule) onPreview;
   final VoidCallback? onCancel;
@@ -20,6 +21,7 @@ class RuleEditor extends StatefulWidget {
     required this.rule,
     required this.catalog,
     required this.accounts,
+    this.mailboxes = const {},
     required this.onSave,
     required this.onPreview,
     this.onCancel,
@@ -33,8 +35,39 @@ class _RuleEditorState extends State<RuleEditor> {
   late final Rule rule = Rule.fromJson(widget.rule.toJson());
   RulePreview? preview;
   String? error;
+  bool _saving = false;
 
   bool get _single => rule.scope.isSingleAccount;
+
+  List<String> get _scopeAccounts =>
+      rule.scope.accounts ?? widget.accounts.keys.toList();
+
+  String _accountLabel(String id) => widget.accounts[id] ?? id;
+
+  /// Comptes et boîtes proposés aux conditions : ceux de la portée.
+  Map<String, List<RuleChoice>> get _conditionOptions {
+    final several = _scopeAccounts.length > 1;
+    return {
+      'account': [
+        for (final a in _scopeAccounts) RuleChoice(a, _accountLabel(a)),
+      ],
+      'mailbox': [
+        for (final a in _scopeAccounts)
+          for (final b in widget.mailboxes[a] ?? const <RuleChoice>[])
+            RuleChoice(
+              b.id,
+              several ? '${_accountLabel(a)} · ${b.label}' : b.label,
+            ),
+      ],
+    };
+  }
+
+  /// Boîtes proposées aux actions : celles du seul compte de la portée.
+  Map<String, List<RuleChoice>> get _actionOptions => {
+    'mailbox': _single
+        ? widget.mailboxes[_scopeAccounts.single] ?? const []
+        : const [],
+  };
 
   List<CatalogEntry> get _conditionChoices => [
     for (final e in widget.catalog.conditions)
@@ -93,10 +126,14 @@ class _RuleEditorState extends State<RuleEditor> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
+    _saving = true;
     try {
       await widget.onSave(rule);
     } catch (e) {
-      setState(() => error = '$e');
+      if (mounted) setState(() => error = '$e');
+    } finally {
+      _saving = false;
     }
   }
 
@@ -152,10 +189,12 @@ class _RuleEditorState extends State<RuleEditor> {
         children: [
           for (var c = 0; c < group.conditions.length; c++)
             ConditionRow(
+              key: ObjectKey(group.conditions[c]),
               group: g,
               index: c,
               condition: group.conditions[c],
               entries: _conditionChoices,
+              options: _conditionOptions,
               onChanged: _touch,
               onRemove: () {
                 group.conditions.removeAt(c);
@@ -187,7 +226,7 @@ class _RuleEditorState extends State<RuleEditor> {
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Text(t('OU'), style: Fonts.sans(size: 12, color: p.dim)),
             ),
-          _group(g),
+          KeyedSubtree(key: ObjectKey(rule.alternatives[g]), child: _group(g)),
         ],
         Align(
           alignment: Alignment.centerLeft,
@@ -206,9 +245,11 @@ class _RuleEditorState extends State<RuleEditor> {
     children: [
       for (var a = 0; a < rule.actions.length; a++)
         ActionRow(
+          key: ObjectKey(rule.actions[a]),
           index: a,
           action: rule.actions[a],
           entries: _actionChoices,
+          options: _actionOptions,
           onChanged: _touch,
           onRemove: () {
             rule.actions.removeAt(a);

@@ -12,6 +12,7 @@ import 'image_rules_section.dart';
 import 'local_labels_section.dart';
 import 'maintenance_settings.dart';
 import 'notification_settings.dart';
+import 'rules_settings.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
 
@@ -33,6 +34,7 @@ List<String> _tabs(bool engine) => [
   t('Notifications'),
   t('Comptes'),
   t('Contacts'),
+  if (engine) t('Règles'),
   if (engine) t('Stockage'),
 ];
 
@@ -349,7 +351,14 @@ class _SettingsPanelState extends State<SettingsPanel> {
       ]),
       2 => box([const NotificationSettings()]),
       4 => box([const ContactsSettings()]),
-      5 when s.source != null => box([const MaintenanceSettings()]),
+      5 when s.source?.ruleAdmin != null => box([
+        RulesSettings(
+          admin: s.source!.ruleAdmin!,
+          accounts: {for (final a in s.accounts) a.id: a.email},
+          changes: s.source!.ruleChanges,
+        ),
+      ]),
+      6 when s.source != null => box([const MaintenanceSettings()]),
       _ when s.source != null => box([const AccountsSettings()]),
       _ => box([
         srow(me.name, me.email, const SizedBox.shrink()),

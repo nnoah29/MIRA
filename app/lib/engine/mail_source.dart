@@ -6,6 +6,7 @@ import 'account_admin.dart';
 import 'account_setup.dart';
 import 'compose_admin.dart';
 import 'label_admin.dart';
+import 'rule_admin.dart';
 import 'maintenance_admin.dart';
 import 'message_actions.dart';
 import 'sync_state.dart';
@@ -61,6 +62,15 @@ abstract class MailSource {
 
   /// Création, renommage, suppression et pose des libellés (`null` : démonstration).
   LabelAdmin? get labelAdmin;
+
+  /// Règles « condition → action » (`null` : démonstration).
+  RuleAdmin? get ruleAdmin;
+
+  /// Signale chaque changement de règle côté moteur.
+  Stream<void> get ruleChanges;
+
+  /// Vrai si une règle a réduit au silence ce message (aucune notification).
+  bool isSilenced(String messageRef);
 
   /// Contenu d'une pièce jointe du moteur (`null` : illisible ou sans identifiant).
   Future<Uint8List?> attachmentBytes(Attachment a);

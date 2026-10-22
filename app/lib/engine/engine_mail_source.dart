@@ -18,6 +18,7 @@ import 'compose_admin.dart';
 import 'mail_layout.dart';
 import 'inline_images.dart';
 import 'label_admin.dart';
+import 'rule_admin.dart';
 import 'message_actions.dart';
 import 'engine_client.dart';
 import 'mail_builder.dart';
@@ -115,6 +116,18 @@ class EngineMailSource implements MailSource {
   LabelAdmin get labelAdmin => LabelAdmin(client);
 
   @override
+  RuleAdmin get ruleAdmin => RuleAdmin(client);
+
+  final StreamController<void> _ruleChanges = StreamController.broadcast();
+  final Set<String> _silenced = {};
+
+  @override
+  Stream<void> get ruleChanges => _ruleChanges.stream;
+
+  @override
+  bool isSilenced(String messageRef) => _silenced.contains(messageRef);
+
+  @override
   MaintenanceAdmin get maintenance => MaintenanceAdmin(client);
 
   @override
@@ -177,9 +190,19 @@ class EngineMailSource implements MailSource {
     _events = client.events().listen((e) {
       final kind = (e['kind'] as Map?)?.cast<String, dynamic>() ?? const {};
       final account = kind['account'];
+      _trackRules('${kind['type']}', kind);
       if (account is String && _isChange('${kind['type']}')) _schedule(account);
       if (account is String) _trackSync(account, '${kind['type']}', kind);
     }, onError: (_) {});
+  }
+
+  void _trackRules(String type, Map<String, dynamic> kind) {
+    if (type == 'rule_changed' && !_ruleChanges.isClosed) {
+      _ruleChanges.add(null);
+    }
+    if (type == 'new_message_received' && kind['silenced'] == true) {
+      _silenced.add('${kind['message']}');
+    }
   }
 
   void _trackSync(String account, String type, Map<String, dynamic> kind) {
@@ -786,6 +809,7 @@ class EngineMailSource implements MailSource {
     }
     unawaited(_events?.cancel() ?? Future<void>.value());
     await _changes.close();
+    await _ruleChanges.close();
     await _syncEvents.close();
   }
 }

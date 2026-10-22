@@ -1895,10 +1895,19 @@ class MailStore extends ChangeNotifier {
     if (byId(id) != null) openMail(id);
   }
 
+  bool _silencedByRule(Mail m) {
+    final ref = m.msgs.lastOrNull?.ref;
+    return ref != null && (source?.isSilenced(ref) ?? false);
+  }
+
   /// Annonce les nouveaux messages d'un compte, selon les réglages ; plus de trois : une seule notification.
   Future<void> _announce(Account acc, List<Mail> arrived) async {
     final n = notifications;
     final cfg = notifySettings;
+    arrived = [
+      for (final m in arrived)
+        if (!_silencedByRule(m)) m,
+    ];
     if (n == null || arrived.isEmpty || !cfg.enabled) return;
     if (cfg.muted.contains(acc.id)) return;
     if (appFocused && !cfg.whenFocused) return;

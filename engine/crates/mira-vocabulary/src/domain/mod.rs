@@ -10,6 +10,7 @@ pub mod identity;
 pub mod mailbox;
 pub mod message;
 pub mod page;
+pub mod rule;
 pub mod servers;
 pub mod thread;
 pub mod view;

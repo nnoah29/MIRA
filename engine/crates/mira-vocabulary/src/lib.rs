@@ -22,6 +22,11 @@ pub use domain::identity::Identity;
 pub use domain::mailbox::{Mailbox, MailboxRole, SyncMarker};
 pub use domain::message::{ContentState, Flags, MessageSummary, Unsubscribe};
 pub use domain::page::{Page, PageRequest};
+pub use domain::rule::action::RuleAction;
+pub use domain::rule::condition::{Condition, ConditionGroup};
+pub use domain::rule::matcher::{AddressField, Comparison, RecipientKind, TextMatcher, TextOp};
+pub use domain::rule::rule::{CURRENT_RULE_SCHEMA_VERSION, Rule, RuleScope};
+pub use domain::rule::test::ConditionTest;
 pub use domain::servers::{Security, ServerEndpoint, ServerSettings};
 pub use domain::thread::Thread;
 pub use domain::view::{StandardView, ViewRef};
@@ -38,7 +43,7 @@ pub use ids::Id;
 pub use ids::keys::{Cursor, EventSeq, IdempotencyKey, ProviderId};
 pub use ids::kinds::{
     AccountId, ActionId, AttachmentId, DraftId, IdentityId, MailboxId, MessageId, OperationId,
-    ProfileId, ThreadId, ViewId,
+    ProfileId, RuleId, ThreadId, ViewId,
 };
 pub use provider::descriptor::ProviderDescriptor;
 pub use provider::limits::ProviderLimits;

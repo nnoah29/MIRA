@@ -46,5 +46,6 @@ pub(super) fn category_name(category: EventCategory) -> &'static str {
         EventCategory::Send => "send",
         EventCategory::Alert => "alert",
         EventCategory::Log => "log",
+        EventCategory::Rule => "rule",
     }
 }

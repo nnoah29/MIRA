@@ -16,4 +16,5 @@ pub enum EventCategory {
     Send,
     Alert,
     Log,
+    Rule,
 }

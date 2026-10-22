@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use super::category::EventCategory;
 use crate::domain::account::AccountState;
 use crate::ids::kinds::{
-    AccountId, ActionId, AttachmentId, MailboxId, MessageId, OperationId, ThreadId,
+    AccountId, ActionId, AttachmentId, MailboxId, MessageId, OperationId, RuleId, ThreadId,
 };
 use crate::time::Timestamp;
 
@@ -103,6 +103,8 @@ pub enum EventKind {
         account: AccountId,
         message: MessageId,
         mailbox: MailboxId,
+        #[serde(default)]
+        silenced: bool,
     },
     MessageUpdated {
         account: AccountId,
@@ -206,6 +208,14 @@ pub enum EventKind {
     OperationCancelled {
         operation: OperationId,
     },
+    RuleChanged {
+        rule: RuleId,
+    },
+    RuleApplied {
+        account: AccountId,
+        rule: RuleId,
+        message: MessageId,
+    },
 }
 
 impl EventKind {
@@ -227,6 +237,7 @@ impl EventKind {
             | K::SendUncertain { .. } => EventCategory::Send,
             K::QuotaFull { .. } | K::CertificateNeedsApproval { .. } | K::RateLimited { .. } | K::MailboxResynchronized { .. } => EventCategory::Alert,
             K::Diagnostic { .. } => EventCategory::Log,
+            K::RuleChanged { .. } | K::RuleApplied { .. } => EventCategory::Rule,
         }
     }
 
@@ -245,10 +256,11 @@ impl EventKind {
             | K::ActionFailed { account, .. } | K::ActionCancelled { account, .. } | K::SendScheduled { account, .. }
             | K::SendDeparted { account, .. } | K::SendFailed { account, .. } | K::SentCopyStored { account, .. }
             | K::SendUncertain { account, .. } | K::QuotaFull { account } | K::CertificateNeedsApproval { account, .. }
-            | K::RateLimited { account } | K::MailboxResynchronized { account, .. } => Some(account),
+            | K::RateLimited { account } | K::MailboxResynchronized { account, .. }
+            | K::RuleApplied { account, .. } => Some(account),
             K::EngineStarted | K::EngineStopping | K::EngineFatalError { .. } | K::Diagnostic { .. }
             | K::OperationProgress { .. } | K::OperationFinished { .. } | K::OperationFailed { .. }
-            | K::OperationCancelled { .. } => None,
+            | K::OperationCancelled { .. } | K::RuleChanged { .. } => None,
         }
     }
 }

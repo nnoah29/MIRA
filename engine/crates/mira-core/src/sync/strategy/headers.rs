@@ -96,6 +96,7 @@ fn announce_batch(ctx: &SyncContext, mailbox: &Mailbox, outcomes: &[Ingested], m
                 account: ctx.account.id.clone(),
                 message: message.clone(),
                 mailbox: mailbox.id.clone(),
+                silenced: false,
             }),
             Ingested::Updated(message) => ctx.emit(updated(&ctx.account.id, message)),
             Ingested::Unchanged(_) => {}

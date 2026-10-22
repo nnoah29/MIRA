@@ -492,6 +492,8 @@ const Map<String, String> enStrings = {
   'Ajouter une condition': 'Add a condition',
   'Ajouter une alternative (OU)': 'Add an alternative (OR)',
   'Ajouter une action': 'Add an action',
+  'Oui': 'Yes',
+  'Non': 'No',
   'Retirer la condition': 'Remove the condition',
   "Retirer l'action": 'Remove the action',
   '{0} messages touchés sur {1} examinés.':

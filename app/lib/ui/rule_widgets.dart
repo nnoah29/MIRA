@@ -75,7 +75,7 @@ class RuleChip extends StatelessWidget {
   }
 }
 
-/// Interrupteur carré, à l'image des autres commandes de l'app.
+/// Interrupteur carré : plein à l'accent quand il est actif, simple filet sinon.
 class RuleToggle extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
@@ -95,19 +95,75 @@ class RuleToggle extends StatelessWidget {
       onTap: () => onChanged(!value),
       builder: (_, h) => AnimatedContainer(
         duration: const Duration(milliseconds: 130),
-        width: 38,
-        height: 20,
+        width: 44,
+        height: 24,
         padding: const EdgeInsets.all(3),
         alignment: value ? Alignment.centerRight : Alignment.centerLeft,
         decoration: BoxDecoration(
-          color: value ? p.accentSoft : p.bg,
+          color: value ? p.accent : p.bg,
           border: Border.all(color: value ? p.accent : (h ? p.dim : p.line)),
         ),
         child: Container(
-          width: 12,
-          height: 12,
-          color: value ? p.accent : (h ? p.muted : p.dim),
+          width: 16,
+          height: 16,
+          color: value ? p.onAccent : (h ? p.muted : p.dim),
         ),
+      ),
+    );
+  }
+}
+
+/// Choix oui / non à deux cases, comme les choix segmentés des autres réglages.
+class RuleSegment extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final String yes;
+  final String no;
+  const RuleSegment({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    required this.yes,
+    required this.no,
+  });
+
+  Widget _cell(BuildContext context, String label, bool on, bool first) {
+    final p = context.pal;
+    final selected = value == on;
+    return Hov(
+      onTap: () => onChanged(on),
+      builder: (_, h) => Container(
+        height: ruleControlHeight - 2,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: selected ? p.accentSoft : null,
+          border: first ? null : Border(left: BorderSide(color: p.line)),
+        ),
+        child: Mono(
+          label,
+          ls: .12,
+          height: null,
+          color: selected ? p.accent : (h ? p.text : p.muted),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.pal;
+    return Container(
+      decoration: BoxDecoration(
+        color: p.bg,
+        border: Border.all(color: p.line),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _cell(context, yes, true, true),
+          _cell(context, no, false, false),
+        ],
       ),
     );
   }

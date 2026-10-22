@@ -146,7 +146,9 @@ class RuleParam extends StatelessWidget {
       return _dropdown('$v', _choices[name]!, (s) => data[name] = s);
     }
     if (v is bool) {
-      return RuleToggle(
+      return RuleSegment(
+        yes: t('Oui'),
+        no: t('Non'),
         value: v,
         onChanged: (b) {
           data[name] = b;

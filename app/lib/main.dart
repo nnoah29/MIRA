@@ -82,7 +82,7 @@ class MiraApp extends StatelessWidget {
     final accent = context.select<MailStore, Color?>((s) => s.accentColor);
     final lang = context.select<MailStore, AppLang>((s) => s.lang);
     return MaterialApp(
-      title: 'Ma boîte — MIRA',
+      title: 'MIRA',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(dark, accent: accent, pal: wall),
       themeAnimationDuration: Duration.zero,

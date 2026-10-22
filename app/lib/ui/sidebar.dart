@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../data/models.dart';
+import '../state/local_labels.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
@@ -157,22 +158,8 @@ class Sidebar extends StatelessWidget {
                       label: t(f.n),
                       count: s.navCount(f.id),
                     ),
-                _NavTitle(t('Libellés')),
-                for (final e in s.labelDefs.entries)
-                  _NavItem(
-                    on: s.label == e.key,
-                    onTap: () => s.selectLabel(e.key),
-                    leading: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Square(8, Color(e.value.c)),
-                    ),
-                    label: s.labelTitle(e.key),
-                    count: s.nonRead(
-                      s.mails.where(
-                        (m) => m.labels.contains(e.key) && !s.hidden(m),
-                      ),
-                    ),
-                  ),
+                ..._labelGroup(s, t('Libellés locaux'), true),
+                ..._labelGroup(s, t('Libellés'), false),
               ],
             ),
           ),
@@ -180,6 +167,35 @@ class Sidebar extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Titre puis entrées des libellés locaux (`local`) ou de ceux des comptes ; rien s'il n'y en a pas.
+List<Widget> _labelGroup(MailStore s, String title, bool local) {
+  final items = [
+    for (final e in s.sidebarLabels())
+      if (isLocalLabel(e.key) == local) e,
+  ];
+  if (items.isEmpty) return const [];
+  return [
+    _NavTitle(title),
+    for (final e in items)
+      _NavItem(
+        on: s.label == e.key,
+        onTap: () => s.selectLabel(e.key),
+        leading: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: local
+              ? Ico(
+                  'diamond',
+                  size: 8,
+                  color: Color(s.labelColor(e.key, e.value.c)),
+                )
+              : Square(8, Color(s.labelColor(e.key, e.value.c))),
+        ),
+        label: s.labelTitle(e.key),
+        count: s.labelCount(e.key),
+      ),
+  ];
 }
 
 class _NavTitle extends StatelessWidget {

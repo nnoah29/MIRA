@@ -7,7 +7,8 @@ use mira_core::api::Request;
 use serde_json::Value;
 
 use super::{
-    all_responses, request_name, request_texts, sync_domain, write_requests, write_responses,
+    all_responses, label_settings_domain, local_label_domain, request_name, request_texts,
+    rule_domain, sync_domain, write_requests, write_responses,
 };
 
 /// Chemin du fichier d'instantané versionné
@@ -36,12 +37,21 @@ pub fn current_snapshot() -> Value {
         let value = serde_json::to_value(&response).unwrap();
         responses.insert(value["type"].as_str().unwrap().to_string(), value);
     }
-    for (name, request) in write_requests().into_iter().chain(sync_domain::requests()) {
+    let named_requests = write_requests()
+        .into_iter()
+        .chain(sync_domain::requests())
+        .chain(rule_domain::requests())
+        .chain(local_label_domain::requests())
+        .chain(label_settings_domain::requests());
+    for (name, request) in named_requests {
         requests.insert(name, serde_json::to_value(&request).unwrap());
     }
     for (name, response) in write_responses()
         .into_iter()
         .chain(sync_domain::responses())
+        .chain(rule_domain::responses())
+        .chain(local_label_domain::responses())
+        .chain(label_settings_domain::responses())
     {
         responses.insert(name, serde_json::to_value(&response).unwrap());
     }

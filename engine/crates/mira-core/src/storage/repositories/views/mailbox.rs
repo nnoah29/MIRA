@@ -6,6 +6,7 @@ use rusqlite::params;
 use super::builder::QueryBuilder;
 use crate::storage::Tx;
 use crate::storage::errors::storage_error;
+use crate::storage::repositories::label_settings::hidden::hidden_from_inbox;
 
 const LARGE_MAILBOX: i64 = 2_000;
 
@@ -20,10 +21,31 @@ impl Tx<'_> {
                 |row| row.get(0),
             )
             .map_err(storage_error)?;
-        Ok(match size > LARGE_MAILBOX {
+        let mut builder = match size > LARGE_MAILBOX {
             true => builder_by_date(mailbox),
             false => builder_by_appearances(mailbox),
-        })
+        };
+        if self.is_inbox(mailbox)? {
+            builder.require(format!("NOT {}", hidden_from_inbox()));
+        }
+        Ok(builder)
+    }
+}
+
+impl Tx<'_> {
+    /// Vrai si la boîte est une Réception
+    fn is_inbox(&self, mailbox: &MailboxId) -> Result<bool, MiraError> {
+        self.sql()
+            .query_row(
+                "SELECT role = 'inbox' FROM mailboxes WHERE id = ?1",
+                [mailbox.as_str()],
+                |row| row.get(0),
+            )
+            .or_else(|error| match error {
+                rusqlite::Error::QueryReturnedNoRows => Ok(false),
+                other => Err(other),
+            })
+            .map_err(storage_error)
     }
 }
 

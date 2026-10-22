@@ -106,8 +106,12 @@ Migrations (`C/storage/migrations/`, suivies par `PRAGMA user_version`, appliqu�
 | v003 | `account_token_meta` (expiration des jetons ; aucun jeton) |
 | v004 | index de lecture (`messages_by_date`, non lus, suivis, `mailboxes_by_account_role`) |
 | v005 | `account_idempotency` (clé d'idempotence de `AddAccount`) |
+| v006 | `rules` (définition JSON, position, `scope_all`), `rule_accounts` (portée, cascade à la suppression du compte), `rule_pending` (messages à évaluer, reprise sur crash) — AG-64, AG-65 |
+| v007 | `rule_idempotency` (clés d'idempotence des écritures de règles, avec empreinte ; non purgées) — AG-65 |
+| v008 | `local_labels` (nom unique sans casse, couleur), `thread_local_labels` (pose par `(compte, clé du fil)`, cascade à la suppression du libellé ou du compte, sans clé étrangère vers `threads`) — AG-72 |
+| v009 | `local_label_idempotency` (clés d'idempotence des libellés locaux, avec empreinte et résultat JSON ; non purgées) — AG-73 |
 
-Trois familles (D-18) : **configuration** (`accounts`, `identities`, `remote_content_allowances`, `account_token_meta`, `account_idempotency`), **miroir** jetable (`mailboxes`, `messages`, `appearances`, `server_ids`, `raw_sources`, `parsed_cache`, `attachments`, `threads`, `messages_fts`), **intentions** jamais jetées (`drafts`, `draft_attachments`, `actions`). `events` est à part. Aucune colonne ne contient de secret (invariant 15, testé en parcourant toutes les tables).
+Trois familles (D-18) : **configuration** (`accounts`, `identities`, `remote_content_allowances`, `account_token_meta`, `account_idempotency`, `rules`, `rule_accounts`, `rule_idempotency`), **miroir** jetable (`mailboxes`, `messages`, `appearances`, `server_ids`, `raw_sources`, `parsed_cache`, `attachments`, `threads`, `messages_fts`), **intentions** jamais jetées (`drafts`, `draft_attachments`, `actions`, `rule_pending`). `events` est à part. Aucune colonne ne contient de secret (invariant 15, testé en parcourant toutes les tables).
 
 Points d'implémentation à connaître :
 - Pagination par curseur opaque `mira1|<date>|<id>` encodé en hexadécimal, jamais d'`OFFSET` (invariant 29) ; curseur invalide → `invalid_input.cursor`.

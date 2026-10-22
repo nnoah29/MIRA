@@ -9,7 +9,19 @@ use crate::storage::errors::storage_error;
 
 const UPSERT: &str = "INSERT INTO mailboxes (id, account_id, name, display_name, delimiter, parent_id, role, sync_enabled, uid_validity, uid_next, highest_modseq, total, unread) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13) ON CONFLICT (account_id, name) DO UPDATE SET display_name = excluded.display_name, delimiter = excluded.delimiter, parent_id = excluded.parent_id, role = excluded.role, sync_enabled = excluded.sync_enabled";
 
-const COUNTERS: &str = "UPDATE mailboxes SET total = (SELECT COUNT(*) FROM appearances a WHERE a.mailbox_id = mailboxes.id AND a.deleted = 0), unread = (SELECT COUNT(*) FROM appearances a JOIN messages m ON m.id = a.message_id WHERE a.mailbox_id = mailboxes.id AND a.deleted = 0 AND m.seen = 0) WHERE id = ?1";
+/// Requête des compteurs : la Réception ignore les messages masqués par un libellé
+fn counters_sql() -> String {
+    let visible = format!(
+        "(mailboxes.role <> 'inbox' OR NOT {})",
+        crate::storage::repositories::label_settings::hidden::hidden_from_inbox()
+    );
+    format!(
+        "UPDATE mailboxes SET \
+         total = (SELECT COUNT(*) FROM appearances a JOIN messages m ON m.id = a.message_id WHERE a.mailbox_id = mailboxes.id AND a.deleted = 0 AND {visible}), \
+         unread = (SELECT COUNT(*) FROM appearances a JOIN messages m ON m.id = a.message_id WHERE a.mailbox_id = mailboxes.id AND a.deleted = 0 AND m.seen = 0 AND {visible}) \
+         WHERE id = ?1"
+    )
+}
 
 const MARKER: &str =
     "UPDATE mailboxes SET uid_validity = ?2, uid_next = ?3, highest_modseq = ?4 WHERE id = ?1";
@@ -51,6 +63,12 @@ impl Tx<'_> {
         self.sql()
             .execute("DELETE FROM mailboxes WHERE id = ?1", [id.as_str()])
             .map_err(storage_error)?;
+        self.sql()
+            .execute(
+                "DELETE FROM label_settings WHERE kind = 'server' AND label_id = ?1",
+                [id.as_str()],
+            )
+            .map_err(storage_error)?;
         Ok(())
     }
 
@@ -58,7 +76,7 @@ impl Tx<'_> {
     pub fn refresh_mailbox_counters(&self, id: &MailboxId) -> Result<(), MiraError> {
         let changed = self
             .sql()
-            .execute(COUNTERS, [id.as_str()])
+            .execute(&counters_sql(), [id.as_str()])
             .map_err(storage_error)?;
         require_change(changed, id)
     }

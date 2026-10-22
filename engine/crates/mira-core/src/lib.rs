@@ -21,6 +21,7 @@ pub mod profile;
 pub mod reading;
 pub mod registry;
 mod replayer;
+pub mod rules;
 pub mod send;
 pub mod smtp;
 pub mod storage;

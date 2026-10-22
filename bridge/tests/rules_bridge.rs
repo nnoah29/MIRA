@@ -85,6 +85,7 @@ async fn rule_create_list_delete_through_bridge() {
     let rules = listed["data"]["data"]["data"].as_array().unwrap();
     assert_eq!(rules.len(), 1, "{listed}");
     assert_eq!(rules[0]["status"]["type"], "valid", "{listed}");
+    assert_eq!(rules[0]["rule"]["name"], "Factures", "{listed}");
     let id = rules[0]["rule"]["id"].clone();
     let delete =
         rule_request(json!({"op": "delete_rule", "rule": id, "idempotency_key": "k-delete"}));
@@ -95,4 +96,5 @@ async fn rule_create_list_delete_through_bridge() {
         0,
         "{after}"
     );
+    assert!(runtime::close().await.contains("\"ok\":true"));
 }

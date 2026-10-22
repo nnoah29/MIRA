@@ -8,6 +8,7 @@ mod realtime;
 mod report;
 mod requests;
 mod resync;
+mod rule_hook;
 mod session;
 mod strategy;
 mod supervisor;
@@ -19,6 +20,7 @@ pub use mode::BackgroundSync;
 pub use realtime::BackoffPolicy;
 pub use report::{ReportHandle, SyncReport};
 pub use requests::{RequestScope, SyncRequests, TakenRequests, Ticket};
+pub use rule_hook::apply_rules_to_message;
 pub use session::{
     BoxFuture, Connection, ConnectionBudget, ConnectionBudgets, CredentialProvider, LeasedClient,
     SyncSession, open_connection,

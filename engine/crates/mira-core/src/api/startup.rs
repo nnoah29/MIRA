@@ -12,6 +12,7 @@ use crate::auth::CredentialVault;
 use crate::events::EventBus;
 use crate::profile::{ProfileEnvironment, ProfileLock, ProfilePaths};
 use crate::replayer::ReplayerHandle;
+use crate::rules::apply::replay_pending_rules;
 use crate::storage::Database;
 use crate::sync::ConnectionBudgets;
 use crate::sync_service::SyncService;
@@ -80,4 +81,15 @@ pub(crate) fn start_background(
         replayers,
         SyncService::start(config, database, events, budgets),
     )
+}
+
+/// Rejoue les règles des messages restés en attente après un arrêt brutal ; un échec est journalisé sans empêcher l'ouverture
+pub(crate) fn resume_pending_rules(
+    config: &EngineConfig,
+    database: &Arc<Database>,
+    events: &EventBus,
+) {
+    if let Err(error) = replay_pending_rules(config, database, events) {
+        tracing::warn!(code = %error.code, "reprise des règles en attente non achevée");
+    }
 }

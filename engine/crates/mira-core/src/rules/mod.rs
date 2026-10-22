@@ -1,7 +1,8 @@
-//! Évaluateur pur des règles « condition → action » : aucune I/O, aucun accès à la base.
+//! Règles « condition → action » : évaluateur pur (sans I/O) et, dans `apply`, exécution à l'arrivée des messages.
 
 pub mod action_translation;
 pub mod address_eval;
+pub mod apply;
 pub mod compare_eval;
 pub mod condition_eval;
 pub mod content_eval;

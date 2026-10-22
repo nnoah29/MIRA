@@ -10,7 +10,7 @@ use super::contract::{Request, Response};
 use super::router::route;
 use super::startup::{
     apply_event_retention, check_client_version, open_profile, resume_interrupted_deletions,
-    start_background,
+    resume_pending_rules, start_background,
 };
 use crate::auth::{CredentialVault, OAuthFlows};
 use crate::events::{EventBus, EventSink, EventSubscription};
@@ -50,6 +50,7 @@ impl Engine {
         apply_event_retention(&config, &database);
         events.emit(EventKind::EngineStarted)?;
         resume_interrupted_deletions(&config, &database, &events, &paths.attachments_cache);
+        resume_pending_rules(&config, &database, &events);
         let budgets = ConnectionBudgets::default();
         let (replayers, sync) = start_background(&config, &database, &events, &budgets);
         Ok(Self {

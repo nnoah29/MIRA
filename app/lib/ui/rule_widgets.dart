@@ -200,7 +200,11 @@ class RuleSelect extends StatelessWidget {
       color: p.bgSide,
       elevation: 0,
       position: PopupMenuPosition.under,
-      constraints: const BoxConstraints(minWidth: 180, maxWidth: 360),
+      constraints: const BoxConstraints(
+        minWidth: 200,
+        maxWidth: 340,
+        maxHeight: 300,
+      ),
       shape: RoundedRectangleBorder(side: BorderSide(color: p.line)),
       onSelected: onChanged,
       itemBuilder: (_) => [
@@ -208,12 +212,12 @@ class RuleSelect extends StatelessWidget {
           PopupMenuItem<String>(
             key: o.key,
             value: o.value,
-            height: 38,
+            height: 32,
             child: Text(
               o.label,
               overflow: TextOverflow.ellipsis,
               style: Fonts.sans(
-                size: 14,
+                size: 13.5,
                 color: o.value == value ? p.accent : p.text,
               ),
             ),

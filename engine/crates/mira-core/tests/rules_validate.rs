@@ -13,6 +13,8 @@ mod mailboxes;
 mod regexes;
 #[path = "rules_validate/scope.rs"]
 mod scope;
+#[path = "rules_validate/shape.rs"]
+mod shape;
 #[path = "rules_validate/status.rs"]
 mod status;
 #[path = "rules_validate/structure.rs"]

@@ -47,7 +47,7 @@ pub(crate) async fn route(engine: &Engine, request: RuleRequest) -> Result<Respo
             idempotency_key: key,
         } => reorder::handle_reorder_rules(engine, &order, key),
         R::ValidateRule { rule } => validate::handle_validate_rule(engine, &rule),
-        R::PreviewRule { rule, limit } => preview::handle_preview_rule(engine, rule, limit),
+        R::PreviewRule { rule, limit } => preview::handle_preview_rule(engine, rule, limit).await,
         R::ListRuleCatalog => catalog::handle_list_rule_catalog(),
     }
 }

@@ -1,4 +1,4 @@
-//! Parcours borné de l'aperçu : les messages les plus récents de la portée, évalués un à un.
+//! Parcours borné de l'aperçu : contextes lus sous le verrou de la base, évaluation faite ensuite, hors verrou.
 
 use std::collections::HashMap;
 
@@ -60,32 +60,41 @@ fn rule_fires_on(rule: &Rule, context: &MessageContext) -> bool {
     !outcome.matched.is_empty()
 }
 
-/// Compte les messages touchés par la règle et garde au plus `samples` exemples, les plus récents
-pub(super) fn scan_candidates(
+/// Lit, sous le verrou de la base, le contexte des messages candidats de la portée (au plus `PREVIEW_SCAN_LIMIT`)
+pub(super) fn load_contexts(
     tx: &Tx<'_>,
-    rule: &Rule,
+    scope: &RuleScope,
     now: Timestamp,
-    samples: u32,
-) -> Result<RulePreview, MiraError> {
-    let candidates = recent_candidates(tx, &scope_accounts(tx, &rule.scope)?)?;
-    let scanned = u64::try_from(candidates.len()).unwrap_or(u64::MAX);
-    let mut preview = RulePreview {
-        matched: 0,
-        scanned,
-        samples: Vec::new(),
-    };
+) -> Result<Vec<MessageContext>, MiraError> {
+    let candidates = recent_candidates(tx, &scope_accounts(tx, scope)?)?;
     let mut cache = HashMap::new();
+    let mut contexts = Vec::with_capacity(candidates.len());
     for summary in candidates {
         let own = cached_own_addresses(tx, &mut cache, &summary.account)?;
-        let id = summary.id.clone();
-        let context = message_context(tx, summary, own, now)?;
+        contexts.push(message_context(tx, summary, own, now)?);
+    }
+    Ok(contexts)
+}
+
+/// Évalue la règle sans accès à la base : messages touchés et au plus `samples` exemples, les plus récents
+pub(super) fn count_matches(
+    rule: &Rule,
+    contexts: Vec<MessageContext>,
+    samples: u32,
+) -> RulePreview {
+    let mut preview = RulePreview {
+        matched: 0,
+        scanned: u64::try_from(contexts.len()).unwrap_or(u64::MAX),
+        samples: Vec::new(),
+    };
+    for context in contexts {
         if !rule_fires_on(rule, &context) {
             continue;
         }
         preview.matched += 1;
         if preview.samples.len() < samples as usize {
-            preview.samples.push(id);
+            preview.samples.push(context.summary.id);
         }
     }
-    Ok(preview)
+    preview
 }

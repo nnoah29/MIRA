@@ -74,7 +74,6 @@ class _LabelsSettingsState extends State<LabelsSettings> {
     bool? hidden,
     bool? hideFromInbox,
     bool? notifications,
-    CounterMode? counter,
     int? color,
   }) async {
     await s.source!.labelSettingsAdmin!.set(
@@ -82,7 +81,6 @@ class _LabelsSettingsState extends State<LabelsSettings> {
       hidden: hidden,
       hideFromInbox: hideFromInbox,
       notifications: notifications,
-      counter: counter,
       color: color,
     );
     await s.refreshLabelSettings();
@@ -104,6 +102,36 @@ class _LabelsSettingsState extends State<LabelsSettings> {
       await s.source!.labelAdmin!.delete(l.id);
     }
     await s.refreshLabelSettings();
+  }
+
+  /// Compteur de la barre latérale, commun à tous les libellés.
+  Widget _counterBar(MailStore s) {
+    final p = context.pal;
+    return Wrap(
+      spacing: 6,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: Text(
+            t('Compteur des libellés'),
+            style: Fonts.sans(size: 13.5, color: p.dim),
+          ),
+        ),
+        for (final (mode, text) in [
+          (CounterMode.unread, t('Non lus')),
+          (CounterMode.total, t('Total')),
+          (CounterMode.none, t('Aucun')),
+        ])
+          RuleChip(
+            key: ValueKey('counter-${mode.name}'),
+            label: text,
+            selected: s.labelCounter == mode,
+            onTap: () => s.setLabelCounter(mode),
+          ),
+      ],
+    );
   }
 
   Widget _adder(MailStore s) {
@@ -212,17 +240,14 @@ class _LabelsSettingsState extends State<LabelsSettings> {
                 label: l,
                 canUp: i > 0,
                 canDown: i < items.length - 1,
-                onSet:
-                    ({hidden, hideFromInbox, notifications, counter, color}) =>
-                        _set(
-                          s,
-                          l,
-                          hidden: hidden,
-                          hideFromInbox: hideFromInbox,
-                          notifications: notifications,
-                          counter: counter,
-                          color: color,
-                        ),
+                onSet: ({hidden, hideFromInbox, notifications, color}) => _set(
+                  s,
+                  l,
+                  hidden: hidden,
+                  hideFromInbox: hideFromInbox,
+                  notifications: notifications,
+                  color: color,
+                ),
                 onMove: (d) => _move(s, l, d),
                 onRename: (to) => _rename(s, l, to),
                 onDelete: () => _delete(s, l),
@@ -259,6 +284,8 @@ class _LabelsSettingsState extends State<LabelsSettings> {
             ),
             style: Fonts.sans(size: 13.5, color: p.dim),
           ),
+          const SizedBox(height: 16),
+          _counterBar(s),
           const SizedBox(height: 16),
           _adder(s),
           if (s.labelOverviews.isEmpty)

@@ -174,6 +174,7 @@ class MailStore extends ChangeNotifier {
     }
     imagePolicy = ImagePolicy.decode(prefs.getString('imgPolicy'));
     theme = prefs.getString('theme') == 'light' ? 'light' : 'dark';
+    labelCounter = CounterMode.parse(prefs.getString('labelCounter'));
     accentHex = prefs.getString('accent');
     dense = prefs.getString('dense') == '1';
     live = prefs.getString('live') != '0';
@@ -300,6 +301,9 @@ class MailStore extends ChangeNotifier {
   String? open;
   PaneView view = PaneView.empty;
   late String theme;
+
+  /// Ce que le compteur de chaque libellé affiche dans la barre latérale, pour tous les libellés.
+  late CounterMode labelCounter;
 
   /// Langue de l'interface.
   late AppLang lang;
@@ -1835,6 +1839,13 @@ class MailStore extends ChangeNotifier {
     }
   }
 
+  /// Choisit le compteur de tous les libellés et l'enregistre dans les préférences.
+  void setLabelCounter(CounterMode mode) {
+    labelCounter = mode;
+    prefs.setString('labelCounter', mode.name);
+    notifyListeners();
+  }
+
   /// Clés des libellés dont les messages sont masqués de la Réception.
   Set<String> _hiddenFromInbox() => {
     for (final o in labelOverviews)
@@ -1896,13 +1907,12 @@ class MailStore extends ChangeNotifier {
 
   /// Nombre affiché à côté d'un libellé selon son compteur (0 : rien à afficher).
   int labelCount(String key) {
-    final mode = _overviewByKey[key]?.prefs.counter ?? CounterMode.unread;
     final ids = <String>{};
     final mine = [
       for (final m in [...mails, ...?_hiddenMails[key]])
         if (m.labels.contains(key) && !hidden(m) && ids.add(m.id)) m,
     ];
-    return switch (mode) {
+    return switch (labelCounter) {
       CounterMode.none => 0,
       CounterMode.total => mine.length,
       CounterMode.unread => nonRead(mine),

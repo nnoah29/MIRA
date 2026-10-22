@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mira/engine/label_settings_admin.dart' show CounterMode;
 import 'package:mira/state/local_labels.dart';
 
 import 'engine_source_test.dart' show FakeEngine;
@@ -52,6 +53,7 @@ void main() {
       final (store, _) = await open(fake);
       await store.refreshLabelSettings();
       await settle();
+      store.setLabelCounter(CounterMode.total);
       expect(store.labelCount('${localLabelPrefix}l1'), 2);
       store.dispose();
     },
@@ -71,6 +73,22 @@ void main() {
           .where((c) => c == 'label_settings.list_labels')
           .length;
       expect(after, greaterThan(before));
+      store.dispose();
+    },
+  );
+
+  test(
+    'le compteur choisi vaut pour tous les libellés et est mémorisé',
+    () async {
+      final fake = FakeEngine();
+      seedEngineLabel(fake);
+      final (store, prefs) = await open(fake);
+      final key = '${localLabelPrefix}l1';
+      store.setLabelCounter(CounterMode.total);
+      expect(store.labelCount(key), 1);
+      store.setLabelCounter(CounterMode.none);
+      expect(store.labelCount(key), 0);
+      expect(prefs.getString('labelCounter'), 'none');
       store.dispose();
     },
   );

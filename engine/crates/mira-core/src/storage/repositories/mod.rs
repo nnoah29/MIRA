@@ -9,6 +9,7 @@ pub mod attachments;
 pub mod drafts;
 pub mod events;
 pub mod identities;
+pub mod local_labels;
 pub mod mailboxes;
 pub mod maintenance;
 pub mod messages;

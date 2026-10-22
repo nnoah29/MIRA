@@ -19,6 +19,7 @@ pub use domain::attachment::{Attachment, CacheState};
 pub use domain::auth::{AuthMethod, AuthMethodKind, OAuthSettings, SecretKind, SecretRef};
 pub use domain::draft::{Draft, DraftAttachment, DraftState};
 pub use domain::identity::Identity;
+pub use domain::local_label::{LocalLabel, LocalLabelAssignment};
 pub use domain::mailbox::{Mailbox, MailboxRole, SyncMarker};
 pub use domain::message::{ContentState, Flags, MessageSummary, Unsubscribe};
 pub use domain::page::{Page, PageRequest};
@@ -42,8 +43,8 @@ pub use events::kind::{EventKind, LogLevel, SyncStep};
 pub use ids::Id;
 pub use ids::keys::{Cursor, EventSeq, IdempotencyKey, ProviderId};
 pub use ids::kinds::{
-    AccountId, ActionId, AttachmentId, DraftId, IdentityId, MailboxId, MessageId, OperationId,
-    ProfileId, RuleId, ThreadId, ViewId,
+    AccountId, ActionId, AttachmentId, DraftId, IdentityId, LocalLabelId, MailboxId, MessageId,
+    OperationId, ProfileId, RuleId, ThreadId, ViewId,
 };
 pub use provider::descriptor::ProviderDescriptor;
 pub use provider::limits::ProviderLimits;

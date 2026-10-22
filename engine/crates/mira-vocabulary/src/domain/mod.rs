@@ -7,6 +7,7 @@ pub mod attachment;
 pub mod auth;
 pub mod draft;
 pub mod identity;
+pub mod local_label;
 pub mod mailbox;
 pub mod message;
 pub mod page;

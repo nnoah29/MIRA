@@ -24,3 +24,5 @@ pub const ATTACHMENT: ErrorCode = ErrorCode("not_found.attachment");
 pub const THREAD: ErrorCode = ErrorCode("not_found.thread");
 /// Règle inconnue.
 pub const RULE: ErrorCode = ErrorCode("not_found.rule");
+/// Libellé local inconnu.
+pub const LOCAL_LABEL: ErrorCode = ErrorCode("not_found.local_label");

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../engine/label_settings_admin.dart';
 import '../i18n/i18n.dart';
 import '../theme/app_theme.dart';
+import 'label_map_button.dart';
 import 'labels_settings.dart' show nextLabelColor;
 import 'rule_widgets.dart';
 import 'widgets.dart';
@@ -278,6 +279,7 @@ class LabelRow extends StatelessWidget {
                 () => onSet(notifications: !prefs.notifications),
               ),
               _counter(context),
+              if (!label.local) LabelMapButton(id: label.id),
               Btn(
                 key: ValueKey('rule-${label.key}'),
                 icon: 'plus',

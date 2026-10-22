@@ -31,6 +31,7 @@ class FakeEngine implements EngineClient {
   final composed = <Map<String, dynamic>>[];
   final drafts = <String, Map<String, dynamic>>{};
   final feed = StreamController<Map<String, dynamic>>.broadcast();
+  final extraInbox = <Map<String, dynamic>>[];
 
   Map<String, dynamic> _msg(
     String id,
@@ -489,6 +490,7 @@ class FakeEngine implements EngineClient {
   Map<String, dynamic> _list(String mailbox) {
     final items = switch (mailbox) {
       'mb-inbox' => [
+        ...extraInbox,
         if (extra) _msg('m9', 'Nouveau', date: 4000),
         if (arrived)
           _msg(
@@ -616,6 +618,96 @@ void main() {
         store.dispose();
       },
     );
+
+    void verdict(FakeEngine fake, String id, bool silenced) => fake.feed.add({
+      'kind': {
+        'type': 'new_message_received',
+        'account': 'acc1',
+        'message': id,
+        'mailbox': 'mb-inbox',
+        'silenced': silenced,
+      },
+    });
+
+    void touch(FakeEngine fake) => fake.feed.add({
+      'kind': {'type': 'message_updated', 'account': 'acc1', 'message': 'm1'},
+    });
+
+    Map<String, dynamic> recent(
+      FakeEngine fake,
+      String id,
+      String thread,
+      int agoMs, {
+      bool seen = false,
+    }) => fake._msg(
+      id,
+      'Sujet $id',
+      thread: thread,
+      seen: seen,
+      date: DateTime.now().millisecondsSinceEpoch - agoMs,
+    );
+
+    Future<void> settle() =>
+        Future<void>.delayed(const Duration(milliseconds: 400));
+
+    test(
+      'fil avec deux nouveaux messages, le plus récent muet : notifié une fois',
+      () async {
+        final (store, fake, n) = await start();
+        fake.extraInbox.addAll([
+          recent(fake, 'm11', 't9', 2000),
+          recent(fake, 'm12', 't9', 1000),
+        ]);
+        verdict(fake, 'm11', false);
+        verdict(fake, 'm12', true);
+        await settle();
+        expect(n.shown, hasLength(1));
+        expect(n.shown.single.$3, 'acc1/inbox/t9');
+        store.dispose();
+      },
+    );
+
+    test('un nouveau message muet plus ancien que le dernier du fil n’ajoute aucune notification', () async {
+      final (store, fake, n) = await start();
+      fake.extraInbox.add(recent(fake, 'm15', 't8', 0));
+      verdict(fake, 'm15', false);
+      await settle();
+      expect(n.shown, hasLength(1));
+      fake.extraInbox.add(recent(fake, 'm14', 't8', 5000));
+      verdict(fake, 'm14', true);
+      await settle();
+      expect(n.shown, hasLength(1));
+      store.dispose();
+    });
+
+    test('verdict reçu après la relecture : muet jamais notifié, non muet notifié une fois', () async {
+      final (store, fake, n) = await start();
+      fake.extraInbox.add(recent(fake, 'm16', 't7', 0));
+      touch(fake);
+      await settle();
+      expect(n.shown, isEmpty);
+      verdict(fake, 'm16', true);
+      await settle();
+      expect(n.shown, isEmpty);
+      fake.extraInbox.add(recent(fake, 'm17', 't6', 0));
+      touch(fake);
+      await settle();
+      expect(n.shown, isEmpty);
+      verdict(fake, 'm17', false);
+      await settle();
+      expect(n.shown.single.$3, 'acc1/inbox/t6');
+      store.dispose();
+    });
+
+    test('rule_changed du moteur est relayé aux réglages des règles', () async {
+      final (store, fake, _) = await start();
+      final got = store.source!.ruleChanges.first;
+      fake.feed.add({
+        'kind': {'type': 'rule_changed', 'rule': 'r1'},
+      });
+      await got.timeout(const Duration(seconds: 2));
+      store.dispose();
+    });
 
     test('compte coupé ou notifications désactivées : rien', () async {
       final (store, fake, n) = await start({'notifyMuted': '["acc1"]'});

@@ -69,8 +69,12 @@ abstract class MailSource {
   /// Signale chaque changement de règle côté moteur.
   Stream<void> get ruleChanges;
 
-  /// Vrai si une règle a réduit au silence ce message (aucune notification).
-  bool isSilenced(String messageRef);
+  /// Verdict des règles sur un message arrivé : `true` muet (aucune notification),
+  /// `false` à annoncer, `null` pas encore connu.
+  bool? arrivalVerdict(String messageRef);
+
+  /// Oublie les verdicts de ces messages, une fois l'annonce décidée.
+  void forgetVerdicts(Iterable<String> messageRefs);
 
   /// Contenu d'une pièce jointe du moteur (`null` : illisible ou sans identifiant).
   Future<Uint8List?> attachmentBytes(Attachment a);

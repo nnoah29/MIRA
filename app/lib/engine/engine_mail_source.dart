@@ -119,13 +119,20 @@ class EngineMailSource implements MailSource {
   RuleAdmin get ruleAdmin => RuleAdmin(client);
 
   final StreamController<void> _ruleChanges = StreamController.broadcast();
-  final Set<String> _silenced = {};
+  final Map<String, bool> _verdicts = {};
 
   @override
   Stream<void> get ruleChanges => _ruleChanges.stream;
 
   @override
-  bool isSilenced(String messageRef) => _silenced.contains(messageRef);
+  bool? arrivalVerdict(String messageRef) => _verdicts[messageRef];
+
+  @override
+  void forgetVerdicts(Iterable<String> messageRefs) {
+    for (final r in messageRefs) {
+      _verdicts.remove(r);
+    }
+  }
 
   @override
   MaintenanceAdmin get maintenance => MaintenanceAdmin(client);
@@ -200,8 +207,9 @@ class EngineMailSource implements MailSource {
     if (type == 'rule_changed' && !_ruleChanges.isClosed) {
       _ruleChanges.add(null);
     }
-    if (type == 'new_message_received' && kind['silenced'] == true) {
-      _silenced.add('${kind['message']}');
+    if (type == 'new_message_received') {
+      _verdicts['${kind['message']}'] = kind['silenced'] == true;
+      if (_verdicts.length > 1000) _verdicts.remove(_verdicts.keys.first);
     }
   }
 

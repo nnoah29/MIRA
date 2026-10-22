@@ -22,6 +22,7 @@ import '../engine/sync_state.dart';
 import '../theme/wall_source.dart';
 import '../theme/wall_theme.dart';
 import '../theme/app_theme.dart';
+import 'arrival_gate.dart';
 import 'assistant.dart';
 import 'contacts.dart';
 import 'folder_map.dart';
@@ -1191,6 +1192,9 @@ class MailStore extends ChangeNotifier {
 
   final Set<String> _reloading = {}, _reloadAgain = {};
 
+  /// Nouveaux fils en attente du verdict des règles avant leur notification.
+  final ArrivalGate _arrivals = ArrivalGate();
+
   Future<void> _reloadOnce(String id) async {
     final src = source;
     final acc = accounts.where((a) => a.id == id).firstOrNull;
@@ -1200,14 +1204,18 @@ class MailStore extends ChangeNotifier {
       _applySnoozes(fresh);
       localLabels.apply(fresh);
       _keepLocalState(id, fresh);
-      if (_signature(fresh) == _signature(_boxes[id] ?? const [])) return;
-      final arrived = newArrivals(
-        _boxes[id],
+      final now = DateTime.now().millisecondsSinceEpoch;
+      _arrivals.hold(_boxes[id], newArrivals(_boxes[id], fresh, now), now);
+      final ready = _arrivals.release(
+        id,
         fresh,
-        DateTime.now().millisecondsSinceEpoch,
+        src.arrivalVerdict,
+        src.forgetVerdicts,
+        now,
       );
+      if (ready.isNotEmpty) unawaited(_announce(acc, ready));
+      if (_signature(fresh) == _signature(_boxes[id] ?? const [])) return;
       _boxes[id] = fresh;
-      unawaited(_announce(acc, arrived));
       _rememberContacts();
       unawaited(_refreshDeep());
       if (unified) {
@@ -1895,19 +1903,10 @@ class MailStore extends ChangeNotifier {
     if (byId(id) != null) openMail(id);
   }
 
-  bool _silencedByRule(Mail m) {
-    final ref = m.msgs.lastOrNull?.ref;
-    return ref != null && (source?.isSilenced(ref) ?? false);
-  }
-
   /// Annonce les nouveaux messages d'un compte, selon les réglages ; plus de trois : une seule notification.
   Future<void> _announce(Account acc, List<Mail> arrived) async {
     final n = notifications;
     final cfg = notifySettings;
-    arrived = [
-      for (final m in arrived)
-        if (!_silencedByRule(m)) m,
-    ];
     if (n == null || arrived.isEmpty || !cfg.enabled) return;
     if (cfg.muted.contains(acc.id)) return;
     if (appFocused && !cfg.whenFocused) return;

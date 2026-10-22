@@ -114,6 +114,19 @@ void main() {
       },
     );
 
+    test('masqué de la Réception, un libellé local retire aussi les messages rattachés', () async {
+      final fake = FakeEngine()
+        ..settingsOn = true
+        ..hideRow = true;
+      seedEngineLabel(fake);
+      final (store, _) = await open(fake);
+      await store.refreshLabelSettings();
+      expect(store.visible().any((m) => m.subject == 'Seul'), true);
+      await store.mapLabel('mb-other', '${localLabelPrefix}l1');
+      expect(store.visible().any((m) => m.subject == 'Seul'), false);
+      store.dispose();
+    });
+
     test(
       'rattacher à un dossier retire le rattachement au libellé local',
       () async {

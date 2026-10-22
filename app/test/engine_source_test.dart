@@ -38,6 +38,7 @@ class FakeEngine implements EngineClient {
   bool importFails = false;
   bool hideInbox = false;
   bool settingsOn = false;
+  bool hideRow = false;
   final labelViews = <Map<String, dynamic>>[];
 
   Map<String, dynamic> _msg(
@@ -481,7 +482,10 @@ class FakeEngine implements EngineClient {
                 'color': 1,
                 'messages': 1,
                 'unused': false,
-                'settings': {'hide_from_inbox': hideInbox, 'counter': 'total'},
+                'settings': {
+                  'hide_from_inbox': hideInbox || hideRow,
+                  'counter': 'total',
+                },
               },
             ],
           },

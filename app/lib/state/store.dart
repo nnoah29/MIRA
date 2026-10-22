@@ -529,7 +529,7 @@ class MailStore extends ChangeNotifier {
     if (folder == 'starred') {
       return pool.where((m) => m.starred && !hidden(m)).toList();
     }
-    return pool.where((m) => m.folder == folder).toList();
+    return pool.where((m) => _shownIn(m, folder)).toList();
   }
 
   // ---- filtres sur toute la boîte (moteur) ----
@@ -661,11 +661,23 @@ class MailStore extends ChangeNotifier {
     return [];
   }
 
+  /// Vrai si un libellé du message est masqué de la Réception (réglage du moteur ou rattachement de l'app).
+  bool _hiddenFromInboxByLabel(Mail m) =>
+      m.labels.any((k) => _overviewByKey[k]?.prefs.hideFromInbox == true);
+
+  bool _shownIn(Mail m, String folder) =>
+      m.folder == folder && !(folder == 'inbox' && _hiddenFromInboxByLabel(m));
+
   int _unreadIn(String folder) {
-    final local = nonRead(mails.where((m) => m.folder == folder));
+    final local = nonRead(mails.where((m) => _shownIn(m, folder)));
     final src = source;
     if (src == null) return local;
-    var exact = 0;
+    final hiddenByApp = folder == 'inbox'
+        ? nonRead(
+            mails.where((m) => m.folder == folder && !_shownIn(m, folder)),
+          )
+        : 0;
+    var exact = -hiddenByApp;
     for (final a in accounts) {
       if (!unified && a.id != activeId) continue;
       exact += src.unreadOf(a.id, folder) ?? 0;

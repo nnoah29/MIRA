@@ -32,6 +32,7 @@ pub const ALL: &[ErrorCode] = &[
     not_found::PROVIDER,
     not_found::ATTACHMENT,
     not_found::THREAD,
+    not_found::RULE,
     incompatible_state::SYSTEM_MAILBOX,
     incompatible_state::ACCOUNT_DELETING,
     incompatible_state::PROFILE_LOCKED,

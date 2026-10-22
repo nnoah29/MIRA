@@ -32,5 +32,5 @@ pub struct Rule {
 
 /// Version de schéma attribuée aux règles qui n'en déclarent pas.
 fn default_schema_version() -> u32 {
-    CURRENT_RULE_SCHEMA_VERSION
+    1
 }

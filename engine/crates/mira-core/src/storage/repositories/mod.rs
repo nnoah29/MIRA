@@ -15,6 +15,7 @@ pub mod messages;
 pub mod mirror;
 pub mod parsed_cache;
 pub mod raw_sources;
+pub mod rules;
 pub mod search;
 pub mod server_ids;
 pub mod thread_links;

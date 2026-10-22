@@ -26,11 +26,13 @@ class RuleChip extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final double? height;
   const RuleChip({
     super.key,
     required this.label,
     required this.selected,
     required this.onTap,
+    this.height,
   });
 
   @override
@@ -40,7 +42,12 @@ class RuleChip extends StatelessWidget {
       onTap: onTap,
       builder: (_, h) => AnimatedContainer(
         duration: const Duration(milliseconds: 130),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        height: height,
+        alignment: height == null ? null : Alignment.center,
+        padding: EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: height == null ? 8 : 0,
+        ),
         decoration: BoxDecoration(
           color: selected ? p.accentSoft : (h ? p.surface : null),
           border: Border.all(color: selected ? p.accent : (h ? p.dim : p.line)),
@@ -106,6 +113,9 @@ class RuleToggle extends StatelessWidget {
   }
 }
 
+/// Hauteur commune des champs, listes et puces d'une même rangée.
+const double ruleControlHeight = 40;
+
 /// Zone de saisie à filet carré, comme les champs des autres réglages.
 class RuleField extends StatelessWidget {
   final Key? fieldKey;
@@ -129,7 +139,9 @@ class RuleField extends StatelessWidget {
     final p = context.pal;
     return Container(
       width: width,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      height: ruleControlHeight,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: p.bg,
         border: Border.all(color: p.line),
@@ -208,7 +220,8 @@ class RuleSelect extends StatelessWidget {
           ),
       ],
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        height: ruleControlHeight,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: p.bg,
           border: Border.all(color: p.line),

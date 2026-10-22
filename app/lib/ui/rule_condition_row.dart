@@ -90,46 +90,45 @@ class ConditionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 30,
-            height: 38,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Mono(
-                index == 0 ? '' : t('ET'),
-                size: 10.5,
-                ls: .16,
-                height: null,
+          if (index > 0)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Mono(t('ET'), size: 10.5, ls: .16, height: null),
+            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RuleChip(
+                key: ValueKey('negate-$group-$index'),
+                label: t('NON'),
+                height: ruleControlHeight,
+                selected: condition.negated,
+                onTap: () {
+                  condition.negated = !condition.negated;
+                  onChanged();
+                },
               ),
-            ),
-          ),
-          RuleChip(
-            key: ValueKey('negate-$group-$index'),
-            label: t('NON'),
-            selected: condition.negated,
-            onTap: () {
-              condition.negated = !condition.negated;
-              onChanged();
-            },
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: RuleKindPicker(
-              keyPrefix: 'condition-$group-$index',
-              entries: entries,
-              data: condition.test,
-              options: options,
-              onChanged: onChanged,
-            ),
-          ),
-          IBtn(
-            'x',
-            key: ValueKey('remove-condition-$group-$index'),
-            tip: t('Retirer la condition'),
-            onTap: onRemove,
+              const SizedBox(width: 10),
+              Expanded(
+                child: RuleKindPicker(
+                  keyPrefix: 'condition-$group-$index',
+                  entries: entries,
+                  data: condition.test,
+                  options: options,
+                  onChanged: onChanged,
+                ),
+              ),
+              IBtn(
+                'x',
+                key: ValueKey('remove-condition-$group-$index'),
+                box: ruleControlHeight,
+                tip: t('Retirer la condition'),
+                onTap: onRemove,
+              ),
+            ],
           ),
         ],
       ),
@@ -173,6 +172,7 @@ class ActionRow extends StatelessWidget {
           IBtn(
             'x',
             key: ValueKey('remove-action-$index'),
+            box: ruleControlHeight,
             tip: t('Retirer l\'action'),
             onTap: onRemove,
           ),

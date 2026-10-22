@@ -8,6 +8,7 @@ use super::writing::{announce, done};
 use crate::actions::errors::input::invalid_parameter;
 use crate::api::contract::Response;
 use crate::api::engine::Engine;
+use crate::labels::refresh_inbox_counters;
 
 /// Pose (ou retire) le libellé sur ces conversations ; une erreur sur l'une refuse toute la pose
 pub(crate) fn handle_set_local_label(
@@ -33,6 +34,7 @@ pub(crate) fn handle_set_local_label(
     })?;
     if written {
         announce(engine)?;
+        refresh_inbox_counters(&engine.database, &engine.events, false)?;
     }
     Ok(done())
 }

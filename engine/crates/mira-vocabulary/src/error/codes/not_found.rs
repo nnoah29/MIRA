@@ -26,3 +26,5 @@ pub const THREAD: ErrorCode = ErrorCode("not_found.thread");
 pub const RULE: ErrorCode = ErrorCode("not_found.rule");
 /// Libellé local inconnu.
 pub const LOCAL_LABEL: ErrorCode = ErrorCode("not_found.local_label");
+/// Libellé inconnu.
+pub const LABEL: ErrorCode = ErrorCode("not_found.label");

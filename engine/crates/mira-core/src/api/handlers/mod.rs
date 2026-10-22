@@ -7,6 +7,7 @@ pub(crate) mod compose;
 pub(crate) mod engine;
 pub(crate) mod event;
 pub(crate) mod identity;
+pub(crate) mod label_settings;
 pub(crate) mod local_label;
 pub(crate) mod mailbox;
 pub(crate) mod maintenance;

@@ -408,6 +408,39 @@
         "signature": null
       }
     },
+    "label_settings.list_labels": {
+      "domain": "label_settings",
+      "request": {
+        "op": "list_labels"
+      }
+    },
+    "label_settings.reorder_labels": {
+      "domain": "label_settings",
+      "request": {
+        "op": "reorder_labels",
+        "order": [
+          {
+            "id": "mailbox-1",
+            "kind": "server"
+          }
+        ]
+      }
+    },
+    "label_settings.set_label_settings": {
+      "domain": "label_settings",
+      "request": {
+        "color": 4285180121,
+        "counter": "total",
+        "hidden": true,
+        "hide_from_inbox": true,
+        "label": {
+          "id": "mailbox-1",
+          "kind": "server"
+        },
+        "notifications": false,
+        "op": "set_label_settings"
+      }
+    },
     "local_label.create_local_label": {
       "domain": "local_label",
       "request": {
@@ -1202,6 +1235,64 @@
         "ok": true
       },
       "type": "integrity"
+    },
+    "label_settings.done": {
+      "data": {
+        "type": "done"
+      },
+      "type": "label_settings"
+    },
+    "label_settings.label": {
+      "data": {
+        "data": {
+          "account": "account-1",
+          "color": 4293415979,
+          "label": {
+            "id": "mailbox-1",
+            "kind": "server"
+          },
+          "messages": 12,
+          "name": "Factures",
+          "settings": {
+            "color": null,
+            "counter": "unread",
+            "hidden": false,
+            "hide_from_inbox": false,
+            "notifications": true,
+            "position": null
+          },
+          "unused": false
+        },
+        "type": "label"
+      },
+      "type": "label_settings"
+    },
+    "label_settings.labels": {
+      "data": {
+        "data": [
+          {
+            "account": "account-1",
+            "color": 4293415979,
+            "label": {
+              "id": "mailbox-1",
+              "kind": "server"
+            },
+            "messages": 12,
+            "name": "Factures",
+            "settings": {
+              "color": null,
+              "counter": "unread",
+              "hidden": false,
+              "hide_from_inbox": false,
+              "notifications": true,
+              "position": null
+            },
+            "unused": false
+          }
+        ],
+        "type": "labels"
+      },
+      "type": "label_settings"
     },
     "local_label.assignments": {
       "data": {

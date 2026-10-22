@@ -217,6 +217,7 @@ pub enum EventKind {
         message: MessageId,
     },
     LocalLabelsChanged,
+    LabelSettingsChanged,
 }
 
 impl EventKind {
@@ -240,6 +241,7 @@ impl EventKind {
             K::Diagnostic { .. } => EventCategory::Log,
             K::RuleChanged { .. } | K::RuleApplied { .. } => EventCategory::Rule,
             K::LocalLabelsChanged => EventCategory::LocalLabel,
+            K::LabelSettingsChanged => EventCategory::Label,
         }
     }
 
@@ -262,7 +264,7 @@ impl EventKind {
             | K::RuleApplied { account, .. } => Some(account),
             K::EngineStarted | K::EngineStopping | K::EngineFatalError { .. } | K::Diagnostic { .. }
             | K::OperationProgress { .. } | K::OperationFinished { .. } | K::OperationFailed { .. }
-            | K::OperationCancelled { .. } | K::RuleChanged { .. } | K::LocalLabelsChanged => None,
+            | K::OperationCancelled { .. } | K::RuleChanged { .. } | K::LocalLabelsChanged | K::LabelSettingsChanged => None,
         }
     }
 }

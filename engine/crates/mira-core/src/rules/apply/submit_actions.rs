@@ -5,6 +5,7 @@ use mira_vocabulary::{AccountId, EventKind, IdempotencyKey, MessageId, MiraError
 use super::context_loader::load_for_message;
 use super::label_changes::apply_label_changes;
 use crate::actions::{QueueContext, SubmitRequest, submit};
+use crate::labels::refresh_inbox_counters;
 use crate::rules::evaluate::evaluate;
 use crate::rules::outcome::RuleOutcome;
 
@@ -61,6 +62,7 @@ pub fn apply_rules_with(
     })?;
     if labeled {
         queue.events.emit(EventKind::LocalLabelsChanged)?;
+        refresh_inbox_counters(queue.db, queue.events, false)?;
     }
     Ok(outcome)
 }

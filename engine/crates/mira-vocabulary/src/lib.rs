@@ -19,6 +19,7 @@ pub use domain::attachment::{Attachment, CacheState};
 pub use domain::auth::{AuthMethod, AuthMethodKind, OAuthSettings, SecretKind, SecretRef};
 pub use domain::draft::{Draft, DraftAttachment, DraftState};
 pub use domain::identity::Identity;
+pub use domain::label_settings::{CounterMode, LabelKind, LabelRef, LabelSettings};
 pub use domain::local_label::{LocalLabel, LocalLabelAssignment};
 pub use domain::mailbox::{Mailbox, MailboxRole, SyncMarker};
 pub use domain::message::{ContentState, Flags, MessageSummary, Unsubscribe};

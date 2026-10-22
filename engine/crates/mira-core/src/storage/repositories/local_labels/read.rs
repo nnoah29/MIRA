@@ -35,6 +35,21 @@ impl Tx<'_> {
             .map_err(storage_error)
     }
 
+    /// Nombre de messages des conversations qui portent ce libellé
+    pub fn local_label_message_count(&self, id: &LocalLabelId) -> Result<u64, MiraError> {
+        self.sql()
+            .query_row(
+                "SELECT COUNT(*) FROM messages m \
+                 JOIN threads t ON t.id = m.thread_id \
+                 JOIN thread_local_labels tl ON tl.account_id = t.account_id AND tl.root_key = t.root_key \
+                 WHERE tl.label_id = ?1",
+                [id.as_str()],
+                |row| row.get::<_, i64>(0),
+            )
+            .map(|count| u64::try_from(count).unwrap_or(0))
+            .map_err(storage_error)
+    }
+
     /// Retrouve un libellé par son nom, casse et espaces de bord ignorés
     pub fn find_local_label_by_name(&self, name: &str) -> Result<Option<LocalLabel>, MiraError> {
         self.sql()

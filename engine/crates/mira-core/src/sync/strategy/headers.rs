@@ -100,7 +100,8 @@ fn announce_batch(ctx: &SyncContext, mailbox: &Mailbox, outcomes: &[Ingested], m
     for outcome in outcomes {
         match outcome {
             Ingested::Created(message) => {
-                let silenced = rules_apply_in(mailbox.role) && silenced_by_rules(ctx, message);
+                let by_rules = rules_apply_in(mailbox.role) && silenced_by_rules(ctx, message);
+                let silenced = by_rules || silenced_by_labels(ctx, message);
                 ctx.emit(EventKind::NewMessageReceived {
                     account: ctx.account.id.clone(),
                     message: message.clone(),
@@ -120,4 +121,11 @@ pub fn updated(account: &AccountId, message: &MessageId) -> EventKind {
         account: account.clone(),
         message: message.clone(),
     }
+}
+
+/// Vrai si un libellé du message le masque de la Réception ou coupe ses notifications
+fn silenced_by_labels(ctx: &SyncContext, message: &MessageId) -> bool {
+    ctx.db
+        .read(|tx| tx.label_silences(message))
+        .unwrap_or(false)
 }

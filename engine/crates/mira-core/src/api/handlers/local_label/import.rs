@@ -9,6 +9,7 @@ use super::writing::announce;
 use crate::actions::errors::input::invalid_parameter;
 use crate::api::contract::{ImportReport, ImportedLabel, LocalLabelResponse, Response};
 use crate::api::engine::Engine;
+use crate::labels::refresh_inbox_counters;
 
 /// Refuse avant toute écriture un nom invalide ou un volume au-delà des plafonds
 fn check_import(labels: &[ImportedLabel]) -> Result<(), MiraError> {
@@ -42,6 +43,7 @@ pub(crate) fn handle_import_local_labels(
     })?;
     if written && !labels.is_empty() {
         announce(engine)?;
+        refresh_inbox_counters(&engine.database, &engine.events, false)?;
     }
     Ok(Response::LocalLabel(LocalLabelResponse::Imported(report)))
 }

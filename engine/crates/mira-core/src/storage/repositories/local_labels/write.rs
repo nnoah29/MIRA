@@ -65,6 +65,12 @@ impl Tx<'_> {
         if changed == 0 {
             return Err(label_not_found());
         }
+        self.sql()
+            .execute(
+                "DELETE FROM label_settings WHERE kind = 'local' AND label_id = ?1",
+                [id.as_str()],
+            )
+            .map_err(storage_error)?;
         Ok(())
     }
 

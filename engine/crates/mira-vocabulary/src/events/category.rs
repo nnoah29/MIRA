@@ -18,4 +18,5 @@ pub enum EventCategory {
     Log,
     Rule,
     LocalLabel,
+    Label,
 }

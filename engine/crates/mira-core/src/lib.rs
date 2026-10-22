@@ -12,6 +12,7 @@ pub mod events;
 pub mod fetching;
 pub mod html;
 pub mod imap;
+pub mod labels;
 pub mod mailboxes;
 pub mod maintenance;
 pub mod mime;

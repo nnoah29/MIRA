@@ -1,10 +1,10 @@
 //! Comparaison de texte des conditions : casse Unicode ignorée, regex bornée.
 
 use mira_vocabulary::{TextMatcher, TextOp};
-use regex::RegexBuilder;
+use regex::{Regex, RegexBuilder};
 
 /// Taille maximale d'une regex compilée, en octets.
-const REGEX_SIZE_LIMIT: usize = 1 << 20;
+pub(crate) const REGEX_SIZE_LIMIT: usize = 1 << 20;
 
 /// Vrai si au moins une valeur du filtre correspond au texte.
 pub fn matches_text(matcher: &TextMatcher, value: &str) -> bool {
@@ -27,11 +27,15 @@ fn matches_candidate(op: TextOp, candidate: &str, value: &str, lowered: &str) ->
     }
 }
 
-/// Vrai si la regex, insensible à la casse, se trouve dans le texte ; une regex invalide est fausse.
-fn regex_matches(pattern: &str, value: &str) -> bool {
+/// Compile une regex insensible à la casse, plafonnée en taille ; partagée avec la validation.
+pub(crate) fn compile_regex(pattern: &str) -> Result<Regex, regex::Error> {
     RegexBuilder::new(pattern)
         .case_insensitive(true)
         .size_limit(REGEX_SIZE_LIMIT)
         .build()
-        .is_ok_and(|regex| regex.is_match(value))
+}
+
+/// Vrai si la regex, insensible à la casse, se trouve dans le texte ; une regex invalide est fausse.
+fn regex_matches(pattern: &str, value: &str) -> bool {
+    compile_regex(pattern).is_ok_and(|regex| regex.is_match(value))
 }

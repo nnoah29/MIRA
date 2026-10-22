@@ -12,3 +12,4 @@ pub mod group_eval;
 pub mod outcome;
 pub mod own_address_eval;
 pub mod text_match;
+pub mod validate;

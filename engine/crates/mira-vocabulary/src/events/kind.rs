@@ -216,6 +216,7 @@ pub enum EventKind {
         rule: RuleId,
         message: MessageId,
     },
+    LocalLabelsChanged,
 }
 
 impl EventKind {
@@ -238,6 +239,7 @@ impl EventKind {
             K::QuotaFull { .. } | K::CertificateNeedsApproval { .. } | K::RateLimited { .. } | K::MailboxResynchronized { .. } => EventCategory::Alert,
             K::Diagnostic { .. } => EventCategory::Log,
             K::RuleChanged { .. } | K::RuleApplied { .. } => EventCategory::Rule,
+            K::LocalLabelsChanged => EventCategory::LocalLabel,
         }
     }
 
@@ -260,7 +262,7 @@ impl EventKind {
             | K::RuleApplied { account, .. } => Some(account),
             K::EngineStarted | K::EngineStopping | K::EngineFatalError { .. } | K::Diagnostic { .. }
             | K::OperationProgress { .. } | K::OperationFinished { .. } | K::OperationFailed { .. }
-            | K::OperationCancelled { .. } | K::RuleChanged { .. } => None,
+            | K::OperationCancelled { .. } | K::RuleChanged { .. } | K::LocalLabelsChanged => None,
         }
     }
 }

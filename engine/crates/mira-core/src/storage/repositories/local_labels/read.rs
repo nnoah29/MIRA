@@ -3,7 +3,7 @@
 use mira_vocabulary::{LocalLabel, LocalLabelId, MiraError};
 use rusqlite::OptionalExtension;
 
-use super::rows::{COLUMNS, label_from_row};
+use super::rows::{COLUMNS, label_from_row, label_not_found, name_key};
 use crate::storage::Tx;
 use crate::storage::errors::storage_error;
 
@@ -34,4 +34,21 @@ impl Tx<'_> {
             .collect::<Result<Vec<_>, _>>()
             .map_err(storage_error)
     }
+
+    /// Retrouve un libellé par son nom, casse et espaces de bord ignorés
+    pub fn find_local_label_by_name(&self, name: &str) -> Result<Option<LocalLabel>, MiraError> {
+        self.sql()
+            .query_row(
+                &format!("SELECT {COLUMNS} FROM local_labels WHERE name_key = ?1"),
+                [name_key(name)],
+                label_from_row,
+            )
+            .optional()
+            .map_err(storage_error)
+    }
+}
+
+/// Relit un libellé ou échoue avec `not_found.local_label`
+pub fn require_label(tx: &Tx<'_>, id: &LocalLabelId) -> Result<LocalLabel, MiraError> {
+    tx.get_local_label(id)?.ok_or_else(label_not_found)
 }

@@ -47,5 +47,6 @@ pub fn group_of(response: &Response) -> &'static str {
         Response::Write(_) => "actions",
         Response::Sync(_) => "sync",
         Response::Rule(_) => "rule",
+        Response::LocalLabel(_) => "local_label",
     }
 }

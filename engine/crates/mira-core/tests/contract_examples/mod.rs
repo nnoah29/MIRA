@@ -6,6 +6,7 @@ pub mod actions;
 pub mod compose;
 pub mod compose_drafts;
 pub mod compose_sending;
+pub mod local_label_domain;
 pub mod mailbox_domain;
 pub mod maintenance_domain;
 pub mod message_domain;
@@ -46,6 +47,7 @@ pub fn request_name(request: &Request) -> &'static str {
         Request::Action(_) | Request::Compose(_) | Request::Queue(_) => "write",
         Request::Sync(_) => "sync",
         Request::Rule(_) => "rule",
+        Request::LocalLabel(_) => "local_label",
     }
 }
 

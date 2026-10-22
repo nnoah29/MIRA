@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use super::account_requests::AccountRequest;
 use super::auth_requests::AuthRequest;
 use super::identity_requests::IdentityRequest;
+use super::local_label_requests::LocalLabelRequest;
 use super::mailbox_requests::MailboxRequest;
 use super::maintenance_requests::MaintenanceRequest;
 use super::message_requests::MessageRequest;
@@ -36,6 +37,7 @@ pub enum Request {
     Queue(QueueRequest),
     Sync(SyncRequest),
     Rule(RuleRequest),
+    LocalLabel(LocalLabelRequest),
 }
 
 /// Requêtes sur le moteur lui-même.

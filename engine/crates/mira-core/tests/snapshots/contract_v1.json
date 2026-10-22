@@ -408,6 +408,78 @@
         "signature": null
       }
     },
+    "local_label.create_local_label": {
+      "domain": "local_label",
+      "request": {
+        "color": 4293415979,
+        "idempotency_key": "key-1",
+        "name": "À payer",
+        "op": "create_local_label"
+      }
+    },
+    "local_label.delete_local_label": {
+      "domain": "local_label",
+      "request": {
+        "label": "label-1",
+        "op": "delete_local_label"
+      }
+    },
+    "local_label.import_local_labels": {
+      "domain": "local_label",
+      "request": {
+        "idempotency_key": "key-1",
+        "labels": [
+          {
+            "color": 4293415979,
+            "conversations": [
+              "thread-1"
+            ],
+            "name": "À payer"
+          }
+        ],
+        "op": "import_local_labels"
+      }
+    },
+    "local_label.list_local_label_assignments": {
+      "domain": "local_label",
+      "request": {
+        "op": "list_local_label_assignments"
+      }
+    },
+    "local_label.list_local_labels": {
+      "domain": "local_label",
+      "request": {
+        "op": "list_local_labels"
+      }
+    },
+    "local_label.recolor_local_label": {
+      "domain": "local_label",
+      "request": {
+        "color": 4285180121,
+        "label": "label-1",
+        "op": "recolor_local_label"
+      }
+    },
+    "local_label.rename_local_label": {
+      "domain": "local_label",
+      "request": {
+        "label": "label-1",
+        "name": "Urgent",
+        "op": "rename_local_label"
+      }
+    },
+    "local_label.set_local_label": {
+      "domain": "local_label",
+      "request": {
+        "idempotency_key": "key-1",
+        "label": "label-1",
+        "on": true,
+        "op": "set_local_label",
+        "threads": [
+          "thread-1"
+        ]
+      }
+    },
     "mailbox.list_mailboxes": {
       "domain": "mailbox",
       "request": {
@@ -1130,6 +1202,61 @@
         "ok": true
       },
       "type": "integrity"
+    },
+    "local_label.assignments": {
+      "data": {
+        "data": [
+          {
+            "labels": [
+              "label-1"
+            ],
+            "thread": "thread-1"
+          }
+        ],
+        "type": "assignments"
+      },
+      "type": "local_label"
+    },
+    "local_label.done": {
+      "data": {
+        "type": "done"
+      },
+      "type": "local_label"
+    },
+    "local_label.imported": {
+      "data": {
+        "data": {
+          "assignments": 1,
+          "ignored": 0,
+          "labels": 1
+        },
+        "type": "imported"
+      },
+      "type": "local_label"
+    },
+    "local_label.label": {
+      "data": {
+        "data": {
+          "color": 4293415979,
+          "id": "label-1",
+          "name": "À payer"
+        },
+        "type": "label"
+      },
+      "type": "local_label"
+    },
+    "local_label.labels": {
+      "data": {
+        "data": [
+          {
+            "color": 4293415979,
+            "id": "label-1",
+            "name": "À payer"
+          }
+        ],
+        "type": "labels"
+      },
+      "type": "local_label"
     },
     "mailboxes": {
       "data": [

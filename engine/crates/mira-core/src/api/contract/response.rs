@@ -6,6 +6,7 @@ use mira_vocabulary::{
 };
 use serde::{Deserialize, Serialize};
 
+use super::local_label_responses::LocalLabelResponse;
 use super::read_responses::{ExportReport, IntegrityReport, RawSourceView, ThreadView};
 use super::rule_responses::RuleResponse;
 use super::sync_response::SyncResponse;
@@ -86,4 +87,5 @@ pub enum Response {
     Write(WriteResponse),
     Sync(SyncResponse),
     Rule(RuleResponse),
+    LocalLabel(LocalLabelResponse),
 }

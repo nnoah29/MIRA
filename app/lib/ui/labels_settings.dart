@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../data/rule_models.dart';
 import '../engine/label_settings_admin.dart';
 import '../i18n/i18n.dart';
 import '../state/local_labels.dart';
@@ -16,8 +15,7 @@ import 'widgets.dart';
 
 /// Onglet des libellés : tous les libellés (locaux, puis ceux de chaque compte) et leurs réglages.
 class LabelsSettings extends StatefulWidget {
-  final void Function(Rule draft) onCreateRule;
-  const LabelsSettings({super.key, required this.onCreateRule});
+  const LabelsSettings({super.key});
 
   @override
   State<LabelsSettings> createState() => _LabelsSettingsState();
@@ -102,27 +100,6 @@ class _LabelsSettingsState extends State<LabelsSettings> {
       await s.source!.labelAdmin!.delete(l.id);
     }
     await s.refreshLabelSettings();
-  }
-
-  void _rule(LabelOverview l) {
-    final test = l.local
-        ? {'type': 'has_local_label', 'label': l.id}
-        : {'type': 'in_mailbox', 'mailbox': l.id};
-    widget.onCreateRule(
-      Rule(
-        id: '',
-        name: t('Libellé « {0} »', [l.name]),
-        scope: l.local
-            ? const RuleScope.all()
-            : RuleScope.accounts([l.account ?? '']),
-        alternatives: [
-          ConditionGroup([Condition(test: test)]),
-        ],
-        actions: [
-          RuleAction({'type': 'mark_read', 'read': true}),
-        ],
-      ),
-    );
   }
 
   Widget _adder(MailStore s) {
@@ -242,7 +219,6 @@ class _LabelsSettingsState extends State<LabelsSettings> {
                 onMove: (d) => _move(s, l, d),
                 onRename: (to) => _rename(s, l, to),
                 onDelete: () => _delete(s, l),
-                onRule: () => _rule(l),
               ),
         ],
       ),

@@ -353,12 +353,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
       2 => box([const NotificationSettings()]),
       4 => box([const ContactsSettings()]),
       5 when s.source?.labelSettingsAdmin != null => box([
-        LabelsSettings(
-          onCreateRule: (draft) => setState(() {
-            ruleDraft.value = draft;
-            tab = 6;
-          }),
-        ),
+        const LabelsSettings(),
       ]),
       6 when s.source?.ruleAdmin != null => box([
         RulesSettings(

@@ -4,7 +4,7 @@ use mira_vocabulary::{CURRENT_RULE_SCHEMA_VERSION, IdempotencyKey, MiraError, Ru
 
 use super::idempotency::{Replay, WriteCommand};
 use super::reading::{require_view, view_of};
-use super::writing::{announce, check_writable, single};
+use super::writing::{announce, check_writable, single, with_normalized_scope};
 use crate::api::contract::Response;
 use crate::api::engine::Engine;
 
@@ -15,11 +15,11 @@ pub(crate) fn handle_create_rule(
     key: IdempotencyKey,
 ) -> Result<Response, MiraError> {
     let command = WriteCommand::new(key, "create_rule", &rule)?;
-    let fresh = Rule {
+    let fresh = with_normalized_scope(Rule {
         id: RuleId::from_raw(engine.config.ids.next_id()),
         schema_version: CURRENT_RULE_SCHEMA_VERSION,
         ..rule
-    };
+    });
     let (view, written) = engine.database.write(|tx| {
         if let Replay::Replayed { rule: Some(id) } = command.replay(tx)? {
             return Ok((require_view(tx, &id)?, false));

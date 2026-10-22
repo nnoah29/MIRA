@@ -121,3 +121,26 @@ async fn errors_and_events_carry_no_secret_nor_rule_content() {
     })
     .await;
 }
+
+/// Une portée qui répète un compte est dédoublonnée : la réponse est ce qui est enregistré
+#[tokio::test]
+async fn repeated_scope_account_is_deduplicated() {
+    within(async {
+        let f = Fixture::start().await;
+        let twice = RuleScope::Accounts(vec![f.account.clone(), f.account.clone()]);
+        let created = create(
+            f.engine(),
+            subject_rule("Double", "x", twice.clone()),
+            "k-1",
+        );
+        let created = created.await.unwrap().rule;
+        assert_eq!(created.scope, RuleScope::Accounts(vec![f.account.clone()]));
+        assert_eq!(list(f.engine()).await[0].rule, created);
+        let mut again = created.clone();
+        again.scope = twice;
+        let updated = update(f.engine(), again, "k-2").await.unwrap().rule;
+        assert_eq!(updated, created);
+        assert_eq!(list(f.engine()).await[0].rule, updated);
+    })
+    .await;
+}

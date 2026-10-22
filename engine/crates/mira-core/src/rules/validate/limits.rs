@@ -44,7 +44,19 @@ pub(super) fn check_limits(rule: &Rule) -> Result<(), MiraError> {
     if rule.actions.len() > MAX_ACTIONS {
         return Err(invalid_parameter("trop d'actions dans la règle"));
     }
+    check_blank_values(rule)?;
     check_values(rule)
+}
+
+/// Refuse un filtre sans valeur ou dont une valeur est vide ou faite d'espaces (elle correspondrait à tout).
+fn check_blank_values(rule: &Rule) -> Result<(), MiraError> {
+    let blank = rule_matchers(rule).iter().any(|matcher| {
+        matcher.values.is_empty() || matcher.values.iter().any(|value| value.trim().is_empty())
+    });
+    if blank {
+        return Err(invalid_parameter("un filtre a une valeur vide"));
+    }
+    Ok(())
 }
 
 /// Refuse un filtre qui a trop de valeurs ou une valeur plus longue que le plafond.

@@ -3,6 +3,8 @@
 
 mod support_rules;
 
+#[path = "rules_validate/condition_targets.rs"]
+mod condition_targets;
 #[path = "rules_validate/conflicts.rs"]
 mod conflicts;
 #[path = "rules_validate/limits.rs"]
@@ -19,5 +21,7 @@ mod shape;
 mod status;
 #[path = "rules_validate/structure.rs"]
 mod structure;
+#[path = "rules_validate/values.rs"]
+mod values;
 #[path = "rules_validate/world.rs"]
 mod world;

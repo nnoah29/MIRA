@@ -22,6 +22,19 @@ pub(super) fn check_writable(tx: &Tx<'_>, rule: &Rule) -> Result<StoredRuleWorld
     Ok(world)
 }
 
+/// Règle dont la portée est triée et sans doublon, telle que le stockage la rendra à la lecture
+pub(super) fn with_normalized_scope(rule: Rule) -> Rule {
+    let scope = match rule.scope {
+        RuleScope::Accounts(mut accounts) => {
+            accounts.sort();
+            accounts.dedup();
+            RuleScope::Accounts(accounts)
+        }
+        RuleScope::AllAccounts => RuleScope::AllAccounts,
+    };
+    Rule { scope, ..rule }
+}
+
 /// Annonce qu'une règle a changé (création, modification, activation, position, suppression)
 pub(super) fn announce(engine: &Engine, rule: &RuleId) -> Result<(), MiraError> {
     engine

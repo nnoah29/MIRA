@@ -2,6 +2,7 @@
 
 use mira_vocabulary::{AccountId, MailboxId, MiraError, Rule, RuleAction, RuleScope};
 
+use super::condition_targets::check_condition_targets;
 use super::world::RuleWorld;
 use crate::actions::errors::input::invalid_parameter;
 
@@ -20,9 +21,10 @@ pub(crate) fn depends_on_account_mailbox(action: &RuleAction) -> bool {
     named_mailbox(action).is_some() || matches!(action, RuleAction::Archive)
 }
 
-/// Vérifie la portée puis les boîtes visées ; sert à l'enregistrement et à la lecture.
+/// Vérifie la portée, les cibles des conditions puis les boîtes visées ; sert à l'enregistrement et à la lecture.
 pub(super) fn check_world(rule: &Rule, world: &dyn RuleWorld) -> Result<(), MiraError> {
     check_scope_accounts(rule, world)?;
+    check_condition_targets(rule, world)?;
     if !rule.actions.iter().any(depends_on_account_mailbox) {
         return Ok(());
     }

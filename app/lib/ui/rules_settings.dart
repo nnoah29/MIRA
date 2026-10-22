@@ -16,11 +16,13 @@ class RulesSettings extends StatefulWidget {
   final RuleAdmin admin;
   final Map<String, String> accounts;
   final Stream<void> changes;
+  final List<RuleChoice> labels;
   const RulesSettings({
     super.key,
     required this.admin,
     required this.accounts,
     required this.changes,
+    this.labels = const [],
   });
 
   @override
@@ -295,6 +297,7 @@ class _RulesSettingsState extends State<RulesSettings> {
       catalog: catalog,
       accounts: widget.accounts,
       mailboxes: mailboxes,
+      labels: widget.labels,
       onSave: _save,
       onPreview: widget.admin.preview,
       onCancel: () => setState(() => editing = null),

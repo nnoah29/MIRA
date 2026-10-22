@@ -6,6 +6,7 @@ import 'account_admin.dart';
 import 'account_setup.dart';
 import 'compose_admin.dart';
 import 'label_admin.dart';
+import 'local_label_admin.dart';
 import 'rule_admin.dart';
 import 'maintenance_admin.dart';
 import 'message_actions.dart';
@@ -68,6 +69,12 @@ abstract class MailSource {
 
   /// Signale chaque changement de règle côté moteur.
   Stream<void> get ruleChanges;
+
+  /// Libellés locaux portés par le moteur (`null` : démonstration).
+  LocalLabelAdmin? get localLabelAdmin;
+
+  /// Signale chaque changement des libellés locaux côté moteur.
+  Stream<void> get localLabelChanges;
 
   /// Verdict des règles sur un message arrivé : `true` muet (aucune notification),
   /// `false` à annoncer, `null` pas encore connu.

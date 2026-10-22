@@ -17,7 +17,13 @@ const localLabelColors = [
 
 bool isLocalLabel(String key) => key.startsWith(localLabelPrefix);
 
-/// Libellés propres à l'application (communs à tous les comptes) et leur pose sur les conversations.
+/// Clé du fil d'une conversation de l'interface (`compte/dossier/fil`) ; un autre identifiant reste tel quel.
+String threadKeyOf(String mailId) {
+  final parts = mailId.split('/');
+  return parts.length > 2 ? parts.sublist(2).join('/') : mailId;
+}
+
+/// Libellés locaux (communs à tous les comptes) et leur pose sur les conversations, par clé de fil.
 class LocalLabels {
   final Map<String, LabelDef> defs = {};
   final Map<String, Set<String>> _tags = {};
@@ -40,7 +46,9 @@ class LocalLabels {
       for (final e in (data['tags'] as Map? ?? {}).entries) {
         final keys = {for (final k in e.value as List) '$k'}
           ..removeWhere((k) => !out.defs.containsKey(k));
-        if (keys.isNotEmpty) out._tags['${e.key}'] = keys;
+        if (keys.isNotEmpty) {
+          out._tags.putIfAbsent(threadKeyOf('${e.key}'), () => {}).addAll(keys);
+        }
       }
     } catch (_) {
       out.defs.clear();
@@ -104,7 +112,7 @@ class LocalLabels {
   /// Pose ou retire un libellé sur des conversations.
   void set(Iterable<String> mailIds, String key, bool on) {
     if (!defs.containsKey(key)) return;
-    for (final id in mailIds) {
+    for (final id in mailIds.map(threadKeyOf)) {
       final keys = _tags.putIfAbsent(id, () => {});
       on ? keys.add(key) : keys.remove(key);
       if (keys.isEmpty) _tags.remove(id);
@@ -114,13 +122,38 @@ class LocalLabels {
   /// Reporte les libellés locaux dans `labels` des conversations données.
   void apply(Iterable<Mail> mails) {
     for (final m in mails) {
-      final keys = _tags[m.id];
+      final keys = _tags[threadKeyOf(m.id)];
       m.labels = [
         for (final k in m.labels)
           if (!isLocalLabel(k)) k,
         ...?keys,
       ];
     }
+  }
+
+  /// Conversations qui portent ce libellé.
+  List<String> conversationsOf(String key) => [
+    for (final e in _tags.entries)
+      if (e.value.contains(key)) e.key,
+  ];
+
+  /// Remplace tout l'état (libellés et poses) par celui du moteur.
+  void replaceAll(Map<String, LabelDef> fresh, Map<String, Set<String>> tags) {
+    defs
+      ..clear()
+      ..addAll(fresh);
+    _tags
+      ..clear()
+      ..addAll({
+        for (final e in tags.entries)
+          if (e.value.isNotEmpty) e.key: {...e.value},
+      });
+  }
+
+  /// Un nom est utilisable s'il n'est pas vide et pas déjà pris par un autre libellé.
+  bool canUse(String name, [String? except]) {
+    final n = name.trim();
+    return n.isNotEmpty && !_taken(n, except);
   }
 
   /// Nombre de conversations portant ce libellé.

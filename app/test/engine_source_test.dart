@@ -32,6 +32,10 @@ class FakeEngine implements EngineClient {
   final drafts = <String, Map<String, dynamic>>{};
   final feed = StreamController<Map<String, dynamic>>.broadcast();
   final extraInbox = <Map<String, dynamic>>[];
+  final localLabels = <Map<String, dynamic>>[];
+  final localPoses = <Map<String, dynamic>>[];
+  final labelWrites = <Map<String, dynamic>>[];
+  bool importFails = false;
 
   Map<String, dynamic> _msg(
     String id,
@@ -447,6 +451,31 @@ class FakeEngine implements EngineClient {
           d['state'] = {'type': 'editing'};
         }
         return {'type': 'done'};
+      case 'local_label.list_local_labels':
+        return _labelAnswer('labels', localLabels);
+      case 'local_label.list_local_label_assignments':
+        return _labelAnswer('assignments', localPoses);
+      case 'local_label.import_local_labels':
+        if (importFails) throw EngineException('internal.bug', 'indisponible');
+        labelWrites.add(r);
+        return _labelAnswer('imported', {
+          'labels': 1,
+          'assignments': 0,
+          'ignored': 0,
+        });
+      case 'local_label.create_local_label':
+        labelWrites.add(r);
+        return _labelAnswer('label', {
+          'id': 'l-new',
+          'name': r['name'],
+          'color': r['color'],
+        });
+      case 'local_label.set_local_label' ||
+          'local_label.rename_local_label' ||
+          'local_label.recolor_local_label' ||
+          'local_label.delete_local_label':
+        labelWrites.add(r);
+        return _labelAnswer('done', null);
       case 'sync.start_sync':
         return {'type': 'done'};
       case 'message.allow_remote_content':
@@ -481,6 +510,11 @@ class FakeEngine implements EngineClient {
     }
     throw EngineException('internal.bug', 'op inconnue $op');
   }
+
+  Map<String, dynamic> _labelAnswer(String type, Object? data) => {
+    'type': 'local_label',
+    'data': {'type': type, 'data': data},
+  };
 
   Map<String, dynamic> _write(String type, Object? data) => {
     'type': 'write',

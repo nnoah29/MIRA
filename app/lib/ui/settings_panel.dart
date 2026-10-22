@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../data/models.dart';
+import '../data/rule_models.dart';
+import '../state/local_labels.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
@@ -356,6 +358,11 @@ class _SettingsPanelState extends State<SettingsPanel> {
           admin: s.source!.ruleAdmin!,
           accounts: {for (final a in s.accounts) a.id: a.email},
           changes: s.source!.ruleChanges,
+          labels: [
+            if (s.localLabelsOnEngine)
+              for (final e in s.localLabels.defs.entries)
+                RuleChoice(e.key.substring(localLabelPrefix.length), e.value.n),
+          ],
         ),
       ]),
       6 when s.source != null => box([const MaintenanceSettings()]),

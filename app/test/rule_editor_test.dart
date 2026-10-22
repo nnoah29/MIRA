@@ -50,6 +50,13 @@ const catalog = RuleCatalog(
       needsMailbox: false,
       singleAccount: false,
     ),
+    CatalogEntry(
+      kind: 'has_local_label',
+      family: 'local_labels',
+      fields: ['label'],
+      needsMailbox: false,
+      singleAccount: false,
+    ),
   ],
   [
     CatalogEntry(
@@ -65,6 +72,13 @@ const catalog = RuleCatalog(
       fields: ['mailbox'],
       needsMailbox: true,
       singleAccount: true,
+    ),
+    CatalogEntry(
+      kind: 'add_local_label',
+      family: 'local_labels',
+      fields: ['label'],
+      needsMailbox: false,
+      singleAccount: false,
     ),
   ],
 );
@@ -103,6 +117,7 @@ Future<List<Rule>> pumpEditor(
   WidgetTester tester,
   Rule rule, {
   Future<void>? gate,
+  List<RuleChoice> labels = const [],
 }) async {
   final saved = <Rule>[];
   await tester.binding.setSurfaceSize(const Size(900, 1600));
@@ -120,6 +135,7 @@ Future<List<Rule>> pumpEditor(
               'a1': [RuleChoice('mb-a1', 'Factures')],
               'a2': [RuleChoice('mb-a2', 'Perso')],
             },
+            labels: labels,
             onSave: (r) async {
               saved.add(r);
               await gate;
@@ -289,6 +305,33 @@ void main() {
       final conditions = saved.single.alternatives.single.conditions;
       expect(conditions[0].test['account'], 'a2');
       expect(conditions[1].test['mailbox'], 'mb-a2');
+    },
+  );
+
+  testWidgets(
+    'un libellé local se choisit dans la liste, même avec tous les comptes',
+    (t) async {
+      final saved = await pumpEditor(
+        t,
+        draft(const RuleScope.all()),
+        labels: const [RuleChoice('l1', 'À payer')],
+      );
+      await t.tap(find.byKey(const ValueKey('action-0-kind')));
+      await t.pumpAndSettle();
+      await t.tap(
+        find.byKey(const ValueKey('action-0-option-add_local_label')),
+      );
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('action-0-label')));
+      await t.pumpAndSettle();
+      await t.tap(find.text('À payer').last);
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('save-rule')));
+      await t.pumpAndSettle();
+      expect(saved.single.actions.single.data, {
+        'type': 'add_local_label',
+        'label': 'l1',
+      });
     },
   );
 }

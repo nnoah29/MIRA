@@ -14,6 +14,7 @@ class RuleEditor extends StatefulWidget {
   final RuleCatalog catalog;
   final Map<String, String> accounts;
   final Map<String, List<RuleChoice>> mailboxes;
+  final List<RuleChoice> labels;
   final Future<void> Function(Rule) onSave;
   final Future<RulePreview> Function(Rule) onPreview;
   final VoidCallback? onCancel;
@@ -23,6 +24,7 @@ class RuleEditor extends StatefulWidget {
     required this.catalog,
     required this.accounts,
     this.mailboxes = const {},
+    this.labels = const [],
     required this.onSave,
     required this.onPreview,
     this.onCancel,
@@ -68,6 +70,7 @@ class _RuleEditorState extends State<RuleEditor> {
   Map<String, List<RuleChoice>> get _conditionOptions {
     final several = _scopeAccounts.length > 1;
     return {
+      'label': widget.labels,
       'account': [
         for (final a in _scopeAccounts) RuleChoice(a, _accountLabel(a)),
       ],
@@ -84,6 +87,7 @@ class _RuleEditorState extends State<RuleEditor> {
 
   /// Boîtes proposées aux actions : celles du seul compte de la portée.
   Map<String, List<RuleChoice>> get _actionOptions => {
+    'label': widget.labels,
     'mailbox': _single
         ? widget.mailboxes[_scopeAccounts.single] ?? const []
         : const [],
@@ -276,7 +280,7 @@ class _RuleEditorState extends State<RuleEditor> {
           padding: const EdgeInsets.only(bottom: 12),
           child: Text(
             t(
-              'Pour classer dans une boîte ou poser un libellé, choisis un seul compte dans la portée.',
+              'Pour classer dans une boîte ou poser un libellé du compte, choisis un seul compte dans la portée.',
             ),
             style: Fonts.sans(size: 13, color: context.pal.dim),
           ),

@@ -18,6 +18,7 @@ import 'compose_admin.dart';
 import 'mail_layout.dart';
 import 'inline_images.dart';
 import 'label_admin.dart';
+import 'local_label_admin.dart';
 import 'rule_admin.dart';
 import 'message_actions.dart';
 import 'engine_client.dart';
@@ -118,11 +119,18 @@ class EngineMailSource implements MailSource {
   @override
   RuleAdmin get ruleAdmin => RuleAdmin(client);
 
+  @override
+  LocalLabelAdmin get localLabelAdmin => LocalLabelAdmin(client);
+
+  final StreamController<void> _labelChanges = StreamController.broadcast();
   final StreamController<void> _ruleChanges = StreamController.broadcast();
   final Map<String, bool> _verdicts = {};
 
   @override
   Stream<void> get ruleChanges => _ruleChanges.stream;
+
+  @override
+  Stream<void> get localLabelChanges => _labelChanges.stream;
 
   @override
   bool? arrivalVerdict(String messageRef) => _verdicts[messageRef];
@@ -206,6 +214,9 @@ class EngineMailSource implements MailSource {
   void _trackRules(String type, Map<String, dynamic> kind) {
     if (type == 'rule_changed' && !_ruleChanges.isClosed) {
       _ruleChanges.add(null);
+    }
+    if (type == 'local_labels_changed' && !_labelChanges.isClosed) {
+      _labelChanges.add(null);
     }
     if (type == 'new_message_received') {
       _verdicts['${kind['message']}'] = kind['silenced'] == true;
@@ -818,6 +829,7 @@ class EngineMailSource implements MailSource {
     unawaited(_events?.cancel() ?? Future<void>.value());
     await _changes.close();
     await _ruleChanges.close();
+    await _labelChanges.close();
     await _syncEvents.close();
   }
 }

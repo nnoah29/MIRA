@@ -14,6 +14,8 @@ import '../engine/blocks_html.dart';
 import '../engine/compose_admin.dart';
 import '../engine/engine_client.dart';
 import '../engine/label_admin.dart';
+import '../engine/local_label_admin.dart';
+import 'local_label_migration.dart';
 import 'local_labels.dart';
 import 'search_filters.dart';
 import '../engine/message_actions.dart';
@@ -145,6 +147,7 @@ class MailStore extends ChangeNotifier {
   final MailSource? source;
   StreamSubscription<String>? _changeSub;
   StreamSubscription<void>? _syncSub;
+  StreamSubscription<void>? _labelSub;
 
   /// Historique des destinataires et noms choisis.
   late final ContactBook contactBook;
@@ -198,6 +201,7 @@ class MailStore extends ChangeNotifier {
         _applySnoozes(l);
         localLabels.apply(l);
       }
+      localLabelsReady = _initLocalLabels();
       _changeSub = source!.changes.listen(_reloadAccount);
       _syncSub = source!.syncEvents.listen((_) {
         _extensionProgress();
@@ -366,6 +370,7 @@ class MailStore extends ChangeNotifier {
   void dispose() {
     _changeSub?.cancel();
     _syncSub?.cancel();
+    _labelSub?.cancel();
     _searchTimer?.cancel();
     _wake?.cancel();
     _wallSub?.cancel();
@@ -1447,6 +1452,12 @@ class MailStore extends ChangeNotifier {
 
   LocalLabels localLabels = LocalLabels();
 
+  /// Vrai quand les libellés locaux viennent du moteur (sinon : préférences de l'app).
+  bool localLabelsOnEngine = false;
+
+  /// Terminé quand la reprise et la première lecture des libellés locaux du moteur sont faites.
+  Future<void> localLabelsReady = Future<void>.value();
+
   Timer? _wake;
 
   /// Programme le réveil du prochain message reporté (un seul minuteur, rien s'il n'y en a pas).
@@ -1722,7 +1733,8 @@ class MailStore extends ChangeNotifier {
     final all = ms.every((m) => m.labels.contains(k));
     localLabels.set(ms.map((m) => m.id), k, !all);
     localLabels.apply(ms);
-    _saveLocalLabels();
+    final threads = {for (final m in ms) threadKeyOf(m.id)}.toList();
+    _afterLabelEdit((a) => a.set(_engineId(k), threads, !all));
     toast(
       t(all ? 'Libellé « {0} » retiré' : 'Libellé « {0} » ajouté', [
         labelTitle(k),
@@ -1731,12 +1743,88 @@ class MailStore extends ChangeNotifier {
   }
 
   void _saveLocalLabels() {
-    prefs.setString('localLabels', localLabels.encode());
+    if (!localLabelsOnEngine) {
+      prefs.setString('localLabels', localLabels.encode());
+    }
     notifyListeners();
+  }
+
+  /// Identifiant du moteur d'un libellé local (clé de l'interface sans son préfixe).
+  String _engineId(String key) => key.substring(localLabelPrefix.length);
+
+  /// Après une modification locale : l'envoie au moteur, ou la garde dans les préférences.
+  void _afterLabelEdit(Future<void> Function(LocalLabelAdmin) op) {
+    if (!localLabelsOnEngine) return _saveLocalLabels();
+    notifyListeners();
+    unawaited(_writeLabels(op));
+  }
+
+  /// Écrit au moteur puis relit ses libellés : l'état affiché redevient celui du moteur, même en cas d'échec.
+  Future<void> _writeLabels(Future<void> Function(LocalLabelAdmin) op) async {
+    try {
+      await op(source!.localLabelAdmin!);
+    } catch (_) {
+      toast(t('Libellé local non enregistré'), err: true);
+    }
+    await _refreshLocalLabels();
+  }
+
+  /// Reprend les libellés des préférences dans le moteur, puis lit ceux du moteur ; sinon reste sur les préférences.
+  Future<void> _initLocalLabels() async {
+    final admin = source?.localLabelAdmin;
+    if (admin == null) return;
+    _labelSub = source!.localLabelChanges.listen((_) => _refreshLocalLabels());
+    try {
+      if (!await migrateLocalLabels(prefs, admin)) return;
+      await _readLocalLabels(admin);
+      localLabelsOnEngine = true;
+    } catch (_) {
+      /* moteur sans libellés locaux : on garde les préférences */
+    }
+  }
+
+  /// Remplace libellés et poses par ceux du moteur et, s'ils ont changé, les reporte sur les conversations.
+  Future<void> _readLocalLabels(LocalLabelAdmin admin) async {
+    final labels = await admin.list();
+    final poses = await admin.assignments();
+    final before = localLabels.encode();
+    localLabels.replaceAll(
+      {
+        for (final l in labels)
+          '$localLabelPrefix${l.id}': LabelDef(l.name, l.color, local: true),
+      },
+      {
+        for (final e in poses.entries)
+          e.key: {for (final id in e.value) '$localLabelPrefix$id'},
+      },
+    );
+    if (localLabels.encode() == before) return;
+    for (final l in _boxes.values) {
+      localLabels.apply(l);
+    }
+    notifyListeners();
+  }
+
+  /// Relit les libellés locaux du moteur (signal du moteur ou fin d'une écriture).
+  Future<void> _refreshLocalLabels() async {
+    final admin = source?.localLabelAdmin;
+    if (admin == null || !localLabelsOnEngine) return;
+    try {
+      await _readLocalLabels(admin);
+    } catch (_) {
+      /* lecture impossible : on garde l'affichage actuel */
+    }
   }
 
   /// Crée un libellé local ; `false` si le nom est vide ou déjà pris.
   bool addLocalLabel(String name) {
+    if (localLabelsOnEngine) {
+      if (!localLabels.canUse(name)) return false;
+      final count = localLabels.defs.length;
+      final color = localLabelColors[count % localLabelColors.length];
+      unawaited(_writeLabels((a) => a.create(name.trim(), color)));
+      return true;
+    }
     if (localLabels.create(name) == null) return false;
     _saveLocalLabels();
     return true;
@@ -1745,13 +1833,15 @@ class MailStore extends ChangeNotifier {
   /// Renomme un libellé local ; `false` si le nom est vide ou déjà pris.
   bool renameLocalLabel(String key, String name) {
     if (!localLabels.rename(key, name)) return false;
-    _saveLocalLabels();
+    _afterLabelEdit((a) => a.rename(_engineId(key), name.trim()));
     return true;
   }
 
   void recolorLocalLabel(String key) {
     localLabels.recolor(key);
-    _saveLocalLabels();
+    final color = localLabels.defs[key]?.c;
+    if (color == null) return;
+    _afterLabelEdit((a) => a.recolor(_engineId(key), color));
   }
 
   /// Supprime un libellé local ; si on le consultait, retour à la réception.
@@ -1761,7 +1851,7 @@ class MailStore extends ChangeNotifier {
       localLabels.apply(l);
     }
     if (label == key) selectFolder('inbox');
-    _saveLocalLabels();
+    _afterLabelEdit((a) => a.delete(_engineId(key)));
   }
 
   /// Envoie la pose du libellé au moteur ; en cas d'échec, rétablit l'état précédent.

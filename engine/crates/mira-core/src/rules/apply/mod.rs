@@ -2,6 +2,7 @@
 
 mod context_loader;
 mod eligibility;
+mod label_changes;
 mod replay_pending;
 mod submit_actions;
 

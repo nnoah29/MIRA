@@ -1,6 +1,6 @@
 //! Contexte d'évaluation d'un message : résumé, adresses du compte et état du fil.
 
-use mira_vocabulary::{EmailAddress, MessageSummary, Timestamp};
+use mira_vocabulary::{EmailAddress, LocalLabelId, MessageSummary, Timestamp};
 
 /// Pièce jointe connue du message, telle que vue par les conditions.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,5 +16,6 @@ pub struct MessageContext {
     pub own_addresses: Vec<EmailAddress>,
     pub attachments: Vec<AttachmentInfo>,
     pub in_existing_thread: bool,
+    pub thread_labels: Vec<LocalLabelId>,
     pub now: Timestamp,
 }

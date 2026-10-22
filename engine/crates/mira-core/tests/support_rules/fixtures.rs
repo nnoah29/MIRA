@@ -60,6 +60,7 @@ pub fn base_context() -> MessageContext {
             media_type: "application/pdf".to_string(),
         }],
         in_existing_thread: false,
+        thread_labels: Vec::new(),
         now: Timestamp::from_millis(NOW_MILLIS),
     }
 }

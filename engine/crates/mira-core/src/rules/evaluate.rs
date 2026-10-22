@@ -6,18 +6,20 @@ use super::group_eval::rule_fires;
 use super::outcome::RuleOutcome;
 use mira_vocabulary::{AccountId, Rule, RuleScope};
 
-/// Évalue les règles, supposées triées par position, sur un message.
+/// Évalue les règles, supposées triées par position, sur un message ; chaque règle voit les libellés posés par les précédentes.
 pub fn evaluate(rules: &[Rule], ctx: &MessageContext) -> RuleOutcome {
     let mut outcome = RuleOutcome::default();
+    let mut working = ctx.clone();
     for rule in rules {
-        if !rule.enabled || !scope_covers(&rule.scope, &ctx.summary.account) {
+        if !rule.enabled || !scope_covers(&rule.scope, &working.summary.account) {
             continue;
         }
-        if !rule_fires(rule, ctx) {
+        if !rule_fires(rule, &working) {
             continue;
         }
         outcome.matched.push(rule.id.clone());
-        if apply_actions(&rule.actions, &mut outcome) {
+        let stop = apply_actions(&rule.actions, &mut outcome, &mut working.thread_labels);
+        if stop {
             break;
         }
     }

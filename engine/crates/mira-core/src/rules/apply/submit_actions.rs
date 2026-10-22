@@ -3,6 +3,7 @@
 use mira_vocabulary::{AccountId, EventKind, IdempotencyKey, MessageId, MiraError, ProviderQuirks};
 
 use super::context_loader::load_for_message;
+use super::label_changes::apply_label_changes;
 use crate::actions::{QueueContext, SubmitRequest, submit};
 use crate::rules::evaluate::evaluate;
 use crate::rules::outcome::RuleOutcome;
@@ -39,7 +40,7 @@ fn submit_outcome(
     Ok(())
 }
 
-/// Évalue les règles sur le message, soumet les actions, émet `RuleApplied` puis retire le message de la file d'attente
+/// Évalue les règles sur le message, soumet les actions, pose les libellés locaux, émet `RuleApplied` puis retire le message de la file d'attente
 pub fn apply_rules_with(
     queue: &QueueContext<'_>,
     quirks: &ProviderQuirks,
@@ -52,6 +53,14 @@ pub fn apply_rules_with(
     let outcome = evaluate(&loaded.rules, &loaded.context);
     let account = &loaded.context.summary.account;
     submit_outcome(queue, quirks, account, message, &outcome)?;
-    queue.db.write(|tx| tx.remove_pending(message))?;
+    let thread = loaded.context.summary.thread.as_ref();
+    let labeled = queue.db.write(|tx| {
+        let changed = apply_label_changes(tx, thread, &outcome.label_changes)?;
+        tx.remove_pending(message)?;
+        Ok(changed)
+    })?;
+    if labeled {
+        queue.events.emit(EventKind::LocalLabelsChanged)?;
+    }
     Ok(outcome)
 }

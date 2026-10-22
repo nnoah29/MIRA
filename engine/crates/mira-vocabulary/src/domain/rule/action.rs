@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::ids::kinds::MailboxId;
+use crate::ids::kinds::{LocalLabelId, MailboxId};
 
 /// Action déclenchée par une règle ; la plupart se traduisent en `ActionKind`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -16,6 +16,8 @@ pub enum RuleAction {
     Archive,
     Trash,
     MarkSpam { spam: bool },
+    AddLocalLabel { label: LocalLabelId },
+    RemoveLocalLabel { label: LocalLabelId },
     SuppressNotification,
     StopProcessing,
 }

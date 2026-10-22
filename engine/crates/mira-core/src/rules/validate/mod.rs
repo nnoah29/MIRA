@@ -3,6 +3,7 @@
 mod condition_targets;
 mod conflicts;
 mod limits;
+mod local_labels;
 mod mailboxes;
 mod matchers;
 mod regexes;

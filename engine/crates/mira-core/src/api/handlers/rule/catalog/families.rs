@@ -16,6 +16,7 @@ pub(super) fn condition_family(test: &ConditionTest) -> &'static str {
         T::IsRead | T::IsFlagged | T::IsAnswered | T::IsForwarded => "flags",
         T::IsNewsletter | T::IsReply | T::InExistingThread => "nature",
         T::InMailbox { .. } | T::FromAccount { .. } => "location",
+        T::HasLocalLabel { .. } => "local_labels",
     }
 }
 
@@ -28,6 +29,7 @@ pub(super) fn action_family(action: &RuleAction) -> &'static str {
             "filing"
         }
         A::Trash | A::MarkSpam { .. } => "cleanup",
+        A::AddLocalLabel { .. } | A::RemoveLocalLabel { .. } => "local_labels",
         A::SuppressNotification => "notification",
         A::StopProcessing => "chaining",
     }

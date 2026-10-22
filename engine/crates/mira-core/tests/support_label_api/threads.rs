@@ -4,7 +4,7 @@ use mira_core::storage::Database;
 use mira_core::threads::assign_thread;
 use mira_vocabulary::{AccountId, MessageId, ThreadId, Timestamp};
 
-use crate::support_mirror::fixtures::sample_message;
+use crate::support_mirror::fixtures::{appearance, sample_message};
 
 /// Ajoute un message isolé (son propre fil) au compte et rend son fil et son identifiant
 pub fn seed_thread(db: &Database, account: &AccountId, tag: &str) -> (ThreadId, MessageId) {
@@ -20,4 +20,17 @@ pub fn seed_thread(db: &Database, account: &AccountId, tag: &str) -> (ThreadId, 
         })
         .unwrap();
     (thread, message.id)
+}
+
+/// Comme `seed_thread`, avec une apparition du message dans la réception (visible de l'aperçu des règles)
+pub fn seed_inbox_thread(
+    db: &Database,
+    account: &AccountId,
+    tag: &str,
+    uid: u32,
+) -> (ThreadId, MessageId) {
+    let (thread, id) = seed_thread(db, account, tag);
+    db.write(|tx| tx.add_appearance(&appearance(id.as_str(), "box-in", uid)))
+        .unwrap();
+    (thread, id)
 }

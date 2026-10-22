@@ -32,5 +32,6 @@ pub fn test_holds(test: &ConditionTest, ctx: &MessageContext) -> bool {
         ConditionTest::InExistingThread => ctx.in_existing_thread,
         ConditionTest::InMailbox { mailbox } => ctx.summary.mailboxes.contains(mailbox),
         ConditionTest::FromAccount { account } => ctx.summary.account == *account,
+        ConditionTest::HasLocalLabel { label } => ctx.thread_labels.contains(label),
     }
 }

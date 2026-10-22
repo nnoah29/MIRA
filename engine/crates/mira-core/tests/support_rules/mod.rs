@@ -9,4 +9,5 @@
 
 pub mod builders;
 pub mod fixtures;
+pub mod labels;
 pub mod probe;

@@ -1,6 +1,8 @@
-//! Contexte d'évaluation d'un message stocké : adresses du compte, pièces jointes, fil existant.
+//! Contexte d'évaluation d'un message stocké : adresses du compte, pièces jointes, fil existant et ses libellés.
 
-use mira_vocabulary::{AccountId, EmailAddress, MessageSummary, MiraError, Timestamp};
+use mira_vocabulary::{
+    AccountId, EmailAddress, LocalLabelId, MessageSummary, MiraError, Timestamp,
+};
 
 use crate::rules::context::{AttachmentInfo, MessageContext};
 use crate::storage::Tx;
@@ -35,15 +37,27 @@ pub fn message_context(
             media_type: attachment.mime_type,
         })
         .collect();
-    let in_existing_thread = match &summary.thread {
-        Some(thread) => tx.thread_has_other_messages(thread, &summary.id)?,
-        None => false,
-    };
+    let (in_existing_thread, thread_labels) = thread_facts(tx, &summary)?;
     Ok(MessageContext {
         summary,
         own_addresses,
         attachments,
         in_existing_thread,
+        thread_labels,
         now,
     })
+}
+
+/// Le fil a-t-il d'autres messages, et quels libellés locaux porte-t-il ; rien de tout cela sans fil
+fn thread_facts(
+    tx: &Tx<'_>,
+    summary: &MessageSummary,
+) -> Result<(bool, Vec<LocalLabelId>), MiraError> {
+    match &summary.thread {
+        Some(thread) => Ok((
+            tx.thread_has_other_messages(thread, &summary.id)?,
+            tx.labels_of_thread(thread)?,
+        )),
+        None => Ok((false, Vec::new())),
+    }
 }

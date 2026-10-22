@@ -2,12 +2,15 @@
 
 use crate::support_rules::probe::{cond, rule, text};
 use mira_core::rules::validate::RuleWorld;
-use mira_vocabulary::{AccountId, ConditionTest, MailboxId, Rule, RuleAction, RuleScope, TextOp};
+use mira_vocabulary::{
+    AccountId, ConditionTest, LocalLabelId, MailboxId, Rule, RuleAction, RuleScope, TextOp,
+};
 
 /// Comptes et boîtes (boîte, compte) existants
 pub struct FakeWorld {
     pub accounts: Vec<&'static str>,
     pub mailboxes: Vec<(&'static str, &'static str)>,
+    pub labels: Vec<&'static str>,
 }
 
 impl RuleWorld for FakeWorld {
@@ -23,6 +26,11 @@ impl RuleWorld for FakeWorld {
             .find(|(id, _)| *id == mailbox.as_str())
             .map(|(_, account)| AccountId::from_raw(*account))
     }
+
+    /// Vrai si le libellé local figure dans la liste
+    fn local_label_exists(&self, label: &LocalLabelId) -> bool {
+        self.labels.contains(&label.as_str())
+    }
 }
 
 /// Monde de référence : acc-1 et acc-2, boîte mb-1 à acc-1, boîte mb-2 à acc-2
@@ -30,6 +38,7 @@ pub fn world() -> FakeWorld {
     FakeWorld {
         accounts: vec!["acc-1", "acc-2"],
         mailboxes: vec![("mb-1", "acc-1"), ("mb-2", "acc-2")],
+        labels: vec!["lab-1"],
     }
 }
 

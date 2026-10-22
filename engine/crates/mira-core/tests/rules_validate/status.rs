@@ -16,6 +16,7 @@ fn status_is_invalid_when_mailbox_disappears() {
     let shrunk = FakeWorld {
         accounts: vec!["acc-1", "acc-2"],
         mailboxes: vec![("mb-2", "acc-2")],
+        labels: vec![],
     };
     assert!(matches!(
         rule_status(&valid_rule(), &shrunk),

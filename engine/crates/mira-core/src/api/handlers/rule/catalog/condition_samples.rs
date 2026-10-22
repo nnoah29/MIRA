@@ -1,8 +1,8 @@
 //! Une instance de chaque variante de condition, dont le catalogue lit l'étiquette et les paramètres.
 
 use mira_vocabulary::{
-    AccountId, AddressField, Comparison, ConditionTest, MailboxId, RecipientKind, TextMatcher,
-    TextOp, Timestamp,
+    AccountId, AddressField, Comparison, ConditionTest, LocalLabelId, MailboxId, RecipientKind,
+    TextMatcher, TextOp, Timestamp,
 };
 
 /// Filtre texte vide servant d'exemple
@@ -83,6 +83,9 @@ fn state_samples() -> Vec<ConditionTest> {
         },
         ConditionTest::FromAccount {
             account: AccountId::from_raw(""),
+        },
+        ConditionTest::HasLocalLabel {
+            label: LocalLabelId::from_raw(""),
         },
     ]
 }

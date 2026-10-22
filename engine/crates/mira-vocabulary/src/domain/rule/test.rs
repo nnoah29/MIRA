@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::matcher::{AddressField, Comparison, RecipientKind, TextMatcher};
-use crate::ids::kinds::{AccountId, MailboxId};
+use crate::ids::kinds::{AccountId, LocalLabelId, MailboxId};
 use crate::time::Timestamp;
 
 /// Test élémentaire porté par une condition.
@@ -67,5 +67,8 @@ pub enum ConditionTest {
     },
     FromAccount {
         account: AccountId,
+    },
+    HasLocalLabel {
+        label: LocalLabelId,
     },
 }

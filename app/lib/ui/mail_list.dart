@@ -392,7 +392,7 @@ class _MailListViewState extends State<MailListView> {
       child: CustomScrollView(
         controller: ctl,
         // ignore: deprecated_member_use
-        cacheExtent: 6000,
+        cacheExtent: 2000,
         slivers: [
           for (final e in groups.entries)
             SliverMainAxisGroup(

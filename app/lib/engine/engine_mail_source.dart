@@ -167,16 +167,38 @@ class EngineMailSource implements MailSource {
   String? mailboxOf(String account, String folder) =>
       _folderBoxes['$account/$folder'];
 
+  static const _attachmentBudget = 20 * 1024 * 1024;
   final Map<String, Uint8List> _attachments = {};
+  int _attachmentsSize = 0;
+
+  /// Mémorise une pièce jointe en évinçant les plus anciennes au-delà de 20 Mo.
+  void _rememberAttachment(String id, Uint8List bytes) {
+    if (bytes.length > _attachmentBudget) return;
+    _attachmentsSize += bytes.length;
+    _attachments[id] = bytes;
+    while (_attachmentsSize > _attachmentBudget) {
+      final oldest = _attachments.keys.first;
+      _attachmentsSize -= _attachments.remove(oldest)!.length;
+    }
+  }
+
+  @override
+  void releaseCaches() {
+    _attachments.clear();
+    _attachmentsSize = 0;
+  }
 
   @override
   Future<Uint8List?> attachmentBytes(Attachment a) async {
     final id = a.id;
     if (id == null) return null;
-    final known = _attachments[id];
-    if (known != null) return known;
+    final known = _attachments.remove(id);
+    if (known != null) {
+      _attachments[id] = known;
+      return known;
+    }
     final bytes = await fetchAttachment(client, id);
-    if (bytes != null) _attachments[id] = bytes;
+    if (bytes != null) _rememberAttachment(id, bytes);
     return bytes;
   }
 
@@ -760,14 +782,19 @@ class EngineMailSource implements MailSource {
     final clock = Stopwatch()..start();
     try {
       final view = await _bodyView(m.ref!);
-      if (view == null) return false;
+      if (view == null) {
+        m.hydrated = false;
+        return false;
+      }
       final data = (view['data'] as Map).cast<String, dynamic>();
       await _loadHtml(m);
-      final text = '${data['text']}'.trim();
+      final text = ((data['text'] as String?) ?? '').trim();
       if (text.isNotEmpty) {
         m.body = _plain(text);
       } else if (m.html != null) {
         m.body = parseHtml(m.html!);
+      } else {
+        m.hydrated = false;
       }
     } finally {
       m.loaded = true;

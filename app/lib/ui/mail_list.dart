@@ -392,7 +392,7 @@ class _MailListViewState extends State<MailListView> {
       child: CustomScrollView(
         controller: ctl,
         // ignore: deprecated_member_use
-        cacheExtent: 6000,
+        cacheExtent: 2000,
         slivers: [
           for (final e in groups.entries)
             SliverMainAxisGroup(
@@ -589,6 +589,7 @@ class MailRow extends StatelessWidget {
 
     Widget row = Hov(
       onTap: () => s.openMail(m.id),
+      onHover: (h) => s.hintMail(h ? m.id : null),
       builder: (_, h) {
         final bg = isSel ? p.surface2 : (h ? p.surface : Colors.transparent);
         final ring = isSel ? p.surface2 : (h ? p.surface : p.bg);

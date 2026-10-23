@@ -25,6 +25,9 @@ const _forceH = int.fromEnvironment('KM_H', defaultValue: 800);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  PaintingBinding.instance.imageCache
+    ..maximumSize = 300
+    ..maximumSizeBytes = 40 << 20;
   GoogleFonts.config.allowRuntimeFetching =
       false; // polices embarquées dans assets/google_fonts
   await Fonts.preload();
@@ -63,9 +66,8 @@ Future<MailSource?> openEngineSource(SharedPreferences prefs) async {
 
 /// Clé du trousseau chiffré du moteur, gardée par le Keystore Android (voir MainActivity.kt).
 Future<Uint8List> androidSecretsKey() async {
-  final key = await const MethodChannel(
-    'mira/keystore',
-  ).invokeMethod<Uint8List>('secretsKey');
+  final key = await const MethodChannel('mira/keystore')
+      .invokeMethod<Uint8List>('secretsKey');
   if (key == null || key.length != 32) {
     throw StateError('clé du trousseau indisponible');
   }

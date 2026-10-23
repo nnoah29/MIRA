@@ -336,6 +336,18 @@ class _SettingsPanelState extends State<SettingsPanel> {
               ('300', '5 min'),
             ], s.prefs.getString('poll') ?? ''),
           ),
+        srow(
+          t('Hibernation'),
+          t(
+            'Sans le focus depuis ce délai, MIRA libère l’affichage (corps des messages, images, caches) ; la réception, les règles et les notifications continuent.',
+          ),
+          seg('hibernate', [
+            ('0', t('Jamais')),
+            ('5', '5 min'),
+            ('10', '10 min'),
+            ('30', '30 min'),
+          ], '${s.hibernateMinutes}'),
+        ),
         const ImageRulesSection(),
         Divider(height: 1, color: p.lineSoft),
         Padding(

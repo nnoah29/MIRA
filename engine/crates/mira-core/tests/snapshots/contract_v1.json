@@ -703,6 +703,14 @@
         "op": "retry_action"
       }
     },
+    "rule.apply_rule_to_existing": {
+      "domain": "rule",
+      "request": {
+        "idempotency_key": "key-1",
+        "op": "apply_rule_to_existing",
+        "rule": "rule-1"
+      }
+    },
     "rule.create_rule": {
       "domain": "rule",
       "request": {

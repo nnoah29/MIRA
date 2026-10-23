@@ -39,5 +39,9 @@ pub enum RuleRequest {
         rule: Rule,
         limit: u32,
     },
+    ApplyRuleToExisting {
+        rule: RuleId,
+        idempotency_key: IdempotencyKey,
+    },
     ListRuleCatalog,
 }

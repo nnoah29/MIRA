@@ -18,12 +18,15 @@ class LabelMapButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<MailStore>();
     final current = s.source?.folderMap[id];
-    final shown = current == null ? t('Libellé') : t(folderById(current).n);
+    final local = s.localLabels.defs[s.localLabels.mapped[id]];
+    final shown = current != null
+        ? t(folderById(current).n)
+        : local?.n ?? t('Libellé');
     return Builder(
       builder: (anchor) => Btn(
         key: ValueKey('map-label-$id'),
         label: '${t('Afficher comme')} : $shown ▾',
-        on: current != null,
+        on: current != null || local != null,
         onTap: () => _pick(anchor, s),
       ),
     );
@@ -32,6 +35,7 @@ class LabelMapButton extends StatelessWidget {
   void _pick(BuildContext anchor, MailStore s) {
     Pops.show(anchor, 'map-$id', (ctx, close) {
       final current = s.source?.folderMap[id];
+      final mapped = s.localLabels.mapped[id];
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -41,10 +45,11 @@ class LabelMapButton extends StatelessWidget {
             key: ValueKey('map-$id-none'),
             leading: const SizedBox.shrink(),
             label: t('Libellé'),
-            on: current == null,
+            on: current == null && mapped == null,
             onTap: () {
               close();
               s.mapFolder(id, null);
+              s.mapLabel(id, null);
             },
           ),
           for (final f in mappableFolders)
@@ -56,6 +61,18 @@ class LabelMapButton extends StatelessWidget {
               onTap: () {
                 close();
                 s.mapFolder(id, f);
+              },
+            ),
+          if (s.localLabels.defs.isNotEmpty) PopTitle(t('Libellés locaux')),
+          for (final e in s.localLabels.defs.entries)
+            PopItem(
+              key: ValueKey('map-$id-${e.key}'),
+              leading: Square(10, Color(e.value.c)),
+              label: e.value.n,
+              on: mapped == e.key,
+              onTap: () {
+                close();
+                s.mapLabel(id, e.key);
               },
             ),
         ],

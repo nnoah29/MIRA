@@ -501,6 +501,9 @@ const Map<String, String> enStrings = {
   'Libellé « {0} »': 'Label “{0}”',
   'Total': 'Total',
   'Aucun': 'None',
+  'Règle appliquée à {0} message(s) déjà présents':
+      'Rule applied to {0} existing message(s)',
+  'Compteur des libellés': 'Label counter',
   'Renommer le libellé': 'Rename the label',
   'Renommer': 'Rename',
   'Supprimer le libellé « {0} » ?': 'Delete the label “{0}”?',

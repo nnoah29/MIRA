@@ -43,6 +43,19 @@ class FakeRulesEngine implements EngineClient {
         },
       };
     }
+    if (op == 'apply_rule_to_existing') {
+      return {
+        'type': 'rule',
+        'data': {
+          'type': 'preview',
+          'data': {
+            'matched': 3,
+            'scanned': 10,
+            'samples': ['m1'],
+          },
+        },
+      };
+    }
     if (op == 'list_mailboxes') {
       return {
         'type': 'mailboxes',
@@ -177,4 +190,16 @@ void main() {
     final editor = t.widget<RuleEditor>(find.byType(RuleEditor));
     expect(editor.mailboxes['a1']!.single.label, 'Factures');
   });
+
+  test(
+    'appliquer une règle à l\u2019existant envoie sa demande et rend le bilan',
+    () async {
+      final engine = FakeRulesEngine();
+      final done = await RuleAdmin(engine).applyToExisting('a');
+      expect((done.matched, done.scanned), (3, 10));
+      final sent = requestsOf(engine, 'apply_rule_to_existing').single;
+      expect(sent['rule'], 'a');
+      expect(sent['idempotency_key'], isNotEmpty);
+    },
+  );
 }

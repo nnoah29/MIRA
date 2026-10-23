@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart' show Uint8List;
+import 'package:flutter/foundation.dart' show Uint8List, setEquals;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -174,6 +174,7 @@ class MailStore extends ChangeNotifier {
     }
     imagePolicy = ImagePolicy.decode(prefs.getString('imgPolicy'));
     theme = prefs.getString('theme') == 'light' ? 'light' : 'dark';
+    labelCounter = CounterMode.parse(prefs.getString('labelCounter'));
     accentHex = prefs.getString('accent');
     dense = prefs.getString('dense') == '1';
     live = prefs.getString('live') != '0';
@@ -198,7 +199,8 @@ class MailStore extends ChangeNotifier {
       _applyIdentities();
       _boxes.addAll(source!.boxes);
       _loadSnoozes();
-      localLabels = LocalLabels.decode(prefs.getString('localLabels'));
+      localLabels = LocalLabels.decode(prefs.getString('localLabels'))
+        ..mapped = decodeLabelMap(prefs.getString('labelMap'));
       for (final l in _boxes.values) {
         _applySnoozes(l);
         localLabels.apply(l);
@@ -300,6 +302,9 @@ class MailStore extends ChangeNotifier {
   String? open;
   PaneView view = PaneView.empty;
   late String theme;
+
+  /// Ce que le compteur de chaque libellé affiche dans la barre latérale, pour tous les libellés.
+  CounterMode labelCounter = CounterMode.unread;
 
   /// Langue de l'interface.
   late AppLang lang;
@@ -516,7 +521,7 @@ class MailStore extends ChangeNotifier {
 
   List<Mail> scope() {
     if (label != null) {
-      return mails
+      return _withDeep(mails)
           .where((m) => m.labels.contains(label) && !hidden(m))
           .toList();
     }
@@ -524,7 +529,7 @@ class MailStore extends ChangeNotifier {
     if (folder == 'starred') {
       return pool.where((m) => m.starred && !hidden(m)).toList();
     }
-    return pool.where((m) => m.folder == folder).toList();
+    return pool.where((m) => _shownIn(m, folder)).toList();
   }
 
   // ---- filtres sur toute la boîte (moteur) ----
@@ -539,7 +544,7 @@ class MailStore extends ChangeNotifier {
   String get _deepKey => '${unified ? '*' : activeId}|$folder|$label|$only';
 
   bool get _wantsDeep =>
-      source != null && label == null && (folder == 'starred' || only != null);
+      source != null && (label != null || folder == 'starred' || only != null);
 
   List<Mail> _withDeep(List<Mail> loaded) {
     if (_deepFor != _deepKey || _deep.isEmpty) return loaded;
@@ -575,17 +580,7 @@ class MailStore extends ChangeNotifier {
     }
     final found = <Mail>[];
     try {
-      for (final a in accounts) {
-        if (!(unified || a.id == activeId)) continue;
-        found.addAll(
-          await src.filtered(
-            a.id,
-            folder,
-            unread: only == 'unread',
-            attachments: only == 'att',
-          ),
-        );
-      }
+      found.addAll(await _deepMails(src));
     } catch (_) {
       return;
     }
@@ -593,6 +588,32 @@ class MailStore extends ChangeNotifier {
     _deep = found;
     _deepFor = key;
     notifyListeners();
+  }
+
+  /// Messages de la vue courante lus dans le moteur : ceux du libellé, ou ceux du dossier filtré.
+  Future<List<Mail>> _deepMails(MailSource src) async {
+    final k = label;
+    if (k != null) {
+      final found = await src.inLabel(k);
+      localLabels.apply(found);
+      return [
+        for (final m in found)
+          if (unified || m.account == activeId) m,
+      ];
+    }
+    final found = <Mail>[];
+    for (final a in accounts) {
+      if (!(unified || a.id == activeId)) continue;
+      found.addAll(
+        await src.filtered(
+          a.id,
+          folder,
+          unread: only == 'unread',
+          attachments: only == 'att',
+        ),
+      );
+    }
+    return found;
   }
 
   bool _matchesLocally(Mail m, String qq) =>
@@ -640,11 +661,23 @@ class MailStore extends ChangeNotifier {
     return [];
   }
 
+  /// Vrai si un libellé du message est masqué de la Réception (réglage du moteur ou rattachement de l'app).
+  bool _hiddenFromInboxByLabel(Mail m) =>
+      m.labels.any((k) => _overviewByKey[k]?.prefs.hideFromInbox == true);
+
+  bool _shownIn(Mail m, String folder) =>
+      m.folder == folder && !(folder == 'inbox' && _hiddenFromInboxByLabel(m));
+
   int _unreadIn(String folder) {
-    final local = nonRead(mails.where((m) => m.folder == folder));
+    final local = nonRead(mails.where((m) => _shownIn(m, folder)));
     final src = source;
     if (src == null) return local;
-    var exact = 0;
+    final hiddenByApp = folder == 'inbox'
+        ? nonRead(
+            mails.where((m) => m.folder == folder && !_shownIn(m, folder)),
+          )
+        : 0;
+    var exact = -hiddenByApp;
     for (final a in accounts) {
       if (!unified && a.id != activeId) continue;
       exact += src.unreadOf(a.id, folder) ?? 0;
@@ -1210,6 +1243,7 @@ class MailStore extends ChangeNotifier {
     if (src == null || acc == null) return;
     try {
       final fresh = _withOutgoing(id, await src.reload(acc));
+      if (_hiddenMails.isNotEmpty) unawaited(_loadHiddenLabels());
       _applySnoozes(fresh);
       localLabels.apply(fresh);
       _keepLocalState(id, fresh);
@@ -1665,13 +1699,20 @@ class MailStore extends ChangeNotifier {
   Map<String, LabelDef> get labelDefs {
     final all = source?.labels ?? seedLabelDefs;
     if (source == null) return all;
-    if (unified) return {...all, ...localLabels.defs};
-    return {
+    final shown = {
       for (final e in all.entries)
+        if (!localLabels.mapped.containsKey(e.key)) e.key: e.value,
+    };
+    if (unified) return {...shown, ...localLabels.defs};
+    return {
+      for (final e in shown.entries)
         if (e.value.account == activeId) e.key: e.value,
       ...localLabels.defs,
     };
   }
+
+  /// Faux si le libellé de compte est affiché comme un libellé local : sa pastille serait en double.
+  bool labelShown(String k) => !localLabels.mapped.containsKey(k);
 
   /// Libellé d'identifiant donné (`null` : supprimé ou d'un autre compte).
   LabelDef? labelDef(String k) =>
@@ -1807,12 +1848,63 @@ class MailStore extends ChangeNotifier {
     if (admin == null) return;
     try {
       final fresh = await admin.list();
+      final before = _hiddenFromInbox();
       labelOverviews = fresh;
       _overviewByKey = {for (final o in fresh) o.key: o};
       notifyListeners();
+      if (!setEquals(before, _hiddenFromInbox())) await _reloadAll();
+      await _loadHiddenLabels();
     } catch (_) {
       /* moteur sans réglages de libellés : affichage par défaut */
     }
+  }
+
+  /// Choisit le compteur de tous les libellés et l'enregistre dans les préférences.
+  void setLabelCounter(CounterMode mode) {
+    labelCounter = mode;
+    prefs.setString('labelCounter', mode.name);
+    notifyListeners();
+  }
+
+  /// Clés des libellés dont les messages sont masqués de la Réception.
+  Set<String> _hiddenFromInbox() => {
+    for (final o in labelOverviews)
+      if (o.prefs.hideFromInbox) o.key,
+  };
+
+  /// Messages des libellés masqués de la Réception, lus dans le moteur : ils ne sont dans aucune boîte chargée.
+  final Map<String, List<Mail>> _hiddenMails = {};
+
+  /// Relit les messages des libellés masqués de la Réception (pour leurs compteurs) ; oublie les autres.
+  Future<void> _loadHiddenLabels() async {
+    final src = source;
+    final keys = _hiddenFromInbox();
+    _hiddenMails.removeWhere((k, _) => !keys.contains(k));
+    if (src == null) return;
+    try {
+      for (final k in keys) {
+        final found = await src.inLabel(k);
+        localLabels.apply(found);
+        _hiddenMails[k] = found;
+      }
+      notifyListeners();
+    } catch (_) {
+      /* lecture impossible : on garde les compteurs actuels */
+    }
+  }
+
+  /// Après l'application d'une règle à l'existant : relit les boîtes et dit combien de messages elle a touchés.
+  Future<void> rulesApplied(int matched) async {
+    await _reloadAll();
+    if (matched > 0) {
+      toast(t('Règle appliquée à {0} message(s) déjà présents', [matched]));
+    }
+  }
+
+  /// Relit tout de suite la boîte de chaque compte, sans attendre la prochaine synchro.
+  Future<void> _reloadAll() async {
+    await Future.wait([for (final a in accounts) _reloadAccount(a.id)]);
+    unawaited(_refreshDeep());
   }
 
   /// Réglages d'un libellé de l'interface (`null` : inconnu du moteur).
@@ -1843,9 +1935,12 @@ class MailStore extends ChangeNotifier {
 
   /// Nombre affiché à côté d'un libellé selon son compteur (0 : rien à afficher).
   int labelCount(String key) {
-    final mode = _overviewByKey[key]?.prefs.counter ?? CounterMode.unread;
-    final mine = mails.where((m) => m.labels.contains(key) && !hidden(m));
-    return switch (mode) {
+    final ids = <String>{};
+    final mine = [
+      for (final m in [...mails, ...?_hiddenMails[key]])
+        if (m.labels.contains(key) && !hidden(m) && ids.add(m.id)) m,
+    ];
+    return switch (labelCounter) {
       CounterMode.none => 0,
       CounterMode.total => mine.length,
       CounterMode.unread => nonRead(mine),
@@ -1883,6 +1978,7 @@ class MailStore extends ChangeNotifier {
     } catch (_) {
       /* lecture impossible : on garde l'affichage actuel */
     }
+    await refreshLabelSettings();
   }
 
   /// Crée un libellé local ; `false` si le nom est vide ou déjà pris.
@@ -1916,6 +2012,8 @@ class MailStore extends ChangeNotifier {
   /// Supprime un libellé local ; si on le consultait, retour à la réception.
   void deleteLocalLabel(String key) {
     localLabels.delete(key);
+    localLabels.mapped.removeWhere((_, v) => v == key);
+    prefs.setString('labelMap', encodeLabelMap(localLabels.mapped));
     for (final l in _boxes.values) {
       localLabels.apply(l);
     }
@@ -1945,6 +2043,24 @@ class MailStore extends ChangeNotifier {
     }
   }
 
+  /// Fait afficher une boîte du serveur comme un libellé local (`null` : redevient un libellé du compte).
+  Future<void> mapLabel(String mailboxId, String? localKey) async {
+    if (localKey != null && source?.folderMap.containsKey(mailboxId) == true) {
+      await mapFolder(mailboxId, null);
+    }
+    if (localKey == null) {
+      localLabels.mapped.remove(mailboxId);
+    } else {
+      localLabels.mapped[mailboxId] = localKey;
+    }
+    await prefs.setString('labelMap', encodeLabelMap(localLabels.mapped));
+    for (final l in _boxes.values) {
+      localLabels.apply(l);
+    }
+    if (label == mailboxId) selectFolder('inbox');
+    notifyListeners();
+  }
+
   /// Rattache une boîte du serveur à un dossier de l'interface (`null` : redevient un libellé).
   Future<void> mapFolder(String mailboxId, String? folder) async {
     final src = source;
@@ -1954,6 +2070,8 @@ class MailStore extends ChangeNotifier {
       src.folderMap.remove(mailboxId);
     } else {
       src.folderMap[mailboxId] = folder;
+      localLabels.mapped.remove(mailboxId);
+      await prefs.setString('labelMap', encodeLabelMap(localLabels.mapped));
     }
     await prefs.setString('folderMap', encodeFolderMap(src.folderMap));
     if (label == mailboxId) selectFolder('inbox');

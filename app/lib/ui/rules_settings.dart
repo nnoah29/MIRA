@@ -18,6 +18,7 @@ class RulesSettings extends StatefulWidget {
   final Stream<void> changes;
   final List<RuleChoice> labels;
   final ValueNotifier<Rule?>? draft;
+  final Future<void> Function(int matched)? onApplied;
   const RulesSettings({
     super.key,
     required this.admin,
@@ -25,6 +26,7 @@ class RulesSettings extends StatefulWidget {
     required this.changes,
     this.labels = const [],
     this.draft,
+    this.onApplied,
   });
 
   @override
@@ -103,12 +105,23 @@ class _RulesSettingsState extends State<RulesSettings> {
 
   Future<void> _save(Rule rule) async {
     if (rule.id.isEmpty) {
-      await widget.admin.create(rule);
+      await _applyToExisting(await widget.admin.create(rule));
     } else {
       await widget.admin.update(rule);
     }
     if (mounted) setState(() => editing = null);
     await _load();
+  }
+
+  /// Applique une règle qui vient d'être créée aux messages déjà chargés ; un échec ne retire pas la règle.
+  Future<void> _applyToExisting(RuleView view) async {
+    if (!view.rule.enabled || !view.status.valid) return;
+    try {
+      final done = await widget.admin.applyToExisting(view.rule.id);
+      await widget.onApplied?.call(done.matched);
+    } catch (e) {
+      if (mounted) setState(() => error = '$e');
+    }
   }
 
   Future<void> _reorder(int from, int to) async {

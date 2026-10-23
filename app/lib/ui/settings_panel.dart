@@ -358,6 +358,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
       6 when s.source?.ruleAdmin != null => box([
         RulesSettings(
           draft: ruleDraft,
+          onApplied: s.rulesApplied,
           admin: s.source!.ruleAdmin!,
           accounts: {for (final a in s.accounts) a.id: a.email},
           changes: s.source!.ruleChanges,

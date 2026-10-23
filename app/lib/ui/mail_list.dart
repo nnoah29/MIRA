@@ -789,7 +789,7 @@ class MailRow extends StatelessWidget {
                           const SizedBox(width: 8),
                         ],
                         for (final lb in m.labels.take(2))
-                          if (s.labelDef(lb) != null) ...[
+                          if (s.labelShown(lb) && s.labelDef(lb) != null) ...[
                             Square(8, Color(s.labelDef(lb)!.c)),
                             const SizedBox(width: 8),
                           ],

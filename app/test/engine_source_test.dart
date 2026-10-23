@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mira/data/html_lite.dart';
 import 'package:mira/data/models.dart';
 import 'package:mira/engine/engine_client.dart';
 import 'package:mira/engine/engine_mail_source.dart';
@@ -16,6 +17,8 @@ class FakeEngine implements EngineClient {
   final queueAsked = <Map<String, dynamic>>[];
   final filteredAsked = <Map<String, dynamic>>[];
   final bodyFails = <String>{};
+  final noText = <String>{};
+  bool fetchFails = false;
   bool allowed = false;
   bool extra = false;
   bool arrived = false;
@@ -179,11 +182,14 @@ class FakeEngine implements EngineClient {
         return {
           'type': 'message_body',
           'data': {
-            'text': 'Un\n\nDeux',
+            'text': noText.contains(r['message']) ? null : 'Un\n\nDeux',
             'html_available': r['message'] == 'm2',
           },
         };
       case 'message.fetch_message_body':
+        if (fetchFails) {
+          throw const EngineException('network.down', 'hors ligne');
+        }
         return {
           'type': 'message_body',
           'data': {'text': 'Téléchargé', 'html_available': false},
@@ -1063,6 +1069,31 @@ void main() {
     expect(fake.calls, contains('message.fetch_message_body'));
     expect(solo.msgs.single.body.single, isNotNull);
   });
+
+  test('un message sans partie texte n\'affiche pas « null »', () async {
+    final fake = FakeEngine()..noText.add('m3');
+    final src = await EngineMailSource.load(fake);
+    final solo = src.boxes['acc1']!.firstWhere((m) => m.subject == 'Seul');
+    await src.hydrate(solo);
+    final shown = plainOf(solo.msgs.single.body);
+    expect(shown, isNot(contains('null')));
+    expect(shown, contains('Rouge'));
+  });
+
+  test(
+    'un corps qui n\'a pas pu être chargé est redemandé à la réouverture',
+    () async {
+      final fake = FakeEngine()
+        ..bodyFails.add('m3')
+        ..fetchFails = true;
+      final src = await EngineMailSource.load(fake);
+      final solo = src.boxes['acc1']!.firstWhere((m) => m.subject == 'Seul');
+      await src.hydrate(solo);
+      fake.fetchFails = false;
+      expect(await src.hydrate(solo), isTrue);
+      expect(plainOf(solo.msgs.single.body), contains('Téléchargé'));
+    },
+  );
 
   test('le store affiche les données du moteur, sans mails fictifs', () async {
     SharedPreferences.setMockInitialValues({});

@@ -782,14 +782,19 @@ class EngineMailSource implements MailSource {
     final clock = Stopwatch()..start();
     try {
       final view = await _bodyView(m.ref!);
-      if (view == null) return false;
+      if (view == null) {
+        m.hydrated = false;
+        return false;
+      }
       final data = (view['data'] as Map).cast<String, dynamic>();
       await _loadHtml(m);
-      final text = '${data['text']}'.trim();
+      final text = ((data['text'] as String?) ?? '').trim();
       if (text.isNotEmpty) {
         m.body = _plain(text);
       } else if (m.html != null) {
         m.body = parseHtml(m.html!);
+      } else {
+        m.hydrated = false;
       }
     } finally {
       m.loaded = true;

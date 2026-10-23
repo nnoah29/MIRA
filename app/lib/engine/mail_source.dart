@@ -38,6 +38,9 @@ abstract class MailSource {
   /// Ajout de comptes par le moteur (`null` : données de démonstration).
   AccountSetup? get setup;
 
+  /// Libère les caches mémoire (pièces jointes lues) ; les données restent sur disque.
+  void releaseCaches();
+
   /// Demande au moteur de synchroniser tous les comptes tout de suite.
   Future<void> syncNow();
 

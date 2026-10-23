@@ -750,6 +750,9 @@ class MailStore extends ChangeNotifier {
         prefs.setString('follow', v);
       case 'poll':
         prefs.setString('poll', v);
+      case 'hibernate':
+        prefs.setString('hibernate', v);
+        if (!_focused) _armSleep();
       case 'live':
         live = v == '1';
         prefs.setString('live', v);
@@ -1161,6 +1164,17 @@ class MailStore extends ChangeNotifier {
     view = PaneView.read;
     _scrollTick++;
     notifyListeners();
+  }
+
+  /// Conversation sous le curseur dans la liste : le lecteur peut la monter d'avance.
+  final ValueNotifier<String?> hintedMail = ValueNotifier(null);
+
+  /// Signale (ou efface) la conversation survolée et charge son corps d'avance.
+  void hintMail(String? id) {
+    hintedMail.value = id;
+    final m = byId(id);
+    if (m == null) return;
+    source?.hydrate(m).catchError((_) => false);
   }
 
   /// Charge d'avance, une par une, les premières conversations de la liste (le réseau n'attend pas l'ouverture).
@@ -2159,8 +2173,50 @@ class MailStore extends ChangeNotifier {
   /// Service de notifications du système (`null` : aucune, comme dans les tests).
   SystemNotifications? notifications;
 
+  bool _focused = true;
+
   /// La fenêtre de MIRA est au premier plan (tenu à jour par l'application).
-  bool appFocused = true;
+  bool get appFocused => _focused;
+
+  set appFocused(bool focused) {
+    _focused = focused;
+    focused ? _wakeUi() : _armSleep();
+  }
+
+  /// Minutes passées sans le focus avant d'hiberner l'interface (0 : jamais).
+  int get hibernateMinutes =>
+      int.tryParse(prefs.getString('hibernate') ?? '') ?? 10;
+
+  /// L'interface a libéré ses vues et ses caches ; le moteur (relevé, règles, notifications) continue.
+  bool hibernating = false;
+  Timer? _sleep;
+
+  /// Programme l'hibernation après le délai réglé, si la fenêtre reste sans focus.
+  void _armSleep() {
+    _sleep?.cancel();
+    final minutes = hibernateMinutes;
+    if (minutes <= 0) return;
+    _sleep = Timer(Duration(minutes: minutes), _hibernate);
+  }
+
+  /// Libère vues web, caches d'images et de pièces jointes ; pas pendant la rédaction d'un message.
+  void _hibernate() {
+    if (_focused || hibernating || view == PaneView.compose) return;
+    hibernating = true;
+    PaintingBinding.instance.imageCache
+      ..clear()
+      ..clearLiveImages();
+    source?.releaseCaches();
+    notifyListeners();
+  }
+
+  /// Le focus revient : l'interface se reconstruit depuis les données déjà chargées.
+  void _wakeUi() {
+    _sleep?.cancel();
+    if (!hibernating) return;
+    hibernating = false;
+    notifyListeners();
+  }
 
   /// Branche le service de notifications ; un clic ouvre le message notifié.
   Future<void> useNotifications(SystemNotifications n) async {

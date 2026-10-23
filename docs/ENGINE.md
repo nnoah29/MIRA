@@ -90,6 +90,5 @@ Règle de frontière : le cœur ne nomme aucun fournisseur, les providers sont p
 | `docs/GUIDE-RUST-POUR-CPP.md` | Lire le code Rust quand on vient du C++ |
 | `docs/DECISIONS-AGENT.md` | Décisions d'implémentation (contexte / choix / raison / retour arrière) |
 | `docs/PROPOSITIONS-REFERENCE.md` | Corrections proposées à la référence |
-| `docs/PASSATION.md`, `docs/RAPPORT-FINAL.md` | Passation et bilan de la session de développement |
 | `docs/specs/` | Spécifications par jalon (dont `J8-J9-facade-cli.md`, CLI retiré depuis) |
 | `docs/GIT_WORKFLOW.md` | Conventions Git (lecture seule) |

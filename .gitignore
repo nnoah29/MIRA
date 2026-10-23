@@ -6,4 +6,4 @@ __pycache__/
 *.pyc
 .idea/
 packaging/out/
-/docs/ETAT/
+graphify-out/

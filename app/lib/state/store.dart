@@ -1893,6 +1893,14 @@ class MailStore extends ChangeNotifier {
     }
   }
 
+  /// Après l'application d'une règle à l'existant : relit les boîtes et dit combien de messages elle a touchés.
+  Future<void> rulesApplied(int matched) async {
+    await _reloadAll();
+    if (matched > 0) {
+      toast(t('Règle appliquée à {0} message(s) déjà présents', [matched]));
+    }
+  }
+
   /// Relit tout de suite la boîte de chaque compte, sans attendre la prochaine synchro.
   Future<void> _reloadAll() async {
     await Future.wait([for (final a in accounts) _reloadAccount(a.id)]);

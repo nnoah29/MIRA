@@ -77,6 +77,17 @@ class RuleAdmin {
     return RulePreview.fromJson(_inner(r));
   }
 
+  /// Applique la règle aux messages déjà présents ; rend combien elle en a touché sur combien examinés.
+  Future<RulePreview> applyToExisting(String id) async {
+    final r = await client.call(
+      req('rule', 'apply_rule_to_existing', {
+        'rule': id,
+        'idempotency_key': _key('apply'),
+      }),
+    );
+    return RulePreview.fromJson(_inner(r));
+  }
+
   /// Boîtes d'un compte, à proposer aux conditions et actions qui en désignent une.
   Future<List<RuleChoice>> mailboxes(String account) async {
     final r = await client.call(

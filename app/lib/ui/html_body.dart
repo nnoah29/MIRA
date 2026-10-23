@@ -10,6 +10,7 @@ import '../i18n/i18n.dart';
 import '../state/image_policy.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
+import 'body_renderer.dart';
 import 'body_skeleton.dart';
 import 'web_mail_body.dart';
 
@@ -17,9 +18,6 @@ import 'web_mail_body.dart';
 const _asyncAbove = 30000;
 const _paper = Color(0xFFFFFFFF);
 const _ink = Color(0xFF1A1A1A);
-
-/// Sous Linux, le corps HTML s'affiche dans une vraie vue web (WebKitGTK) ; ailleurs, par le moteur de widgets.
-final bool webViewEnabled = Platform.isLinux;
 
 /// Le HTML impose-t-il ses propres couleurs (il doit alors rester sur fond clair) ?
 bool imposesColors(String html) => RegExp(
@@ -125,7 +123,7 @@ class _MailHtmlState extends State<MailHtml> {
       ImageAction.ask => msg.blocked.isEmpty,
     };
     final raw = msg.htmlRaw;
-    if (webViewEnabled && raw != null) {
+    if (raw != null && usesWebView(raw)) {
       return _webBody(raw, remoteOk, action);
     }
     final onPaper = imposesColors(msg.html!);

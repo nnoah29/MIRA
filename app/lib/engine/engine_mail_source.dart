@@ -183,6 +183,12 @@ class EngineMailSource implements MailSource {
   }
 
   @override
+  void releaseCaches() {
+    _attachments.clear();
+    _attachmentsSize = 0;
+  }
+
+  @override
   Future<Uint8List?> attachmentBytes(Attachment a) async {
     final id = a.id;
     if (id == null) return null;

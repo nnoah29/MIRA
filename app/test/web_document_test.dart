@@ -90,4 +90,15 @@ void main() {
       expect(policy, isNot(contains('<')));
     },
   );
+
+  test('une image citée plusieurs fois est encodée une seule fois', () {
+    final doc = webDocument(
+      '<img src="cid:a"><img src="cid:a">',
+      remoteImages: false,
+      inline: {'a': _png},
+    );
+    final b64 = base64Encode(_png);
+    expect(b64.allMatches(doc).length, 2);
+    expect(doc, isNot(contains('cid:a')));
+  });
 }

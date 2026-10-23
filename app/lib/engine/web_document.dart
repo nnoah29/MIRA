@@ -33,10 +33,13 @@ String webDocument(
 
 String _inlineImages(String html, Map<String, Uint8List> inline) {
   if (inline.isEmpty) return html;
+  final encoded = <String, String>{};
   return html.replaceAllMapped(_cid, (found) {
-    final bytes = inline[found.group(1)];
+    final id = found.group(1)!;
+    final bytes = inline[id];
     if (bytes == null) return found.group(0)!;
-    return 'data:${_mimeOf(bytes)};base64,${base64Encode(bytes)}';
+    return encoded[id] ??=
+        'data:${_mimeOf(bytes)};base64,${base64Encode(bytes)}';
   });
 }
 

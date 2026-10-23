@@ -9,6 +9,7 @@ import '../theme/icons.dart';
 class Hov extends StatefulWidget {
   final Widget Function(BuildContext context, bool hover) builder;
   final VoidCallback? onTap;
+  final ValueChanged<bool>? onHover;
   final String? tip;
   final bool opaque;
 
@@ -18,6 +19,7 @@ class Hov extends StatefulWidget {
     super.key,
     required this.builder,
     this.onTap,
+    this.onHover,
     this.tip,
     this.opaque = true,
     this.press = false,
@@ -45,8 +47,14 @@ class _HovState extends State<Hov> {
       cursor: widget.onTap != null
           ? SystemMouseCursors.click
           : MouseCursor.defer,
-      onEnter: (_) => setState(() => h = true),
-      onExit: (_) => setState(() => h = false),
+      onEnter: (_) {
+        widget.onHover?.call(true);
+        setState(() => h = true);
+      },
+      onExit: (_) {
+        widget.onHover?.call(false);
+        setState(() => h = false);
+      },
       child: GestureDetector(
         behavior: widget.opaque
             ? HitTestBehavior.opaque

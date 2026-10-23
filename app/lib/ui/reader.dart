@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'body_skeleton.dart';
+import 'body_renderer.dart';
 import 'html_body.dart';
 import 'native_cover.dart';
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -27,45 +29,89 @@ class Reader extends StatefulWidget {
 class _ReaderState extends State<Reader> {
   final List<String> deck = [];
   Timer? _warm;
+  Timer? _hint;
+  late final MailStore _store;
 
   /// Garde les dernières conversations montées hors écran : y revenir est instantané.
-  void _track() {
+  void _track(MailStore s) {
     deck.remove(widget.mail.id);
     deck.add(widget.mail.id);
+    _trim(s);
+  }
+
+  /// Le deck garde jusqu'à `_deckSize` conversations, dont au plus `_webDeckSize` portées par une vue web (la plus lourde).
+  void _trim(MailStore s) {
     while (deck.length > _deckSize) {
       deck.removeAt(0);
     }
+    final heavy = deck.where((id) => _usesWeb(s, id)).toList();
+    while (heavy.length > _webDeckSize) {
+      deck.remove(heavy.removeAt(0));
+    }
   }
 
-  /// Monte hors écran, une à la fois et au calme, les voisins de la conversation affichée.
+  bool _usesWeb(MailStore s, String id) =>
+      s.byId(id)?.msgs.any((x) => usesWebView(x.htmlRaw)) ?? false;
+
+  /// Monte hors écran, au calme, les deux voisins de la conversation affichée.
   void _scheduleWarmUp(MailStore s) {
     _warm?.cancel();
     if (!widget.mail.msgs.every((x) => x.loaded || x.ref == null)) return;
-    _warm = Timer(const Duration(milliseconds: 450), () {
+    _warm = Timer(const Duration(milliseconds: 250), () {
       final l = s.visible();
       final i = l.indexWhere((x) => x.id == widget.mail.id);
-      final next = [i + 1, i - 1]
-          .where((j) => i >= 0 && j >= 0 && j < l.length)
-          .map((j) => l[j])
-          .where((x) => !deck.contains(x.id));
-      if (next.isEmpty || !mounted) return;
-      setState(() {
-        if (deck.length >= _deckSize) deck.removeAt(0);
-        deck.insert(0, next.first.id);
-      });
+      final next = [
+        i + 1,
+        i - 1,
+      ].where((j) => i >= 0 && j >= 0 && j < l.length).map((j) => l[j].id);
+      _mountAhead(s, next);
     });
+  }
+
+  /// Écoute le survol de la liste : la conversation visée est montée dès que le curseur s'y arrête.
+  void _onHint() {
+    _hint?.cancel();
+    final id = _store.hintedMail.value;
+    if (id == null) return;
+    _hint = Timer(
+      const Duration(milliseconds: 150),
+      () => _mountAhead(_store, [id]),
+    );
+  }
+
+  /// Ajoute des conversations au fond du deck ; ne redessine que si le deck a changé.
+  void _mountAhead(MailStore s, Iterable<String> ids) {
+    final before = [...deck];
+    for (final id in ids) {
+      if (!deck.contains(id) && s.byId(id)?.outbox == null) deck.insert(0, id);
+    }
+    _trim(s);
+    if (mounted && !listEquals(before, deck)) setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _store = context.read<MailStore>();
+    _store.hintedMail.addListener(_onHint);
   }
 
   @override
   void dispose() {
     _warm?.cancel();
+    _hint?.cancel();
+    _store.hintedMail.removeListener(_onHint);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    _track();
     final s = context.watch<MailStore>();
+    if (s.hibernating) {
+      deck.clear();
+      return const SizedBox.expand();
+    }
+    _track(s);
     _scheduleWarmUp(s);
     final p = context.pal;
     final m = widget.mail;
@@ -334,7 +380,7 @@ class _Thread extends StatelessWidget {
       ],
     );
     final time = Mono(fullDate(msg.date), ls: .08, height: null);
-    final nativeBody = webViewEnabled && msg.htmlRaw != null;
+    final nativeBody = usesWebView(msg.htmlRaw);
     Widget chev(bool folded) => AnimatedRotation(
       turns: folded ? -.25 : 0,
       duration: const Duration(milliseconds: 150),
@@ -576,6 +622,7 @@ class _BodySwitch extends StatelessWidget {
 }
 
 const _deckSize = 5;
+const _webDeckSize = 4;
 
 /// Pile de conversations : la courante est visible, les autres restent montées (et mises en page) hors écran.
 class _Deck extends StatelessWidget {

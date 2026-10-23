@@ -26,17 +26,18 @@ fn scope_accounts(tx: &Tx<'_>, scope: &RuleScope) -> Result<Vec<AccountId>, Mira
     Ok(accounts)
 }
 
-/// Messages candidats des comptes, du plus récent au plus ancien, au plus `PREVIEW_SCAN_LIMIT`
+/// Messages candidats des comptes, du plus récent au plus ancien, au plus `limit`
 fn recent_candidates(
     tx: &Tx<'_>,
     accounts: &[AccountId],
+    limit: u32,
 ) -> Result<Vec<MessageSummary>, MiraError> {
     let mut all = Vec::new();
     for account in accounts {
-        all.extend(tx.rule_candidates(account, PREVIEW_SCAN_LIMIT)?);
+        all.extend(tx.rule_candidates(account, limit)?);
     }
     all.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| b.1.id.cmp(&a.1.id)));
-    all.truncate(PREVIEW_SCAN_LIMIT as usize);
+    all.truncate(limit as usize);
     Ok(all.into_iter().map(|(_, summary)| summary).collect())
 }
 
@@ -60,13 +61,14 @@ fn rule_fires_on(rule: &Rule, context: &MessageContext) -> bool {
     !outcome.matched.is_empty()
 }
 
-/// Lit, sous le verrou de la base, le contexte des messages candidats de la portée (au plus `PREVIEW_SCAN_LIMIT`)
+/// Lit, sous le verrou de la base, le contexte des messages candidats de la portée (au plus `limit`)
 pub(super) fn load_contexts(
     tx: &Tx<'_>,
     scope: &RuleScope,
     now: Timestamp,
+    limit: u32,
 ) -> Result<Vec<MessageContext>, MiraError> {
-    let candidates = recent_candidates(tx, &scope_accounts(tx, scope)?)?;
+    let candidates = recent_candidates(tx, &scope_accounts(tx, scope)?, limit)?;
     let mut cache = HashMap::new();
     let mut contexts = Vec::with_capacity(candidates.len());
     for summary in candidates {

@@ -1,8 +1,8 @@
-//! Vues de liste : une boîte ou une vue standard.
+//! Vues de liste : une boîte, un libellé local ou une vue standard.
 
 use serde::{Deserialize, Serialize};
 
-use crate::ids::kinds::MailboxId;
+use crate::ids::kinds::{LocalLabelId, MailboxId};
 
 /// Vue standard construite sur tous les comptes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -18,5 +18,6 @@ pub enum StandardView {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ViewRef {
     Mailbox { mailbox: MailboxId },
+    LocalLabel { label: LocalLabelId },
     Standard { view: StandardView },
 }

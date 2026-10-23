@@ -3,7 +3,7 @@
 use mira_vocabulary::error::codes::internal;
 use mira_vocabulary::{ErrorCategory, MiraError, Rule};
 
-use super::preview_scan::{count_matches, load_contexts};
+use super::preview_scan::{PREVIEW_SCAN_LIMIT, count_matches, load_contexts};
 use crate::api::contract::{Response, RuleResponse};
 use crate::api::engine::Engine;
 use crate::rules::validate::validate_shape;
@@ -25,7 +25,7 @@ pub(crate) async fn handle_preview_rule(
     let now = engine.config.clock.now();
     let contexts = engine
         .database
-        .read(|tx| load_contexts(tx, &probe.scope, now))?;
+        .read(|tx| load_contexts(tx, &probe.scope, now, PREVIEW_SCAN_LIMIT))?;
     let samples = limit.min(MAX_PREVIEW_SAMPLES);
     let preview = tokio::task::spawn_blocking(move || count_matches(&probe, contexts, samples))
         .await

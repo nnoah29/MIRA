@@ -7,7 +7,7 @@ use crate::rules::outcome::LabelChange;
 use crate::storage::Tx;
 
 /// Pose ou retire les libellés sur la conversation (un libellé supprimé entre-temps est ignoré) ; vrai si elle a changé
-pub(super) fn apply_label_changes(
+pub(crate) fn apply_label_changes(
     tx: &Tx<'_>,
     thread: Option<&ThreadId>,
     changes: &[LabelChange],

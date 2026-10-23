@@ -15,7 +15,6 @@ typedef LabelSet = Future<void> Function({
   bool? hidden,
   bool? hideFromInbox,
   bool? notifications,
-  CounterMode? counter,
   int? color,
 });
 
@@ -44,23 +43,6 @@ class LabelRow extends StatelessWidget {
     label: text,
     selected: on,
     onTap: tap,
-  );
-
-  Widget _counter(BuildContext context) => Wrap(
-    spacing: 6,
-    children: [
-      for (final (mode, text) in [
-        (CounterMode.unread, t('Non lus')),
-        (CounterMode.total, t('Total')),
-        (CounterMode.none, t('Aucun')),
-      ])
-        RuleChip(
-          key: ValueKey('counter-${label.key}-${mode.name}'),
-          label: text,
-          selected: label.prefs.counter == mode,
-          onTap: () => onSet(counter: mode),
-        ),
-    ],
   );
 
   Future<void> _askRename(BuildContext context) async {
@@ -276,7 +258,6 @@ class LabelRow extends StatelessWidget {
                 prefs.notifications,
                 () => onSet(notifications: !prefs.notifications),
               ),
-              _counter(context),
               if (!label.local) LabelMapButton(id: label.id),
             ],
           ),

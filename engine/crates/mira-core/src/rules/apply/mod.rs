@@ -7,5 +7,6 @@ mod replay_pending;
 mod submit_actions;
 
 pub use eligibility::rules_apply_in;
+pub(crate) use label_changes::apply_label_changes;
 pub use replay_pending::replay_pending_rules;
 pub use submit_actions::apply_rules_with;

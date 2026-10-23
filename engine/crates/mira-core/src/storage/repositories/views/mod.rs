@@ -4,6 +4,7 @@ mod builder;
 mod clauses;
 mod filters;
 mod list;
+mod local_label;
 mod mailbox;
 mod page;
 mod search;

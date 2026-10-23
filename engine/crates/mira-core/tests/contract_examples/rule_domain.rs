@@ -86,6 +86,10 @@ pub fn requests() -> Vec<Named<Request>> {
             rule: sample_rule(),
             limit: 20,
         },
+        RuleRequest::ApplyRuleToExisting {
+            rule: RuleId::from_raw("rule-1"),
+            idempotency_key: IdempotencyKey("key-1".to_string()),
+        },
         RuleRequest::ListRuleCatalog,
     ]);
     let ops: Vec<&str> = items.iter().map(op_name).collect();
@@ -149,6 +153,7 @@ pub fn op_name(request: &RuleRequest) -> &'static str {
         RuleRequest::ReorderRules { .. } => "reorder_rules",
         RuleRequest::ValidateRule { .. } => "validate_rule",
         RuleRequest::PreviewRule { .. } => "preview_rule",
+        RuleRequest::ApplyRuleToExisting { .. } => "apply_rule_to_existing",
         RuleRequest::ListRuleCatalog => "list_rule_catalog",
     }
 }

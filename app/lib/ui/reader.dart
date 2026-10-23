@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'body_skeleton.dart';
+import 'body_renderer.dart';
 import 'html_body.dart';
 import 'native_cover.dart';
 
@@ -334,7 +335,7 @@ class _Thread extends StatelessWidget {
       ],
     );
     final time = Mono(fullDate(msg.date), ls: .08, height: null);
-    final nativeBody = webViewEnabled && msg.htmlRaw != null;
+    final nativeBody = usesWebView(msg.htmlRaw);
     Widget chev(bool folded) => AnimatedRotation(
       turns: folded ? -.25 : 0,
       duration: const Duration(milliseconds: 150),

@@ -6,6 +6,24 @@ import 'engine_client.dart';
 const _maxInline = 20;
 const _maxBytes = 5 * 1024 * 1024;
 
+/// Total d'images incorporées gardées en mémoire par message ; les autres restent des pièces jointes.
+const inlineBudget = 8 * 1024 * 1024;
+
+/// Garde, dans l'ordre, les images qui tiennent encore dans le budget du message.
+List<Map<String, dynamic>> withinInlineBudget(
+  List<Map<String, dynamic>> images,
+) {
+  var left = inlineBudget;
+  final kept = <Map<String, dynamic>>[];
+  for (final a in images) {
+    final size = ((a['size'] as num?) ?? 0).toInt();
+    if (size > left) continue;
+    left -= size;
+    kept.add(a);
+  }
+  return kept;
+}
+
 /// Identifiants `cid:` cités par un HTML, sans chevrons et en minuscules.
 Set<String> citedCids(String html) => {
   for (final m in RegExp(
@@ -27,11 +45,11 @@ Future<Map<String, Uint8List>> loadInlineImages(
   Set<String> wanted,
   List<Map<String, dynamic>> attachments,
 ) async {
-  final wantedNow = [
+  final wantedNow = withinInlineBudget([
     for (final a in attachments)
       if (cidOf(a) case final cid? when wanted.contains(cid))
         if (((a['size'] as num?) ?? 0) <= _maxBytes) a,
-  ].take(_maxInline).toList();
+  ]).take(_maxInline).toList();
   final bytes = await Future.wait([
     for (final a in wantedNow) _fetch(client, '${a['id']}'),
   ]);

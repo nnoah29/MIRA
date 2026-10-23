@@ -18,6 +18,7 @@ import '../engine/label_settings_admin.dart';
 import '../engine/local_label_admin.dart';
 import 'local_label_migration.dart';
 import 'local_labels.dart';
+import 'label_query.dart';
 import 'search_filters.dart';
 import '../engine/message_actions.dart';
 import '../engine/mail_source.dart';
@@ -293,6 +294,9 @@ class MailStore extends ChangeNotifier {
   Account get active => accounts.firstWhere((a) => a.id == activeId);
   String folder = 'inbox';
   String? label;
+
+  /// Le libellé courant vient d'un `@:nom` tapé dans la recherche (et non d'un clic dans la barre latérale).
+  bool _labelFromQuery = false;
   String pill = 'all';
   String q = '';
   SearchFilters searchFilters = const SearchFilters();
@@ -633,6 +637,7 @@ class MailStore extends ChangeNotifier {
         if ((!hidden(m) || m.folder == folder) &&
             (unified || m.account == activeId) &&
             searchFilters.matches(m, nowMs()) &&
+            (!_labelFromQuery || m.labels.contains(label)) &&
             seen.add(m.id))
           m,
     ];
@@ -1027,6 +1032,7 @@ class MailStore extends ChangeNotifier {
     navOpen = false;
     folder = id;
     label = null;
+    _labelFromQuery = false;
     _afterNav();
   }
 
@@ -1034,6 +1040,7 @@ class MailStore extends ChangeNotifier {
     navOpen = false;
     label = k;
     folder = 'inbox';
+    _labelFromQuery = false;
     _afterNav();
   }
 
@@ -1059,11 +1066,30 @@ class MailStore extends ChangeNotifier {
   }
 
   void setQuery(String v) {
-    q = v;
+    final parsed = parseLabelQuery(v, labelDefs);
+    _applyQueryLabel(parsed.key);
+    q = parsed.rest;
     serverNote = null;
-    _scheduleSearch(v);
+    _scheduleSearch(parsed.rest);
     notifyListeners();
   }
+
+  /// Affiche (ou retire) la vue du libellé nommé par `@:nom`, comme un clic sur ce libellé.
+  void _applyQueryLabel(String? key) {
+    if (key != null && label != key) {
+      label = key;
+      folder = 'inbox';
+      _labelFromQuery = true;
+      _afterNav();
+    } else if (key == null && _labelFromQuery) {
+      label = null;
+      _labelFromQuery = false;
+      _afterNav();
+    }
+  }
+
+  /// Du texte est saisi dans la barre de recherche, `@:nom` compris.
+  bool get hasQueryText => searchCtl.text.isNotEmpty;
 
   void clearQuery() {
     _resetSearch();
@@ -1074,6 +1100,11 @@ class MailStore extends ChangeNotifier {
   /// Efface le texte cherché et les filtres de recherche.
   void _resetSearch() {
     q = '';
+    if (_labelFromQuery) {
+      label = null;
+      _labelFromQuery = false;
+      unawaited(_refreshDeep());
+    }
     searchCtl.clear();
     searchFilters = const SearchFilters();
     filtersOpen = false;

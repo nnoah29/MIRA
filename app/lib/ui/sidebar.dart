@@ -279,7 +279,7 @@ class Topbar extends StatelessWidget {
     final p = context.pal;
     final w = MediaQuery.sizeOf(context).width;
     final mobile = w <= 760;
-    final hasQ = s.q.isNotEmpty;
+    final hasQ = s.hasQueryText;
     final wide = w > 1350;
     return Container(
       height: 64,

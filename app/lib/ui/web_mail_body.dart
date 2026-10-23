@@ -99,7 +99,18 @@ class _WebMailBodyState extends State<WebMailBody>
     _fallback?.cancel();
     _wheel.dispose();
     _curtain.dispose();
+    unawaited(_release());
     super.dispose();
+  }
+
+  /// Sous Linux, retirer le widget ne fait que masquer la vue native : le moteur web n'est détruit qu'à la libération du contrôleur.
+  Future<void> _release() async {
+    try {
+      await _ready;
+      await _controller.platform.closeOffscreenWebView();
+    } on Object {
+      return;
+    }
   }
 
   /// La page chargée et mesurée remplace le squelette en se dévoilant.
@@ -138,6 +149,7 @@ class _WebMailBodyState extends State<WebMailBody>
 
   Future<void> _load() async {
     await _ready;
+    if (!mounted) return;
     await _controller.loadHtmlString(
       webDocument(
         widget.html,

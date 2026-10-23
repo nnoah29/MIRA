@@ -86,7 +86,7 @@ class _ShellState extends State<Shell> with WidgetsBindingObserver {
         return true;
       }
       if (s.searchFocus.hasFocus) {
-        if (s.q.isNotEmpty) {
+        if (s.hasQueryText) {
           s.clearQuery();
         } else {
           s.searchFocus.unfocus();

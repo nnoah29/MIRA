@@ -576,7 +576,7 @@ class _BodySwitch extends StatelessWidget {
   }
 }
 
-const _deckSize = 5;
+const _deckSize = 2;
 
 /// Pile de conversations : la courante est visible, les autres restent montées (et mises en page) hors écran.
 class _Deck extends StatelessWidget {

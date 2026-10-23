@@ -4,6 +4,7 @@
 #ifdef GDK_WINDOWING_X11
 #include <gdk/gdkx.h>
 #endif
+#include <webkit2/webkit2.h>
 
 #include "flutter/generated_plugin_registrant.h"
 
@@ -61,6 +62,10 @@ static void my_application_activate(GApplication* application) {
   g_signal_connect_swapped(view, "first-frame", G_CALLBACK(first_frame_cb),
                            self);
   gtk_widget_realize(GTK_WIDGET(view));
+
+  // Mode « visionneuse de documents » : WebKit garde le moins de caches possible (un courriel ne se recharge pas).
+  webkit_web_context_set_cache_model(webkit_web_context_get_default(),
+                                     WEBKIT_CACHE_MODEL_DOCUMENT_VIEWER);
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
 

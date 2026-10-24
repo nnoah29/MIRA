@@ -1,4 +1,4 @@
-// Généré à partir de tool/en.py — traductions françaises → anglaises.
+// Traductions françaises → anglaises : la clé est le texte français tel qu'écrit dans l'app (`t('…')`). Source maintenue à la main.
 const Map<String, String> enStrings = {
   'Ma boîte': 'My mailbox',
   'Libellés': 'Labels',

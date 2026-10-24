@@ -409,6 +409,9 @@ class MailStore extends ChangeNotifier {
   // ---- messages plus anciens ----
   bool loadingMore = false;
 
+  /// Par compte et dossier : le compteur du serveur vu, et ce qu'on y a ajouté ou retiré en lisant ici.
+  final Map<String, (int, int)> _unreadAdj = {};
+
   /// Comptes de la vue courante ayant des messages plus anciens non chargés.
   List<String> _deeper() {
     final src = source;
@@ -673,19 +676,26 @@ class MailStore extends ChangeNotifier {
   bool _shownIn(Mail m, String folder) =>
       m.folder == folder && !(folder == 'inbox' && _hiddenFromInboxByLabel(m));
 
+  /// Non lus de la Réception que l'app cache à cause d'un libellé, chargés ou lus dans le moteur.
+  int _unreadHiddenFromInbox() {
+    final seen = <String>{};
+    final hiddenOnes = [
+      ...mails.where((m) => m.folder == 'inbox' && !_shownIn(m, 'inbox')),
+      for (final l in _hiddenMails.values)
+        ...l.where((m) => m.folder == 'inbox' && _hiddenFromInboxByLabel(m)),
+    ];
+    return nonRead(hiddenOnes.where((m) => seen.add(m.id)));
+  }
+
   int _unreadIn(String folder) {
     final local = nonRead(mails.where((m) => _shownIn(m, folder)));
     final src = source;
     if (src == null) return local;
-    final hiddenByApp = folder == 'inbox'
-        ? nonRead(
-            mails.where((m) => m.folder == folder && !_shownIn(m, folder)),
-          )
-        : 0;
+    final hiddenByApp = folder == 'inbox' ? _unreadHiddenFromInbox() : 0;
     var exact = -hiddenByApp;
     for (final a in accounts) {
       if (!unified && a.id != activeId) continue;
-      exact += src.unreadOf(a.id, folder) ?? 0;
+      exact += _serverUnread(src, a.id, folder);
     }
     return exact > local ? exact : local;
   }
@@ -1182,7 +1192,7 @@ class MailStore extends ChangeNotifier {
       return;
     }
     if (m.unread) {
-      m.unread = false;
+      _setUnread(m, false);
       _syncAction([m], (a) => a.read(true));
     }
     _hydrate(m);
@@ -1724,13 +1734,46 @@ class MailStore extends ChangeNotifier {
     moveTo(ids, 'trash', 'mis à la corbeille');
   }
 
+  /// Change l'état lu d'un message dans toutes ses copies (liste, recherche, libellés masqués) et dans les compteurs.
+  void _setUnread(Mail m, bool unread) {
+    if (m.unread != unread) _noteReadChange(m, unread);
+    final copies = [
+      ...mails,
+      ..._hits,
+      ..._deep,
+      for (final l in _hiddenMails.values) ...l,
+    ];
+    for (final c in copies) {
+      if (c.id == m.id) c.unread = unread;
+    }
+    m.unread = unread;
+  }
+
+  /// Retient le changement de lecture tant que le compteur du serveur n'a pas bougé.
+  void _noteReadChange(Mail m, bool nowUnread) {
+    final raw = source?.unreadOf(m.account, m.folder);
+    if (raw == null) return;
+    final k = '${m.account}/${m.folder}';
+    final cur = _unreadAdj[k];
+    final base = cur != null && cur.$1 == raw ? cur.$2 : 0;
+    _unreadAdj[k] = (raw, base + (nowUnread ? 1 : -1));
+  }
+
+  /// Compteur du serveur d'un dossier, corrigé des lectures faites ici et pas encore reprises par le serveur.
+  int _serverUnread(MailSource src, String account, String folder) {
+    final raw = src.unreadOf(account, folder) ?? 0;
+    final adj = _unreadAdj['$account/$folder'];
+    if (adj == null || adj.$1 != raw) return raw;
+    return raw + adj.$2 < 0 ? 0 : raw + adj.$2;
+  }
+
   void toggleRead() {
     final ids = targets();
     if (ids.isEmpty) return hint();
     final ms = ids.map((i) => byId(i)!).toList();
     final allRead = ms.every((m) => !m.unread);
     for (final m in ms) {
-      m.unread = allRead;
+      _setUnread(m, allRead);
     }
     sel.clear();
     notifyListeners();

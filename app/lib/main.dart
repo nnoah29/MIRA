@@ -59,7 +59,9 @@ Future<MailSource?> openEngineSource(SharedPreferences prefs) async {
       folderMap: decodeFolderMap(prefs.getString('folderMap')),
     );
   } catch (e) {
-    stderr.writeln('MIRA : moteur indisponible, données de démonstration ($e)');
+    stderr.writeln(
+      'MIRA : moteur indisponible, données de démonstration ($e)',
+    ); // i18n:ignore
     return null;
   }
 }
@@ -69,7 +71,7 @@ Future<Uint8List> androidSecretsKey() async {
   final key = await const MethodChannel('mira/keystore')
       .invokeMethod<Uint8List>('secretsKey');
   if (key == null || key.length != 32) {
-    throw StateError('clé du trousseau indisponible');
+    throw StateError('clé du trousseau indisponible'); // i18n:ignore
   }
   return key;
 }

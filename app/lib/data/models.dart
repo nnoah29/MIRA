@@ -307,22 +307,22 @@ List<Sender> knownSenders = [];
 Person me = Person(defaultAccounts[0].name, defaultAccounts[0].email);
 
 const seedLabelDefs = <String, LabelDef>{
-  'projets': LabelDef('Projets', 0xFFe8542b),
-  'candidatures': LabelDef('Candidatures', 0xFF6aa8d9),
-  'factures': LabelDef('Factures', 0xFF8bc48a),
-  'equipe': LabelDef('Équipe', 0xFFd9b46a),
+  'projets': LabelDef('Projets', 0xFFe8542b), // i18n:key 2
+  'candidatures': LabelDef('Candidatures', 0xFF6aa8d9), // i18n:key 2
+  'factures': LabelDef('Factures', 0xFF8bc48a), // i18n:key 2
+  'equipe': LabelDef('Équipe', 0xFFd9b46a), // i18n:key 2
 };
 
 const folderDefs = <FolderDef>[
-  FolderDef('inbox', 'Réception', 'inbox'),
-  FolderDef('starred', 'Favoris', 'star'),
-  FolderDef('snoozed', 'Reportés', 'clock'),
-  FolderDef('sent', 'Envoyés', 'send'),
-  FolderDef('drafts', 'Brouillons', 'file'),
-  FolderDef('outbox', 'Boîte d’envoi', 'outbox'),
-  FolderDef('archive', 'Archives', 'archive'),
-  FolderDef('spam', 'Spam', 'warn'),
-  FolderDef('trash', 'Corbeille', 'trash'),
+  FolderDef('inbox', 'Réception', 'inbox'), // i18n:key 2
+  FolderDef('starred', 'Favoris', 'star'), // i18n:key 2
+  FolderDef('snoozed', 'Reportés', 'clock'), // i18n:key 2
+  FolderDef('sent', 'Envoyés', 'send'), // i18n:key 2
+  FolderDef('drafts', 'Brouillons', 'file'), // i18n:key 2
+  FolderDef('outbox', 'Boîte d’envoi', 'outbox'), // i18n:key 2
+  FolderDef('archive', 'Archives', 'archive'), // i18n:key 2
+  FolderDef('spam', 'Spam', 'warn'), // i18n:key 2
+  FolderDef('trash', 'Corbeille', 'trash'), // i18n:key 2
 ];
 
 FolderDef folderById(String id) =>

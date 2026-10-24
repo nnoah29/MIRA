@@ -1,3 +1,4 @@
+// i18n:ignore-file — contenu fictif de la démonstration, volontairement en français.
 import 'dart:math';
 
 import 'format.dart';

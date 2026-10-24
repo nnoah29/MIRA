@@ -58,12 +58,12 @@ String fullDate(int ms) => DateFormat(
 String groupOf(int ms) {
   final n = diffDays(ms);
   return n <= 0
-      ? "Aujourd'hui"
+      ? tkey("Aujourd'hui")
       : n == 1
-      ? 'Hier'
+      ? tkey('Hier')
       : n < 7
-      ? 'Cette semaine'
-      : 'Plus ancien';
+      ? tkey('Cette semaine')
+      : tkey('Plus ancien');
 }
 
 String sizeOf(int b) => b < 1024

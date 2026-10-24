@@ -4,7 +4,11 @@ import 'dart:convert';
 class EngineException implements Exception {
   final String code;
   final String message;
-  const EngineException(this.code, this.message);
+
+  /// Message écrit par l'app, déjà dans la langue active (sinon : texte du code d'erreur).
+  final bool localized;
+  const EngineException(this.code, this.message) : localized = false;
+  const EngineException.local(this.code, this.message) : localized = true;
 
   @override
   String toString() => 'EngineException($code): $message';
@@ -35,7 +39,7 @@ Map<String, dynamic> openEnvelope(String json) {
   final err = (env['error'] as Map?)?.cast<String, dynamic>() ?? const {};
   throw EngineException(
     '${err['code'] ?? 'internal.bug'}',
-    '${err['message'] ?? 'erreur du moteur'}',
+    '${err['message'] ?? 'erreur du moteur'}', // i18n:ignore
   );
 }
 

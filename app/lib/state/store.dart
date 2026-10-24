@@ -35,6 +35,7 @@ import 'image_policy.dart';
 import 'rich_controller.dart';
 import 'mail_notifier.dart';
 import 'unsubscribe.dart';
+import '../i18n/engine_errors.dart';
 import '../i18n/i18n.dart';
 
 enum PaneView { empty, read, compose, assistant, settings, addAccount }
@@ -183,7 +184,6 @@ class MailStore extends ChangeNotifier {
     accentHex = prefs.getString('accent');
     dense = prefs.getString('dense') == '1';
     live = prefs.getString('live') != '0';
-    sig = prefs.getString('sig') ?? 'Cordialement,\nNoah';
     final extra = <Account>[];
     try {
       final raw = prefs.getString('accounts');
@@ -254,9 +254,9 @@ class MailStore extends ChangeNotifier {
     try {
       unawaited(_reloadAccount(activeId));
       await src.syncNow();
-      if (!quiet) toast('Synchronisation lancée');
+      if (!quiet) toast(t('Synchronisation lancée'));
     } catch (_) {
-      if (!quiet) toast('Synchronisation impossible', err: true);
+      if (!quiet) toast(t('Synchronisation impossible'), err: true);
     } finally {
       await Future<void>.delayed(const Duration(milliseconds: 1200));
       syncing = false;
@@ -348,7 +348,9 @@ class MailStore extends ChangeNotifier {
   }
 
   late bool dense, live;
-  late String sig;
+
+  /// Signature : celle de l'utilisateur, sinon la formule par défaut dans la langue active.
+  String get sig => prefs.getString('sig') ?? t('Cordialement,\nNoah');
   late List<ChatMsg> chat;
   bool busy = false;
   ComposeState? c;
@@ -759,7 +761,7 @@ class MailStore extends ChangeNotifier {
     });
   }
 
-  void hint() => toast('Sélectionne d’abord un message', err: true);
+  void hint() => toast(t('Sélectionne d’abord un message'), err: true);
 
   // ---- préférences ----
   void setSetting(String k, String v) {
@@ -809,7 +811,6 @@ class MailStore extends ChangeNotifier {
   }
 
   void setSig(String s) {
-    sig = s;
     prefs.setString('sig', s);
   }
 
@@ -845,10 +846,7 @@ class MailStore extends ChangeNotifier {
   /// Démarrage (après le premier build, `narrow` est connu).
   void start() {
     if (source != null && source!.accounts.isEmpty) {
-      toast(
-        'Aucun compte : ajoutes-en un avec « mira account add »',
-        err: true,
-      );
+      toast(t('Aucun compte : ajoutes-en un dans les réglages'), err: true);
     }
     if (!narrow) {
       final l = visible();
@@ -938,7 +936,7 @@ class MailStore extends ChangeNotifier {
     prefs.setString('account', 'all');
     _resetView();
     notifyListeners();
-    toast('Toutes les boîtes');
+    toast(t('Toutes les boîtes'));
   }
 
   /// Adresse d'expédition d'un compte (par défaut : le compte actif).
@@ -1279,7 +1277,7 @@ class MailStore extends ChangeNotifier {
         notifyListeners();
       }
     } catch (_) {
-      toast('Impossible d’autoriser le contenu distant', err: true);
+      toast(t('Impossible d’autoriser le contenu distant'), err: true);
     }
   }
 
@@ -1701,13 +1699,13 @@ class MailStore extends ChangeNotifier {
     if (ids.isEmpty) return hint();
     switch (v) {
       case '1m':
-        snoozeTo(ids, 'dans 1 minute (démo)', 60000);
+        snoozeTo(ids, tkey('dans 1 minute (démo)'), 60000);
       case '1h':
-        snoozeTo(ids, 'dans 1 heure', 0);
+        snoozeTo(ids, tkey('dans 1 heure'), 0);
       case 'tom':
-        snoozeTo(ids, 'demain 08:00', 0);
+        snoozeTo(ids, tkey('demain 08:00'), 0);
       default:
-        snoozeTo(ids, 'lundi 08:00', 0);
+        snoozeTo(ids, tkey('lundi 08:00'), 0);
     }
   }
 
@@ -1718,8 +1716,8 @@ class MailStore extends ChangeNotifier {
     moveTo(
       ids,
       back ? 'inbox' : 'archive',
-      back ? 'déplacé dans la réception' : 'archivé',
-      back ? 'déplacés dans la réception' : 'archivés',
+      back ? tkey('déplacé dans la réception') : tkey('archivé'),
+      back ? tkey('déplacés dans la réception') : tkey('archivés'),
     );
   }
 
@@ -1730,8 +1728,8 @@ class MailStore extends ChangeNotifier {
     moveTo(
       ids,
       back ? 'inbox' : 'spam',
-      back ? 'déplacé dans la réception' : 'signalé comme spam',
-      back ? 'déplacés dans la réception' : 'signalés comme spam',
+      back ? tkey('déplacé dans la réception') : tkey('signalé comme spam'),
+      back ? tkey('déplacés dans la réception') : tkey('signalés comme spam'),
     );
   }
 
@@ -1741,7 +1739,7 @@ class MailStore extends ChangeNotifier {
     if (ids.every((id) => byId(id)!.folder == 'trash')) {
       return removeForever(ids);
     }
-    moveTo(ids, 'trash', 'mis à la corbeille');
+    moveTo(ids, 'trash', tkey('mis à la corbeille'));
   }
 
   /// Change l'état lu d'un message dans toutes ses copies (liste, recherche, libellés masqués) et dans les compteurs.
@@ -1850,7 +1848,7 @@ class MailStore extends ChangeNotifier {
         : all0.where((m) => m.account == def.account).toList();
     final skipped = all0.length - ms.length;
     if (ms.isEmpty) {
-      toast('Libellé d’un autre compte : rien à modifier', err: true);
+      toast(t('Libellé d’un autre compte : rien à modifier'), err: true);
       return;
     }
     final all = ms.every((m) => m.labels.contains(k));
@@ -2223,7 +2221,7 @@ class MailStore extends ChangeNotifier {
             ? m.labels.where((x) => x != k).toList()
             : {...m.labels, k}.toList();
       }
-      toast('Libellé non modifié', err: true);
+      toast(t('Libellé non modifié'), err: true);
       notifyListeners();
     }
   }
@@ -2287,7 +2285,10 @@ class MailStore extends ChangeNotifier {
     try {
       await job();
     } catch (e) {
-      toast(e is EngineException ? e.message : 'Libellé refusé', err: true);
+      toast(
+        e is EngineException ? engineErrorText(e) : t('Libellé refusé'),
+        err: true,
+      );
       return false;
     }
     await _reloadAccount(account);
@@ -3040,7 +3041,7 @@ class MailStore extends ChangeNotifier {
     final o = m.outbox;
     final admin = source?.composer;
     if (o == null || admin == null) return Future.value();
-    return _outboxOp(m, () => admin.cancelSend(o.action), 'Envoi annulé');
+    return _outboxOp(m, () => admin.cancelSend(o.action), t('Envoi annulé'));
   }
 
   /// Relance un envoi échoué.
@@ -3048,7 +3049,7 @@ class MailStore extends ChangeNotifier {
     final o = m.outbox;
     final admin = source?.composer;
     if (o == null || admin == null) return Future.value();
-    return _outboxOp(m, () => admin.retry(o.action), 'Nouvel essai lancé');
+    return _outboxOp(m, () => admin.retry(o.action), t('Nouvel essai lancé'));
   }
 
   /// Envoi incertain : le renvoyer, ou le tenir pour parti.
@@ -3059,7 +3060,7 @@ class MailStore extends ChangeNotifier {
     return _outboxOp(
       m,
       () => admin.resolve(o.action, resend: resend),
-      resend ? 'Message renvoyé' : 'Message tenu pour envoyé',
+      t(resend ? 'Message renvoyé' : 'Message tenu pour envoyé'),
     );
   }
 
@@ -3275,7 +3276,7 @@ class MailStore extends ChangeNotifier {
     if (cs.to.isEmpty) {
       cs.shake++;
       notifyListeners();
-      toast('Ajoute au moins un destinataire', err: true);
+      toast(t('Ajoute au moins un destinataire'), err: true);
       return;
     }
     if (source != null) return _sendReal(cs, sched);
@@ -3587,8 +3588,10 @@ class MailStore extends ChangeNotifier {
     _after(rand(500, 900).round(), tick);
   }
 
-  void scheduleCleanup(List<String> ids) =>
-      _after(1800, () => moveTo(ids, 'archive', 'archivé', 'archivés'));
+  void scheduleCleanup(List<String> ids) => _after(
+    1800,
+    () => moveTo(ids, 'archive', tkey('archivé'), tkey('archivés')),
+  );
 
   void useDraft(int i) {
     final msg = chat[i];

@@ -4,18 +4,30 @@
 Usage : i18n-audit [--json] [--lang CODE]... [dossier-app]   (code de sortie 1 s'il manque une traduction ou un texte)
         i18n-audit --init CODE [dossier-app]                  crée lib/i18n/lang/CODE.dart avec tous les textes, à traduire
 Le français est la langue source : chaque texte de l'app est sa propre clé de traduction (`t('Texte')`).
-`tkey('Texte')` déclare un texte affiché plus tard par `t(valeur)`. Un texte français volontairement hors traduction
+`tkey('Texte')` déclare un texte affiché plus tard par `t(valeur)` ; dans un contexte constant, `// i18n:key N` sur la ligne (N : rang du littéral, tous si absent) ou un bloc
+`// i18n:keys-begin` … `// i18n:keys-end` d'entrées `'code': 'texte'` (les textes sont des clés). Un fichier entier de contenu fictif (démonstration) porte `// i18n:ignore-file`. Un texte français volontairement hors traduction
 (motif de recherche, donnée de démonstration…) porte `// i18n:ignore` sur sa ligne.
 """
 import glob, json, os, re, sys
 
 ACCENTS = re.compile(r"[àâäçéèêëîïôöùûüÿœÀÂÇÉÈÊËÎÏÔÙÛÜŒ’…«»]")
 FR_WORDS = re.compile(r"\b(le|la|les|des|du|un|une|et|ou|pour|avec|sans|vous|ton|ta|tes|votre|est|pas|sur|dans|aucun|aucune|nouveau|erreur|impossible|choisis|ajouter|supprimer|enregistrer|annuler|fermer)\b", re.I)
-IGNORE_DIRS = ("lib/src/rust/", "lib/i18n/")
+SINK_CALLS = {"Text", "toast", "Btn", "Mono", "SnackBar", "Tooltip"}
+SINK_NAMES = {"label", "tip", "hint", "hintText", "tooltip", "title", "subtitle", "semanticLabel", "text", "message", "labelText", "helperText", "errorText"}
+IGNORE_DIRS = ("lib/src/rust/", "lib/i18n/lang/")
 
 
-def tokenize(src):
-    """Rend les littéraux de chaîne `(début, fin, texte, interpolé)` et les positions des identifiants/ponctuations utiles."""
+def skip_string(src, i):
+    """Position qui suit le littéral de chaîne simple commençant en `i` (dans une interpolation)."""
+    q = src[i]
+    i += 1
+    while i < len(src) and src[i] != q:
+        i += 2 if src[i] == "\\" else 1
+    return i + 1
+
+
+def tokenize(src, base=0):
+    """Rend les jetons `(genre, début, fin, texte, interpolé)` ; le code des interpolations `${…}` est lui aussi découpé."""
     out, i, n = [], 0, len(src)
     while i < n:
         c = src[i]
@@ -33,7 +45,7 @@ def tokenize(src):
             q = src[i]
             triple = src.startswith(q * 3, i)
             i += 3 if triple else 1
-            buf, interp = [], False
+            buf, interp, inner = [], False, []
             while i < n:
                 ch = src[i]
                 if ch == "\\" and not raw:
@@ -48,9 +60,14 @@ def tokenize(src):
                     interp = True
                     if src[i + 1] == "{":
                         depth, i = 1, i + 2
+                        begin = i
                         while i < n and depth:
+                            if src[i] in "'\"":
+                                i = skip_string(src, i)
+                                continue
                             depth += {"{": 1, "}": -1}.get(src[i], 0)
                             i += 1
+                        inner.extend(tokenize(src[begin:i - 1], base + begin))
                     else:
                         i += 1
                         while i < n and (src[i].isalnum() or src[i] == "_"):
@@ -59,16 +76,17 @@ def tokenize(src):
                     continue
                 buf.append(ch)
                 i += 1
-            out.append(("str", start, i, "".join(buf), interp))
+            out.append(("str", start + base, i + base, "".join(buf), interp))
+            out.extend(inner)
         elif c.isalpha() or c == "_":
             j = i
             while j < n and (src[j].isalnum() or src[j] == "_"):
                 j += 1
-            out.append(("id", i, j, src[i:j], False))
+            out.append(("id", i + base, j + base, src[i:j], False))
             i = j
         else:
             if not c.isspace():
-                out.append(("p", i, i + 1, c, False))
+                out.append(("p", i + base, i + base + 1, c, False))
             i += 1
     return out
 
@@ -103,6 +121,7 @@ def analyse(root):
         rel = os.path.relpath(f, root)
         line = lambda pos: src.count("\n", 0, pos) + 1
         text_lines = src.split("\n")
+        demo_file = "i18n:ignore-file" in src
         toks = tokenize(src)
         inside = set()
         for k, tok in enumerate(toks):
@@ -127,15 +146,41 @@ def analyse(root):
                         used.setdefault(x[3], []).append((rel, line(x[1])))
                 if not lits:
                     dynamic.append((rel, line(tok[1]), "clé calculée (non vérifiable)"))
+        for begin, end in re.findall(r"i18n:keys-begin.*?\n(.*?)(?=// i18n:keys-end)", src, re.S) and [
+            (m.end(), src.index("// i18n:keys-end", m.end())) for m in re.finditer(r"// i18n:keys-begin[^\n]*\n", src)
+        ]:
+            region = [x for x in toks if x[0] == "str" and begin <= x[1] < end]
+            for x in region[1::2]:
+                used.setdefault(x[3], []).append((rel, line(x[1])))
+                inside.add(x[1])
+            for x in region[0::2]:
+                inside.add(x[1])
+        sink = set()
+        for k, tok in enumerate(toks[:-2]):
+            nxt = toks[k + 1:k + 3]
+            direct = tok[0] == "id" and tok[3] in SINK_CALLS and nxt[0][3] == "(" and nxt[1][0] == "str"
+            named = tok[0] == "id" and tok[3] in SINK_NAMES and nxt[0][3] == ":" and nxt[1][0] == "str"
+            if direct or named:
+                sink.add(nxt[1][1])
         for tok in toks:
             if tok[0] != "str" or tok[1] in inside:
                 continue
             text = tok[3].replace("\x00", "")
             if len(text.strip()) < 3:
                 continue
-            if "i18n:ignore" in text_lines[line(tok[1]) - 1]:
+            marked = text_lines[line(tok[1]) - 1]
+            if demo_file and "i18n:key" not in marked:
                 continue
-            if ACCENTS.search(text) or len(FR_WORDS.findall(text)) >= 2:
+            declared = re.search(r"i18n:key(?: (\d+))?", marked)
+            if declared:
+                rank = [x for x in toks if x[0] == "str" and line(x[1]) == line(tok[1])].index(tok) + 1
+                if declared.group(1) in (None, str(rank)):
+                    used.setdefault(tok[3], []).append((rel, line(tok[1])))
+                continue
+            if "i18n:ignore" in marked or "i18n:ignore" in text_lines[min(line(tok[1]), len(text_lines) - 1)]:
+                continue
+            looks_texty = re.search(r"[A-Za-zÀ-ÿ]{3}", text) and not re.fullmatch(r"[a-z0-9_./:#@%$\-]+|[A-Z0-9_]+", text.strip())
+            if tok[1] in sink and looks_texty or ACCENTS.search(text) or len(FR_WORDS.findall(text)) >= 2:
                 hard.append((rel, line(tok[1]), tok[3].replace("\x00", "${…}")))
     return used, dynamic, hard
 
@@ -195,7 +240,7 @@ def main():
     for code in langs:
         table = load_lang(root, code)
         report["languages"][code] = {
-            "missing": sorted(k for k in used if not table.get(k, "").strip()),
+            "missing": sorted(k for k in used if k.strip() and not table.get(k, "").strip()),
             "unused": sorted(k for k in table if k not in used),
             "placeholders": sorted(k for k, v in table.items() if v and not placeholders(v) <= placeholders(k)),
         }

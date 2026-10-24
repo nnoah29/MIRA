@@ -426,6 +426,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
               children: [
                 for (var i = 0; i < _tabs(s.source != null).length; i++)
                   Hov(
+                    key: ValueKey('settings-tab-$i'),
                     onTap: () => setState(() => tab = i),
                     builder: (_, h) {
                       final on = tab == i;

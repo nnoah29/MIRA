@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../engine/account_admin.dart';
 import '../engine/account_setup.dart';
 import '../engine/engine_client.dart';
+import '../i18n/engine_errors.dart';
 import '../i18n/i18n.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
@@ -19,8 +20,7 @@ import 'sync_status_line.dart';
 import 'synced_mailboxes.dart';
 import 'widgets.dart';
 
-String _message(Object e) =>
-    e is EngineException ? e.message : t('Erreur inattendue : {0}', ['$e']);
+String _message(Object e) => engineErrorText(e);
 
 /// Libellé et importance de l'état d'un compte.
 (String, bool) stateLabel(AccountDetail a) => switch (a.state) {
@@ -231,9 +231,9 @@ class _AccountCardState extends State<AccountCard> {
   Future<void> _saveName() => _run(() {
     final v = name.text.trim();
     if (v.isEmpty) {
-      throw const EngineException(
+      throw EngineException.local(
         'invalid_input.parameter',
-        'Le nom ne peut pas être vide',
+        t('Le nom ne peut pas être vide'),
       );
     }
     return widget.admin.rename(a.id, v);
@@ -243,7 +243,7 @@ class _AccountCardState extends State<AccountCard> {
     final ip = int.tryParse(imapPort.text.trim());
     final sp = int.tryParse(smtpPort.text.trim());
     if (imapHost.text.trim().isEmpty || smtpHost.text.trim().isEmpty) {
-      throw EngineException(
+      throw EngineException.local(
         'invalid_input.parameter',
         t('Hôte du serveur manquant'),
       );
@@ -254,7 +254,7 @@ class _AccountCardState extends State<AccountCard> {
         sp < 1 ||
         ip > 65535 ||
         sp > 65535) {
-      throw EngineException(
+      throw EngineException.local(
         'invalid_input.parameter',
         t('Port invalide (1 à 65535)'),
       );
@@ -282,7 +282,7 @@ class _AccountCardState extends State<AccountCard> {
   Future<void> _storePassword() => _run(() async {
     final pw = password.text;
     if (pw.isEmpty) {
-      throw EngineException(
+      throw EngineException.local(
         'invalid_input.parameter',
         t('Saisis le mot de passe.'),
       );

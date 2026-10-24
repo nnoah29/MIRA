@@ -7,7 +7,7 @@ import 'lang/en.dart';
 ///
 /// Ajouter une langue : voir `docs/I18N.md` (un fichier `lang/xx.dart`, une ligne ici).
 enum AppLang {
-  fr('fr', 'fr_FR', 'Français', {}, null),
+  fr('fr', 'fr_FR', 'Français', {}, null), // i18n:ignore
   en('en', 'en_US', 'English', enStrings, null);
 
   /// Code de la langue, locale des dates, nom affiché dans le sélecteur.
@@ -35,14 +35,21 @@ enum AppLang {
       : AppLang.values.firstWhere((l) => l.code == fallbackCode);
 
   /// Traduction du texte français [fr] dans cette langue, ou `null` s'il n'y en a pas.
-  String? lookup(String fr) {
-    final own = strings[fr];
-    if (own != null && own.isNotEmpty) return own;
-    return fallback?.lookup(fr);
-  }
+  String? lookup(String fr) => resolveText(fr, strings, fallback?.lookup);
 
   static AppLang fromCode(String? c) =>
       AppLang.values.firstWhere((l) => l.code == c, orElse: () => AppLang.fr);
+}
+
+/// Traduction de [fr] dans [table] ; un texte absent ou vide passe à [fallback] (`null` : pas de traduction).
+String? resolveText(
+  String fr,
+  Map<String, String> table,
+  String? Function(String)? fallback,
+) {
+  final own = table[fr];
+  if (own != null && own.isNotEmpty) return own;
+  return fallback?.call(fr);
 }
 
 /// Langue active (modifiée par `MailStore.setLang`).

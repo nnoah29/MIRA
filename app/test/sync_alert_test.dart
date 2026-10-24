@@ -78,4 +78,24 @@ void main() {
     state.apply('sync_finished', {'operation': 'op1'});
     expect(mostUrgent([(alice, state)]), isNull);
   });
+
+  test('une alerte annoncée par le moteur (envoi, action) s’affiche et s’efface à l’envoi suivant', () {
+    final state = SyncState();
+    expect(state.apply('quota_full', {'account': 'a1'}), isTrue);
+    expect(syncAlertMessage(alice.email, state), contains('Boîte pleine'));
+    expect(mostUrgent([(alice, state)]), isNotNull);
+    state.apply('send_departed', {'account': 'a1'});
+    expect(mostUrgent([(alice, state)]), isNull);
+    expect(state.apply('rate_limited', {'account': 'a1'}), isTrue);
+    expect(
+      syncAlertMessage(alice.email, state),
+      contains('limite les requêtes'),
+    );
+  });
+
+  test('un envoi réussi n’efface pas un autre échec de synchronisation', () {
+    final state = failing('tls.invalid_certificate');
+    state.apply('send_departed', {'account': 'a1'});
+    expect(mostUrgent([(alice, state)]), isNotNull);
+  });
 }

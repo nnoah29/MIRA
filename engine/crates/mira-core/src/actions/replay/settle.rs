@@ -6,6 +6,7 @@ use super::classify::{FailureClass, classify, send_outcome_is_unknown};
 use super::context::ReplayContext;
 use super::park::{park_for_authentication, park_transient};
 use super::report::StepOutcome;
+use crate::events::announce_alert;
 use crate::imap::ImapClient;
 use crate::send::settle_interrupted_send;
 
@@ -16,6 +17,7 @@ pub(super) async fn settle_failure(
     action: &PendingAction,
     error: &MiraError,
 ) -> Result<StepOutcome, MiraError> {
+    announce_alert(ctx.queue.events, &action.account, error);
     let is_send = matches!(action.kind, ActionKind::Send { .. });
     if is_send && send_outcome_is_unknown(error) {
         return settle_interrupted_send(ctx, client, action).await;

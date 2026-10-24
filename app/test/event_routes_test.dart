@@ -48,6 +48,8 @@ void main() {
     expect(effectsOf('sync_finished'), {EventEffect.sync, EventEffect.reload});
     expect(effectsOf('action_failed'), {EventEffect.reload});
     expect(effectsOf('account_deleted'), {EventEffect.accounts});
+    expect(effectsOf('quota_full'), {EventEffect.sync});
+    expect(effectsOf('rate_limited'), {EventEffect.sync});
   });
 
   test('un type inconnu est ignoré sans erreur', () {

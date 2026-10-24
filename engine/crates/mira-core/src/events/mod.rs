@@ -2,6 +2,7 @@
 //! Un abonné rattrape d'abord ce qu'il a manqué depuis la base, puis reçoit le direct (invariant 32).
 
 mod bus;
+mod counters;
 mod recording;
 mod sink;
 mod subscription;

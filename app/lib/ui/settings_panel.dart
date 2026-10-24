@@ -326,7 +326,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
           srow(
             t('Fréquence de relevé'),
             t(
-              'Nouveaux messages de la Réception : instantané (IDLE). Les autres changements sont relevés à cette fréquence ; appliqué au prochain lancement. Plus court = plus de trafic, certains fournisseurs peuvent limiter le compte.',
+              'Nouveaux messages de la Réception : instantané (IDLE). Les autres changements sont relevés à cette fréquence, appliquée tout de suite. Plus court = plus de trafic, certains fournisseurs peuvent limiter le compte.',
             ),
             seg('poll', [
               ('', t('Auto')),
@@ -334,7 +334,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
               ('60', '1 min'),
               ('120', '2 min'),
               ('300', '5 min'),
-            ], s.prefs.getString('poll') ?? ''),
+            ], s.pollChoice),
           ),
         srow(
           t('Hibernation'),

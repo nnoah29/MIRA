@@ -41,8 +41,19 @@ class FakeEngine implements EngineClient {
   bool importFails = false;
   bool hideInbox = false;
   bool settingsOn = false;
+  int? enginePoll;
+  bool engineSettingsOn = false;
+  final settingWrites = <Map<String, dynamic>>[];
   bool hideRow = false;
   final labelViews = <Map<String, dynamic>>[];
+
+  Map<String, dynamic> _settingsAnswer() => {
+    'type': 'settings',
+    'data': {
+      'type': 'settings',
+      'data': {'poll_secs': enginePoll},
+    },
+  };
 
   Map<String, dynamic> _msg(
     String id,
@@ -502,6 +513,22 @@ class FakeEngine implements EngineClient {
           'type': 'label_settings',
           'data': {'type': 'done', 'data': null},
         };
+      case 'settings.get_settings':
+        if (!engineSettingsOn) throw EngineException('internal.bug', 'absent');
+        return _settingsAnswer();
+      case 'settings.set_settings':
+        final next = (r['settings'] as Map)['poll_secs'] as int?;
+        settingWrites.add(r);
+        if (next != enginePoll) {
+          enginePoll = next;
+          feed.add({
+            'kind': {
+              'type': 'settings_changed',
+              'keys': ['poll_secs'],
+            },
+          });
+        }
+        return _settingsAnswer();
       case 'local_label.list_local_labels':
         return _labelAnswer('labels', localLabels);
       case 'local_label.list_local_label_assignments':

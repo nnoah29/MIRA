@@ -151,6 +151,7 @@ class MailStore extends ChangeNotifier {
   StreamSubscription<void>? _syncSub;
   StreamSubscription<void>? _labelSub;
   StreamSubscription<void>? _settingsSub;
+  StreamSubscription<void>? _engineSettingsSub;
 
   /// Historique des destinataires et noms choisis.
   late final ContactBook contactBook;
@@ -208,6 +209,7 @@ class MailStore extends ChangeNotifier {
       }
       localLabelsReady = _initLocalLabels();
       unawaited(_initLabelSettings());
+      unawaited(_initEngineSettings());
       _changeSub = source!.changes.listen(_reloadAccount);
       _syncSub = source!.syncEvents.listen((_) {
         _extensionProgress();
@@ -384,6 +386,7 @@ class MailStore extends ChangeNotifier {
     _syncSub?.cancel();
     _labelSub?.cancel();
     _settingsSub?.cancel();
+    _engineSettingsSub?.cancel();
     _searchTimer?.cancel();
     _wake?.cancel();
     _wallSub?.cancel();
@@ -764,7 +767,7 @@ class MailStore extends ChangeNotifier {
         followWallpaper = v == '1';
         prefs.setString('follow', v);
       case 'poll':
-        prefs.setString('poll', v);
+        _applyPoll(v);
       case 'hibernate':
         prefs.setString('hibernate', v);
         if (!_focused) _armSleep();
@@ -1913,6 +1916,59 @@ class MailStore extends ChangeNotifier {
       localLabelsOnEngine = true;
     } catch (_) {
       /* moteur sans libellés locaux : on garde les préférences */
+    }
+  }
+
+  /// Relevé périodique en secondes tel que le moteur l'applique, `null` : délai du fournisseur.
+  int? pollSecs;
+
+  /// Choix affiché pour le relevé : celui du moteur, ou des préférences en démonstration.
+  String get pollChoice => source?.engineSettingsAdmin == null
+      ? prefs.getString('poll') ?? ''
+      : '${pollSecs ?? ''}';
+
+  /// Envoie le relevé choisi au moteur, qui l'applique tout de suite ; relit en cas d'échec.
+  void _applyPoll(String v) {
+    final admin = source?.engineSettingsAdmin;
+    if (admin == null) {
+      prefs.setString('poll', v);
+      return;
+    }
+    pollSecs = int.tryParse(v);
+    unawaited(
+      admin.setPollSecs(pollSecs).catchError((_) => refreshEngineSettings()),
+    );
+  }
+
+  /// Reprend le relevé des préférences (une fois), lit les réglages du moteur et les relit à chaque signal.
+  Future<void> _initEngineSettings() async {
+    final src = source;
+    final admin = src?.engineSettingsAdmin;
+    if (admin == null) return;
+    _engineSettingsSub = src!.engineSettingsChanges.listen(
+      (_) => refreshEngineSettings(),
+    );
+    try {
+      final legacy = int.tryParse(prefs.getString('poll') ?? '');
+      if (legacy != null && await admin.pollSecs() == null) {
+        await admin.setPollSecs(legacy);
+      }
+      await prefs.remove('poll');
+    } catch (_) {
+      /* moteur sans réglages : les préférences restent */
+    }
+    await refreshEngineSettings();
+  }
+
+  /// Relit les réglages du moteur ; en cas d'échec, garde l'affichage actuel.
+  Future<void> refreshEngineSettings() async {
+    final admin = source?.engineSettingsAdmin;
+    if (admin == null) return;
+    try {
+      pollSecs = await admin.pollSecs();
+      notifyListeners();
+    } catch (_) {
+      /* moteur sans réglages : affichage actuel */
     }
   }
 

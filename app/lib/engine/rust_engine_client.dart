@@ -32,7 +32,6 @@ class RustEngineClient implements EngineClient {
   /// `home` et `secretsKey` remplacent le dossier de données et le trousseau du système (Android).
   static Future<RustEngineClient> open({
     String profile = 'default',
-    int? pollSecs,
     String? home,
     Uint8List? secretsKey,
   }) async {
@@ -40,7 +39,6 @@ class RustEngineClient implements EngineClient {
     openEnvelope(
       await ffi.openEngine(
         profile: profile,
-        pollSecs: pollSecs,
         home: home,
         secretsKey: secretsKey,
       ),

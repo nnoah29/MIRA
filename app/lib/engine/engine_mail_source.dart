@@ -19,6 +19,7 @@ import 'compose_admin.dart';
 import 'mail_layout.dart';
 import 'inline_images.dart';
 import 'label_admin.dart';
+import 'engine_settings_admin.dart';
 import 'label_settings_admin.dart';
 import 'local_label_admin.dart';
 import 'rule_admin.dart';
@@ -127,6 +128,10 @@ class EngineMailSource implements MailSource {
   @override
   LabelSettingsAdmin get labelSettingsAdmin => LabelSettingsAdmin(client);
 
+  @override
+  EngineSettingsAdmin get engineSettingsAdmin => EngineSettingsAdmin(client);
+
+  final StreamController<void> _engineSettings = StreamController.broadcast();
   final StreamController<void> _settingsChanges = StreamController.broadcast();
   final StreamController<void> _labelChanges = StreamController.broadcast();
   final StreamController<void> _ruleChanges = StreamController.broadcast();
@@ -140,6 +145,9 @@ class EngineMailSource implements MailSource {
 
   @override
   Stream<void> get labelSettingsChanges => _settingsChanges.stream;
+
+  @override
+  Stream<void> get engineSettingsChanges => _engineSettings.stream;
 
   @override
   bool? arrivalVerdict(String messageRef) => _verdicts[messageRef];
@@ -251,6 +259,9 @@ class EngineMailSource implements MailSource {
     }
     if (type == 'label_settings_changed' && !_settingsChanges.isClosed) {
       _settingsChanges.add(null);
+    }
+    if (type == 'settings_changed' && !_engineSettings.isClosed) {
+      _engineSettings.add(null);
     }
     if (type == 'new_message_received') {
       _verdicts['${kind['message']}'] = kind['silenced'] == true;
@@ -895,6 +906,7 @@ class EngineMailSource implements MailSource {
     await _ruleChanges.close();
     await _labelChanges.close();
     await _settingsChanges.close();
+    await _engineSettings.close();
     await _syncEvents.close();
   }
 }

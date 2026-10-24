@@ -146,9 +146,11 @@ def analyse(root):
                         used.setdefault(x[3], []).append((rel, line(x[1])))
                 if not lits:
                     dynamic.append((rel, line(tok[1]), "clé calculée (non vérifiable)"))
-        for begin, end in re.findall(r"i18n:keys-begin.*?\n(.*?)(?=// i18n:keys-end)", src, re.S) and [
-            (m.end(), src.index("// i18n:keys-end", m.end())) for m in re.finditer(r"// i18n:keys-begin[^\n]*\n", src)
-        ]:
+        blocks = [
+            (m.end(), src.index("// i18n:keys-end", m.end()))
+            for m in re.finditer(r"// i18n:keys-begin[^\n]*\n", src)
+        ]
+        for begin, end in blocks:
             region = [x for x in toks if x[0] == "str" and begin <= x[1] < end]
             for x in region[1::2]:
                 used.setdefault(x[3], []).append((rel, line(x[1])))
@@ -217,7 +219,7 @@ def init_language(root, code, used):
     if os.path.exists(path):
         sys.exit(f"{path} existe déjà")
     quote = lambda x: "'" + x.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n").replace("$", "\\$") + "'"
-    rows = "".join(f"  {quote(k)}: '',\n" for k in sorted(used))
+    rows = "".join(f"  {quote(k)}: '',\n" for k in sorted(used) if k.strip())
     open(path, "w", encoding="utf-8").write(
         f"// Traductions françaises → {code} : un texte vide n'est pas traduit (l'app montre alors la langue de repli).\n"
         f"const Map<String, String> {code}Strings = {{\n{rows}}};\n")

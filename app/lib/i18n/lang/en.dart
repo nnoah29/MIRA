@@ -764,4 +764,5 @@ const Map<String, String> enStrings = {
       'Server certificate invalid or not trusted',
   'Connexion non chiffrée refusée': 'Unencrypted connection refused',
   'Libellé refusé': 'Label refused',
+  'Aucun compte': 'No account',
 };

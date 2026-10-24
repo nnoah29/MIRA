@@ -196,9 +196,7 @@ class MailStore extends ChangeNotifier {
       /* préférences illisibles : on ignore */
     }
     final real = source?.accounts ?? [...defaultAccounts, ...extra];
-    accounts = real.isEmpty
-        ? [const Account('none', 'Aucun compte', '')]
-        : real;
+    accounts = real.isEmpty ? [Account('none', t('Aucun compte'), '')] : real;
     knownAccounts = accounts;
     if (source != null) {
       _applyIdentities();
@@ -1431,7 +1429,7 @@ class MailStore extends ChangeNotifier {
     final ids = {for (final a in src.accounts) a.id};
     _boxes.removeWhere((id, _) => !ids.contains(id));
     accounts = src.accounts.isEmpty
-        ? [const Account('none', 'Aucun compte', '')]
+        ? [Account('none', t('Aucun compte'), '')]
         : src.accounts;
     knownAccounts = accounts;
     for (final a in accounts) {

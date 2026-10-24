@@ -689,6 +689,7 @@ void showAccountPop(BuildContext anchor) {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
+                              mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
@@ -740,6 +741,7 @@ void showAccountPop(BuildContext anchor) {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
+                                  mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(

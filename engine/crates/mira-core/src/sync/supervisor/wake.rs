@@ -3,6 +3,8 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use tokio::sync::watch;
+
 use super::runtime::{AccountRuntime, wait_shutdown};
 use crate::sync::realtime::{IdleSignal, IdleWatcher};
 
@@ -14,6 +16,7 @@ pub enum Wake {
     InboxChanged,
     IdleLost,
     Poll,
+    PollChanged,
 }
 
 /// Attend un signal de l'écoute IDLE ; sans écoute, n'arrive jamais.
@@ -24,6 +27,14 @@ async fn idle_signal(idle: &mut Option<IdleWatcher>) -> Wake {
     match watcher.signals.recv().await {
         Some(IdleSignal::Changed) => Wake::InboxChanged,
         _ => Wake::IdleLost,
+    }
+}
+
+/// Attend qu'un nouveau délai de relevé soit choisi ; sans émetteur, n'arrive jamais.
+async fn poll_changed(poll: &mut watch::Receiver<Option<Duration>>) -> Wake {
+    match poll.changed().await {
+        Ok(()) => Wake::PollChanged,
+        Err(_) => std::future::pending().await,
     }
 }
 
@@ -38,6 +49,7 @@ pub async fn wait_for_wake(
         () = wait_shutdown(&mut runtime.shutdown) => Wake::Shutdown,
         () = requests.notified() => Wake::Requested,
         wake = idle_signal(idle) => wake,
+        wake = poll_changed(&mut runtime.poll) => wake,
         () = tokio::time::sleep(poll) => Wake::Poll,
     }
 }

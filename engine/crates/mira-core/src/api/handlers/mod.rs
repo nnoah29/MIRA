@@ -17,5 +17,6 @@ pub(crate) mod provider;
 pub(crate) mod queue;
 pub(crate) mod rule;
 pub(crate) mod search;
+pub(crate) mod settings;
 pub(crate) mod sync;
 pub(crate) mod thread;

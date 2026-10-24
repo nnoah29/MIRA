@@ -27,10 +27,7 @@ impl Default for SupervisorConfig {
     }
 }
 
-impl SupervisorConfig {
-    /// Délai entre deux relevés : celui imposé au test, sinon le minimum du provider.
-    pub fn poll_interval_for(&self, limits: &ProviderLimits) -> Duration {
-        self.poll_interval
-            .unwrap_or_else(|| Duration::from_secs(u64::from(limits.min_poll_interval_secs)))
-    }
+/// Délai de relevé du provider, appliqué quand aucun réglage ne l'impose.
+pub fn provider_poll(limits: &ProviderLimits) -> Duration {
+    Duration::from_secs(u64::from(limits.min_poll_interval_secs))
 }

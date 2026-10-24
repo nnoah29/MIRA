@@ -39,6 +39,7 @@ impl RunningAccount {
         config: SupervisorConfig,
         budget: ConnectionBudget,
         shutdown: watch::Receiver<bool>,
+        poll: watch::Receiver<Option<Duration>>,
     ) -> Self {
         let requests = Arc::new(SyncRequests::default());
         let report = ReportHandle::default();
@@ -51,6 +52,7 @@ impl RunningAccount {
             report: report.clone(),
             shutdown,
             config,
+            poll,
             state,
         };
         let task = tokio::spawn(run_account(runtime));

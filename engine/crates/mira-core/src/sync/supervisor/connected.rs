@@ -51,13 +51,14 @@ async fn realtime_loop(
     mut idle: Option<IdleWatcher>,
 ) -> Exit {
     let limits = runtime.ctx.provider.descriptor().limits;
-    let poll = runtime.config.poll_interval_for(&limits);
     loop {
+        let poll = runtime.poll_delay(&limits);
         let result = match wait_for_wake(runtime, &mut idle, poll).await {
             Wake::Shutdown => return Exit::Shutdown,
             Wake::IdleLost => return classify(idle_lost()),
             Wake::InboxChanged => sync_inbox(session).await,
             Wake::Poll => sync_account(session).await,
+            Wake::PollChanged => Ok(()),
             Wake::Requested => serve_requests(runtime, session).await,
         };
         if let Err(error) = result {

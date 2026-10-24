@@ -6,6 +6,7 @@ pub mod appearance;
 pub mod attachment;
 pub mod auth;
 pub mod draft;
+pub mod engine_settings;
 pub mod identity;
 pub mod label_settings;
 pub mod local_label;

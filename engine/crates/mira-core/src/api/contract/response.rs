@@ -10,6 +10,7 @@ use super::label_settings_responses::LabelSettingsResponse;
 use super::local_label_responses::LocalLabelResponse;
 use super::read_responses::{ExportReport, IntegrityReport, RawSourceView, ThreadView};
 use super::rule_responses::RuleResponse;
+use super::settings_responses::SettingsResponse;
 use super::sync_response::SyncResponse;
 use super::write::WriteResponse;
 use crate::fetching::ServerSearchResult;
@@ -90,4 +91,5 @@ pub enum Response {
     Rule(RuleResponse),
     LocalLabel(LocalLabelResponse),
     LabelSettings(LabelSettingsResponse),
+    Settings(SettingsResponse),
 }

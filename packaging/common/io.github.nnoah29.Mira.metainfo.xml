@@ -11,14 +11,22 @@
   </developer>
   <description>
     <p>MIRA is a desktop mail client that keeps a full copy of your mail on your own computer, so everything opens instantly, works without a connection, and stays yours.</p>
+    <p xml:lang="fr">MIRA est un client de messagerie de bureau qui garde une copie complète de votre courrier sur votre ordinateur : tout s’ouvre instantanément, fonctionne sans connexion et reste à vous.</p>
     <p>Connect Gmail, Outlook, Yahoo or any IMAP account and read, sort, search and write from a single, calm interface.</p>
+    <p xml:lang="fr">Connectez Gmail, Outlook, Yahoo ou n’importe quel compte IMAP, et lisez, triez, cherchez et écrivez depuis une seule interface, calme.</p>
     <ul>
       <li>Read, reply and organise offline; changes sync when you're back online</li>
+      <li xml:lang="fr">Lisez, répondez et classez hors ligne ; les changements se synchronisent au retour de la connexion</li>
       <li>Unified inbox across all your accounts</li>
+      <li xml:lang="fr">Boîte unifiée pour tous vos comptes</li>
       <li>Remote images and trackers blocked by default</li>
+      <li xml:lang="fr">Images distantes et pisteurs bloqués par défaut</li>
       <li>Undo send, scheduled sending and snooze</li>
+      <li xml:lang="fr">Annulation d’envoi, envoi programmé et report de messages</li>
       <li>Fast full-text search, extendable to the server</li>
+      <li xml:lang="fr">Recherche plein texte rapide, extensible au serveur</li>
       <li>Desktop notifications for new mail</li>
+      <li xml:lang="fr">Notifications de bureau pour les nouveaux messages</li>
     </ul>
   </description>
   <launchable type="desktop-id">io.github.nnoah29.Mira.desktop</launchable>

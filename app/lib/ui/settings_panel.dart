@@ -158,7 +158,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
         srow(
           t('Langue de l’application'),
           t(
-            'Choisis la langue de l’interface. Les messages fictifs restent en français.',
+            'Choisis la langue de l’interface et des messages fictifs de la démonstration.',
           ),
           Container(
             decoration: BoxDecoration(border: Border.all(color: p.line)),

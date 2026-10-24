@@ -1,6 +1,6 @@
-// i18n:ignore-file — contenu fictif de la démonstration, volontairement en français.
 import 'package:intl/intl.dart';
 
+import '../i18n/i18n.dart';
 import 'models.dart';
 
 /// Contenu fictif des documents joints (aucun vrai fichier n'existe dans la démo).
@@ -64,7 +64,7 @@ bool isTextAtt(Attachment a) => kindOf(a) == AttKind.text;
 
 String _date(int daysAgo) => DateFormat(
   'd MMMM y',
-  'fr_FR',
+  appLang.dateLocale,
 ).format(DateTime.now().subtract(Duration(days: daysAgo)));
 
 /// Pages d'un document PDF fictif, selon son nom.
@@ -73,60 +73,64 @@ List<List<DocBlock>> documentPages(Attachment a) {
   if (n.contains('plan-validation')) {
     return [
       [
-        const DocTitle(
-          'Validation du plan de projet',
-          'KERNEL · Programme de réalisation',
+        DocTitle(
+          t('Validation du plan de projet'),
+          t('KERNEL · Programme de réalisation'),
         ),
         DocMeta([
-          ('Projet', 'Bot WhatsApp stock'),
-          ('Porteur', 'Noah Toffa'),
+          (t('Projet'), 'Bot WhatsApp stock'),
+          (t('Porteur'), 'Noah Toffa'),
           ('Date', _date(0)),
-          ('Statut', 'Plan validé'),
+          (t('Statut'), t('Plan validé')),
         ]),
-        const DocHeading('1. Résumé'),
-        const DocPara(
-          'Le plan a été relu avant le lancement de la réalisation. Le problème est clairement posé : les commerçants perdent des ventes faute de suivi de stock fiable. La solution proposée, un bot WhatsApp répondant aussi par SMS, est réaliste et son périmètre tient en quelques semaines.',
+        DocHeading(t('1. Résumé')),
+        DocPara(
+          t(
+            'Le plan a été relu avant le lancement de la réalisation. Le problème est clairement posé : les commerçants perdent des ventes faute de suivi de stock fiable. La solution proposée, un bot WhatsApp répondant aussi par SMS, est réaliste et son périmètre tient en quelques semaines.',
+          ),
         ),
-        const DocHeading('2. Critères de relecture'),
-        const DocBullets([
-          'Problème clair et mesurable — validé',
-          'Solution réaliste avec les moyens disponibles — validé',
-          'Périmètre limité à quelques semaines — validé',
-          'Plan de test terrain à Cotonou — validé',
+        DocHeading(t('2. Critères de relecture')),
+        DocBullets([
+          t('Problème clair et mesurable — validé'),
+          t('Solution réaliste avec les moyens disponibles — validé'),
+          t('Périmètre limité à quelques semaines — validé'),
+          t('Plan de test terrain à Cotonou — validé'),
         ]),
-        const DocHeading('3. Prochaines étapes'),
-        const DocPara(
-          'Vous pouvez passer à la réalisation. Le projet terminé sera validé une seconde fois avant publication. Deux crédits sont réservés pour votre projet.',
+        DocHeading(t('3. Prochaines étapes')),
+        DocPara(
+          t(
+            'Vous pouvez passer à la réalisation. Le projet terminé sera validé une seconde fois avant publication. Deux crédits sont réservés pour votre projet.',
+          ),
         ),
-        const DocSign('L’équipe KERNEL', 'Relecture des plans'),
+        DocSign(t('L’équipe KERNEL'), t('Relecture des plans')),
       ],
     ];
   }
   if (n.contains('facture')) {
     return [
       [
-        const DocTitle('Facture', 'Supabase · N° 2026-09-0412'),
+        DocTitle(t('Facture'), t('Supabase · N° 2026-09-0412')),
         DocMeta([
-          ('Période', '1er au 30 septembre'),
-          ('Émise le', _date(1)),
-          ('Client', 'Noah Toffa'),
+          (t('Période'), t('1er au 30 septembre')),
+          (t('Émise le'), _date(1)),
+          (t('Client'), 'Noah Toffa'),
           ('Plan', 'Free'),
         ]),
-        const DocTable(
-          ['Désignation', 'Qté', 'Prix', 'Total'],
+        DocTable(
+          [t('Désignation'), t('Qté'), 'Prix', t('Total')],
           [
-            ['Projet stock-bot — plan Free', '1', '0,00 €', '0,00 €'],
-            ['Base de données (500 Mo inclus)', '1', '0,00 €', '0,00 €'],
-            ['Requêtes API (2 M inclus)', '1', '0,00 €', '0,00 €'],
+            [t('Projet stock-bot — plan Free'), '1', '0,00 €', '0,00 €'],
+            [t('Base de données (500 Mo inclus)'), '1', '0,00 €', '0,00 €'],
+            [t('Requêtes API (2 M inclus)'), '1', '0,00 €', '0,00 €'],
           ],
           totals: [
-            ('Sous-total', '0,00 €'),
+            (t('Sous-total'), '0,00 €'),
             ('TVA', '0,00 €'),
-            ('Total à payer', '0,00 €'),
+            (t('Total à payer'), '0,00 €'),
           ],
         ),
-        const DocPara(
-          'Aucune action requise de votre part. Merci d’utiliser Supabase.',
+        DocPara(
+          t('Aucune action requise de votre part. Merci d’utiliser Supabase.'),
         ),
       ],
     ];
@@ -134,68 +138,78 @@ List<List<DocBlock>> documentPages(Attachment a) {
   if (n.contains('devis')) {
     return [
       [
-        const DocTitle(
-          'Devis — Hébergement de la boutique',
-          'Cotonou Market · Réf. DV-0187',
+        DocTitle(
+          t('Devis — Hébergement de la boutique'),
+          t('Cotonou Market · Réf. DV-0187'),
         ),
         DocMeta([
           ('Date', _date(4)),
-          ('Validité', '30 jours'),
-          ('Destinataire', 'Noah Toffa'),
-          ('Émetteur', 'Yao Kpadonou'),
+          (t('Validité'), t('30 jours')),
+          (t('Destinataire'), 'Noah Toffa'),
+          (t('Émetteur'), 'Yao Kpadonou'),
         ]),
-        const DocTable(
-          ['Désignation', 'Qté', 'Prix', 'Total'],
+        DocTable(
+          [t('Désignation'), t('Qté'), 'Prix', t('Total')],
           [
             [
-              'Hébergement mensuel de la boutique',
+              t('Hébergement mensuel de la boutique'),
               '1',
               '12 000 FCFA',
               '12 000 FCFA',
             ],
-            ['Sauvegardes quotidiennes', '1', 'incluses', '0 FCFA'],
-            ['Mise en place initiale', '1', 'offerte', '0 FCFA'],
+            [t('Sauvegardes quotidiennes'), '1', t('incluses'), '0 FCFA'],
+            [t('Mise en place initiale'), '1', t('offerte'), '0 FCFA'],
           ],
-          totals: [('Total mensuel', '12 000 FCFA')],
+          totals: [(t('Total mensuel'), '12 000 FCFA')],
         ),
-        const DocPara(
-          'Dans l’attente de votre retour pour lancer la mise en place de la boutique.',
+        DocPara(
+          t(
+            'Dans l’attente de votre retour pour lancer la mise en place de la boutique.',
+          ),
         ),
-        const DocSign('Yao Kpadonou', 'Cotonou Market'),
+        DocSign('Yao Kpadonou', 'Cotonou Market'),
       ],
     ];
   }
   if (n.contains('contrat')) {
     return [
       [
-        const DocTitle(
-          'Contrat d’hébergement',
-          'OVHcloud · Confirmation de souscription',
+        DocTitle(
+          t('Contrat d’hébergement'),
+          t('OVHcloud · Confirmation de souscription'),
         ),
         DocMeta([
-          ('Contrat', 'HB-5520-77'),
-          ('Début', _date(14)),
-          ('Durée', '12 mois reconductibles'),
+          (t('Contrat'), 'HB-5520-77'),
+          (t('Début'), _date(14)),
+          (t('Durée'), t('12 mois reconductibles')),
         ]),
-        const DocHeading('Article 1 — Objet'),
-        const DocPara(
-          'Le présent contrat définit les conditions d’hébergement des services web du client sur l’infrastructure OVHcloud.',
+        DocHeading(t('Article 1 — Objet')),
+        DocPara(
+          t(
+            'Le présent contrat définit les conditions d’hébergement des services web du client sur l’infrastructure OVHcloud.',
+          ),
         ),
-        const DocHeading('Article 2 — Disponibilité'),
-        const DocPara(
-          'Le prestataire s’engage sur une disponibilité mensuelle de 99,9 %, hors maintenances planifiées annoncées 48 heures à l’avance.',
+        DocHeading(t('Article 2 — Disponibilité')),
+        DocPara(
+          t(
+            'Le prestataire s’engage sur une disponibilité mensuelle de 99,9 %, hors maintenances planifiées annoncées 48 heures à l’avance.',
+          ),
         ),
       ],
       [
-        const DocHeading('Article 3 — Facturation'),
-        const DocPara(
-          'Les factures sont émises mensuellement et disponibles dans l’espace client. Tout retard de règlement donne lieu à une relance.',
+        DocHeading(t('Article 3 — Facturation')),
+        DocPara(
+          t(
+            'Les factures sont émises mensuellement et disponibles dans l’espace client. Tout retard de règlement donne lieu à une relance.',
+          ),
         ),
-        const DocHeading('Article 4 — Résiliation'),
-        const DocPara(
-          'Chaque partie peut résilier le contrat par écrit avec un préavis de 30 jours.',
+        DocHeading(t('Article 4 — Résiliation')),
+        DocPara(
+          t(
+            'Chaque partie peut résilier le contrat par écrit avec un préavis de 30 jours.',
+          ),
         ),
-        const DocSign('OVHcloud', 'Service clients'),
+        DocSign('OVHcloud', t('Service clients')),
       ],
     ];
   }
@@ -206,11 +220,13 @@ List<List<DocBlock>> documentPages(Attachment a) {
     [
       DocTitle(
         title[0].toUpperCase() + title.substring(1),
-        'Document joint · ${a.s}',
+        t('Document joint · {0}', [a.s]),
       ),
-      DocMeta([('Fichier', a.n), ('Type', a.t), ('Taille', a.s)]),
-      const DocPara(
-        'Ceci est un aperçu fictif : la démo ne contient pas le fichier réel. Dans une vraie boîte mail, le contenu du document s’afficherait ici.',
+      DocMeta([(t('Fichier'), a.n), ('Type', a.t), (t('Taille'), a.s)]),
+      DocPara(
+        t(
+          'Ceci est un aperçu fictif : la démo ne contient pas le fichier réel. Dans une vraie boîte mail, le contenu du document s’afficherait ici.',
+        ),
       ),
     ],
   ];

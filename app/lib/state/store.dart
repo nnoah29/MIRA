@@ -805,7 +805,18 @@ class MailStore extends ChangeNotifier {
     lang = l;
     appLang = l;
     prefs.setString('lang', l.code);
+    if (source == null) _reseedDemo();
     notifyListeners();
+  }
+
+  /// Reconstruit les messages fictifs dans la langue active ; l'affichage (dossier, panneau) reste en place.
+  void _reseedDemo() {
+    _boxes.clear();
+    mails = unified ? _mergedBoxes() : seedAccount(active);
+    chat = [_welcome()];
+    sel.clear();
+    open = null;
+    if (view == PaneView.read) view = PaneView.empty;
   }
 
   void setSig(String s) {

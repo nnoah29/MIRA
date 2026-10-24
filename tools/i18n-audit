@@ -226,6 +226,33 @@ def init_language(root, code, used):
     print(f"{path} créé avec {len(used)} textes ; ajoute `{code}(...)` à l'enum AppLang (docs/I18N.md)")
 
 
+def app_languages(root):
+    """Codes des langues déclarées dans l'enum `AppLang`."""
+    text = open(os.path.join(root, "lib/i18n/i18n.dart"), encoding="utf-8").read()
+    return [c for c in re.findall(r"^\s+\w+\('(\w+)', '\w+', '[^']+', ", text, re.M) ]
+
+
+def packaging_gaps(root, codes):
+    """Traductions manquantes des métadonnées du paquet Linux : le texte par défaut est l'anglais."""
+    base = os.path.join(root, "..", "packaging", "common")
+    desktop = open(os.path.join(base, "io.github.nnoah29.Mira.desktop"), encoding="utf-8").read()
+    meta = open(os.path.join(base, "io.github.nnoah29.Mira.metainfo.xml"), encoding="utf-8").read()
+    description = re.search(r"<description>(.*?)</description>", meta, re.S).group(1)
+    default_items = len(re.findall(r"<(?:p|li)>", description))
+    gaps = {}
+    for code in codes:
+        if code == "en":
+            continue
+        missing = [f"{key}[{code}]" for key in ("GenericName", "Comment", "Keywords") if f"{key}[{code}]=" not in desktop]
+        if f'<summary xml:lang="{code}">' not in meta:
+            missing.append(f"summary xml:lang={code}")
+        if len(re.findall(rf'<(?:p|li) xml:lang="{code}">', description)) != default_items:
+            missing.append(f"description xml:lang={code} ({default_items} paragraphes et puces)")
+        if missing:
+            gaps[code] = missing
+    return gaps
+
+
 def main():
     argv = sys.argv[1:]
     as_json = "--json" in argv
@@ -238,7 +265,7 @@ def main():
         init_language(root, init[0], used)
         return 0
     langs = langs or lang_codes(root)
-    report = {"keys": len(used), "dynamic": dynamic, "hardcoded": hard, "languages": {}}
+    report = {"keys": len(used), "dynamic": dynamic, "hardcoded": hard, "languages": {}, "packaging": packaging_gaps(root, app_languages(root))}
     for code in langs:
         table = load_lang(root, code)
         report["languages"][code] = {
@@ -252,9 +279,11 @@ def main():
         print(f"{len(used)} textes utilisés par t()/tn()/tkey(), {len(dynamic)} appels à clé calculée, {len(hard)} textes français écrits en dur")
         for code, r in report["languages"].items():
             print(f"[{code}] manquants : {len(r['missing'])}, paramètres incohérents : {len(r['placeholders'])}, traduits mais inutilisés : {len(r['unused'])}")
+        for code, gaps in report["packaging"].items():
+            print(f"[{code}] paquet Linux : " + ", ".join(gaps))
         for rel, lineno, text in hard[:20]:
             print(f"  en dur : {rel}:{lineno}  {text[:70]}")
-    bad = bool(hard) or any(r["missing"] or r["placeholders"] for r in report["languages"].values())
+    bad = bool(hard) or bool(report["packaging"]) or any(r["missing"] or r["placeholders"] for r in report["languages"].values())
     return 1 if bad else 0
 
 

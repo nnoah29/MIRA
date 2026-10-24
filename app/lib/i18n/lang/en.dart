@@ -415,8 +415,8 @@ const Map<String, String> enStrings = {
   '<{0}> · à {1}': '<{0}> · to {1}',
   'Fond d’écran': 'Wallpaper',
   'Langue de l’application': 'App language',
-  'Choisis la langue de l’interface. Les messages fictifs restent en français.':
-      'Choose the interface language. Sample mails stay in French.',
+  'Choisis la langue de l’interface et des messages fictifs de la démonstration.':
+      'Choose the language of the interface and of the demo’s sample messages.',
   'Comptes': 'Accounts',
   'Ajouter un compte': 'Add an account',
   'AJOUTER UN COMPTE': 'ADD AN ACCOUNT',
@@ -765,4 +765,241 @@ const Map<String, String> enStrings = {
   'Connexion non chiffrée refusée': 'Unencrypted connection refused',
   'Libellé refusé': 'Label refused',
   'Aucun compte': 'No account',
+  '-90 % sur tout, aujourd’hui seulement': '-90% off everything, today only',
+  '1,2 Mo': '1.2 MB',
+  '184 Ko': '184 KB',
+  '230 Ko': '230 KB',
+  '310 Ko': '310 KB',
+  '455 Ko': '455 KB',
+  '480 Ko': '480 KB',
+  '512 Ko': '512 KB',
+  '92 Ko': '92 KB',
+  '980 Ko': '980 KB',
+  '1. Résumé': '1. Summary',
+  '2. Critères de relecture': '2. Review criteria',
+  '3. Prochaines étapes': '3. Next steps',
+  '12 mois reconductibles': '12 months, renewable',
+  '30 jours': '30 days',
+  '1er au 30 septembre': 'September 1 to 30',
+  '3 fichiers modifiés · +184 −27': '3 files changed · +184 −27',
+  '<code>Error: Cannot find module "./theme"</code>':
+      '<code>Error: Cannot find module "./theme"</code>',
+  '<span class="at">@Noah</span> dis-moi aussi si je dois préparer quelque chose de mon côté.': '<span class="at">@Noah</span> also let me know if I should prepare anything on my side.',
+  '<strong>kofi-a</strong> a fusionné <em>« feat: relances SMS »</em> dans <code>main</code>.': '<strong>kofi-a</strong> merged <em>“feat: SMS reminders”</em> into <code>main</code>.',
+  '<strong>kofi-a</strong> a ouvert l’issue <em>#14</em>.':
+      '<strong>kofi-a</strong> opened issue <em>#14</em>.',
+  'Alerte de sécurité': 'Security alert',
+  'Appuyez sur <strong>?</strong> pour afficher tous les raccourcis, et sur <strong>c</strong> pour écrire un nouveau message.': 'Press <strong>?</strong> to show all the shortcuts, and <strong>c</strong> to write a new message.',
+  'Article 1 — Objet': 'Article 1 — Purpose',
+  'Article 2 — Disponibilité': 'Article 2 — Availability',
+  'Article 3 — Facturation': 'Article 3 — Billing',
+  'Article 4 — Résiliation': 'Article 4 — Termination',
+  'Astuce : raccourcis clavier': 'Tip: keyboard shortcuts',
+  'Aucun conflit détecté. Les vérifications CI sont passées.':
+      'No conflicts detected. CI checks passed.',
+  'Aucune action requise de votre part. Merci d’utiliser Supabase.':
+      'No action required on your part. Thank you for using Supabase.',
+  'Base de données (500 Mo inclus)': 'Database (500 MB included)',
+  'Bienvenue Noah !': 'Welcome Noah!',
+  'Bienvenue sur KERNEL': 'Welcome to KERNEL',
+  'Bienvenue sur MIRA': 'Welcome to MIRA',
+  'Bonjour Awa,': 'Hello Awa,',
+  'Bonjour Noah,': 'Hello Noah,',
+  'Bonjour Yao, voici notre devis détaillé.':
+      'Hello Yao, here is our detailed quote.',
+  'Bonjour,': 'Hello,',
+  'Bonne découverte !': 'Enjoy exploring!',
+  'Bonne nouvelle : le commerçant est partant pour jeudi à 15 h !':
+      'Good news: the shopkeeper is on for Thursday at 3 pm!',
+  'Bonne soirée !': 'Have a good evening!',
+  'Build échoué — kernel-mail': 'Build failed — kernel-mail',
+  'Candidature — lettre de motivation': 'Application — cover letter',
+  'Ceci est un aperçu fictif : la démo ne contient pas le fichier réel. Dans une vraie boîte mail, le contenu du document s’afficherait ici.': 'This is a sample preview: the demo does not contain the real file. In a real mailbox, the document’s content would appear here.',
+  'Cette semaine : Flutter 3.47': 'This week: Flutter 3.47',
+  'Cette semaine : encore un nouveau framework…':
+      'This week: yet another new framework…',
+  'Chaque partie peut résilier le contrat par écrit avec un préavis de 30 jours.': 'Either party may terminate the contract in writing with 30 days’ notice.',
+  'Client': 'Customer',
+  'Cliquez ici pour découvrir notre méthode secrète…':
+      'Click here to discover our secret method…',
+  'Commande de 40 unités': 'Order of 40 units',
+  'Compte rendu de la réunion du 8': 'Minutes of the meeting on the 8th',
+  'Contrat': 'Contract',
+  'Contrat d’hébergement': 'Hosting contract',
+  'Contrat hébergement — confirmation': 'Hosting contract — confirmation',
+  'Cotonou Market · Réf. DV-0187': 'Cotonou Market · Ref. DV-0187',
+  'C’est exactement ce qu’il me fallait. On en reparle demain à la première heure ?':
+      'That’s exactly what I needed. Shall we talk again first thing tomorrow?',
+  'C’était super clair, je transmets au reste de l’équipe dès demain matin.': 'It was super clear, I’ll pass it on to the rest of the team tomorrow morning.',
+  'Dans l’attente de votre retour pour lancer la mise en place de la boutique.':
+      'We look forward to your reply so we can start setting up the shop.',
+  'Dernière chance, ne manquez pas cette offre incroyable.':
+      'Last chance, don’t miss this incredible offer.',
+  'Devis hébergement boutique': 'Shop hosting quote',
+  'Devis hébergement — réponse': 'Hosting quote — reply',
+  'Devis — Hébergement de la boutique': 'Quote — Shop hosting',
+  'Durée': 'Duration',
+  'Début': 'Start',
+  'Démo confirmée jeudi 15 h': 'Demo confirmed Thursday 3 pm',
+  'Déploiement réussi — kernel-mail': 'Deployment succeeded — kernel-mail',
+  'Désignation': 'Description',
+  'Entretien : choisis ton créneau': 'Interview: pick your slot',
+  'Facture': 'Invoice',
+  'Fichier': 'File',
+  'Félicitations ! Tu viens de débloquer ton premier badge sur KERNEL.':
+      'Congratulations! You just unlocked your first badge on KERNEL.',
+  'Gagnez 1 000 € par jour sans effort !!!':
+      'Earn €1,000 a day with no effort!!!',
+  'Hello Noah,': 'Hello Noah,',
+  'Hébergement mensuel de la boutique': 'Monthly shop hosting',
+  'Idées pour la landing page': 'Ideas for the landing page',
+  'Il aimerait voir la commande de stock par SMS en direct. Tu peux prévoir un scénario court ?': 'He’d like to see the SMS stock ordering live. Can you prepare a short scenario?',
+  'Il te reste quelques jours pour finaliser ton dossier de candidature. Pense à compléter ton profil et à joindre ton <strong>CV mis à jour</strong>.': 'You have a few days left to finalise your application. Remember to complete your profile and attach your <strong>updated CV</strong>.',
+  'Je regarde ça et je reviens vers toi dans la journée.':
+      'I’ll look into it and get back to you today.',
+  'Je serai dispo à <strong>15 h jeudi</strong> pour voir la démo avec le commerçant de Cotonou. Peux-tu confirmer que le bot gère bien les ruptures de stock par SMS, même sans smartphone ?': 'I’ll be available at <strong>3 pm Thursday</strong> to see the demo with the Cotonou shopkeeper. Can you confirm the bot handles stock-outs by SMS, even without a smartphone?',
+  'Je te propose une démo jeudi à 15 h avec le commerçant. Dis-moi si ça te convient.': 'I suggest a demo on Thursday at 3 pm with the shopkeeper. Let me know if that works for you.',
+  'Je transmets à l’équipe et on te confirme rapidement.':
+      'I’ll pass it on to the team and we’ll confirm shortly.',
+  'Je t’ai mis trois maquettes en pièce jointe pour la landing du bot. Dis-moi laquelle tu préfères avant mardi, que j’attaque l’intégration.': 'I attached three mockups for the bot’s landing page. Tell me which one you prefer before Tuesday so I can start the integration.',
+  'Je t’envoie les photos des tests terrain. Dis-moi lesquelles tu veux garder pour la présentation.': 'Sending you the photos from the field tests. Tell me which ones you want to keep for the presentation.',
+  'J’ai regardé la maquette de la boîte mail : le rythme typographique est très bon. Un point : <span class="at">@Noah</span> peux-tu augmenter le contraste des libellés mono sur fond clair ?': 'I looked at the mailbox mockup: the typographic rhythm is very good. One point: <span class="at">@Noah</span> could you increase the contrast of the mono labels on a light background?',
+  'KERNEL · Programme de réalisation': 'KERNEL · Build programme',
+  'La 2 est ma préférée (le titre en condensé passe vraiment bien).':
+      'Number 2 is my favourite (the condensed title really works).',
+  'Le dernier déploiement de <strong>kernel-mail</strong> a échoué.':
+      'The latest deployment of <strong>kernel-mail</strong> failed.',
+  'Le plan a été relu avant le lancement de la réalisation. Le problème est clairement posé : les commerçants perdent des ventes faute de suivi de stock fiable. La solution proposée, un bot WhatsApp répondant aussi par SMS, est réaliste et son périmètre tient en quelques semaines.': 'The plan was reviewed before the build started. The problem is clearly stated: shopkeepers lose sales for lack of reliable stock tracking. The proposed solution, a WhatsApp bot that also replies by SMS, is realistic and its scope fits in a few weeks.',
+  'Le plan est validé en amont, avant que tu lances le projet. <strong>Bot WhatsApp stock</strong> a passé la relecture : le problème est clair, la solution est réaliste et le périmètre tient en quelques semaines.': 'The plan is approved upfront, before you start the project. <strong>Bot WhatsApp stock</strong> passed review: the problem is clear, the solution is realistic and the scope fits in a few weeks.',
+  'Le prestataire s’engage sur une disponibilité mensuelle de 99,9 %, hors maintenances planifiées annoncées 48 heures à l’avance.': 'The provider commits to 99.9% monthly availability, excluding planned maintenance announced 48 hours in advance.',
+  'Le présent contrat définit les conditions d’hébergement des services web du client sur l’infrastructure OVHcloud.': 'This contract defines the conditions for hosting the customer’s web services on the OVHcloud infrastructure.',
+  'Le service des admissions': 'The admissions office',
+  'Les 10 frameworks JS à connaître': 'The 10 JS frameworks to know',
+  'Les admissions': 'Admissions',
+  'Les factures sont émises mensuellement et disponibles dans l’espace client. Tout retard de règlement donne lieu à une relance.': 'Invoices are issued monthly and available in the customer area. Any late payment will trigger a reminder.',
+  'Les nouveautés de la semaine : performances, outils et ressources à ne pas manquer.':
+      'This week’s news: performance, tools and resources you shouldn’t miss.',
+  'Les relances SMS partent parfois deux fois quand le stock passe sous le seuil pendant la synchro.': 'SMS reminders sometimes go out twice when the stock drops below the threshold during sync.',
+  'L’équipe KERNEL': 'The KERNEL team',
+  'L’équipe StockBot': 'The StockBot team',
+  'Madame, Monsieur,': 'Dear Sir or Madam,',
+  'Merci Awa, je trie ça ce soir.':
+      'Thanks Awa, I’ll sort through these tonight.',
+  'Merci Kofi, je regarde ça ce soir et je te dis laquelle je retiens.':
+      'Thanks Kofi, I’ll look at them tonight and tell you which one I pick.',
+  'Merci beaucoup, c’est très clair.':
+      'Thank you very much, that’s very clear.',
+  'Merci pour ton retour !': 'Thanks for your feedback!',
+  'Mise en place initiale': 'Initial setup',
+  'Montant : <strong>0,00 €</strong> — plan Free. Aucune action requise de votre part.': 'Amount: <strong>€0.00</strong> — Free plan. No action required on your part.',
+  'Notre laboratoire serait ravi de tester le bot WhatsApp de stock. Pouvons-nous planifier un appel cette semaine ?': 'Our lab would be delighted to test the WhatsApp stock bot. Can we schedule a call this week?',
+  'Nous n’avons pas reçu le règlement de votre facture mensuelle.':
+      'We have not received payment of your monthly invoice.',
+  'Nous souhaiterions passer commande de <strong>40 unités</strong> pour la boutique de Cotonou. Pouvez-vous confirmer le délai de livraison ?': 'We would like to order <strong>40 units</strong> for the Cotonou shop. Can you confirm the delivery time?',
+  'Nouvelle connexion détectée': 'New sign-in detected',
+  'OVHcloud · Confirmation de souscription':
+      'OVHcloud · Subscription confirmation',
+  'Parfait, merci pour ta réponse !': 'Perfect, thanks for your reply!',
+  'Partenariat Dakar': 'Dakar partnership',
+  'Passionné par le développement et l’impact local, je souhaite rejoindre la prochaine session…': 'Passionate about development and local impact, I would like to join the next session…',
+  'Payez 1,99 € de frais pour débloquer votre colis.':
+      'Pay a €1.99 fee to release your parcel.',
+  'Photo de famille': 'Family photo',
+  'Photos du déplacement à Cotonou': 'Photos from the Cotonou trip',
+  'Plan de test terrain à Cotonou — validé':
+      'Field test plan in Cotonou — approved',
+  'Plan validé': 'Plan approved',
+  'Planning de la semaine': 'Schedule for the week',
+  'Porteur': 'Owner',
+  'Problème clair et mesurable — validé':
+      'Clear, measurable problem — approved',
+  'Production : kernel-mail.vercel.app · Durée : 41 s · Commit : 3f9c2a1':
+      'Production: kernel-mail.vercel.app · Duration: 41 s · Commit: 3f9c2a1',
+  'Projet': 'Project',
+  'Projet stock-bot — plan Free': 'stock-bot project — Free plan',
+  'Proposition de démo — Bot WhatsApp stock':
+      'Demo proposal — Bot WhatsApp stock',
+  'Périmètre limité à quelques semaines — validé':
+      'Scope limited to a few weeks — approved',
+  'Qté': 'Qty',
+  'Rappel : dépôt de candidature avant le 20':
+      'Reminder: application deadline on the 20th',
+  'Re : Bot WhatsApp stock — démo jeudi':
+      'Re: Bot WhatsApp stock — demo Thursday',
+  'Re : Idées pour la landing page': 'Re: Ideas for the landing page',
+  'Re : Photos du déplacement à Cotonou': 'Re: Photos from the Cotonou trip',
+  'Regarde ce que j’ai sorti ce matin, je trouve que le carré orange fonctionne vraiment bien.': 'Look at what I came up with this morning, I think the orange square really works.',
+  'Relance facture mensuelle': 'Monthly invoice reminder',
+  'Relecture des plans': 'Plan review',
+  'Requêtes API (2 M inclus)': 'API requests (2 M included)',
+  'Retour sur la maquette': 'Feedback on the mockup',
+  'Reçu 👍': 'Got it 👍',
+  'Salut Awa,': 'Hi Awa,',
+  'Salut Noah,': 'Hi Noah,',
+  'Salut à tous,': 'Hi everyone,',
+  'Salut,': 'Hi,',
+  'Sans dépôt avant le 20 à minuit, ton dossier ne sera pas examiné pour cette session.': 'Without a submission before midnight on the 20th, your application will not be considered for this session.',
+  'Sauvegardes quotidiennes': 'Daily backups',
+  'Service clients': 'Customer service',
+  'Si c’était vous, aucune action n’est nécessaire.':
+      'If this was you, no action is needed.',
+  'Si c’était vous, vous n’avez rien à faire.':
+      'If this was you, there is nothing to do.',
+  'Sinon je valide pour ma part.': 'Otherwise I approve on my side.',
+  'Solution réaliste avec les moyens disponibles — validé':
+      'Realistic solution with the available means — approved',
+  'Sous-total': 'Subtotal',
+  'Statut': 'Status',
+  'Suite à notre appel, voici le devis pour l’hébergement de la boutique : 12 000 FCFA / mois, sauvegardes incluses. J’attends ton retour pour lancer la mise en place.': 'Following our call, here is the quote for hosting the shop: 12,000 FCFA / month, backups included. I’m waiting for your reply to start the setup.',
+  'Supabase · N° 2026-09-0412': 'Supabase · No. 2026-09-0412',
+  'Super, merci pour le point d’hier !':
+      'Great, thanks for yesterday’s update!',
+  'Taille': 'Size',
+  'Ton badge « Premier pas » est débloqué':
+      'Your “First step” badge is unlocked',
+  'Ton dossier a retenu notre attention ! Choisis un créneau d’entretien parmi ceux proposés dans ton espace avant vendredi.': 'Your application caught our attention! Pick an interview slot among those offered in your space before Friday.',
+  'Ton espace est prêt. Dépose ton premier projet, gagne des points de score et débloque tes premiers badges.': 'Your space is ready. Submit your first project, earn score points and unlock your first badges.',
+  'Ton plan de projet a été validé': 'Your project plan has been approved',
+  'Top ! Juste une question : peux-tu m’envoyer la version finale en pièce jointe quand elle est prête ?': 'Great! Just one question: can you send me the final version as an attachment when it’s ready?',
+  'Total mensuel': 'Monthly total',
+  'Total à payer': 'Total due',
+  'Tu as vu le nouveau logo ?': 'Have you seen the new logo?',
+  'Tu peux maintenant passer à la réalisation. Le projet fini sera validé une seconde fois. Deux crédits sont réservés pour toi.': 'You can now move on to the build. The finished project will be reviewed a second time. Two credits are reserved for you.',
+  'Une nouvelle connexion à votre compte Google a été détectée sur <strong>Linux</strong>.': 'A new sign-in to your Google account was detected on <strong>Linux</strong>.',
+  'Une nouvelle connexion à votre compte a été détectée depuis <strong>Cotonou, Bénin</strong> (Chrome sur Linux).': 'A new sign-in to your account was detected from <strong>Cotonou, Benin</strong> (Chrome on Linux).',
+  'Validation du plan de projet': 'Project plan approval',
+  'Validité': 'Validity',
+  'Voici la photo de dimanche, à bientôt !':
+      'Here is Sunday’s photo, see you soon!',
+  'Voici le compte rendu : priorité à la démo, relecture des specs d’ici vendredi, et choix de l’hébergeur à trancher.': 'Here are the minutes: priority on the demo, review the specs by Friday, and pick the hosting provider.',
+  'Voici le planning :': 'Here is the schedule:',
+  'Voici l’avancement : le bot répond déjà aux commandes de stock par SMS. Je termine la partie relances et on peut caler une démo jeudi.': 'Here is the progress: the bot already answers stock commands by SMS. I’m finishing the reminders part and we can schedule a demo on Thursday.',
+  'Votre colis est bloqué — action requise':
+      'Your parcel is on hold — action required',
+  'Votre compte <strong>{0}</strong> est maintenant connecté. Retrouvez ici tous vos messages, libellés et brouillons.': 'Your account <strong>{0}</strong> is now connected. Find all your messages, labels and drafts here.',
+  'Votre contrat d’hébergement est actif. Retrouvez votre facture dans votre espace client.': 'Your hosting contract is active. Find your invoice in your customer area.',
+  'Votre facture de septembre est disponible':
+      'Your September invoice is available',
+  'Votre facture pour la période du 1er au 30 septembre est disponible.':
+      'Your invoice for the period from September 1 to 30 is available.',
+  'Votre projet <strong>kernel-mail</strong> a été déployé avec succès.':
+      'Your project <strong>kernel-mail</strong> was deployed successfully.',
+  'Votre projet <strong>stock-bot</strong> a utilisé 82 % de son quota mensuel de requêtes.': 'Your project <strong>stock-bot</strong> has used 82% of its monthly request quota.',
+  'Votre projet <strong>stock-bot</strong> a été mis en pause après 7 jours d’inactivité.': 'Your project <strong>stock-bot</strong> was paused after 7 days of inactivity.',
+  'Votre projet approche de la limite gratuite':
+      'Your project is approaching the free limit',
+  'Votre projet stock-bot est en pause': 'Your stock-bot project is paused',
+  'Vous pouvez passer à la réalisation. Le projet terminé sera validé une seconde fois avant publication. Deux crédits sont réservés pour votre projet.': 'You can move on to the build. The finished project will be reviewed a second time before publication. Two credits are reserved for your project.',
+  '[stock-bot] Nouvelle issue #14 : relance SMS en double':
+      '[stock-bot] New issue #14: duplicate SMS reminder',
+  '[stock-bot] Pull request #12 fusionnée':
+      '[stock-bot] Pull request #12 merged',
+  'incluses': 'included',
+  'offerte': 'free',
+  'À très vite,<br><strong>L’équipe KERNEL</strong>':
+      'See you soon,<br><strong>The KERNEL team</strong>',
+  'Émetteur': 'Issuer',
+  'Émise le': 'Issued on',
+  '• Lundi : tests terrain à Cotonou<br>• Mercredi : point d’avancement<br>• Jeudi : démo commerçant (15 h)<br>• Vendredi : rétrospective': '• Monday: field tests in Cotonou<br>• Wednesday: progress check<br>• Thursday: shopkeeper demo (3 pm)<br>• Friday: retrospective',
+  'Document joint · {0}': 'Attached document · {0}',
 };

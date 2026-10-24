@@ -287,6 +287,12 @@ const Map<String, String> enStrings = {
   'Dossier vidé': 'Folder emptied',
   'Se désabonner': 'Unsubscribe',
   'Hors ligne : {0}': 'Offline: {0}',
+  'Certificat du serveur de {0} non approuvé : synchronisation suspendue':
+      'Server certificate for {0} is not trusted: sync suspended',
+  'Boîte pleine : {0}. Libère de la place sur le serveur':
+      'Mailbox full: {0}. Free up space on the server',
+  '{0} : le fournisseur limite les requêtes, nouvel essai plus tard':
+      '{0}: the provider is rate limiting requests, will retry later',
   'Synchronisation de {0} impossible ({1})': 'Could not sync {0} ({1})',
   'Synchronisation impossible': 'Sync failed',
   'Désabonnement envoyé': 'Unsubscribe request sent',

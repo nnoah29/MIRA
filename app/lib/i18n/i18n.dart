@@ -6,9 +6,18 @@ import 'lang/en.dart';
 /// est écrit en français et sert de clé de traduction (`t('Texte')`).
 ///
 /// Ajouter une langue : voir `docs/I18N.md` (un fichier `lang/xx.dart`, une ligne ici).
+/// Règle de pluriel d'une langue : donne la catégorie (`one`, `few`, `many`, `other`…, noms du CLDR) d'un nombre.
+typedef PluralRule = String Function(int n);
+
+/// Français : 0 et 1 sont au singulier.
+String pluralFr(int n) => n == 0 || n == 1 ? 'one' : 'other';
+
+/// Anglais : seul 1 est au singulier.
+String pluralEn(int n) => n == 1 ? 'one' : 'other';
+
 enum AppLang {
-  fr('fr', 'fr_FR', 'Français', {}, null), // i18n:ignore
-  en('en', 'en_US', 'English', enStrings, null);
+  fr('fr', 'fr_FR', 'Français', {}, null, pluralFr), // i18n:ignore
+  en('en', 'en_US', 'English', enStrings, null, pluralEn);
 
   /// Code de la langue, locale des dates, nom affiché dans le sélecteur.
   final String code, dateLocale, label;
@@ -19,12 +28,16 @@ enum AppLang {
   /// Code de la langue de repli pour un texte non traduit (`null` : le texte français).
   final String? fallbackCode;
 
+  /// Catégorie de pluriel d'un nombre dans cette langue.
+  final PluralRule plural;
+
   const AppLang(
     this.code,
     this.dateLocale,
     this.label,
     this.strings,
     this.fallbackCode,
+    this.plural,
   );
 
   Locale get locale => Locale(code);
@@ -64,8 +77,23 @@ String t(String fr, [List<Object?> args = const []]) {
   return s;
 }
 
-/// « 1 message », « 3 messages » : [one] et [other] sont des clés de traduction.
-String tn(int n, String one, String other) => '$n ${t(n > 1 ? other : one)}';
+/// « 1 message », « 3 messages » : [one] et [other] sont des clés de traduction. Une langue qui a d'autres
+/// formes de pluriel les écrit sous la clé `<other>#<catégorie>` (par exemple `messages#few`) ; sans elle, [other].
+String tn(int n, String one, String other) =>
+    '$n ${pluralText(appLang.plural(n), one, other, t, appLang.lookup)}';
+
+/// Texte de la forme de pluriel [category] : `one` ou `other` par [translate], sinon la forme propre à la langue.
+String pluralText(
+  String category,
+  String one,
+  String other,
+  String Function(String) translate,
+  String? Function(String) lookup,
+) {
+  if (category == 'one') return translate(one);
+  if (category == 'other') return translate(other);
+  return lookup('$other#$category') ?? translate(other);
+}
 
 /// Marque un texte français à traduire plus tard (données, constantes) : rend le texte tel quel,
 /// l'audit des traductions le compte comme une clé. À afficher ensuite avec `t(valeur)`.

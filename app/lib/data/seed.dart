@@ -5,10 +5,12 @@ import '../i18n/i18n.dart';
 import 'html_lite.dart';
 import 'models.dart';
 
-const kernel = Person(
-  'Équipe KERNEL', // i18n:ignore
-  'equipe@kernel.epitech.africa',
-); // i18n:ignore
+/// Équipe KERNEL : son nom suit la langue active.
+Person get kernel => Person(t('Équipe KERNEL'), 'equipe@kernel.epitech.africa');
+
+/// Équipe MIRA : son nom suit la langue active.
+Person get miraTeam => Person(t('Équipe MIRA'), 'equipe@mira.app');
+
 const awa = Person('Awa Diallo', 'awa@stockbot.africa');
 const gh = Person('GitHub', 'notifications@github.com');
 const supa = Person('Supabase', 'billing@supabase.io');
@@ -20,7 +22,7 @@ const yao = Person('Yao Kpadonou', 'yao@cotonou-market.bj');
 const linda = Person('Linda Hounsou', 'linda@epitech.africa');
 const ovh = Person('OVHcloud', 'support@ovhcloud.com');
 
-const contacts = <Person>[
+List<Person> get contacts => <Person>[
   kernel,
   awa,
   gh,
@@ -776,7 +778,7 @@ List<Mail> seedFor(Account a) {
     add(
       mk(
         'inbox',
-        const Person('Équipe MIRA', 'equipe@mira.app'), // i18n:ignore
+        miraTeam,
         t('Bienvenue sur MIRA'),
         5 * minMs,
         ps([
@@ -794,7 +796,7 @@ List<Mail> seedFor(Account a) {
     add(
       mk(
         'inbox',
-        const Person('Équipe MIRA', 'equipe@mira.app'), // i18n:ignore
+        miraTeam,
         t('Astuce : raccourcis clavier'),
         2 * hourMs,
         ps([

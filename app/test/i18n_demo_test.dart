@@ -61,4 +61,14 @@ void main() {
     );
     s.dispose();
   });
+
+  test('les équipes fictives ont un nom dans chaque langue', () {
+    expect(kernel.name, 'Équipe KERNEL');
+    expect(miraTeam.name, 'Équipe MIRA');
+    appLang = AppLang.en;
+    expect(kernel.name, 'KERNEL team');
+    expect(miraTeam.name, 'MIRA team');
+    expect(contacts.first.name, 'KERNEL team');
+    expect(kernel.email, 'equipe@kernel.epitech.africa');
+  });
 }

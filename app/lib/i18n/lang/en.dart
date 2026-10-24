@@ -1002,4 +1002,6 @@ const Map<String, String> enStrings = {
   'Émise le': 'Issued on',
   '• Lundi : tests terrain à Cotonou<br>• Mercredi : point d’avancement<br>• Jeudi : démo commerçant (15 h)<br>• Vendredi : rétrospective': '• Monday: field tests in Cotonou<br>• Wednesday: progress check<br>• Thursday: shopkeeper demo (3 pm)<br>• Friday: retrospective',
   'Document joint · {0}': 'Attached document · {0}',
+  'Équipe KERNEL': 'KERNEL team',
+  'Équipe MIRA': 'MIRA team',
 };

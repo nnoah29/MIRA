@@ -12,6 +12,7 @@ import glob, json, os, re, sys
 
 ACCENTS = re.compile(r"[àâäçéèêëîïôöùûüÿœÀÂÇÉÈÊËÎÏÔÙÛÜŒ’…«»]")
 FR_WORDS = re.compile(r"\b(le|la|les|des|du|un|une|et|ou|pour|avec|sans|vous|ton|ta|tes|votre|est|pas|sur|dans|aucun|aucune|nouveau|erreur|impossible|choisis|ajouter|supprimer|enregistrer|annuler|fermer)\b", re.I)
+PLURAL_SUFFIX = re.compile(r"#(zero|one|two|few|many|other)$")
 SINK_CALLS = {"Text", "toast", "Btn", "Mono", "SnackBar", "Tooltip"}
 SINK_NAMES = {"label", "tip", "hint", "hintText", "tooltip", "title", "subtitle", "semanticLabel", "text", "message", "labelText", "helperText", "errorText"}
 IGNORE_DIRS = ("lib/src/rust/", "lib/i18n/lang/")
@@ -270,7 +271,7 @@ def main():
         table = load_lang(root, code)
         report["languages"][code] = {
             "missing": sorted(k for k in used if k.strip() and not table.get(k, "").strip()),
-            "unused": sorted(k for k in table if k not in used),
+            "unused": sorted(k for k in table if PLURAL_SUFFIX.sub("", k) not in used),
             "placeholders": sorted(k for k, v in table.items() if v and not placeholders(v) <= placeholders(k)),
         }
     if as_json:

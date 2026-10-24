@@ -179,7 +179,8 @@ class NotificationSettings extends StatelessWidget {
 
   /// Valeur affichée des heures calmes : une plage proposée, sinon « Jamais ».
   static String prefsQuiet(MailStore s) {
-    final raw = s.prefs.getString('notifyQuiet') ?? '';
+    final quiet = s.notifySettings.quiet;
+    final raw = quiet == null ? '' : '${quiet.$1}-${quiet.$2}';
     return const {'22-7', '23-8'}.contains(raw) ? raw : '';
   }
 }

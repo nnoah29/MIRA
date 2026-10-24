@@ -13,6 +13,7 @@ import '../data/seed.dart';
 import '../engine/blocks_html.dart';
 import '../engine/compose_admin.dart';
 import '../engine/engine_client.dart';
+import '../engine/engine_settings_admin.dart';
 import '../engine/label_admin.dart';
 import '../engine/label_settings_admin.dart';
 import '../engine/local_label_admin.dart';
@@ -1919,28 +1920,47 @@ class MailStore extends ChangeNotifier {
     }
   }
 
-  /// Relevé périodique en secondes tel que le moteur l'applique, `null` : délai du fournisseur.
-  int? pollSecs;
+  /// Réglages du moteur tels qu'il les applique (`null` : démonstration ou moteur sans réglages).
+  EngineSettings? engineSettings;
+
+  /// Relevé périodique en secondes, `null` : délai du fournisseur.
+  int? get pollSecs => engineSettings?.pollSecs;
 
   /// Choix affiché pour le relevé : celui du moteur, ou des préférences en démonstration.
-  String get pollChoice => source?.engineSettingsAdmin == null
+  String get pollChoice => engineSettings == null
       ? prefs.getString('poll') ?? ''
       : '${pollSecs ?? ''}';
 
-  /// Envoie le relevé choisi au moteur, qui l'applique tout de suite ; relit en cas d'échec.
-  void _applyPoll(String v) {
+  /// Remplace les réglages du moteur : affichés tout de suite, relus en cas d'échec.
+  void _writeEngineSettings(EngineSettings next) {
     final admin = source?.engineSettingsAdmin;
-    if (admin == null) {
-      prefs.setString('poll', v);
-      return;
-    }
-    pollSecs = int.tryParse(v);
+    if (admin == null) return;
+    _adopt(next);
+    notifyListeners();
     unawaited(
-      admin.setPollSecs(pollSecs).catchError((_) => refreshEngineSettings()),
+      admin
+          .write(next)
+          .then<void>((_) {}, onError: (Object _) => refreshEngineSettings()),
     );
   }
 
-  /// Reprend le relevé des préférences (une fois), lit les réglages du moteur et les relit à chaque signal.
+  /// Retient les réglages du moteur et les donne aux notifications.
+  void _adopt(EngineSettings next) {
+    engineSettings = next;
+    notifySettings.engine = next;
+  }
+
+  /// Envoie le relevé choisi au moteur ; sans réglages du moteur, aux préférences.
+  void _applyPoll(String v) {
+    final current = engineSettings;
+    if (current == null) {
+      prefs.setString('poll', v);
+      return;
+    }
+    _writeEngineSettings(current.withPoll(int.tryParse(v)));
+  }
+
+  /// Reprend les anciennes préférences (une fois), lit les réglages du moteur et les relit à chaque signal.
   Future<void> _initEngineSettings() async {
     final src = source;
     final admin = src?.engineSettingsAdmin;
@@ -1949,15 +1969,30 @@ class MailStore extends ChangeNotifier {
       (_) => refreshEngineSettings(),
     );
     try {
-      final legacy = int.tryParse(prefs.getString('poll') ?? '');
-      if (legacy != null && await admin.pollSecs() == null) {
-        await admin.setPollSecs(legacy);
+      final current = await admin.read();
+      final merged = _withLegacy(current);
+      if (!merged.sameAs(current)) await admin.write(merged);
+      _adopt(merged);
+      for (final k in const ['poll', 'notifyMuted', 'notifyQuiet']) {
+        await prefs.remove(k);
       }
-      await prefs.remove('poll');
+      notifyListeners();
     } catch (_) {
       /* moteur sans réglages : les préférences restent */
     }
-    await refreshEngineSettings();
+  }
+
+  /// Réglages du moteur complétés par les anciennes préférences, là où le moteur n'a rien.
+  EngineSettings _withLegacy(EngineSettings current) {
+    final legacy = NotifySettings(prefs);
+    final poll = int.tryParse(prefs.getString('poll') ?? '');
+    return EngineSettings(
+      pollSecs: current.pollSecs ?? poll,
+      mutedAccounts: current.mutedAccounts.isEmpty
+          ? legacy.muted
+          : current.mutedAccounts,
+      quietHours: current.quietHours ?? legacy.quiet,
+    );
   }
 
   /// Relit les réglages du moteur ; en cas d'échec, garde l'affichage actuel.
@@ -1965,7 +2000,7 @@ class MailStore extends ChangeNotifier {
     final admin = source?.engineSettingsAdmin;
     if (admin == null) return;
     try {
-      pollSecs = await admin.pollSecs();
+      _adopt(await admin.read());
       notifyListeners();
     } catch (_) {
       /* moteur sans réglages : affichage actuel */
@@ -2401,14 +2436,24 @@ class MailStore extends ChangeNotifier {
 
   /// Change un réglage de notification et redessine.
   void setNotify(String key, String value) {
+    final current = engineSettings;
+    if (key == 'notifyQuiet' && current != null) {
+      return _writeEngineSettings(current.withQuiet(parseQuiet(value)));
+    }
     prefs.setString(key, value);
     notifyListeners();
   }
 
   /// Coupe ou rétablit les notifications d'un compte.
   void muteAccount(String account, bool mute) {
-    notifySettings.setMuted(account, mute);
-    notifyListeners();
+    final current = engineSettings;
+    if (current == null) {
+      notifySettings.setMuted(account, mute);
+      return notifyListeners();
+    }
+    final next = {...current.mutedAccounts};
+    mute ? next.add(account) : next.remove(account);
+    _writeEngineSettings(current.withMuted(next));
   }
 
   /// Affiche une notification d'essai, même au premier plan.

@@ -96,4 +96,65 @@ void main() {
     expect(prefs.getString('poll'), '30');
     store.dispose();
   });
+
+  test('couper un compte l’envoie au moteur et l’affichage le suit', () async {
+    final fake = FakeEngine()..engineSettingsOn = true;
+    final (store, prefs) = await open(fake);
+    store.muteAccount('acc1', true);
+    await settle();
+    expect(fake.engineMuted, ['acc1']);
+    expect(store.notifySettings.muted, {'acc1'});
+    expect(prefs.getString('notifyMuted'), isNull);
+    store.muteAccount('acc1', false);
+    await settle();
+    expect(fake.engineMuted, isEmpty);
+    store.dispose();
+  });
+
+  test('les heures calmes sont portées par le moteur', () async {
+    final fake = FakeEngine()..engineSettingsOn = true;
+    final (store, prefs) = await open(fake);
+    store.setNotify('notifyQuiet', '22-7');
+    await settle();
+    expect(fake.engineQuiet, {'from': 22, 'to': 7});
+    expect(store.notifySettings.isQuiet(23), isTrue);
+    expect(prefs.getString('notifyQuiet'), isNull);
+    store.setNotify('notifyQuiet', '');
+    await settle();
+    expect(fake.engineQuiet, isNull);
+    store.dispose();
+  });
+
+  test(
+    'sourdine et heures calmes des préférences sont reprises une fois',
+    () async {
+      final fake = FakeEngine()..engineSettingsOn = true;
+      final (store, prefs) = await open(fake, {
+        'notifyMuted': '["acc1"]',
+        'notifyQuiet': '23-8',
+      });
+      expect(fake.engineMuted, ['acc1']);
+      expect(fake.engineQuiet, {'from': 23, 'to': 8});
+      expect(prefs.getString('notifyMuted'), isNull);
+      expect(prefs.getString('notifyQuiet'), isNull);
+      expect(store.notifySettings.muted, {'acc1'});
+      store.dispose();
+    },
+  );
+
+  test('une sourdine changée côté moteur se répercute sur l’app', () async {
+    final fake = FakeEngine()..engineSettingsOn = true;
+    final (store, _) = await open(fake);
+    expect(store.notifySettings.muted, isEmpty);
+    fake.engineMuted = ['acc1'];
+    fake.feed.add({
+      'kind': {
+        'type': 'settings_changed',
+        'keys': ['muted_accounts'],
+      },
+    });
+    await settle();
+    expect(store.notifySettings.muted, {'acc1'});
+    store.dispose();
+  });
 }

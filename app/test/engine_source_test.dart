@@ -42,6 +42,8 @@ class FakeEngine implements EngineClient {
   bool hideInbox = false;
   bool settingsOn = false;
   int? enginePoll;
+  List<String> engineMuted = [];
+  Map<String, dynamic>? engineQuiet;
   bool engineSettingsOn = false;
   final settingWrites = <Map<String, dynamic>>[];
   bool hideRow = false;
@@ -51,7 +53,11 @@ class FakeEngine implements EngineClient {
     'type': 'settings',
     'data': {
       'type': 'settings',
-      'data': {'poll_secs': enginePoll},
+      'data': {
+        'poll_secs': enginePoll,
+        'muted_accounts': engineMuted,
+        'quiet_hours': engineQuiet,
+      },
     },
   };
 
@@ -517,10 +523,13 @@ class FakeEngine implements EngineClient {
         if (!engineSettingsOn) throw EngineException('internal.bug', 'absent');
         return _settingsAnswer();
       case 'settings.set_settings':
-        final next = (r['settings'] as Map)['poll_secs'] as int?;
+        final given = (r['settings'] as Map).cast<String, dynamic>();
         settingWrites.add(r);
-        if (next != enginePoll) {
-          enginePoll = next;
+        final before = _settingsAnswer().toString();
+        enginePoll = given['poll_secs'] as int?;
+        engineMuted = [...(given['muted_accounts'] as List).cast<String>()];
+        engineQuiet = (given['quiet_hours'] as Map?)?.cast<String, dynamic>();
+        if (_settingsAnswer().toString() != before) {
           feed.add({
             'kind': {
               'type': 'settings_changed',

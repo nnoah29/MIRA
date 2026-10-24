@@ -93,6 +93,12 @@ abstract class MailSource {
   /// Signale chaque changement des réglages du moteur.
   Stream<void> get engineSettingsChanges;
 
+  /// Signale chaque changement de compteur de non-lus annoncé par le moteur.
+  Stream<void> get counterChanges;
+
+  /// Signale chaque changement des comptes (ajout, modification, suppression, état) côté moteur.
+  Stream<void> get accountEvents;
+
   /// Verdict des règles sur un message arrivé : `true` muet (aucune notification),
   /// `false` à annoncer, `null` pas encore connu.
   bool? arrivalVerdict(String messageRef);

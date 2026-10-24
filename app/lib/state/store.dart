@@ -150,6 +150,8 @@ class MailStore extends ChangeNotifier {
   final MailSource? source;
   StreamSubscription<String>? _changeSub;
   StreamSubscription<void>? _syncSub;
+  StreamSubscription<void>? _counterSub;
+  StreamSubscription<void>? _accountSub;
   StreamSubscription<void>? _labelSub;
   StreamSubscription<void>? _settingsSub;
   StreamSubscription<void>? _engineSettingsSub;
@@ -212,6 +214,8 @@ class MailStore extends ChangeNotifier {
       unawaited(_initLabelSettings());
       unawaited(_initEngineSettings());
       _changeSub = source!.changes.listen(_reloadAccount);
+      _counterSub = source!.counterChanges.listen((_) => notifyListeners());
+      _accountSub = source!.accountEvents.listen((_) => accountsChanged());
       _syncSub = source!.syncEvents.listen((_) {
         _extensionProgress();
         notifyListeners();
@@ -385,6 +389,8 @@ class MailStore extends ChangeNotifier {
   void dispose() {
     _changeSub?.cancel();
     _syncSub?.cancel();
+    _counterSub?.cancel();
+    _accountSub?.cancel();
     _labelSub?.cancel();
     _settingsSub?.cancel();
     _engineSettingsSub?.cancel();

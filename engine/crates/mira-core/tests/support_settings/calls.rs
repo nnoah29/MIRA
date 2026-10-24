@@ -21,7 +21,15 @@ pub async fn current(engine: &Engine) -> EngineSettings {
 
 /// Remplace les réglages par un relevé périodique donné
 pub async fn set_poll(engine: &Engine, poll_secs: Option<u32>) -> Result<EngineSettings, String> {
-    let settings = EngineSettings { poll_secs };
+    let settings = EngineSettings {
+        poll_secs,
+        ..current(engine).await
+    };
+    replace(engine, settings).await
+}
+
+/// Remplace l'ensemble des réglages
+pub async fn replace(engine: &Engine, settings: EngineSettings) -> Result<EngineSettings, String> {
     call(engine, SettingsRequest::SetSettings { settings }).await
 }
 

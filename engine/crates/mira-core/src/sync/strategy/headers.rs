@@ -9,6 +9,7 @@ use crate::sync::download::{count, report_progress};
 use crate::sync::identity::{Incoming, Ingested, ingest_header};
 use crate::sync::rule_hook::silenced_by_rules;
 use crate::sync::session::SyncSession;
+use crate::sync::settings_hook::silenced_by_settings;
 
 /// Taille d'un lot d'en-têtes, et donc fréquence minimale des événements de progression.
 pub const HEADER_BATCH: usize = 100;
@@ -101,7 +102,8 @@ fn announce_batch(ctx: &SyncContext, mailbox: &Mailbox, outcomes: &[Ingested], m
         match outcome {
             Ingested::Created(message) => {
                 let by_rules = rules_apply_in(mailbox.role) && silenced_by_rules(ctx, message);
-                let silenced = by_rules || silenced_by_labels(ctx, message);
+                let silenced =
+                    by_rules || silenced_by_labels(ctx, message) || silenced_by_settings(ctx);
                 ctx.emit(EventKind::NewMessageReceived {
                     account: ctx.account.id.clone(),
                     message: message.clone(),

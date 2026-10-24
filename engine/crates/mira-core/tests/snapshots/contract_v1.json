@@ -993,7 +993,14 @@
       "request": {
         "op": "set_settings",
         "settings": {
-          "poll_secs": 120
+          "muted_accounts": [
+            "account-1"
+          ],
+          "poll_secs": 120,
+          "quiet_hours": {
+            "from": 22,
+            "to": 7
+          }
         }
       }
     },
@@ -1760,7 +1767,14 @@
     "settings.settings": {
       "data": {
         "data": {
-          "poll_secs": 120
+          "muted_accounts": [
+            "account-1"
+          ],
+          "poll_secs": 120,
+          "quiet_hours": {
+            "from": 22,
+            "to": 7
+          }
         },
         "type": "settings"
       },

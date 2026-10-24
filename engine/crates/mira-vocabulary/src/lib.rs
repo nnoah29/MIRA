@@ -18,7 +18,7 @@ pub use domain::appearance::Appearance;
 pub use domain::attachment::{Attachment, CacheState};
 pub use domain::auth::{AuthMethod, AuthMethodKind, OAuthSettings, SecretKind, SecretRef};
 pub use domain::draft::{Draft, DraftAttachment, DraftState};
-pub use domain::engine_settings::{EngineSettings, MAX_POLL_SECS, MIN_POLL_SECS};
+pub use domain::engine_settings::{EngineSettings, MAX_POLL_SECS, MIN_POLL_SECS, QuietHours};
 pub use domain::identity::Identity;
 pub use domain::label_settings::{CounterMode, LabelKind, LabelRef, LabelSettings};
 pub use domain::local_label::{LocalLabel, LocalLabelAssignment};

@@ -60,4 +60,33 @@ void main() {
     }
     await teardown(tester, s);
   });
+
+  testWidgets('en anglais, la rédaction, la lecture et le tri sont traduits', (
+    tester,
+  ) async {
+    final s = await pumpApp(
+      tester,
+      prefs: {'lang': 'en'},
+      size: const Size(1500, 1000),
+    );
+    appLang = AppLang.en;
+    await tester.pump(const Duration(milliseconds: 200));
+    s.openMail(s.mails.first.id);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(
+      untranslatedOnScreen(tester, {}),
+      isEmpty,
+      reason: 'lecture d’un message',
+    );
+    await tester.tap(find.byTooltip('Sort'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(untranslatedOnScreen(tester, {}), isEmpty, reason: 'menu de tri');
+    await tester.tap(find.text('Newest first').first);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byTooltip('New message (c)'));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(s.view, PaneView.compose);
+    expect(untranslatedOnScreen(tester, {}), isEmpty, reason: 'rédaction');
+    await teardown(tester, s);
+  });
 }

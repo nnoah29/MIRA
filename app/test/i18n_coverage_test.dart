@@ -108,6 +108,11 @@ void main() {
         reason: 'texte français écrit en dur',
       );
       expect(
+        report['packaging'],
+        isEmpty,
+        reason: 'métadonnées du paquet Linux non traduites',
+      );
+      expect(
         langs.keys,
         containsAll(
           AppLang.values.where((l) => l.strings.isNotEmpty).map((l) => l.code),

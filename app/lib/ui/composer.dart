@@ -73,15 +73,16 @@ class _ComposerState extends State<Composer> {
     _lastBody = c.body.text;
     if (!mounted) return;
     setState(() {});
-    if (slashJustTyped(before, _lastBody, c.body.selection.baseOffset)) {
+    final cursor = c.body.selection.baseOffset;
+    if (slashJustTyped(before, _lastBody, cursor)) {
       WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _templates(fromSlash: true),
+        (_) => _templates(slashAt: cursor - 1),
       );
     }
   }
 
   /// Ouvre le sélecteur de modèles (bouton ou « / ») et insère le modèle choisi.
-  void _templates({bool fromSlash = false}) {
+  void _templates({int? slashAt}) {
     final s = context.read<MailStore>();
     final admin = s.source?.templateAdmin;
     if (!mounted || admin == null) return;
@@ -93,7 +94,7 @@ class _ComposerState extends State<Composer> {
       c: c,
       admin: admin,
       fromName: sender.firstOrNull?.name,
-      fromSlash: fromSlash,
+      slashAt: slashAt,
       notify: s.toast,
       touch: s.touch,
     );

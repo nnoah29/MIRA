@@ -14,16 +14,20 @@ bool slashOpensPicker(String text, int cursor) {
 bool slashJustTyped(String before, String after, int cursor) =>
     after.length == before.length + 1 && slashOpensPicker(after, cursor);
 
-/// Insère [text] à la place de la sélection (ou à la fin), en retirant le « / » déclencheur si demandé.
-void insertAtCursor(
-  RichController body,
-  String text, {
-  bool removeSlash = false,
-}) {
+/// Zone remplacée par une insertion : le « / » déclencheur s'il y est encore, sinon la sélection (ou la fin).
+(int, int) _replaced(RichController body, int? slashAt) {
+  final text = body.text;
+  final at = slashAt;
+  if (at != null && at >= 0 && at < text.length && text[at] == '/') {
+    return (at, at + 1);
+  }
   final sel = body.selection;
-  var start = sel.isValid ? sel.start : body.text.length;
-  final end = sel.isValid ? sel.end : body.text.length;
-  if (removeSlash && start > 0 && body.text[start - 1] == '/') start -= 1;
+  return sel.isValid ? (sel.start, sel.end) : (text.length, text.length);
+}
+
+/// Insère [text] à la place du « / » tapé en [slashAt], sinon de la sélection (ou à la fin).
+void insertAtCursor(RichController body, String text, {int? slashAt}) {
+  final (start, end) = _replaced(body, slashAt);
   body.value = TextEditingValue(
     text: body.text.replaceRange(start, end, text),
     selection: TextSelection.collapsed(offset: start + text.length),

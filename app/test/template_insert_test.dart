@@ -78,14 +78,21 @@ void main() {
 
     test('retire la barre oblique déclencheuse', () {
       final b = body('Salut /', 7);
-      insertAtCursor(b, 'Texte', removeSlash: true);
+      insertAtCursor(b, 'Texte', slashAt: 6);
       expect(b.text, 'Salut Texte');
     });
 
     test('garde une barre qui n’est pas juste avant le curseur', () {
       final b = body('a/b', 3);
-      insertAtCursor(b, 'X', removeSlash: true);
+      insertAtCursor(b, 'X', slashAt: 0);
       expect(b.text, 'a/bX');
+    });
+
+    test('remplace la barre déclencheuse même si le curseur a avancé', () {
+      final b = body('Salut /m', 8);
+      insertAtCursor(b, 'Texte', slashAt: 6);
+      expect(b.text, 'Salut Textem');
+      expect(b.selection.baseOffset, 11);
     });
 
     test('sans sélection valide, ajoute à la fin', () {

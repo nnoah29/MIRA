@@ -21,6 +21,16 @@ Future<EngineTemplate?> _choose(
   return showTemplatePicker(context, all);
 }
 
+/// Nombre de variables restées visibles dans les textes réellement insérés.
+int _leftIn(List<String> unresolved, Iterable<String> inserted) {
+  final shown = <String>{
+    for (final text in inserted)
+      for (final m in RegExp(r'\{\{\s*([^}]+?)\s*\}\}').allMatches(text))
+        m.group(1)!,
+  };
+  return unresolved.where(shown.contains).length;
+}
+
 /// Rend le modèle dans le contexte de la rédaction et l'insère ; l'objet n'est rempli que s'il est vide.
 Future<void> _insert(
   ComposeState c,
@@ -28,7 +38,7 @@ Future<void> _insert(
   EngineTemplate chosen, {
   required String? fromName,
   required DateTime now,
-  required bool fromSlash,
+  required int? slashAt,
   required Notify notify,
   required VoidCallback touch,
 }) async {
@@ -40,13 +50,14 @@ Future<void> _insert(
     now: now,
   );
   final rendered = await admin.render(chosen.id, context);
-  insertAtCursor(c.body, rendered.body, removeSlash: fromSlash);
+  insertAtCursor(c.body, rendered.body, slashAt: slashAt);
   final subject = rendered.subject;
-  if (subject != null && c.subject.text.trim().isEmpty) {
-    c.subject.text = subject;
-  }
+  final applied = subject != null && c.subject.text.trim().isEmpty
+      ? subject
+      : null;
+  if (applied != null) c.subject.text = applied;
   touch();
-  final left = rendered.unresolved.length;
+  final left = _leftIn(rendered.unresolved, [rendered.body, ?applied]);
   if (left > 0) {
     notify(tn(left, 'variable à compléter', 'variables à compléter'));
   }
@@ -61,7 +72,7 @@ Future<void> pickAndInsertTemplate(
   required Notify notify,
   required VoidCallback touch,
   DateTime? now,
-  bool fromSlash = false,
+  int? slashAt,
 }) async {
   try {
     final chosen = await _choose(context, admin);
@@ -72,7 +83,7 @@ Future<void> pickAndInsertTemplate(
       chosen,
       fromName: fromName,
       now: now ?? DateTime.now(),
-      fromSlash: fromSlash,
+      slashAt: slashAt,
       notify: notify,
       touch: touch,
     );

@@ -3,8 +3,9 @@
 
 mod support_templates;
 
+use mira_core::storage::repositories::message_templates::TemplateIdempotencyEntry;
 use mira_core::storage::{Database, schema_version};
-use mira_vocabulary::TemplateId;
+use mira_vocabulary::{IdempotencyKey, TemplateId};
 use support_templates::{code_of, insert, template};
 
 /// La mise à jour garde l'identifiant et la création, change les champs et la date de mise à jour
@@ -61,4 +62,49 @@ fn migration_creates_table_and_data_survives_reopen() {
     drop(db);
     let reopened = Database::open(&path).unwrap();
     assert_eq!(reopened.read(|tx| tx.count_templates()).unwrap(), 1);
+}
+
+/// Supprimer un modèle efface aussi les copies de son texte gardées pour l'idempotence
+#[test]
+fn delete_forgets_its_idempotency_copies() {
+    let db = Database::open_in_memory().unwrap();
+    let item = template("t-1", "Merci");
+    insert(&db, &item).unwrap();
+    let key = IdempotencyKey("k-1".to_string());
+    let entry = TemplateIdempotencyEntry {
+        operation: "create_template".to_string(),
+        fingerprint: "empreinte".to_string(),
+        result: serde_json::to_string(&item).unwrap(),
+    };
+    db.write(|tx| tx.record_template_idempotency(&key, &entry))
+        .unwrap();
+    db.write(|tx| tx.delete_template(&item.id)).unwrap();
+    assert!(
+        db.read(|tx| tx.template_idempotency_entry(&key))
+            .unwrap()
+            .is_none()
+    );
+}
+
+/// Les copies gardées pour un autre modèle ne sont pas touchées
+#[test]
+fn delete_keeps_other_templates_idempotency_copies() {
+    let db = Database::open_in_memory().unwrap();
+    let (gone, kept) = (template("t-1", "Merci"), template("t-2", "Relance"));
+    insert(&db, &gone).unwrap();
+    insert(&db, &kept).unwrap();
+    let key = IdempotencyKey("k-2".to_string());
+    let entry = TemplateIdempotencyEntry {
+        operation: "create_template".to_string(),
+        fingerprint: "empreinte".to_string(),
+        result: serde_json::to_string(&kept).unwrap(),
+    };
+    db.write(|tx| tx.record_template_idempotency(&key, &entry))
+        .unwrap();
+    db.write(|tx| tx.delete_template(&gone.id)).unwrap();
+    assert!(
+        db.read(|tx| tx.template_idempotency_entry(&key))
+            .unwrap()
+            .is_some()
+    );
 }

@@ -56,7 +56,7 @@ impl Tx<'_> {
         Ok(())
     }
 
-    /// Supprime un modèle ; inconnu : `not_found.template`
+    /// Supprime un modèle et les copies de son texte gardées pour l'idempotence ; inconnu : `not_found.template`
     pub fn delete_template(&self, id: &TemplateId) -> Result<(), MiraError> {
         let changed = self
             .sql()
@@ -65,6 +65,12 @@ impl Tx<'_> {
         if changed == 0 {
             return Err(template_not_found());
         }
+        self.sql()
+            .execute(
+                "DELETE FROM template_idempotency WHERE json_extract(result, '$.id') = ?1",
+                [id.as_str()],
+            )
+            .map_err(storage_error)?;
         Ok(())
     }
 

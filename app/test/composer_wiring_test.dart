@@ -94,6 +94,21 @@ void main() {
     store.dispose();
   });
 
+  testWidgets('un caractère tapé avant l’ouverture du sélecteur est conservé', (
+    t,
+  ) async {
+    final (store, _) = await pumpComposer(t);
+    final body = find.byType(TextField).last;
+    await t.enterText(body, 'Salut ');
+    await t.enterText(body, 'Salut /');
+    await t.enterText(body, 'Salut /m');
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('picker-row-t1')));
+    await t.pumpAndSettle();
+    expect(store.c!.body.text, 'Salut Bonjour à tousm');
+    store.dispose();
+  });
+
   testWidgets('une barre oblique dans une adresse n’ouvre rien', (t) async {
     final (store, _) = await pumpComposer(t);
     final body = find.byType(TextField).last;

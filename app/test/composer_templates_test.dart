@@ -19,7 +19,7 @@ class Harness {
 Future<Harness> pumpHarness(
   WidgetTester tester, {
   List<Person> to = const [Person('Léa Durand', 'lea@x.fr')],
-  bool fromSlash = false,
+  int? slashAt,
   String body = '',
   String subject = '',
 }) async {
@@ -56,7 +56,7 @@ Future<Harness> pumpHarness(
               c: h.compose,
               admin: TemplateAdmin(h.engine),
               fromName: 'Noah',
-              fromSlash: fromSlash,
+              slashAt: slashAt,
               now: DateTime(2026, 10, 25, 14, 30),
               notify: (message, {bool err = false}) =>
                   h.notes.add((message, err)),
@@ -106,7 +106,7 @@ void main() {
   testWidgets('la barre oblique déclencheuse est remplacée par le texte', (
     t,
   ) async {
-    final h = await pumpHarness(t, body: 'Salut /', fromSlash: true);
+    final h = await pumpHarness(t, body: 'Salut /', slashAt: 6);
     await choose(t);
     expect(
       h.compose.body.text,
@@ -120,6 +120,20 @@ void main() {
     expect(h.compose.body.text, contains('{{contact.nom}}'));
     expect(h.notes.single, ('2 variables à compléter', false));
   });
+
+  testWidgets(
+    'seules les variables visibles dans le texte inséré sont comptées',
+    (t) async {
+      final h = await pumpHarness(
+        t,
+        to: const [Person('', 'lea@x.fr')],
+        subject: 'Re: X',
+      );
+      await choose(t);
+      expect(h.compose.subject.text, 'Re: X');
+      expect(h.notes.single, ('1 variable à compléter', false));
+    },
+  );
 
   testWidgets('modèle supprimé entre-temps : erreur traduite, corps intact', (
     t,

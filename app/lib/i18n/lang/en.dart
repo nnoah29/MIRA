@@ -275,6 +275,7 @@ const Map<String, String> enStrings = {
   'Supprimer le brouillon': 'Delete draft',
   'Programmer': 'Schedule',
   'Programmer l’envoi': 'Schedule sending',
+  'Choisir une date et une heure…': 'Pick a date and time…',
   'Envoyer': 'Send',
   'Envoyer (Ctrl+Entrée)': 'Send (Ctrl+Enter)',
   'Fermer': 'Close',

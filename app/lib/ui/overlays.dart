@@ -7,6 +7,7 @@ import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
 import 'native_cover.dart';
+import 'send_time_pop.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
 
@@ -302,6 +303,14 @@ void showSchedPop(BuildContext anchor) {
               s.send(n.toLowerCase());
             },
           ),
+        PopItem(
+          leading: popIco('clock', ctx),
+          label: t('Choisir une date et une heure…'),
+          onTap: () {
+            close();
+            showSendTimePop(anchor, s);
+          },
+        ),
       ],
     );
   });

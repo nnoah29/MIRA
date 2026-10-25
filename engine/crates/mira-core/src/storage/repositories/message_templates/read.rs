@@ -3,6 +3,7 @@
 use mira_vocabulary::{MessageTemplate, MiraError, TemplateId};
 use rusqlite::OptionalExtension;
 
+use super::errors::template_not_found;
 use super::rows::{COLUMNS, template_from_row};
 use crate::storage::Tx;
 use crate::storage::errors::storage_error;
@@ -44,4 +45,9 @@ impl Tx<'_> {
             .map(|count| usize::try_from(count).unwrap_or(0))
             .map_err(storage_error)
     }
+}
+
+/// Relit un modèle ou échoue avec `not_found.template`
+pub fn require_template(tx: &Tx<'_>, id: &TemplateId) -> Result<MessageTemplate, MiraError> {
+    tx.get_template(id)?.ok_or_else(template_not_found)
 }

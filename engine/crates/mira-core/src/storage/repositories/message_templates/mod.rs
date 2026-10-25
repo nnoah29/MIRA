@@ -7,3 +7,4 @@ mod rows;
 mod write;
 
 pub use idempotency::TemplateIdempotencyEntry;
+pub use read::require_template;

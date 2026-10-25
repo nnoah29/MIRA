@@ -1061,6 +1061,65 @@
         }
       }
     },
+    "template.create_template": {
+      "domain": "template",
+      "request": {
+        "body": "Bonjour {{contact.nom}}",
+        "idempotency_key": "key-1",
+        "name": "Remerciement",
+        "op": "create_template",
+        "subject": "Merci"
+      }
+    },
+    "template.delete_template": {
+      "domain": "template",
+      "request": {
+        "op": "delete_template",
+        "template": "template-1"
+      }
+    },
+    "template.get_template": {
+      "domain": "template",
+      "request": {
+        "op": "get_template",
+        "template": "template-1"
+      }
+    },
+    "template.list_templates": {
+      "domain": "template",
+      "request": {
+        "op": "list_templates"
+      }
+    },
+    "template.render_template": {
+      "domain": "template",
+      "request": {
+        "context": {
+          "account_email": "noah@example.org",
+          "account_name": "Noah",
+          "contact": {
+            "email": "lea@example.org",
+            "first_name": "Léa",
+            "name": "Durand"
+          },
+          "date": "25/10/2026",
+          "subject": "Devis",
+          "time": "14:30"
+        },
+        "op": "render_template",
+        "template": "template-1"
+      }
+    },
+    "template.update_template": {
+      "domain": "template",
+      "request": {
+        "body": "Bonjour",
+        "name": "Remerciement",
+        "op": "update_template",
+        "subject": null,
+        "template": "template-1"
+      }
+    },
     "thread.get_thread": {
       "domain": "thread",
       "request": {
@@ -1874,6 +1933,55 @@
         "type": "status"
       },
       "type": "sync"
+    },
+    "template.done": {
+      "data": {
+        "type": "done"
+      },
+      "type": "template"
+    },
+    "template.rendered": {
+      "data": {
+        "data": {
+          "body": "Bonjour Durand, merci. {{moi.nom}}",
+          "subject": "Merci Léa",
+          "unresolved": [
+            "moi.nom"
+          ]
+        },
+        "type": "rendered"
+      },
+      "type": "template"
+    },
+    "template.template": {
+      "data": {
+        "data": {
+          "body": "Bonjour {{contact.nom}}, merci. {{moi.nom}}",
+          "created_at": 1700000000000,
+          "id": "template-1",
+          "name": "Remerciement",
+          "subject": "Merci {{contact.prénom}}",
+          "updated_at": 1700000000000
+        },
+        "type": "template"
+      },
+      "type": "template"
+    },
+    "template.templates": {
+      "data": {
+        "data": [
+          {
+            "body": "Bonjour {{contact.nom}}, merci. {{moi.nom}}",
+            "created_at": 1700000000000,
+            "id": "template-1",
+            "name": "Remerciement",
+            "subject": "Merci {{contact.prénom}}",
+            "updated_at": 1700000000000
+          }
+        ],
+        "type": "templates"
+      },
+      "type": "template"
     },
     "thread": {
       "data": {

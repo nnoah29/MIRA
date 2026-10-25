@@ -19,4 +19,5 @@ pub(crate) mod rule;
 pub(crate) mod search;
 pub(crate) mod settings;
 pub(crate) mod sync;
+pub(crate) mod template;
 pub(crate) mod thread;

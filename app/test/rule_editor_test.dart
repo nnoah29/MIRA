@@ -80,6 +80,13 @@ const catalog = RuleCatalog(
       needsMailbox: false,
       singleAccount: false,
     ),
+    CatalogEntry(
+      kind: 'reply_with_template',
+      family: 'reply',
+      fields: ['template'],
+      needsMailbox: false,
+      singleAccount: false,
+    ),
   ],
 );
 
@@ -118,6 +125,7 @@ Future<List<Rule>> pumpEditor(
   Rule rule, {
   Future<void>? gate,
   List<RuleChoice> labels = const [],
+  List<RuleChoice> templates = const [],
 }) async {
   final saved = <Rule>[];
   await tester.binding.setSurfaceSize(const Size(900, 1600));
@@ -136,6 +144,7 @@ Future<List<Rule>> pumpEditor(
               'a2': [RuleChoice('mb-a2', 'Perso')],
             },
             labels: labels,
+            templates: templates,
             onSave: (r) async {
               saved.add(r);
               await gate;
@@ -334,4 +343,30 @@ void main() {
       });
     },
   );
+
+  testWidgets('un modèle se choisit dans la liste pour préparer une réponse', (
+    t,
+  ) async {
+    final saved = await pumpEditor(
+      t,
+      draft(const RuleScope.all()),
+      templates: const [RuleChoice('tpl-1', 'Absence')],
+    );
+    await t.tap(find.byKey(const ValueKey('action-0-kind')));
+    await t.pumpAndSettle();
+    await t.tap(
+      find.byKey(const ValueKey('action-0-option-reply_with_template')),
+    );
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('action-0-template')));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Absence').last);
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('save-rule')));
+    await t.pumpAndSettle();
+    expect(saved.single.actions.single.data, {
+      'type': 'reply_with_template',
+      'template': 'tpl-1',
+    });
+  });
 }

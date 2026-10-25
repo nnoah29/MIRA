@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../data/rule_models.dart';
 import '../engine/rule_admin.dart';
+import '../engine/template_admin.dart';
 import '../i18n/i18n.dart';
 import '../theme/app_theme.dart';
 import 'rule_editor.dart';
@@ -17,6 +18,7 @@ class RulesSettings extends StatefulWidget {
   final Map<String, String> accounts;
   final Stream<void> changes;
   final List<RuleChoice> labels;
+  final TemplateAdmin? templateAdmin;
   final ValueNotifier<Rule?>? draft;
   final Future<void> Function(int matched)? onApplied;
   const RulesSettings({
@@ -25,6 +27,7 @@ class RulesSettings extends StatefulWidget {
     required this.accounts,
     required this.changes,
     this.labels = const [],
+    this.templateAdmin,
     this.draft,
     this.onApplied,
   });
@@ -37,6 +40,7 @@ class _RulesSettingsState extends State<RulesSettings> {
   List<RuleView> views = [];
   RuleCatalog catalog = const RuleCatalog([], []);
   Map<String, List<RuleChoice>> mailboxes = {};
+  List<RuleChoice> templates = const [];
   Rule? editing;
   String? error;
   StreamSubscription<void>? _sub;
@@ -49,6 +53,22 @@ class _RulesSettingsState extends State<RulesSettings> {
     _takeDraft();
     _load();
     _loadMailboxes();
+    _loadTemplates();
+  }
+
+  /// Modèles proposés à l'action « Répondre avec un modèle » ; une lecture qui échoue n'en propose aucun.
+  Future<void> _loadTemplates() async {
+    final admin = widget.templateAdmin;
+    if (admin == null) return;
+    try {
+      final found = await admin.list();
+      if (!mounted) return;
+      setState(
+        () => templates = [for (final m in found) RuleChoice(m.id, m.name)],
+      );
+    } catch (_) {
+      if (mounted) setState(() => templates = const []);
+    }
   }
 
   /// Boîtes de chaque compte, pour les listes de l'éditeur ; un compte illisible n'en propose aucune.
@@ -324,6 +344,7 @@ class _RulesSettingsState extends State<RulesSettings> {
       accounts: widget.accounts,
       mailboxes: mailboxes,
       labels: widget.labels,
+      templates: templates,
       onSave: _save,
       onPreview: widget.admin.preview,
       onCancel: () => setState(() => editing = null),

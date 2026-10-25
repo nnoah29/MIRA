@@ -40,6 +40,7 @@ const _kindLabels = <String, String>{
   'mark_spam': 'Marquer comme spam',
   'suppress_notification': 'Ne pas notifier',
   'stop_processing': 'Arrêter le traitement',
+  'reply_with_template': 'Préparer une réponse avec un modèle',
   // i18n:keys-end
 };
 

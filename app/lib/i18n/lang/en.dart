@@ -605,6 +605,7 @@ const Map<String, String> enStrings = {
   'Marquer comme spam': 'Mark as spam',
   'Ne pas notifier': 'Do not notify',
   'Arrêter le traitement': 'Stop processing',
+  'Préparer une réponse avec un modèle': 'Prepare a reply with a template',
   'Choisir…': 'Choose…',
   '{0} (introuvable)': '{0} (not found)',
   '<': '<',

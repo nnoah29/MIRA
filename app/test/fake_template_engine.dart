@@ -41,12 +41,46 @@ class FakeTemplateEngine implements EngineClient {
     return _wrap('template', found);
   }
 
+  /// Valeur d'une variable dans le contexte, avec les noms de champs du contrat du moteur.
+  String? _value(String name, Map<String, dynamic> context) {
+    final contact = (context['contact'] as Map?)?.cast<String, dynamic>();
+    final found = switch (name) {
+      'contact.nom' => contact?['name'],
+      'contact.prénom' => contact?['first_name'],
+      'contact.email' => contact?['email'],
+      'date' => context['date'],
+      'heure' => context['time'],
+      'moi.nom' => context['account_name'],
+      'moi.email' => context['account_email'],
+      'objet' => context['subject'],
+      _ => null,
+    };
+    return found is String && found.isNotEmpty ? found : null;
+  }
+
+  /// Rend le texte comme le moteur : variables sans valeur laissées visibles et listées.
+  String _fill(String text, Map<String, dynamic> context, List<String> left) {
+    return text.replaceAllMapped(RegExp(r'\{\{\s*([^}]+?)\s*\}\}'), (m) {
+      final value = _value(m.group(1)!, context);
+      if (value != null) return value;
+      if (!left.contains(m.group(1)!)) left.add(m.group(1)!);
+      return m.group(0)!;
+    });
+  }
+
   Map<String, dynamic> _render(Map<String, dynamic> r) {
-    final found = templates.firstWhere((t) => t['id'] == r['template']);
+    final matches = templates.where((t) => t['id'] == r['template']);
+    if (matches.isEmpty) {
+      throw const EngineException('not_found.template', 'inconnu');
+    }
+    final found = matches.first;
+    final context = (r['context'] as Map).cast<String, dynamic>();
+    final left = <String>[];
+    final subject = found['subject'] as String?;
     return _wrap('rendered', {
-      'subject': found['subject'],
-      'body': found['body'],
-      'unresolved': <String>[],
+      'subject': subject == null ? null : _fill(subject, context, left),
+      'body': _fill('${found['body']}', context, left),
+      'unresolved': left,
     });
   }
 

@@ -496,6 +496,11 @@ const Map<String, String> enStrings = {
   'Invalide': 'Invalid',
   'Supprimer la règle « {0} » ?': 'Delete the rule “{0}”?',
   'Ajouter un modèle': 'Add a template',
+  'Aucun modèle trouvé.': 'No matching template.',
+  'Chercher un modèle': 'Search templates',
+  'Insérer un modèle': 'Insert a template',
+  'variable à compléter': 'variable to fill in',
+  'variables à compléter': 'variables to fill in',
   'Aucun modèle.': 'No templates.',
   'Le nom du modèle est vide': 'The template name is empty',
   'Le nom, l’objet ou le texte du modèle est trop long':

@@ -9,8 +9,10 @@ import '../data/format.dart';
 import '../data/models.dart';
 import '../state/rich_controller.dart';
 import '../state/store.dart';
+import '../state/template_insert.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
+import 'composer_templates.dart';
 import 'overlays.dart';
 import '../data/documents.dart';
 import 'viewer.dart';
@@ -36,12 +38,14 @@ class _ComposerState extends State<Composer> {
   final scroll = ScrollController();
   final wrapKey = GlobalKey();
   double fieldW = 400;
+  String _lastBody = '';
 
   ComposeState get c => widget.c;
 
   @override
   void initState() {
     super.initState();
+    _lastBody = c.body.text;
     c.body.addListener(_onBody);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -59,12 +63,40 @@ class _ComposerState extends State<Composer> {
     super.didUpdateWidget(old);
     if (old.c != widget.c) {
       old.c.body.removeListener(_onBody);
+      _lastBody = widget.c.body.text;
       widget.c.body.addListener(_onBody);
     }
   }
 
   void _onBody() {
-    if (mounted) setState(() {});
+    final before = _lastBody;
+    _lastBody = c.body.text;
+    if (!mounted) return;
+    setState(() {});
+    if (slashJustTyped(before, _lastBody, c.body.selection.baseOffset)) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _templates(fromSlash: true),
+      );
+    }
+  }
+
+  /// Ouvre le sélecteur de modèles (bouton ou « / ») et insère le modèle choisi.
+  void _templates({bool fromSlash = false}) {
+    final s = context.read<MailStore>();
+    final admin = s.source?.templateAdmin;
+    if (!mounted || admin == null) return;
+    final sender = s.senderChoices().where(
+      (x) => x.email.toLowerCase() == c.from.toLowerCase(),
+    );
+    pickAndInsertTemplate(
+      context,
+      c: c,
+      admin: admin,
+      fromName: sender.firstOrNull?.name,
+      fromSlash: fromSlash,
+      notify: s.toast,
+      touch: s.touch,
+    );
   }
 
   @override
@@ -483,6 +515,15 @@ class _ComposerState extends State<Composer> {
           child: Row(
             children: [
               IBtn('clip', tip: t('Joindre un fichier'), onTap: _attach),
+              if (s.source?.templateAdmin != null) ...[
+                const SizedBox(width: 10),
+                IBtn(
+                  'file',
+                  key: const ValueKey('insert-template'),
+                  tip: t('Insérer un modèle'),
+                  onTap: _templates,
+                ),
+              ],
               const SizedBox(width: 10),
               IBtn('trash', tip: t('Supprimer le brouillon'), onTap: s.discard),
               const Spacer(),

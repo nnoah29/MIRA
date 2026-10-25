@@ -14,9 +14,10 @@ use crate::sync::session::{ConnectionBudget, ConnectionBudgets, CredentialProvid
 /// Lance et arrête les tâches de synchronisation des comptes.
 #[derive(Debug)]
 pub struct SyncSupervisor {
-    config: SupervisorConfig,
+    pub(super) config: SupervisorConfig,
     budgets: ConnectionBudgets,
     pub(super) shutdown: watch::Sender<bool>,
+    pub(super) poll: watch::Sender<Option<Duration>>,
     pub(super) accounts: AccountTable,
 }
 
@@ -33,6 +34,7 @@ impl SyncSupervisor {
             config,
             budgets,
             shutdown,
+            poll: watch::channel(config.poll_interval).0,
             accounts: AccountTable::default(),
         }
     }
@@ -51,7 +53,14 @@ impl SyncSupervisor {
         let shutdown = self.shutdown.subscribe();
         let limit = ctx.provider.descriptor().limits.max_connections;
         let budget = self.budgets.budget_for(id.as_str(), limit);
-        let running = RunningAccount::launch(ctx, credentials, self.config, budget, shutdown);
+        let running = RunningAccount::launch(
+            ctx,
+            credentials,
+            self.config,
+            budget,
+            shutdown,
+            self.poll.subscribe(),
+        );
         table.insert(id, running);
         true
     }

@@ -982,6 +982,28 @@
         "query": "facture"
       }
     },
+    "settings.get_settings": {
+      "domain": "settings",
+      "request": {
+        "op": "get_settings"
+      }
+    },
+    "settings.set_settings": {
+      "domain": "settings",
+      "request": {
+        "op": "set_settings",
+        "settings": {
+          "muted_accounts": [
+            "account-1"
+          ],
+          "poll_secs": 120,
+          "quiet_hours": {
+            "from": 22,
+            "to": 7
+          }
+        }
+      }
+    },
     "sync.extend_window": {
       "domain": "sync",
       "request": {
@@ -1741,6 +1763,22 @@
         "truncated": false
       },
       "type": "server_search"
+    },
+    "settings.settings": {
+      "data": {
+        "data": {
+          "muted_accounts": [
+            "account-1"
+          ],
+          "poll_secs": 120,
+          "quiet_hours": {
+            "from": 22,
+            "to": 7
+          }
+        },
+        "type": "settings"
+      },
+      "type": "settings"
     },
     "status": {
       "data": {

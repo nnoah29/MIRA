@@ -5,6 +5,7 @@ import '../state/search_filters.dart';
 import 'account_admin.dart';
 import 'account_setup.dart';
 import 'compose_admin.dart';
+import 'engine_settings_admin.dart';
 import 'label_admin.dart';
 import 'label_settings_admin.dart';
 import 'local_label_admin.dart';
@@ -85,6 +86,18 @@ abstract class MailSource {
 
   /// Signale chaque changement des réglages des libellés côté moteur.
   Stream<void> get labelSettingsChanges;
+
+  /// Réglages appliqués par le moteur (relevé périodique…) (`null` : démonstration).
+  EngineSettingsAdmin? get engineSettingsAdmin;
+
+  /// Signale chaque changement des réglages du moteur.
+  Stream<void> get engineSettingsChanges;
+
+  /// Signale chaque changement de compteur de non-lus annoncé par le moteur.
+  Stream<void> get counterChanges;
+
+  /// Signale chaque changement des comptes (ajout, modification, suppression, état) côté moteur.
+  Stream<void> get accountEvents;
 
   /// Verdict des règles sur un message arrivé : `true` muet (aucune notification),
   /// `false` à annoncer, `null` pas encore connu.

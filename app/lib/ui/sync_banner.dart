@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../engine/sync_alert.dart';
 import '../engine/sync_state.dart';
 import '../i18n/i18n.dart';
 import '../state/store.dart';
@@ -16,9 +17,9 @@ class SyncBanner extends StatelessWidget {
     final s = context.watch<MailStore>();
     final p = context.pal;
     final issues = s.syncIssues;
-    final bad = issues.where((e) => e.$2.offline || e.$2.failed != null);
-    if (bad.isEmpty) return _progress(issues, p);
-    final (account, state) = bad.first;
+    final urgent = mostUrgent(issues);
+    if (urgent == null) return _progress(issues, p);
+    final (account, state) = urgent;
     return Container(
       key: const ValueKey('sync-banner'),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -27,7 +28,7 @@ class SyncBanner extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              _message(account.email, state),
+              syncAlertMessage(account.email, state),
               style: Fonts.sans(size: 13, color: p.text),
             ),
           ),
@@ -36,10 +37,6 @@ class SyncBanner extends StatelessWidget {
       ),
     );
   }
-
-  String _message(String email, SyncState st) => st.offline
-      ? t('Hors ligne : {0}', [email])
-      : t('Synchronisation de {0} impossible ({1})', [email, st.failed ?? '']);
 
   Widget _progress(List<(dynamic, SyncState)> issues, Pal p) {
     final pct = issues.map((e) => e.$2.percent).whereType<int>().firstOrNull;

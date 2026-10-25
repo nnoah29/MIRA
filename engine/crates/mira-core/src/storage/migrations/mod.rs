@@ -16,6 +16,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("v008_local_labels.sql"),
     include_str!("v009_local_label_idempotency.sql"),
     include_str!("v010_label_settings.sql"),
+    include_str!("v011_engine_settings.sql"),
 ];
 
 /// Applique, dans une transaction, les migrations pas encore appliquées

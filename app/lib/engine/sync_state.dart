@@ -34,6 +34,15 @@ class SyncState {
         syncing = false;
         offline = false;
         failed = null;
+      case 'quota_full':
+        failed = 'server.quota_exceeded';
+      case 'rate_limited':
+        failed = 'server.rate_limited';
+      case 'send_departed':
+        if (failed == 'server.quota_exceeded' ||
+            failed == 'server.rate_limited') {
+          failed = null;
+        }
       case 'sync_failed':
         ended = kind['operation'] as String?;
         syncing = false;

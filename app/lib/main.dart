@@ -50,7 +50,6 @@ Future<MailSource?> openEngineSource(SharedPreferences prefs) async {
   try {
     final android = Platform.isAndroid;
     final client = await RustEngineClient.open(
-      pollSecs: int.tryParse(prefs.getString('poll') ?? ''),
       home: android ? (await getApplicationSupportDirectory()).path : null,
       secretsKey: android ? await androidSecretsKey() : null,
     );

@@ -53,6 +53,7 @@ impl SyncService {
                 events: Arc::new(events.clone()),
             }),
         };
+        service.apply_stored_settings();
         service.start_known_accounts();
         service
     }

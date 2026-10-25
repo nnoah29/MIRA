@@ -218,6 +218,9 @@ pub enum EventKind {
     },
     LocalLabelsChanged,
     LabelSettingsChanged,
+    SettingsChanged {
+        keys: Vec<String>,
+    },
 }
 
 impl EventKind {
@@ -242,6 +245,7 @@ impl EventKind {
             K::RuleChanged { .. } | K::RuleApplied { .. } => EventCategory::Rule,
             K::LocalLabelsChanged => EventCategory::LocalLabel,
             K::LabelSettingsChanged => EventCategory::Label,
+            K::SettingsChanged { .. } => EventCategory::Settings,
         }
     }
 
@@ -264,7 +268,8 @@ impl EventKind {
             | K::RuleApplied { account, .. } => Some(account),
             K::EngineStarted | K::EngineStopping | K::EngineFatalError { .. } | K::Diagnostic { .. }
             | K::OperationProgress { .. } | K::OperationFinished { .. } | K::OperationFailed { .. }
-            | K::OperationCancelled { .. } | K::RuleChanged { .. } | K::LocalLabelsChanged | K::LabelSettingsChanged => None,
+            | K::OperationCancelled { .. } | K::RuleChanged { .. } | K::LocalLabelsChanged | K::LabelSettingsChanged
+            | K::SettingsChanged { .. } => None,
         }
     }
 }

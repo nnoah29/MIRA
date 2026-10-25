@@ -13,6 +13,7 @@ import '../data/seed.dart';
 import '../engine/blocks_html.dart';
 import '../engine/compose_admin.dart';
 import '../engine/engine_client.dart';
+import '../engine/engine_settings_admin.dart';
 import '../engine/label_admin.dart';
 import '../engine/label_settings_admin.dart';
 import '../engine/local_label_admin.dart';
@@ -149,8 +150,11 @@ class MailStore extends ChangeNotifier {
   final MailSource? source;
   StreamSubscription<String>? _changeSub;
   StreamSubscription<void>? _syncSub;
+  StreamSubscription<void>? _counterSub;
+  StreamSubscription<void>? _accountSub;
   StreamSubscription<void>? _labelSub;
   StreamSubscription<void>? _settingsSub;
+  StreamSubscription<void>? _engineSettingsSub;
 
   /// Historique des destinataires et noms choisis.
   late final ContactBook contactBook;
@@ -208,7 +212,10 @@ class MailStore extends ChangeNotifier {
       }
       localLabelsReady = _initLocalLabels();
       unawaited(_initLabelSettings());
+      unawaited(_initEngineSettings());
       _changeSub = source!.changes.listen(_reloadAccount);
+      _counterSub = source!.counterChanges.listen((_) => notifyListeners());
+      _accountSub = source!.accountEvents.listen((_) => accountsChanged());
       _syncSub = source!.syncEvents.listen((_) {
         _extensionProgress();
         notifyListeners();
@@ -382,8 +389,11 @@ class MailStore extends ChangeNotifier {
   void dispose() {
     _changeSub?.cancel();
     _syncSub?.cancel();
+    _counterSub?.cancel();
+    _accountSub?.cancel();
     _labelSub?.cancel();
     _settingsSub?.cancel();
+    _engineSettingsSub?.cancel();
     _searchTimer?.cancel();
     _wake?.cancel();
     _wallSub?.cancel();
@@ -764,7 +774,7 @@ class MailStore extends ChangeNotifier {
         followWallpaper = v == '1';
         prefs.setString('follow', v);
       case 'poll':
-        prefs.setString('poll', v);
+        _applyPoll(v);
       case 'hibernate':
         prefs.setString('hibernate', v);
         if (!_focused) _armSleep();
@@ -1916,6 +1926,93 @@ class MailStore extends ChangeNotifier {
     }
   }
 
+  /// Réglages du moteur tels qu'il les applique (`null` : démonstration ou moteur sans réglages).
+  EngineSettings? engineSettings;
+
+  /// Relevé périodique en secondes, `null` : délai du fournisseur.
+  int? get pollSecs => engineSettings?.pollSecs;
+
+  /// Choix affiché pour le relevé : celui du moteur, ou des préférences en démonstration.
+  String get pollChoice => engineSettings == null
+      ? prefs.getString('poll') ?? ''
+      : '${pollSecs ?? ''}';
+
+  /// Remplace les réglages du moteur : affichés tout de suite, relus en cas d'échec.
+  void _writeEngineSettings(EngineSettings next) {
+    final admin = source?.engineSettingsAdmin;
+    if (admin == null) return;
+    _adopt(next);
+    notifyListeners();
+    unawaited(
+      admin
+          .write(next)
+          .then<void>((_) {}, onError: (Object _) => refreshEngineSettings()),
+    );
+  }
+
+  /// Retient les réglages du moteur et les donne aux notifications.
+  void _adopt(EngineSettings next) {
+    engineSettings = next;
+    notifySettings.engine = next;
+  }
+
+  /// Envoie le relevé choisi au moteur ; sans réglages du moteur, aux préférences.
+  void _applyPoll(String v) {
+    final current = engineSettings;
+    if (current == null) {
+      prefs.setString('poll', v);
+      return;
+    }
+    _writeEngineSettings(current.withPoll(int.tryParse(v)));
+  }
+
+  /// Reprend les anciennes préférences (une fois), lit les réglages du moteur et les relit à chaque signal.
+  Future<void> _initEngineSettings() async {
+    final src = source;
+    final admin = src?.engineSettingsAdmin;
+    if (admin == null) return;
+    _engineSettingsSub = src!.engineSettingsChanges.listen(
+      (_) => refreshEngineSettings(),
+    );
+    try {
+      final current = await admin.read();
+      final merged = _withLegacy(current);
+      if (!merged.sameAs(current)) await admin.write(merged);
+      _adopt(merged);
+      for (final k in const ['poll', 'notifyMuted', 'notifyQuiet']) {
+        await prefs.remove(k);
+      }
+      notifyListeners();
+    } catch (_) {
+      /* moteur sans réglages : les préférences restent */
+    }
+  }
+
+  /// Réglages du moteur complétés par les anciennes préférences, là où le moteur n'a rien.
+  EngineSettings _withLegacy(EngineSettings current) {
+    final legacy = NotifySettings(prefs);
+    final poll = int.tryParse(prefs.getString('poll') ?? '');
+    return EngineSettings(
+      pollSecs: current.pollSecs ?? poll,
+      mutedAccounts: current.mutedAccounts.isEmpty
+          ? legacy.muted
+          : current.mutedAccounts,
+      quietHours: current.quietHours ?? legacy.quiet,
+    );
+  }
+
+  /// Relit les réglages du moteur ; en cas d'échec, garde l'affichage actuel.
+  Future<void> refreshEngineSettings() async {
+    final admin = source?.engineSettingsAdmin;
+    if (admin == null) return;
+    try {
+      _adopt(await admin.read());
+      notifyListeners();
+    } catch (_) {
+      /* moteur sans réglages : affichage actuel */
+    }
+  }
+
   /// Libellés avec leurs réglages (moteur), dans l'ordre d'affichage.
   List<LabelOverview> labelOverviews = [];
   Map<String, LabelOverview> _overviewByKey = {};
@@ -2345,14 +2442,24 @@ class MailStore extends ChangeNotifier {
 
   /// Change un réglage de notification et redessine.
   void setNotify(String key, String value) {
+    final current = engineSettings;
+    if (key == 'notifyQuiet' && current != null) {
+      return _writeEngineSettings(current.withQuiet(parseQuiet(value)));
+    }
     prefs.setString(key, value);
     notifyListeners();
   }
 
   /// Coupe ou rétablit les notifications d'un compte.
   void muteAccount(String account, bool mute) {
-    notifySettings.setMuted(account, mute);
-    notifyListeners();
+    final current = engineSettings;
+    if (current == null) {
+      notifySettings.setMuted(account, mute);
+      return notifyListeners();
+    }
+    final next = {...current.mutedAccounts};
+    mute ? next.add(account) : next.remove(account);
+    _writeEngineSettings(current.withMuted(next));
   }
 
   /// Affiche une notification d'essai, même au premier plan.

@@ -10,6 +10,7 @@ mod requests;
 mod resync;
 mod rule_hook;
 mod session;
+mod settings_hook;
 mod strategy;
 mod supervisor;
 mod window;

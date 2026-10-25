@@ -2,7 +2,7 @@
 name: mira-mail
 title: MIRA
 base: core22
-version: '1.1.4.1'
+version: '1.1.5'
 summary: Desktop mail client that works offline
 description: |
   MIRA keeps a full copy of your mail on your own computer, so everything
@@ -29,7 +29,7 @@ apps:
 parts:
   mira-mail:
     plugin: dump
-    source: out/mira-mail-1.1.4.1-x86_64.tar.gz
+    source: out/mira-mail-1.1.5-x86_64.tar.gz
     override-build: |
       install -d $CRAFT_PART_INSTALL/usr/lib/mira-mail
       cp -a app/. $CRAFT_PART_INSTALL/usr/lib/mira-mail/

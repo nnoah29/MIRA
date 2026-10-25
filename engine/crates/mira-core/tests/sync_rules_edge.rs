@@ -33,7 +33,7 @@ async fn invalid_rule_is_ignored() {
     .await;
 }
 
-/// Un message présent dans deux boîtes (vues Gmail) n'est évalué qu'une fois
+/// Un message présent dans deux boîtes (libellés multiples) n'est évalué qu'une fois
 #[tokio::test]
 async fn message_in_two_mailboxes_is_evaluated_once() {
     within(async {

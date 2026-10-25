@@ -1,6 +1,6 @@
 //! Interrogation du monde (comptes, boîtes) par la validation, sans accès au stockage.
 
-use mira_vocabulary::{AccountId, LocalLabelId, MailboxId};
+use mira_vocabulary::{AccountId, LocalLabelId, MailboxId, TemplateId};
 
 /// Ce que la validation doit savoir des comptes et des boîtes existants.
 pub trait RuleWorld {
@@ -11,4 +11,6 @@ pub trait RuleWorld {
     fn mailbox_account(&self, mailbox: &MailboxId) -> Option<AccountId>;
     /// Vrai si le libellé local existe encore.
     fn local_label_exists(&self, label: &LocalLabelId) -> bool;
+    /// Vrai si le modèle de message existe encore.
+    fn template_exists(&self, template: &TemplateId) -> bool;
 }

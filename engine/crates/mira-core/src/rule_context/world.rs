@@ -2,17 +2,18 @@
 
 use std::collections::{HashMap, HashSet};
 
-use mira_vocabulary::{AccountId, LocalLabelId, MailboxId, MiraError};
+use mira_vocabulary::{AccountId, LocalLabelId, MailboxId, MiraError, TemplateId};
 
 use crate::rules::validate::RuleWorld;
 use crate::storage::Tx;
 
-/// Comptes, boîtes et libellés locaux du profil au moment de la lecture.
+/// Comptes, boîtes, libellés locaux et modèles du profil au moment de la lecture.
 #[derive(Debug, Clone, Default)]
 pub struct StoredRuleWorld {
     accounts: HashSet<AccountId>,
     mailboxes: HashMap<MailboxId, AccountId>,
     labels: HashSet<LocalLabelId>,
+    templates: HashSet<TemplateId>,
 }
 
 impl StoredRuleWorld {
@@ -27,6 +28,9 @@ impl StoredRuleWorld {
         }
         for label in tx.list_local_labels()? {
             world.labels.insert(label.id);
+        }
+        for template in tx.list_templates()? {
+            world.templates.insert(template.id);
         }
         Ok(world)
     }
@@ -46,5 +50,10 @@ impl RuleWorld for StoredRuleWorld {
     /// Vrai si le libellé local existait au moment de la lecture
     fn local_label_exists(&self, label: &LocalLabelId) -> bool {
         self.labels.contains(label)
+    }
+
+    /// Vrai si le modèle existait au moment de la lecture
+    fn template_exists(&self, template: &TemplateId) -> bool {
+        self.templates.contains(template)
     }
 }

@@ -1,6 +1,7 @@
 //! Création d'un brouillon : neuf, réponse, réponse à tous, transfert.
 
 mod fields;
+mod from_rule;
 mod insert;
 
 use mira_vocabulary::{AccountId, Draft, IdentityId, MessageId, MiraError};
@@ -10,6 +11,7 @@ use crate::actions::QueueContext;
 use crate::actions::errors::not_found::account_not_found;
 use crate::storage::repositories::messages::message_not_found;
 use fields::{DraftFields, Mode, fields_from};
+pub use from_rule::{RuleReplyText, create_rule_reply};
 use insert::{insert_new_draft, own_addresses};
 
 /// Crée un brouillon vide ; sans identité demandée, celle par défaut du compte est utilisée

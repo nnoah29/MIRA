@@ -2,9 +2,10 @@
 
 use mira_vocabulary::{Mailbox, MiraError, SyncMarker};
 
+use super::announce::updated;
 use super::detect::{compared_changes, qresync_changes};
 use super::flag_changes::{apply_flag_changes, remove_vanished};
-use super::headers::{Announce, ingest_headers, updated};
+use super::headers::{Announce, ingest_headers};
 use crate::capabilities::ChangeDetection;
 use crate::imap::{FetchedFlags, SelectedMailbox};
 use crate::sync::session::SyncSession;

@@ -58,6 +58,7 @@ fn hidden_from_inbox_messages_stay_in_the_label_view() {
     assert!(list_messages(&db, &none, &query).unwrap().items.is_empty());
 }
 
+/// Masque le libellé local de la Réception.
 fn hide_from_inbox(db: &mira_core::storage::Database, id: &str) {
     let label = LabelRef {
         kind: LabelKind::Local,
@@ -71,6 +72,7 @@ fn hide_from_inbox(db: &mira_core::storage::Database, id: &str) {
         .unwrap();
 }
 
+/// Crée une conversation de deux messages dans la boîte « box-1 ».
 fn inbox_conversation(db: &mira_core::storage::Database) -> mira_vocabulary::ThreadId {
     let thread = conversation(db);
     db.write(|tx| {

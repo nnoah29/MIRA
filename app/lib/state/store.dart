@@ -197,6 +197,8 @@ class MailStore extends ChangeNotifier {
     }
     final real = source?.accounts ?? [...defaultAccounts, ...extra];
     accounts = real.isEmpty ? [Account('none', t('Aucun compte'), '')] : real;
+    welcomeOpen =
+        source != null && real.isEmpty && prefs.getString('welcomed') != '1';
     knownAccounts = accounts;
     if (source != null) {
       _applyIdentities();
@@ -1408,6 +1410,26 @@ class MailStore extends ChangeNotifier {
 
   void toggleAssistant() =>
       view == PaneView.assistant ? closePane() : showView(PaneView.assistant);
+
+  /// Accueil du premier lancement : moteur réel, aucun compte, jamais vu (ou rejoué depuis « À propos »).
+  late bool welcomeOpen;
+
+  /// Ferme l'accueil pour de bon ; `addAccount` enchaîne sur l'ajout d'un compte.
+  void finishWelcome({required bool addAccount}) {
+    prefs.setString('welcomed', '1');
+    welcomeOpen = false;
+    if (addAccount) {
+      openAddAccount();
+    } else {
+      notifyListeners();
+    }
+  }
+
+  /// Rouvre l'accueil (bouton de « À propos »).
+  void replayWelcome() {
+    welcomeOpen = true;
+    notifyListeners();
+  }
 
   /// Demande Réglages › Comptes avec l'onglet d'ajout ouvert ; consommé par l'écran des comptes.
   bool wantsAddAccount = false;

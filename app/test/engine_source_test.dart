@@ -43,6 +43,7 @@ class FakeEngine implements EngineClient {
   bool settingsOn = false;
   int? enginePoll;
   List<String> engineMuted = [];
+  bool noAccounts = false;
   Map<String, dynamic>? engineQuiet;
   bool engineSettingsOn = false;
   final settingWrites = <Map<String, dynamic>>[];
@@ -104,11 +105,12 @@ class FakeEngine implements EngineClient {
         return {
           'type': 'accounts',
           'data': [
-            {
-              'id': 'acc1',
-              'display_name': 'Alice',
-              'address': 'alice@example.org',
-            },
+            if (!noAccounts)
+              {
+                'id': 'acc1',
+                'display_name': 'Alice',
+                'address': 'alice@example.org',
+              },
             if (second)
               {'id': 'acc2', 'display_name': 'Pro', 'address': 'alice@pro.org'},
           ],

@@ -182,6 +182,16 @@ const Map<String, String> enStrings = {
   'Contact supprimé': 'Contact deleted',
   'Stockage': 'Storage',
   'À propos': 'About',
+  'BIENVENUE DANS MIRA': 'WELCOME TO MIRA',
+  'Tous tes comptes au même endroit': 'All your accounts in one place',
+  'Gmail, Outlook, Yahoo ou n’importe quel serveur IMAP.':
+      'Gmail, Outlook, Yahoo or any IMAP server.',
+  'Tes messages sont copiés sur ton appareil : lis et réponds sans réseau.': 'Your messages are copied to your device: read and reply without a network.',
+  'Privé par défaut': 'Private by default',
+  'Aucun serveur MIRA, aucune télémétrie, images distantes bloquées.':
+      'No MIRA server, no telemetry, remote images blocked.',
+  'Plus tard': 'Later',
+  'Revoir l’accueil': 'Show the welcome again',
   'MIRA {0}': 'MIRA {0}',
   'Un client mail libre pour Linux et Android : plusieurs comptes, lecture hors ligne, thème sombre ou clair. Licence MIT.': 'A free mail client for Linux and Android: several accounts, offline reading, dark or light theme. MIT licence.',
   'Site de MIRA': 'MIRA website',
@@ -191,7 +201,8 @@ const Map<String, String> enStrings = {
   'Politique de confidentialité': 'Privacy policy',
   'Conditions d’utilisation': 'Terms of use',
   'Auteur': 'Author',
-  'MIRA est conçu et développé par Noah TOFFA (@nnoah29).': 'MIRA is designed and developed by Noah TOFFA (@nnoah29).',
+  'MIRA est conçu et développé par Noah TOFFA (@nnoah29).':
+      'MIRA is designed and developed by Noah TOFFA (@nnoah29).',
   'Site de l’auteur': 'Author’s website',
   'Stockage et maintenance': 'Storage and maintenance',
   'Mesure en cours…': 'Measuring…',

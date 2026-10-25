@@ -28,3 +28,5 @@ pub const RULE: ErrorCode = ErrorCode("not_found.rule");
 pub const LOCAL_LABEL: ErrorCode = ErrorCode("not_found.local_label");
 /// Libellé inconnu.
 pub const LABEL: ErrorCode = ErrorCode("not_found.label");
+/// Modèle de message inconnu.
+pub const TEMPLATE: ErrorCode = ErrorCode("not_found.template");

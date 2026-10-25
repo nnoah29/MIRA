@@ -24,6 +24,7 @@ pub use domain::label_settings::{CounterMode, LabelKind, LabelRef, LabelSettings
 pub use domain::local_label::{LocalLabel, LocalLabelAssignment};
 pub use domain::mailbox::{Mailbox, MailboxRole, SyncMarker};
 pub use domain::message::{ContentState, Flags, MessageSummary, Unsubscribe};
+pub use domain::message_template::{ContactInfo, MessageTemplate, RenderContext, RenderedTemplate};
 pub use domain::page::{Page, PageRequest};
 pub use domain::rule::action::RuleAction;
 pub use domain::rule::condition::{Condition, ConditionGroup};
@@ -46,7 +47,7 @@ pub use ids::Id;
 pub use ids::keys::{Cursor, EventSeq, IdempotencyKey, ProviderId};
 pub use ids::kinds::{
     AccountId, ActionId, AttachmentId, DraftId, IdentityId, LocalLabelId, MailboxId, MessageId,
-    OperationId, ProfileId, RuleId, ThreadId, ViewId,
+    OperationId, ProfileId, RuleId, TemplateId, ThreadId, ViewId,
 };
 pub use provider::descriptor::ProviderDescriptor;
 pub use provider::limits::ProviderLimits;

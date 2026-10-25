@@ -14,3 +14,9 @@ pub const CONTRACT_VERSION: ErrorCode = ErrorCode("invalid_input.contract_versio
 pub const CURSOR: ErrorCode = ErrorCode("invalid_input.cursor");
 /// Clé d'idempotence réutilisée avec une autre commande.
 pub const IDEMPOTENCY_CONFLICT: ErrorCode = ErrorCode("invalid_input.idempotency_conflict");
+/// Nom de modèle de message vide.
+pub const TEMPLATE_NAME_EMPTY: ErrorCode = ErrorCode("invalid_input.template_name_empty");
+/// Nom de modèle de message déjà pris.
+pub const TEMPLATE_NAME_TAKEN: ErrorCode = ErrorCode("invalid_input.template_name_taken");
+/// Nom, objet ou corps de modèle de message trop long.
+pub const TEMPLATE_TOO_LONG: ErrorCode = ErrorCode("invalid_input.template_too_long");

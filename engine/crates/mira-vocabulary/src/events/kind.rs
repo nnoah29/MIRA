@@ -221,6 +221,7 @@ pub enum EventKind {
     SettingsChanged {
         keys: Vec<String>,
     },
+    TemplatesChanged,
 }
 
 impl EventKind {
@@ -246,6 +247,7 @@ impl EventKind {
             K::LocalLabelsChanged => EventCategory::LocalLabel,
             K::LabelSettingsChanged => EventCategory::Label,
             K::SettingsChanged { .. } => EventCategory::Settings,
+            K::TemplatesChanged => EventCategory::Template,
         }
     }
 
@@ -269,7 +271,7 @@ impl EventKind {
             K::EngineStarted | K::EngineStopping | K::EngineFatalError { .. } | K::Diagnostic { .. }
             | K::OperationProgress { .. } | K::OperationFinished { .. } | K::OperationFailed { .. }
             | K::OperationCancelled { .. } | K::RuleChanged { .. } | K::LocalLabelsChanged | K::LabelSettingsChanged
-            | K::SettingsChanged { .. } => None,
+            | K::SettingsChanged { .. } | K::TemplatesChanged => None,
         }
     }
 }

@@ -23,6 +23,7 @@ import 'label_admin.dart';
 import 'engine_settings_admin.dart';
 import 'event_routes.dart';
 import 'label_settings_admin.dart';
+import 'template_admin.dart';
 import 'local_label_admin.dart';
 import 'rule_admin.dart';
 import 'message_actions.dart';
@@ -133,7 +134,11 @@ class EngineMailSource implements MailSource {
   @override
   EngineSettingsAdmin get engineSettingsAdmin => EngineSettingsAdmin(client);
 
+  @override
+  TemplateAdmin get templateAdmin => TemplateAdmin(client);
+
   final StreamController<void> _engineSettings = StreamController.broadcast();
+  final StreamController<void> _templateChanges = StreamController.broadcast();
   final StreamController<void> _counterEvents = StreamController.broadcast();
   final StreamController<void> _accountEvents = StreamController.broadcast();
   final StreamController<void> _settingsChanges = StreamController.broadcast();
@@ -152,6 +157,9 @@ class EngineMailSource implements MailSource {
 
   @override
   Stream<void> get engineSettingsChanges => _engineSettings.stream;
+
+  @override
+  Stream<void> get templateChanges => _templateChanges.stream;
 
   @override
   Stream<void> get counterChanges => _counterEvents.stream;
@@ -284,6 +292,8 @@ class EngineMailSource implements MailSource {
         _signal(_settingsChanges);
       case EventEffect.settings:
         _signal(_engineSettings);
+      case EventEffect.templates:
+        _signal(_templateChanges);
     }
   }
 
@@ -949,6 +959,7 @@ class EngineMailSource implements MailSource {
     await _labelChanges.close();
     await _settingsChanges.close();
     await _engineSettings.close();
+    await _templateChanges.close();
     await _counterEvents.close();
     await _accountEvents.close();
     await _syncEvents.close();

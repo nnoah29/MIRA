@@ -43,6 +43,10 @@ const engineErrorTexts = <String, String>{
       'Cette opération a déjà été faite autrement',
   'invalid_input.missing_parameter': 'Un champ obligatoire est vide',
   'invalid_input.parameter': 'Valeur invalide',
+  'invalid_input.template_name_empty': 'Le nom du modèle est vide',
+  'invalid_input.template_name_taken': 'Un modèle porte déjà ce nom',
+  'invalid_input.template_too_long':
+      'Le nom, l’objet ou le texte du modèle est trop long',
   'local_storage.corrupted': 'Base de données locale corrompue',
   'local_storage.disk_full': 'Disque plein',
   'local_storage.io': 'Erreur de lecture ou d’écriture sur le disque',
@@ -64,6 +68,7 @@ const engineErrorTexts = <String, String>{
   'not_found.operation': 'Opération introuvable',
   'not_found.provider': 'Fournisseur inconnu',
   'not_found.rule': 'Règle introuvable',
+  'not_found.template': 'Modèle introuvable',
   'not_found.thread': 'Conversation introuvable',
   'secrets.keyring_locked':
       'Trousseau de mots de passe verrouillé : déverrouille-le puis réessaie',

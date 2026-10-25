@@ -22,6 +22,8 @@ mod settings_requests;
 mod settings_responses;
 mod sync_requests;
 mod sync_response;
+mod template_requests;
+mod template_responses;
 mod thread_requests;
 mod write;
 
@@ -49,6 +51,8 @@ pub use settings_requests::SettingsRequest;
 pub use settings_responses::SettingsResponse;
 pub use sync_requests::{SyncRequest, SyncScope};
 pub use sync_response::{AccountSyncStatus, SyncResponse};
+pub use template_requests::TemplateRequest;
+pub use template_responses::TemplateResponse;
 pub use thread_requests::ThreadRequest;
 pub use write::{
     ActionRequest, ComposeRequest, DraftChanges, DraftMode, OutboxEntry, QueueRequest,

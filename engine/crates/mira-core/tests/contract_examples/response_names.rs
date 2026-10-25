@@ -50,5 +50,6 @@ pub fn group_of(response: &Response) -> &'static str {
         Response::LocalLabel(_) => "local_label",
         Response::LabelSettings(_) => "label_settings",
         Response::Settings(_) => "settings",
+        Response::Template(_) => "template",
     }
 }

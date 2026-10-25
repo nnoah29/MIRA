@@ -12,6 +12,7 @@ pub mod label_settings;
 pub mod local_label;
 pub mod mailbox;
 pub mod message;
+pub mod message_template;
 pub mod page;
 pub mod rule;
 pub mod servers;

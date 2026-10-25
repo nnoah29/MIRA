@@ -26,6 +26,9 @@ enum EventEffect {
 
   /// Signale un changement des réglages du moteur.
   settings,
+
+  /// Signale un changement des modèles de messages.
+  templates,
 }
 
 const _none = <EventEffect>{};
@@ -83,6 +86,7 @@ const Map<String, Set<EventEffect>> eventRoutes = {
   'local_labels_changed': {EventEffect.localLabels},
   'label_settings_changed': {EventEffect.labelSettings},
   'settings_changed': {EventEffect.settings},
+  'templates_changed': {EventEffect.templates},
 };
 
 /// Effets d'un événement ; un type inconnu (moteur plus récent que l'app) n'en a aucun.

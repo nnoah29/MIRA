@@ -8,6 +8,7 @@ import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
 import '../theme/wall_source.dart';
+import 'about_settings.dart';
 import 'accounts_settings.dart';
 import 'contacts_settings.dart';
 import 'image_rules_section.dart';
@@ -39,6 +40,7 @@ List<String> _tabs(bool engine) => [
   if (engine) t('Libellés'),
   if (engine) t('Règles'),
   if (engine) t('Stockage'),
+  t('À propos'),
 ];
 
 class SettingsPanel extends StatefulWidget {
@@ -153,250 +155,264 @@ class _SettingsPanelState extends State<SettingsPanel> {
     );
 
     if (s.wantsAddAccount && s.source != null) tab = 3;
-    final content = switch (tab) {
-      0 => box([
-        srow(
-          t('Langue de l’application'),
-          t(
-            'Choisis la langue de l’interface et des messages fictifs de la démonstration.',
-          ),
-          Container(
-            decoration: BoxDecoration(border: Border.all(color: p.line)),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final (i, l) in AppLang.values.indexed)
-                  Hov(
-                    onTap: () => s.setLang(l),
-                    builder: (_, h) {
-                      final on = s.lang == l;
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 130),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: on ? p.accentSoft : null,
-                          border: i > 0
-                              ? Border(left: BorderSide(color: p.line))
-                              : null,
-                        ),
-                        child: Mono(
-                          l.label,
-                          ls: .12,
-                          color: on ? p.accent : (h ? p.text : p.muted),
-                          height: null,
-                        ),
-                      );
-                    },
-                  ),
-              ],
-            ),
-          ),
-        ),
-        if (wallSupported)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: p.lineSoft)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  runSpacing: 12,
-                  spacing: 24,
-                  children: [
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: 520),
-                      child: head(
-                        t('Couleurs du fond d’écran'),
-                        s.wallAvailable
-                            ? t(
-                                'Fond, texte et accent suivent ton fond d’écran en direct (ShellArie).',
-                              )
-                            : t(
-                                'Aucun fichier de couleurs trouvé (/tmp/qs_colors.json) : thème MIRA par défaut.',
-                              ),
-                      ),
-                    ),
-                    seg('follow', [
-                      ('1', t('Suivre')),
-                      ('0', t('Ignorer')),
-                    ], s.followWallpaper ? '1' : '0'),
-                  ],
+    final aboutTab = _tabs(s.source != null).length - 1;
+    final content = tab == aboutTab
+        ? box([const AboutSettings()])
+        : switch (tab) {
+            0 => box([
+              srow(
+                t('Langue de l’application'),
+                t(
+                  'Choisis la langue de l’interface et des messages fictifs de la démonstration.',
                 ),
-                if (s.wallAvailable && s.followWallpaper) ...[
-                  const SizedBox(height: 14),
-                  Row(
+                Container(
+                  decoration: BoxDecoration(border: Border.all(color: p.line)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      for (final (n, c) in [
-                        (t('Fond'), p.bg),
-                        (t('Surface'), p.surface2),
-                        (t('Texte'), p.text),
-                        (t('Accent'), p.accent),
-                      ])
-                        Padding(
-                          padding: const EdgeInsets.only(right: 14),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 22,
-                                height: 22,
-                                decoration: BoxDecoration(
-                                  color: c,
-                                  border: Border.all(color: p.line),
-                                ),
+                      for (final (i, l) in AppLang.values.indexed)
+                        Hov(
+                          onTap: () => s.setLang(l),
+                          builder: (_, h) {
+                            final on = s.lang == l;
+                            return AnimatedContainer(
+                              duration: const Duration(milliseconds: 130),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
                               ),
-                              SizedBox(width: 8),
-                              Mono(n, size: 10.5, ls: .1, height: null),
-                            ],
-                          ),
+                              decoration: BoxDecoration(
+                                color: on ? p.accentSoft : null,
+                                border: i > 0
+                                    ? Border(left: BorderSide(color: p.line))
+                                    : null,
+                              ),
+                              child: Mono(
+                                l.label,
+                                ls: .12,
+                                color: on ? p.accent : (h ? p.text : p.muted),
+                                height: null,
+                              ),
+                            );
+                          },
                         ),
                     ],
                   ),
-                ],
-              ],
-            ),
-          ),
-        Opacity(
-          opacity: s.wallPal != null ? .4 : 1,
-          child: IgnorePointer(
-            ignoring: s.wallPal != null,
-            child: srow(
-              t('Thème'),
-              s.wallPal != null
-                  ? t(
-                      'Piloté par le fond d’écran (clair ou sombre selon sa luminosité).',
-                    )
-                  : t('Sombre ou clair, selon ton environnement.'),
-              seg('theme', [
-                ('dark', t('Sombre')),
-                ('light', t('Clair')),
-              ], s.theme),
-            ),
-          ),
-        ),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: p.lineSoft)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              head(
-                t('Couleur principale'),
-                t(
-                  'Remplace l’orange : boutons, accents, sélection et libellés actifs.',
                 ),
               ),
-              SizedBox(height: 14),
-              _AccentPicker(),
-            ],
-          ),
-        ),
-        srow(
-          t('Densité de la liste'),
-          t(
-            'Confortable : deux lignes d’aperçu sous l’objet. Compacte : plus de messages à l’écran, sans aperçu.',
-          ),
-          seg('dense', [
-            ('0', t('Confortable')),
-            ('1', t('Compacte')),
-          ], s.dense ? '1' : '0'),
-          last: true,
-        ),
-      ]),
-      1 => box([
-        if (s.source == null)
-          srow(
-            t('Nouveaux messages simulés'),
-            t('Reçois de faux mails à intervalles réguliers pour la démo.'),
-            seg('live', [
-              ('1', t('Activé')),
-              ('0', t('Désactivé')),
-            ], s.live ? '1' : '0'),
-          ),
-        if (s.source != null)
-          srow(
-            t('Fréquence de relevé'),
-            t(
-              'Nouveaux messages de la Réception : instantané (IDLE). Les autres changements sont relevés à cette fréquence, appliquée tout de suite. Plus court = plus de trafic, certains fournisseurs peuvent limiter le compte.',
-            ),
-            seg('poll', [
-              ('', t('Auto')),
-              ('30', '30 s'),
-              ('60', '1 min'),
-              ('120', '2 min'),
-              ('300', '5 min'),
-            ], s.pollChoice),
-          ),
-        srow(
-          t('Hibernation'),
-          t(
-            'Sans le focus depuis ce délai, MIRA libère l’affichage (corps des messages, images, caches) ; la réception, les règles et les notifications continuent.',
-          ),
-          seg('hibernate', [
-            ('0', t('Jamais')),
-            ('5', '5 min'),
-            ('10', '10 min'),
-            ('30', '30 min'),
-          ], '${s.hibernateMinutes}'),
-        ),
-        const ImageRulesSection(),
-        Divider(height: 1, color: p.lineSoft),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              head(t('Signature'), t('Ajoutée à tes réponses et transferts.')),
-              const SizedBox(height: 12),
-              _SigField(ctl: sigCtl, onChanged: s.setSig),
-            ],
-          ),
-        ),
-      ]),
-      2 => box([const NotificationSettings()]),
-      4 => box([const ContactsSettings()]),
-      5 when s.source?.labelSettingsAdmin != null => box([
-        const LabelsSettings(),
-      ]),
-      6 when s.source?.ruleAdmin != null => box([
-        RulesSettings(
-          draft: ruleDraft,
-          onApplied: s.rulesApplied,
-          admin: s.source!.ruleAdmin!,
-          accounts: {for (final a in s.accounts) a.id: a.email},
-          changes: s.source!.ruleChanges,
-          labels: [
-            if (s.localLabelsOnEngine)
-              for (final e in s.localLabels.defs.entries)
-                RuleChoice(e.key.substring(localLabelPrefix.length), e.value.n),
-          ],
-        ),
-      ]),
-      7 when s.source != null => box([const MaintenanceSettings()]),
-      _ when s.source != null => box([const AccountsSettings()]),
-      _ => box([
-        srow(me.name, me.email, const SizedBox.shrink()),
-        srow(
-          t('Démo'),
-          t('Remet tous les messages et réglages de départ.'),
-          Btn(
-            icon: 'reply',
-            label: t('Réinitialiser'),
-            onTap: () => s.setSetting('reset', '1'),
-          ),
-          last: true,
-        ),
-      ]),
-    };
+              if (wallSupported)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: p.lineSoft)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        runSpacing: 12,
+                        spacing: 24,
+                        children: [
+                          ConstrainedBox(
+                            constraints: BoxConstraints(maxWidth: 520),
+                            child: head(
+                              t('Couleurs du fond d’écran'),
+                              s.wallAvailable
+                                  ? t(
+                                      'Fond, texte et accent suivent ton fond d’écran en direct (ShellArie).',
+                                    )
+                                  : t(
+                                      'Aucun fichier de couleurs trouvé (/tmp/qs_colors.json) : thème MIRA par défaut.',
+                                    ),
+                            ),
+                          ),
+                          seg('follow', [
+                            ('1', t('Suivre')),
+                            ('0', t('Ignorer')),
+                          ], s.followWallpaper ? '1' : '0'),
+                        ],
+                      ),
+                      if (s.wallAvailable && s.followWallpaper) ...[
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            for (final (n, c) in [
+                              (t('Fond'), p.bg),
+                              (t('Surface'), p.surface2),
+                              (t('Texte'), p.text),
+                              (t('Accent'), p.accent),
+                            ])
+                              Padding(
+                                padding: const EdgeInsets.only(right: 14),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 22,
+                                      height: 22,
+                                      decoration: BoxDecoration(
+                                        color: c,
+                                        border: Border.all(color: p.line),
+                                      ),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Mono(n, size: 10.5, ls: .1, height: null),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              Opacity(
+                opacity: s.wallPal != null ? .4 : 1,
+                child: IgnorePointer(
+                  ignoring: s.wallPal != null,
+                  child: srow(
+                    t('Thème'),
+                    s.wallPal != null
+                        ? t(
+                            'Piloté par le fond d’écran (clair ou sombre selon sa luminosité).',
+                          )
+                        : t('Sombre ou clair, selon ton environnement.'),
+                    seg('theme', [
+                      ('dark', t('Sombre')),
+                      ('light', t('Clair')),
+                    ], s.theme),
+                  ),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                decoration: BoxDecoration(
+                  border: Border(bottom: BorderSide(color: p.lineSoft)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    head(
+                      t('Couleur principale'),
+                      t(
+                        'Remplace l’orange : boutons, accents, sélection et libellés actifs.',
+                      ),
+                    ),
+                    SizedBox(height: 14),
+                    _AccentPicker(),
+                  ],
+                ),
+              ),
+              srow(
+                t('Densité de la liste'),
+                t(
+                  'Confortable : deux lignes d’aperçu sous l’objet. Compacte : plus de messages à l’écran, sans aperçu.',
+                ),
+                seg('dense', [
+                  ('0', t('Confortable')),
+                  ('1', t('Compacte')),
+                ], s.dense ? '1' : '0'),
+                last: true,
+              ),
+            ]),
+            1 => box([
+              if (s.source == null)
+                srow(
+                  t('Nouveaux messages simulés'),
+                  t(
+                    'Reçois de faux mails à intervalles réguliers pour la démo.',
+                  ),
+                  seg('live', [
+                    ('1', t('Activé')),
+                    ('0', t('Désactivé')),
+                  ], s.live ? '1' : '0'),
+                ),
+              if (s.source != null)
+                srow(
+                  t('Fréquence de relevé'),
+                  t(
+                    'Nouveaux messages de la Réception : instantané (IDLE). Les autres changements sont relevés à cette fréquence, appliquée tout de suite. Plus court = plus de trafic, certains fournisseurs peuvent limiter le compte.',
+                  ),
+                  seg('poll', [
+                    ('', t('Auto')),
+                    ('30', '30 s'),
+                    ('60', '1 min'),
+                    ('120', '2 min'),
+                    ('300', '5 min'),
+                  ], s.pollChoice),
+                ),
+              srow(
+                t('Hibernation'),
+                t(
+                  'Sans le focus depuis ce délai, MIRA libère l’affichage (corps des messages, images, caches) ; la réception, les règles et les notifications continuent.',
+                ),
+                seg('hibernate', [
+                  ('0', t('Jamais')),
+                  ('5', '5 min'),
+                  ('10', '10 min'),
+                  ('30', '30 min'),
+                ], '${s.hibernateMinutes}'),
+              ),
+              const ImageRulesSection(),
+              Divider(height: 1, color: p.lineSoft),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    head(
+                      t('Signature'),
+                      t('Ajoutée à tes réponses et transferts.'),
+                    ),
+                    const SizedBox(height: 12),
+                    _SigField(ctl: sigCtl, onChanged: s.setSig),
+                  ],
+                ),
+              ),
+            ]),
+            2 => box([const NotificationSettings()]),
+            4 => box([const ContactsSettings()]),
+            5 when s.source?.labelSettingsAdmin != null => box([
+              const LabelsSettings(),
+            ]),
+            6 when s.source?.ruleAdmin != null => box([
+              RulesSettings(
+                draft: ruleDraft,
+                onApplied: s.rulesApplied,
+                admin: s.source!.ruleAdmin!,
+                accounts: {for (final a in s.accounts) a.id: a.email},
+                changes: s.source!.ruleChanges,
+                labels: [
+                  if (s.localLabelsOnEngine)
+                    for (final e in s.localLabels.defs.entries)
+                      RuleChoice(
+                        e.key.substring(localLabelPrefix.length),
+                        e.value.n,
+                      ),
+                ],
+              ),
+            ]),
+            7 when s.source != null => box([const MaintenanceSettings()]),
+            _ when s.source != null => box([const AccountsSettings()]),
+            _ => box([
+              srow(me.name, me.email, const SizedBox.shrink()),
+              srow(
+                t('Démo'),
+                t('Remet tous les messages et réglages de départ.'),
+                Btn(
+                  icon: 'reply',
+                  label: t('Réinitialiser'),
+                  onTap: () => s.setSetting('reset', '1'),
+                ),
+                last: true,
+              ),
+            ]),
+          };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -42,4 +42,25 @@ void main() {
   test('sans HTML d\'origine, jamais de vue web', () {
     expect(usesWebView(null), isFalse);
   });
+
+  test(
+    'le mode d’affichage enregistré se relit, un texte inconnu donne auto',
+    () {
+      expect(HtmlMode.parse('web'), HtmlMode.web);
+      expect(HtmlMode.parse('widgets'), HtmlMode.widgets);
+      expect(HtmlMode.parse('auto'), HtmlMode.auto);
+      expect(HtmlMode.parse(null), HtmlMode.auto);
+      expect(HtmlMode.parse('autre'), HtmlMode.auto);
+    },
+  );
+
+  test('le mode impose le rendu quel que soit le message (Linux)', () {
+    const simple = '<p>Bonjour</p>';
+    const rich = '<table></table><table></table>';
+    expect(usesWebView(simple, HtmlMode.auto), isFalse);
+    expect(usesWebView(rich, HtmlMode.auto), isTrue);
+    expect(usesWebView(simple, HtmlMode.web), isTrue);
+    expect(usesWebView(rich, HtmlMode.widgets), isFalse);
+    expect(usesWebView(null, HtmlMode.web), isFalse);
+  }, skip: !webViewEnabled);
 }

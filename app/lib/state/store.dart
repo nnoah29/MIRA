@@ -3307,7 +3307,7 @@ class MailStore extends ChangeNotifier {
     toast(had != null ? t('Brouillon supprimé') : t('Message abandonné'));
   }
 
-  Future<void> send([String? sched]) async {
+  Future<void> send([String? sched, int? at]) async {
     final cs = c;
     if (cs == null) return;
     if (cs.to.isEmpty) {
@@ -3316,7 +3316,7 @@ class MailStore extends ChangeNotifier {
       toast(t('Ajoute au moins un destinataire'), err: true);
       return;
     }
-    if (source != null) return _sendReal(cs, sched);
+    if (source != null) return _sendReal(cs, sched, at);
     cs.timer?.cancel();
     final blocks = [...cs.body.toBlocks(), ...?cs.quote];
     final init = ComposeInit(
@@ -3387,7 +3387,7 @@ class MailStore extends ChangeNotifier {
   }
 
   /// Envoi par le moteur : brouillon enregistré, puis mis en file (annulable pendant le délai du moteur).
-  Future<void> _sendReal(ComposeState cs, String? sched) async {
+  Future<void> _sendReal(ComposeState cs, String? sched, int? when) async {
     final admin = source?.composer;
     if (admin == null || _sending) return;
     _sending = true;
@@ -3400,9 +3400,9 @@ class MailStore extends ChangeNotifier {
       if (id == null) throw const EngineException('draft_missing', '');
       final action = await admin.send(
         id,
-        at: sched == null ? null : scheduledMs(sched),
+        at: sched == null ? null : when ?? scheduledMs(sched),
       );
-      _afterSend(cs, id, action, sched);
+      _afterSend(cs, id, action, sched, when);
     } catch (_) {
       toast(t('Envoi impossible, le message reste en brouillon'), err: true);
     } finally {
@@ -3415,7 +3415,13 @@ class MailStore extends ChangeNotifier {
   /// Envois mis en file et pas encore visibles dans « Envoyés » : brouillon → (message affiché, fin de validité).
   final Map<String, (Mail, int)> _outgoing = {};
 
-  void _afterSend(ComposeState cs, String draft, String action, String? sched) {
+  void _afterSend(
+    ComposeState cs,
+    String draft,
+    String action,
+    String? sched, [
+    int? when,
+  ]) {
     final local = byId(cs.id);
     final account = accountByEmail(cs.from)?.id ?? activeId;
     final shown = Mail(
@@ -3439,7 +3445,7 @@ class MailStore extends ChangeNotifier {
         ),
       ],
     );
-    final at = sched == null ? nowMs() : scheduledMs(sched);
+    final at = sched == null ? nowMs() : when ?? scheduledMs(sched);
     if (sched == null) _outgoing[draft] = (shown, at + 120000);
     mails = [...mails.where((m) => m != local), if (sched == null) shown];
     if (!unified) _boxes[account] = mails;

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app_info.dart';
 import '../i18n/i18n.dart';
+import '../state/store.dart';
 import '../theme/app_theme.dart';
 import 'widgets.dart';
 
@@ -17,8 +19,9 @@ class AboutSettings extends StatelessWidget {
     BuildContext context,
     String title,
     String body,
-    List<_Link> links,
-  ) {
+    List<_Link> links, [
+    List<Widget> extra = const [],
+  ]) {
     final p = context.pal;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -49,6 +52,7 @@ class AboutSettings extends StatelessWidget {
                   label: l.label,
                   onTap: () => openLink(Uri.parse(l.url)),
                 ),
+              ...extra,
             ],
           ),
         ],
@@ -70,6 +74,15 @@ class AboutSettings extends StatelessWidget {
           [
             _Link(t('Site de MIRA'), siteUrl),
             _Link(t('Code source'), sourceUrl),
+          ],
+          [
+            if (context.read<MailStore>().source != null)
+              Btn(
+                key: const ValueKey('about-welcome'),
+                icon: 'refresh',
+                label: t('Revoir l’accueil'),
+                onTap: context.read<MailStore>().replayWelcome,
+              ),
           ],
         ),
         _section(

@@ -64,6 +64,6 @@ void main() {
     expect(sent['context'], {'date': '25/10/2026'});
     expect(rendered.body, 'Bonjour {{contact.nom}}');
     expect(rendered.subject, 'Objet');
-    expect(rendered.unresolved, isEmpty);
+    expect(rendered.unresolved, ['contact.nom']);
   });
 }

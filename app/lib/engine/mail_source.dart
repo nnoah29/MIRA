@@ -8,6 +8,7 @@ import 'compose_admin.dart';
 import 'engine_settings_admin.dart';
 import 'label_admin.dart';
 import 'label_settings_admin.dart';
+import 'template_admin.dart';
 import 'local_label_admin.dart';
 import 'rule_admin.dart';
 import 'maintenance_admin.dart';
@@ -92,6 +93,12 @@ abstract class MailSource {
 
   /// Signale chaque changement des réglages du moteur.
   Stream<void> get engineSettingsChanges;
+
+  /// Modèles de messages portés par le moteur (`null` : démonstration).
+  TemplateAdmin? get templateAdmin;
+
+  /// Signale chaque changement des modèles de messages côté moteur.
+  Stream<void> get templateChanges;
 
   /// Signale chaque changement de compteur de non-lus annoncé par le moteur.
   Stream<void> get counterChanges;

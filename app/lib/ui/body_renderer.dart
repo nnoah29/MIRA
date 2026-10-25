@@ -27,8 +27,26 @@ bool isSimpleHtml(String html) {
   return '<table'.allMatches(lower).length <= _maxSimpleTables;
 }
 
-/// Ce corps passe-t-il par la vue web ? Décision stable pour un même HTML.
-bool usesWebView(String? htmlRaw) {
+/// Façon d'afficher le HTML sous Linux : choix selon le message, toujours la vue web, ou toujours les widgets.
+enum HtmlMode {
+  auto('auto'),
+  web('web'),
+  widgets('widgets');
+
+  final String code;
+  const HtmlMode(this.code);
+
+  /// Le mode enregistré ; tout autre texte donne le choix automatique.
+  static HtmlMode parse(String? code) =>
+      values.firstWhere((m) => m.code == code, orElse: () => auto);
+}
+
+/// Ce corps passe-t-il par la vue web ? Décision stable pour un même HTML et un même mode.
+bool usesWebView(String? htmlRaw, [HtmlMode mode = HtmlMode.auto]) {
   if (!webViewEnabled || htmlRaw == null) return false;
-  return !(simpleBodiesNative && isSimpleHtml(htmlRaw));
+  return switch (mode) {
+    HtmlMode.web => true,
+    HtmlMode.widgets => false,
+    HtmlMode.auto => !(simpleBodiesNative && isSimpleHtml(htmlRaw)),
+  };
 }

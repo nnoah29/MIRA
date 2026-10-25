@@ -182,6 +182,10 @@ const Map<String, String> enStrings = {
   'Contact supprimé': 'Contact deleted',
   'Stockage': 'Storage',
   'À propos': 'About',
+  'Affichage du HTML': 'HTML display',
+  'Auto : les messages simples en widgets, les autres dans la vue web. Vue web : fidèle à un navigateur. Widgets : intégré à l’app, plus léger, moins fidèle.': 'Auto: simple messages as widgets, the others in the web view. Web view: faithful to a browser. Widgets: built into the app, lighter, less faithful.',
+  'Vue web': 'Web view',
+  'Widgets': 'Widgets',
   'BIENVENUE DANS MIRA': 'WELCOME TO MIRA',
   'Tous tes comptes au même endroit': 'All your accounts in one place',
   'Gmail, Outlook, Yahoo ou n’importe quel serveur IMAP.':

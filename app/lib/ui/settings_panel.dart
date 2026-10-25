@@ -9,6 +9,7 @@ import '../theme/app_theme.dart';
 import '../theme/icons.dart';
 import '../theme/wall_source.dart';
 import 'about_settings.dart';
+import 'body_renderer.dart';
 import 'accounts_settings.dart';
 import 'contacts_settings.dart';
 import 'image_rules_section.dart';
@@ -317,8 +318,21 @@ class _SettingsPanelState extends State<SettingsPanel> {
                   ('0', t('Confortable')),
                   ('1', t('Compacte')),
                 ], s.dense ? '1' : '0'),
-                last: true,
+                last: !webViewEnabled,
               ),
+              if (webViewEnabled)
+                srow(
+                  t('Affichage du HTML'),
+                  t(
+                    'Auto : les messages simples en widgets, les autres dans la vue web. Vue web : fidèle à un navigateur. Widgets : intégré à l’app, plus léger, moins fidèle.',
+                  ),
+                  seg('htmlMode', [
+                    ('auto', t('Auto')),
+                    ('web', t('Vue web')),
+                    ('widgets', t('Widgets')),
+                  ], s.htmlMode.code),
+                  last: true,
+                ),
             ]),
             1 => box([
               if (s.source == null)

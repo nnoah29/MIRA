@@ -24,6 +24,7 @@ import 'search_filters.dart';
 import '../engine/message_actions.dart';
 import '../engine/mail_source.dart';
 import '../engine/sync_state.dart';
+import '../ui/body_renderer.dart';
 import '../theme/wall_source.dart';
 import '../theme/wall_theme.dart';
 import '../theme/app_theme.dart';
@@ -183,6 +184,7 @@ class MailStore extends ChangeNotifier {
     labelCounter = CounterMode.parse(prefs.getString('labelCounter'));
     accentHex = prefs.getString('accent');
     dense = prefs.getString('dense') == '1';
+    htmlMode = HtmlMode.parse(prefs.getString('htmlMode'));
     live = prefs.getString('live') != '0';
     final extra = <Account>[];
     try {
@@ -348,6 +350,7 @@ class MailStore extends ChangeNotifier {
   }
 
   late bool dense, live;
+  late HtmlMode htmlMode;
 
   /// Signature : celle de l'utilisateur, sinon la formule par défaut dans la langue active.
   String get sig => prefs.getString('sig') ?? t('Cordialement,\nNoah');
@@ -772,6 +775,9 @@ class MailStore extends ChangeNotifier {
       case 'dense':
         dense = v == '1';
         prefs.setString('dense', v);
+      case 'htmlMode':
+        htmlMode = HtmlMode.parse(v);
+        prefs.setString('htmlMode', htmlMode.code);
       case 'follow':
         followWallpaper = v == '1';
         prefs.setString('follow', v);

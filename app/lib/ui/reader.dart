@@ -51,7 +51,7 @@ class _ReaderState extends State<Reader> {
   }
 
   bool _usesWeb(MailStore s, String id) =>
-      s.byId(id)?.msgs.any((x) => usesWebView(x.htmlRaw)) ?? false;
+      s.byId(id)?.msgs.any((x) => usesWebView(x.htmlRaw, s.htmlMode)) ?? false;
 
   /// Monte hors écran, au calme, les deux voisins de la conversation affichée.
   void _scheduleWarmUp(MailStore s) {
@@ -380,7 +380,7 @@ class _Thread extends StatelessWidget {
       ],
     );
     final time = Mono(fullDate(msg.date), ls: .08, height: null);
-    final nativeBody = usesWebView(msg.htmlRaw);
+    final nativeBody = usesWebView(msg.htmlRaw, s.htmlMode);
     Widget chev(bool folded) => AnimatedRotation(
       turns: folded ? -.25 : 0,
       duration: const Duration(milliseconds: 150),

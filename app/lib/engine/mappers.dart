@@ -1,5 +1,6 @@
 import '../data/format.dart';
 import '../data/models.dart';
+import '../i18n/i18n.dart';
 
 /// Dossier de l'interface correspondant au rôle d'une boîte du moteur (`null` : non affichée).
 String? folderForRole(String role) => switch (role) {
@@ -40,7 +41,7 @@ String attachmentKind(String? filename, String mime) {
 
 /// Pièce jointe de l'interface à partir de ses métadonnées du moteur.
 Attachment attachmentOf(Map<String, dynamic> a) {
-  final name = (a['filename'] as String?) ?? 'pièce jointe';
+  final name = (a['filename'] as String?) ?? t('pièce jointe');
   return Attachment(
     name,
     attachmentKind(name, '${a['mime_type']}'),

@@ -32,6 +32,10 @@ final _cellPixelWidth = RegExp(
 );
 final _widthRule = RegExp(r'(?<![-\w])width\s*:');
 final _percentWidth = RegExp(r'^\s*(\d+(?:\.\d+)?)\s*%\s*$');
+final _backgroundRule = RegExp(
+  r'(?<![-\w])background(-color)?\s*:',
+  caseSensitive: false,
+);
 final _minWidth = RegExp(
   r'(?<![-\w])min-width\s*:[^;]*;?',
   caseSensitive: false,
@@ -46,12 +50,14 @@ String fixLayout(String html) {
   final styled =
       lower.contains('word-break') ||
       lower.contains('width:') ||
-      lower.contains('border-radius');
+      lower.contains('border-radius') ||
+      lower.contains('bgcolor');
   final attributes =
       lower.contains('<table') &&
       (lower.contains('align=') || lower.contains('width='));
   if (!styled && !attributes) return html;
   final doc = html_parser.parse(html);
+  doc.querySelectorAll('[bgcolor]').forEach(_paintBgcolor);
   doc.querySelectorAll('table[align]').forEach(_placeTable);
   doc.querySelectorAll('table').forEach(_fixedColumns);
   doc.querySelectorAll('table[width]').forEach(_sizeTable);
@@ -61,6 +67,14 @@ String fixLayout(String html) {
   }
   doc.querySelectorAll('table[style]').forEach(_boundOutside);
   return doc.outerHtml;
+}
+
+/// L'attribut `bgcolor` devient un fond CSS, comme dans un navigateur (le moteur de rendu ignore l'attribut).
+void _paintBgcolor(dom.Element e) {
+  final color = e.attributes.remove('bgcolor')!.trim();
+  final style = e.attributes['style'] ?? '';
+  if (color.isEmpty || _backgroundRule.hasMatch(style)) return;
+  e.attributes['style'] = 'background-color:$color;$style';
 }
 
 /// `<table align>` place la table dans la page ; le moteur de rendu en ferait un `text-align` hérité par tout son contenu.

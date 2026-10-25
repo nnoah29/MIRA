@@ -192,7 +192,7 @@ class _ShellState extends State<Shell> with WidgetsBindingObserver {
 
     final unread = s.navCount('inbox');
     return Title(
-      title: '${unread > 0 ? '($unread) ' : ''}${t('Ma boîte')} — MIRA',
+      title: '${unread > 0 ? '($unread) ' : ''}${t('Ma boîte')} — MIRA', // i18n:ignore
       color: p.bg,
       child: PopScope(
         canPop: !(s.navOpen || (narrow && paneOpen)),

@@ -7,7 +7,6 @@ import 'package:mira/data/models.dart';
 import 'package:mira/data/seed.dart';
 import 'package:mira/state/assistant.dart';
 import 'package:mira/state/rich_controller.dart';
-import 'package:mira/i18n/en.dart';
 import 'package:mira/i18n/i18n.dart';
 import 'package:mira/state/search_filters.dart';
 import 'package:mira/state/store.dart';
@@ -561,19 +560,24 @@ void main() {
       expect(t('Texte sans traduction'), 'Texte sans traduction');
     });
 
-    test(
-      'toutes les clés ont une traduction non vide avec les mêmes paramètres',
-      () {
-        final ph = RegExp(r'\{\d+\}');
-        for (final e in enStrings.entries) {
-          expect(e.value.trim(), isNotEmpty, reason: e.key);
+    test('toutes les clés de chaque langue ont les mêmes paramètres que le texte français', () {
+      final ph = RegExp(r'\{\d+\}');
+      for (final lang in AppLang.values) {
+        for (final e in lang.strings.entries) {
+          if (lang.fallbackCode == null) {
+            expect(
+              e.value.trim(),
+              isNotEmpty,
+              reason: '${lang.code}: ${e.key}',
+            );
+          }
           final a = ph.allMatches(e.key).map((m) => m.group(0)).toSet();
           final b = ph.allMatches(e.value).map((m) => m.group(0)).toSet();
-          // « qui attend{1} » : le paramètre de pluriel français peut ne pas exister en anglais
-          expect(b.difference(a), isEmpty, reason: e.key);
+          // « qui attend{1} » : le paramètre de pluriel français peut ne pas exister dans la langue cible
+          expect(b.difference(a), isEmpty, reason: '${lang.code}: ${e.key}');
         }
-      },
-    );
+      }
+    });
 
     test('le magasin mémorise la langue et les dates suivent', () async {
       final s = await newStore();

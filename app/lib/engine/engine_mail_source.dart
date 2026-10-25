@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import '../data/format.dart';
 import '../data/html_lite.dart';
 import '../data/models.dart';
+import '../i18n/i18n.dart';
 import '../state/local_labels.dart' show localLabelPrefix;
 import '../state/search_filters.dart';
 import 'account_admin.dart';
@@ -19,6 +20,8 @@ import 'compose_admin.dart';
 import 'mail_layout.dart';
 import 'inline_images.dart';
 import 'label_admin.dart';
+import 'engine_settings_admin.dart';
+import 'event_routes.dart';
 import 'label_settings_admin.dart';
 import 'local_label_admin.dart';
 import 'rule_admin.dart';
@@ -127,6 +130,12 @@ class EngineMailSource implements MailSource {
   @override
   LabelSettingsAdmin get labelSettingsAdmin => LabelSettingsAdmin(client);
 
+  @override
+  EngineSettingsAdmin get engineSettingsAdmin => EngineSettingsAdmin(client);
+
+  final StreamController<void> _engineSettings = StreamController.broadcast();
+  final StreamController<void> _counterEvents = StreamController.broadcast();
+  final StreamController<void> _accountEvents = StreamController.broadcast();
   final StreamController<void> _settingsChanges = StreamController.broadcast();
   final StreamController<void> _labelChanges = StreamController.broadcast();
   final StreamController<void> _ruleChanges = StreamController.broadcast();
@@ -140,6 +149,15 @@ class EngineMailSource implements MailSource {
 
   @override
   Stream<void> get labelSettingsChanges => _settingsChanges.stream;
+
+  @override
+  Stream<void> get engineSettingsChanges => _engineSettings.stream;
+
+  @override
+  Stream<void> get counterChanges => _counterEvents.stream;
+
+  @override
+  Stream<void> get accountEvents => _accountEvents.stream;
 
   @override
   bool? arrivalVerdict(String messageRef) => _verdicts[messageRef];
@@ -162,6 +180,8 @@ class EngineMailSource implements MailSource {
 
   final Map<String, String> _folderBoxes = {};
   final Map<String, String> _boxFolder = {};
+  final Map<String, String> _boxAccount = {};
+  final Map<String, int> _boxUnread = {};
 
   @override
   String? mailboxOf(String account, String folder) =>
@@ -235,27 +255,60 @@ class EngineMailSource implements MailSource {
   void _listen() {
     _events = client.events().listen((e) {
       final kind = (e['kind'] as Map?)?.cast<String, dynamic>() ?? const {};
-      final account = kind['account'];
-      _trackRules('${kind['type']}', kind);
-      if (account is String && _isChange('${kind['type']}')) _schedule(account);
-      if (account is String) _trackSync(account, '${kind['type']}', kind);
+      final type = '${kind['type']}';
+      for (final effect in effectsOf(type)) {
+        _apply(effect, type, kind);
+      }
     }, onError: (_) {});
   }
 
-  void _trackRules(String type, Map<String, dynamic> kind) {
-    if (type == 'rule_changed' && !_ruleChanges.isClosed) {
-      _ruleChanges.add(null);
+  /// Applique un effet de la table des événements.
+  void _apply(EventEffect effect, String type, Map<String, dynamic> kind) {
+    final account = kind['account'];
+    switch (effect) {
+      case EventEffect.reload:
+        if (account is String) _schedule(account);
+      case EventEffect.counters:
+        _noteCounters(kind);
+      case EventEffect.sync:
+        if (account is String) _trackSync(account, type, kind);
+      case EventEffect.accounts:
+        _signal(_accountEvents);
+      case EventEffect.verdict:
+        _noteVerdict(kind);
+      case EventEffect.rules:
+        _signal(_ruleChanges);
+      case EventEffect.localLabels:
+        _signal(_labelChanges);
+      case EventEffect.labelSettings:
+        _signal(_settingsChanges);
+      case EventEffect.settings:
+        _signal(_engineSettings);
     }
-    if (type == 'local_labels_changed' && !_labelChanges.isClosed) {
-      _labelChanges.add(null);
-    }
-    if (type == 'label_settings_changed' && !_settingsChanges.isClosed) {
-      _settingsChanges.add(null);
-    }
-    if (type == 'new_message_received') {
-      _verdicts['${kind['message']}'] = kind['silenced'] == true;
-      if (_verdicts.length > 1000) _verdicts.remove(_verdicts.keys.first);
-    }
+  }
+
+  void _signal(StreamController<void> stream) {
+    if (!stream.isClosed) stream.add(null);
+  }
+
+  void _noteVerdict(Map<String, dynamic> kind) {
+    _verdicts['${kind['message']}'] = kind['silenced'] == true;
+    if (_verdicts.length > 1000) _verdicts.remove(_verdicts.keys.first);
+  }
+
+  /// Reprend le compteur de non-lus d'une boîte annoncé par le moteur, sans relire le compte.
+  void _noteCounters(Map<String, dynamic> kind) {
+    final box = '${kind['mailbox']}';
+    final unread = kind['unread'];
+    final folder = _boxFolder[box];
+    final account = _boxAccount[box];
+    if (unread is! num || folder == null || account == null) return;
+    _boxUnread[box] = unread.toInt();
+    final total = _boxFolder.entries
+        .where((b) => b.value == folder && _boxAccount[b.key] == account)
+        .fold<int>(0, (sum, b) => sum + (_boxUnread[b.key] ?? 0));
+    _unread['$account/$folder'] = total;
+    _signal(_counterEvents);
   }
 
   void _trackSync(String account, String type, Map<String, dynamic> kind) {
@@ -271,13 +324,6 @@ class EngineMailSource implements MailSource {
       if (!_changes.isClosed) _changes.add(account);
     });
   }
-
-  static bool _isChange(String type) => const {
-    'sync_finished',
-    'new_message_received',
-    'message_updated',
-    'message_deleted',
-  }.contains(type);
 
   @override
   Future<List<Mail>> reload(Account account) async {
@@ -295,11 +341,18 @@ class EngineMailSource implements MailSource {
       if (folder != null) _folderBoxes['${account.id}/$folder'] = '${b['id']}';
     }
     _unread.removeWhere((k, _) => k.startsWith('${account.id}/'));
+    final stale = _boxAccount.entries.where((e) => e.value == account.id);
+    for (final id in [for (final e in stale) e.key]) {
+      _boxAccount.remove(id);
+      _boxUnread.remove(id);
+    }
     for (final b in boxes) {
       final folder = _folderOf(b);
       if (folder == null) continue;
       _boxFolder['${b['id']}'] = folder;
+      _boxAccount['${b['id']}'] = account.id;
       final n = b['unread'];
+      _boxUnread['${b['id']}'] = n is int ? n : 0;
       if (n is int) {
         _unread.update(
           '${account.id}/$folder',
@@ -425,7 +478,7 @@ class EngineMailSource implements MailSource {
       from: from,
       to: d.to,
       cc: d.cc,
-      subject: d.subject.trim().isEmpty ? '(sans objet)' : d.subject,
+      subject: d.subject.trim().isEmpty ? t('(sans objet)') : d.subject,
       date: d.updatedAt,
       msgs: [
         Msg(from: from, date: d.updatedAt, body: body, att: d.attachments),
@@ -800,9 +853,9 @@ class EngineMailSource implements MailSource {
       m.loaded = true;
     }
     onProgress?.call();
-    _trace('corps ${m.ref}', clock);
+    _trace('corps ${m.ref}', clock); // i18n:ignore
     await _loadAttachments(m);
-    _trace('pièces jointes ${m.ref}', clock);
+    _trace('pièces jointes ${m.ref}', clock); // i18n:ignore
     return true;
   }
 
@@ -895,6 +948,9 @@ class EngineMailSource implements MailSource {
     await _ruleChanges.close();
     await _labelChanges.close();
     await _settingsChanges.close();
+    await _engineSettings.close();
+    await _counterEvents.close();
+    await _accountEvents.close();
     await _syncEvents.close();
   }
 }

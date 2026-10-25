@@ -41,8 +41,25 @@ class FakeEngine implements EngineClient {
   bool importFails = false;
   bool hideInbox = false;
   bool settingsOn = false;
+  int? enginePoll;
+  List<String> engineMuted = [];
+  Map<String, dynamic>? engineQuiet;
+  bool engineSettingsOn = false;
+  final settingWrites = <Map<String, dynamic>>[];
   bool hideRow = false;
   final labelViews = <Map<String, dynamic>>[];
+
+  Map<String, dynamic> _settingsAnswer() => {
+    'type': 'settings',
+    'data': {
+      'type': 'settings',
+      'data': {
+        'poll_secs': enginePoll,
+        'muted_accounts': engineMuted,
+        'quiet_hours': engineQuiet,
+      },
+    },
+  };
 
   Map<String, dynamic> _msg(
     String id,
@@ -502,6 +519,25 @@ class FakeEngine implements EngineClient {
           'type': 'label_settings',
           'data': {'type': 'done', 'data': null},
         };
+      case 'settings.get_settings':
+        if (!engineSettingsOn) throw EngineException('internal.bug', 'absent');
+        return _settingsAnswer();
+      case 'settings.set_settings':
+        final given = (r['settings'] as Map).cast<String, dynamic>();
+        settingWrites.add(r);
+        final before = _settingsAnswer().toString();
+        enginePoll = given['poll_secs'] as int?;
+        engineMuted = [...(given['muted_accounts'] as List).cast<String>()];
+        engineQuiet = (given['quiet_hours'] as Map?)?.cast<String, dynamic>();
+        if (_settingsAnswer().toString() != before) {
+          feed.add({
+            'kind': {
+              'type': 'settings_changed',
+              'keys': ['poll_secs'],
+            },
+          });
+        }
+        return _settingsAnswer();
       case 'local_label.list_local_labels':
         return _labelAnswer('labels', localLabels);
       case 'local_label.list_local_label_assignments':

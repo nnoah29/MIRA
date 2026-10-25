@@ -84,4 +84,37 @@ void main() {
     expect(store.visible().map((m) => m.id), contains('acc1/inbox/t1'));
     store.dispose();
   });
+
+  test(
+    'marquer lu fait baisser le compteur de la Réception sans attendre',
+    () async {
+      final fake = FakeEngine();
+      final (store, _) = await open(fake);
+      final before = store.navCount('inbox');
+      final conv = store.mails.firstWhere(
+        (m) => m.unread && m.folder == 'inbox',
+      );
+      store.sel.add(conv.id);
+      store.toggleRead();
+      await settle();
+      expect(store.navCount('inbox'), before - 1);
+      store.dispose();
+    },
+  );
+
+  test('marquer lu dans un libellé met à jour son compteur', () async {
+    final fake = FakeEngine();
+    seedEngineLabel(fake);
+    final (store, _) = await open(fake);
+    final key = '${localLabelPrefix}l1';
+    final before = store.labelCount(key);
+    store.selectLabel(key);
+    await settle();
+    final shown = store.visible().firstWhere((m) => m.unread);
+    store.sel.add(shown.id);
+    store.toggleRead();
+    expect(store.labelCount(key), before - 1);
+    await settle();
+    store.dispose();
+  });
 }

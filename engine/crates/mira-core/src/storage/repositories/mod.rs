@@ -7,6 +7,7 @@ pub mod allowances;
 pub mod appearances;
 pub mod attachments;
 pub mod drafts;
+pub mod engine_settings;
 pub mod events;
 pub mod identities;
 pub mod label_settings;

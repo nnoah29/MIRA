@@ -18,6 +18,7 @@ pub mod responses_legacy;
 pub mod responses_read;
 pub mod rule_domain;
 pub mod search_domain;
+pub mod settings_domain;
 pub mod small_domains;
 pub mod snapshot;
 pub mod sync_domain;
@@ -50,6 +51,7 @@ pub fn request_name(request: &Request) -> &'static str {
         Request::Rule(_) => "rule",
         Request::LocalLabel(_) => "local_label",
         Request::LabelSettings(_) => "label_settings",
+        Request::Settings(_) => "settings",
     }
 }
 

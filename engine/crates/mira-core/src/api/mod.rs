@@ -19,7 +19,7 @@ pub use contract::{
     LocalLabelRequest, LocalLabelResponse, MailboxRequest, MaintenanceRequest, MessageRequest,
     NewIdentity, OperationRequest, OutboxEntry, ProviderRequest, QueueRequest, RemoteContentTarget,
     Request, Response, RuleCatalog, RulePreview, RuleRequest, RuleResponse, RuleView,
-    SearchRequest, SecretInput, SyncRequest, SyncResponse, SyncScope, TargetSelection,
-    ThreadRequest, WriteResponse,
+    SearchRequest, SecretInput, SettingsRequest, SettingsResponse, SyncRequest, SyncResponse,
+    SyncScope, TargetSelection, ThreadRequest, WriteResponse,
 };
 pub use engine::Engine;

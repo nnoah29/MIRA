@@ -13,6 +13,7 @@ import '../data/seed.dart';
 import '../engine/blocks_html.dart';
 import '../engine/compose_admin.dart';
 import '../engine/engine_client.dart';
+import '../engine/engine_settings_admin.dart';
 import '../engine/label_admin.dart';
 import '../engine/label_settings_admin.dart';
 import '../engine/local_label_admin.dart';
@@ -34,6 +35,7 @@ import 'image_policy.dart';
 import 'rich_controller.dart';
 import 'mail_notifier.dart';
 import 'unsubscribe.dart';
+import '../i18n/engine_errors.dart';
 import '../i18n/i18n.dart';
 
 enum PaneView { empty, read, compose, assistant, settings, addAccount }
@@ -149,8 +151,11 @@ class MailStore extends ChangeNotifier {
   final MailSource? source;
   StreamSubscription<String>? _changeSub;
   StreamSubscription<void>? _syncSub;
+  StreamSubscription<void>? _counterSub;
+  StreamSubscription<void>? _accountSub;
   StreamSubscription<void>? _labelSub;
   StreamSubscription<void>? _settingsSub;
+  StreamSubscription<void>? _engineSettingsSub;
 
   /// Historique des destinataires et noms choisis.
   late final ContactBook contactBook;
@@ -179,7 +184,6 @@ class MailStore extends ChangeNotifier {
     accentHex = prefs.getString('accent');
     dense = prefs.getString('dense') == '1';
     live = prefs.getString('live') != '0';
-    sig = prefs.getString('sig') ?? 'Cordialement,\nNoah';
     final extra = <Account>[];
     try {
       final raw = prefs.getString('accounts');
@@ -192,9 +196,7 @@ class MailStore extends ChangeNotifier {
       /* préférences illisibles : on ignore */
     }
     final real = source?.accounts ?? [...defaultAccounts, ...extra];
-    accounts = real.isEmpty
-        ? [const Account('none', 'Aucun compte', '')]
-        : real;
+    accounts = real.isEmpty ? [Account('none', t('Aucun compte'), '')] : real;
     knownAccounts = accounts;
     if (source != null) {
       _applyIdentities();
@@ -208,7 +210,10 @@ class MailStore extends ChangeNotifier {
       }
       localLabelsReady = _initLocalLabels();
       unawaited(_initLabelSettings());
+      unawaited(_initEngineSettings());
       _changeSub = source!.changes.listen(_reloadAccount);
+      _counterSub = source!.counterChanges.listen((_) => notifyListeners());
+      _accountSub = source!.accountEvents.listen((_) => accountsChanged());
       _syncSub = source!.syncEvents.listen((_) {
         _extensionProgress();
         notifyListeners();
@@ -247,9 +252,9 @@ class MailStore extends ChangeNotifier {
     try {
       unawaited(_reloadAccount(activeId));
       await src.syncNow();
-      if (!quiet) toast('Synchronisation lancée');
+      if (!quiet) toast(t('Synchronisation lancée'));
     } catch (_) {
-      if (!quiet) toast('Synchronisation impossible', err: true);
+      if (!quiet) toast(t('Synchronisation impossible'), err: true);
     } finally {
       await Future<void>.delayed(const Duration(milliseconds: 1200));
       syncing = false;
@@ -341,7 +346,9 @@ class MailStore extends ChangeNotifier {
   }
 
   late bool dense, live;
-  late String sig;
+
+  /// Signature : celle de l'utilisateur, sinon la formule par défaut dans la langue active.
+  String get sig => prefs.getString('sig') ?? t('Cordialement,\nNoah');
   late List<ChatMsg> chat;
   bool busy = false;
   ComposeState? c;
@@ -382,8 +389,11 @@ class MailStore extends ChangeNotifier {
   void dispose() {
     _changeSub?.cancel();
     _syncSub?.cancel();
+    _counterSub?.cancel();
+    _accountSub?.cancel();
     _labelSub?.cancel();
     _settingsSub?.cancel();
+    _engineSettingsSub?.cancel();
     _searchTimer?.cancel();
     _wake?.cancel();
     _wallSub?.cancel();
@@ -408,6 +418,9 @@ class MailStore extends ChangeNotifier {
 
   // ---- messages plus anciens ----
   bool loadingMore = false;
+
+  /// Par compte et dossier : le compteur du serveur vu, et ce qu'on y a ajouté ou retiré en lisant ici.
+  final Map<String, (int, int)> _unreadAdj = {};
 
   /// Comptes de la vue courante ayant des messages plus anciens non chargés.
   List<String> _deeper() {
@@ -673,19 +686,26 @@ class MailStore extends ChangeNotifier {
   bool _shownIn(Mail m, String folder) =>
       m.folder == folder && !(folder == 'inbox' && _hiddenFromInboxByLabel(m));
 
+  /// Non lus de la Réception que l'app cache à cause d'un libellé, chargés ou lus dans le moteur.
+  int _unreadHiddenFromInbox() {
+    final seen = <String>{};
+    final hiddenOnes = [
+      ...mails.where((m) => m.folder == 'inbox' && !_shownIn(m, 'inbox')),
+      for (final l in _hiddenMails.values)
+        ...l.where((m) => m.folder == 'inbox' && _hiddenFromInboxByLabel(m)),
+    ];
+    return nonRead(hiddenOnes.where((m) => seen.add(m.id)));
+  }
+
   int _unreadIn(String folder) {
     final local = nonRead(mails.where((m) => _shownIn(m, folder)));
     final src = source;
     if (src == null) return local;
-    final hiddenByApp = folder == 'inbox'
-        ? nonRead(
-            mails.where((m) => m.folder == folder && !_shownIn(m, folder)),
-          )
-        : 0;
+    final hiddenByApp = folder == 'inbox' ? _unreadHiddenFromInbox() : 0;
     var exact = -hiddenByApp;
     for (final a in accounts) {
       if (!unified && a.id != activeId) continue;
-      exact += src.unreadOf(a.id, folder) ?? 0;
+      exact += _serverUnread(src, a.id, folder);
     }
     return exact > local ? exact : local;
   }
@@ -739,7 +759,7 @@ class MailStore extends ChangeNotifier {
     });
   }
 
-  void hint() => toast('Sélectionne d’abord un message', err: true);
+  void hint() => toast(t('Sélectionne d’abord un message'), err: true);
 
   // ---- préférences ----
   void setSetting(String k, String v) {
@@ -754,7 +774,7 @@ class MailStore extends ChangeNotifier {
         followWallpaper = v == '1';
         prefs.setString('follow', v);
       case 'poll':
-        prefs.setString('poll', v);
+        _applyPoll(v);
       case 'hibernate':
         prefs.setString('hibernate', v);
         if (!_focused) _armSleep();
@@ -785,11 +805,21 @@ class MailStore extends ChangeNotifier {
     lang = l;
     appLang = l;
     prefs.setString('lang', l.code);
+    if (source == null) _reseedDemo();
     notifyListeners();
   }
 
+  /// Reconstruit les messages fictifs dans la langue active ; l'affichage (dossier, panneau) reste en place.
+  void _reseedDemo() {
+    _boxes.clear();
+    mails = unified ? _mergedBoxes() : seedAccount(active);
+    chat = [_welcome()];
+    sel.clear();
+    open = null;
+    if (view == PaneView.read) view = PaneView.empty;
+  }
+
   void setSig(String s) {
-    sig = s;
     prefs.setString('sig', s);
   }
 
@@ -825,10 +855,7 @@ class MailStore extends ChangeNotifier {
   /// Démarrage (après le premier build, `narrow` est connu).
   void start() {
     if (source != null && source!.accounts.isEmpty) {
-      toast(
-        'Aucun compte : ajoutes-en un avec « mira account add »',
-        err: true,
-      );
+      toast(t('Aucun compte : ajoutes-en un dans les réglages'), err: true);
     }
     if (!narrow) {
       final l = visible();
@@ -918,7 +945,7 @@ class MailStore extends ChangeNotifier {
     prefs.setString('account', 'all');
     _resetView();
     notifyListeners();
-    toast('Toutes les boîtes');
+    toast(t('Toutes les boîtes'));
   }
 
   /// Adresse d'expédition d'un compte (par défaut : le compte actif).
@@ -1182,7 +1209,7 @@ class MailStore extends ChangeNotifier {
       return;
     }
     if (m.unread) {
-      m.unread = false;
+      _setUnread(m, false);
       _syncAction([m], (a) => a.read(true));
     }
     _hydrate(m);
@@ -1259,7 +1286,7 @@ class MailStore extends ChangeNotifier {
         notifyListeners();
       }
     } catch (_) {
-      toast('Impossible d’autoriser le contenu distant', err: true);
+      toast(t('Impossible d’autoriser le contenu distant'), err: true);
     }
   }
 
@@ -1413,7 +1440,7 @@ class MailStore extends ChangeNotifier {
     final ids = {for (final a in src.accounts) a.id};
     _boxes.removeWhere((id, _) => !ids.contains(id));
     accounts = src.accounts.isEmpty
-        ? [const Account('none', 'Aucun compte', '')]
+        ? [Account('none', t('Aucun compte'), '')]
         : src.accounts;
     knownAccounts = accounts;
     for (final a in accounts) {
@@ -1681,13 +1708,13 @@ class MailStore extends ChangeNotifier {
     if (ids.isEmpty) return hint();
     switch (v) {
       case '1m':
-        snoozeTo(ids, 'dans 1 minute (démo)', 60000);
+        snoozeTo(ids, tkey('dans 1 minute (démo)'), 60000);
       case '1h':
-        snoozeTo(ids, 'dans 1 heure', 0);
+        snoozeTo(ids, tkey('dans 1 heure'), 0);
       case 'tom':
-        snoozeTo(ids, 'demain 08:00', 0);
+        snoozeTo(ids, tkey('demain 08:00'), 0);
       default:
-        snoozeTo(ids, 'lundi 08:00', 0);
+        snoozeTo(ids, tkey('lundi 08:00'), 0);
     }
   }
 
@@ -1698,8 +1725,8 @@ class MailStore extends ChangeNotifier {
     moveTo(
       ids,
       back ? 'inbox' : 'archive',
-      back ? 'déplacé dans la réception' : 'archivé',
-      back ? 'déplacés dans la réception' : 'archivés',
+      back ? tkey('déplacé dans la réception') : tkey('archivé'),
+      back ? tkey('déplacés dans la réception') : tkey('archivés'),
     );
   }
 
@@ -1710,8 +1737,8 @@ class MailStore extends ChangeNotifier {
     moveTo(
       ids,
       back ? 'inbox' : 'spam',
-      back ? 'déplacé dans la réception' : 'signalé comme spam',
-      back ? 'déplacés dans la réception' : 'signalés comme spam',
+      back ? tkey('déplacé dans la réception') : tkey('signalé comme spam'),
+      back ? tkey('déplacés dans la réception') : tkey('signalés comme spam'),
     );
   }
 
@@ -1721,7 +1748,40 @@ class MailStore extends ChangeNotifier {
     if (ids.every((id) => byId(id)!.folder == 'trash')) {
       return removeForever(ids);
     }
-    moveTo(ids, 'trash', 'mis à la corbeille');
+    moveTo(ids, 'trash', tkey('mis à la corbeille'));
+  }
+
+  /// Change l'état lu d'un message dans toutes ses copies (liste, recherche, libellés masqués) et dans les compteurs.
+  void _setUnread(Mail m, bool unread) {
+    if (m.unread != unread) _noteReadChange(m, unread);
+    final copies = [
+      ...mails,
+      ..._hits,
+      ..._deep,
+      for (final l in _hiddenMails.values) ...l,
+    ];
+    for (final c in copies) {
+      if (c.id == m.id) c.unread = unread;
+    }
+    m.unread = unread;
+  }
+
+  /// Retient le changement de lecture tant que le compteur du serveur n'a pas bougé.
+  void _noteReadChange(Mail m, bool nowUnread) {
+    final raw = source?.unreadOf(m.account, m.folder);
+    if (raw == null) return;
+    final k = '${m.account}/${m.folder}';
+    final cur = _unreadAdj[k];
+    final base = cur != null && cur.$1 == raw ? cur.$2 : 0;
+    _unreadAdj[k] = (raw, base + (nowUnread ? 1 : -1));
+  }
+
+  /// Compteur du serveur d'un dossier, corrigé des lectures faites ici et pas encore reprises par le serveur.
+  int _serverUnread(MailSource src, String account, String folder) {
+    final raw = src.unreadOf(account, folder) ?? 0;
+    final adj = _unreadAdj['$account/$folder'];
+    if (adj == null || adj.$1 != raw) return raw;
+    return raw + adj.$2 < 0 ? 0 : raw + adj.$2;
   }
 
   void toggleRead() {
@@ -1730,7 +1790,7 @@ class MailStore extends ChangeNotifier {
     final ms = ids.map((i) => byId(i)!).toList();
     final allRead = ms.every((m) => !m.unread);
     for (final m in ms) {
-      m.unread = allRead;
+      _setUnread(m, allRead);
     }
     sel.clear();
     notifyListeners();
@@ -1797,7 +1857,7 @@ class MailStore extends ChangeNotifier {
         : all0.where((m) => m.account == def.account).toList();
     final skipped = all0.length - ms.length;
     if (ms.isEmpty) {
-      toast('Libellé d’un autre compte : rien à modifier', err: true);
+      toast(t('Libellé d’un autre compte : rien à modifier'), err: true);
       return;
     }
     final all = ms.every((m) => m.labels.contains(k));
@@ -1870,6 +1930,93 @@ class MailStore extends ChangeNotifier {
       localLabelsOnEngine = true;
     } catch (_) {
       /* moteur sans libellés locaux : on garde les préférences */
+    }
+  }
+
+  /// Réglages du moteur tels qu'il les applique (`null` : démonstration ou moteur sans réglages).
+  EngineSettings? engineSettings;
+
+  /// Relevé périodique en secondes, `null` : délai du fournisseur.
+  int? get pollSecs => engineSettings?.pollSecs;
+
+  /// Choix affiché pour le relevé : celui du moteur, ou des préférences en démonstration.
+  String get pollChoice => engineSettings == null
+      ? prefs.getString('poll') ?? ''
+      : '${pollSecs ?? ''}';
+
+  /// Remplace les réglages du moteur : affichés tout de suite, relus en cas d'échec.
+  void _writeEngineSettings(EngineSettings next) {
+    final admin = source?.engineSettingsAdmin;
+    if (admin == null) return;
+    _adopt(next);
+    notifyListeners();
+    unawaited(
+      admin
+          .write(next)
+          .then<void>((_) {}, onError: (Object _) => refreshEngineSettings()),
+    );
+  }
+
+  /// Retient les réglages du moteur et les donne aux notifications.
+  void _adopt(EngineSettings next) {
+    engineSettings = next;
+    notifySettings.engine = next;
+  }
+
+  /// Envoie le relevé choisi au moteur ; sans réglages du moteur, aux préférences.
+  void _applyPoll(String v) {
+    final current = engineSettings;
+    if (current == null) {
+      prefs.setString('poll', v);
+      return;
+    }
+    _writeEngineSettings(current.withPoll(int.tryParse(v)));
+  }
+
+  /// Reprend les anciennes préférences (une fois), lit les réglages du moteur et les relit à chaque signal.
+  Future<void> _initEngineSettings() async {
+    final src = source;
+    final admin = src?.engineSettingsAdmin;
+    if (admin == null) return;
+    _engineSettingsSub = src!.engineSettingsChanges.listen(
+      (_) => refreshEngineSettings(),
+    );
+    try {
+      final current = await admin.read();
+      final merged = _withLegacy(current);
+      if (!merged.sameAs(current)) await admin.write(merged);
+      _adopt(merged);
+      for (final k in const ['poll', 'notifyMuted', 'notifyQuiet']) {
+        await prefs.remove(k);
+      }
+      notifyListeners();
+    } catch (_) {
+      /* moteur sans réglages : les préférences restent */
+    }
+  }
+
+  /// Réglages du moteur complétés par les anciennes préférences, là où le moteur n'a rien.
+  EngineSettings _withLegacy(EngineSettings current) {
+    final legacy = NotifySettings(prefs);
+    final poll = int.tryParse(prefs.getString('poll') ?? '');
+    return EngineSettings(
+      pollSecs: current.pollSecs ?? poll,
+      mutedAccounts: current.mutedAccounts.isEmpty
+          ? legacy.muted
+          : current.mutedAccounts,
+      quietHours: current.quietHours ?? legacy.quiet,
+    );
+  }
+
+  /// Relit les réglages du moteur ; en cas d'échec, garde l'affichage actuel.
+  Future<void> refreshEngineSettings() async {
+    final admin = source?.engineSettingsAdmin;
+    if (admin == null) return;
+    try {
+      _adopt(await admin.read());
+      notifyListeners();
+    } catch (_) {
+      /* moteur sans réglages : affichage actuel */
     }
   }
 
@@ -2083,7 +2230,7 @@ class MailStore extends ChangeNotifier {
             ? m.labels.where((x) => x != k).toList()
             : {...m.labels, k}.toList();
       }
-      toast('Libellé non modifié', err: true);
+      toast(t('Libellé non modifié'), err: true);
       notifyListeners();
     }
   }
@@ -2147,7 +2294,10 @@ class MailStore extends ChangeNotifier {
     try {
       await job();
     } catch (e) {
-      toast(e is EngineException ? e.message : 'Libellé refusé', err: true);
+      toast(
+        e is EngineException ? engineErrorText(e) : t('Libellé refusé'),
+        err: true,
+      );
       return false;
     }
     await _reloadAccount(account);
@@ -2302,14 +2452,24 @@ class MailStore extends ChangeNotifier {
 
   /// Change un réglage de notification et redessine.
   void setNotify(String key, String value) {
+    final current = engineSettings;
+    if (key == 'notifyQuiet' && current != null) {
+      return _writeEngineSettings(current.withQuiet(parseQuiet(value)));
+    }
     prefs.setString(key, value);
     notifyListeners();
   }
 
   /// Coupe ou rétablit les notifications d'un compte.
   void muteAccount(String account, bool mute) {
-    notifySettings.setMuted(account, mute);
-    notifyListeners();
+    final current = engineSettings;
+    if (current == null) {
+      notifySettings.setMuted(account, mute);
+      return notifyListeners();
+    }
+    final next = {...current.mutedAccounts};
+    mute ? next.add(account) : next.remove(account);
+    _writeEngineSettings(current.withMuted(next));
   }
 
   /// Affiche une notification d'essai, même au premier plan.
@@ -2890,7 +3050,7 @@ class MailStore extends ChangeNotifier {
     final o = m.outbox;
     final admin = source?.composer;
     if (o == null || admin == null) return Future.value();
-    return _outboxOp(m, () => admin.cancelSend(o.action), 'Envoi annulé');
+    return _outboxOp(m, () => admin.cancelSend(o.action), t('Envoi annulé'));
   }
 
   /// Relance un envoi échoué.
@@ -2898,7 +3058,7 @@ class MailStore extends ChangeNotifier {
     final o = m.outbox;
     final admin = source?.composer;
     if (o == null || admin == null) return Future.value();
-    return _outboxOp(m, () => admin.retry(o.action), 'Nouvel essai lancé');
+    return _outboxOp(m, () => admin.retry(o.action), t('Nouvel essai lancé'));
   }
 
   /// Envoi incertain : le renvoyer, ou le tenir pour parti.
@@ -2909,7 +3069,7 @@ class MailStore extends ChangeNotifier {
     return _outboxOp(
       m,
       () => admin.resolve(o.action, resend: resend),
-      resend ? 'Message renvoyé' : 'Message tenu pour envoyé',
+      t(resend ? 'Message renvoyé' : 'Message tenu pour envoyé'),
     );
   }
 
@@ -3125,7 +3285,7 @@ class MailStore extends ChangeNotifier {
     if (cs.to.isEmpty) {
       cs.shake++;
       notifyListeners();
-      toast('Ajoute au moins un destinataire', err: true);
+      toast(t('Ajoute au moins un destinataire'), err: true);
       return;
     }
     if (source != null) return _sendReal(cs, sched);
@@ -3437,8 +3597,10 @@ class MailStore extends ChangeNotifier {
     _after(rand(500, 900).round(), tick);
   }
 
-  void scheduleCleanup(List<String> ids) =>
-      _after(1800, () => moveTo(ids, 'archive', 'archivé', 'archivés'));
+  void scheduleCleanup(List<String> ids) => _after(
+    1800,
+    () => moveTo(ids, 'archive', tkey('archivé'), tkey('archivés')),
+  );
 
   void useDraft(int i) {
     final msg = chat[i];

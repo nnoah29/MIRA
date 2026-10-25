@@ -2,6 +2,7 @@ import '../data/rule_models.dart';
 import '../i18n/i18n.dart';
 
 const _kindLabels = <String, String>{
+  // i18n:keys-begin
   'sender': 'Expéditeur',
   'recipient': 'Destinataire',
   'me_in_to': 'Je suis en destinataire direct',
@@ -39,6 +40,7 @@ const _kindLabels = <String, String>{
   'mark_spam': 'Marquer comme spam',
   'suppress_notification': 'Ne pas notifier',
   'stop_processing': 'Arrêter le traitement',
+  // i18n:keys-end
 };
 
 /// Libellé lisible d'une variante du catalogue (l'étiquette brute si inconnue).

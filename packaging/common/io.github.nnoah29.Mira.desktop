@@ -11,3 +11,4 @@ Terminal=false
 Categories=Network;Email;
 StartupWMClass=io.github.nnoah29.Mira
 Keywords=mail;email;imap;inbox;
+Keywords[fr]=courrier;mail;e-mail;messagerie;imap;boîte de réception;

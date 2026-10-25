@@ -4,10 +4,20 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/models.dart';
+import '../engine/engine_settings_admin.dart';
 
-/// Réglages des notifications de nouveaux messages, gardés dans les préférences.
+/// Heures calmes écrites `de-à` en heures pleines ; `null` : jamais.
+(int, int)? parseQuiet(String raw) {
+  final parts = raw.split('-').map(int.tryParse).toList();
+  if (parts.length != 2 || parts.contains(null)) return null;
+  return (parts[0]!, parts[1]!);
+}
+
+/// Réglages des notifications de nouveaux messages : heures calmes et comptes en sourdine viennent
+/// du moteur quand il les porte, des préférences sinon ; le reste reste dans les préférences.
 class NotifySettings {
   final SharedPreferences prefs;
+  EngineSettings? engine;
   NotifySettings(this.prefs);
 
   bool _flag(String k, bool byDefault) =>
@@ -19,15 +29,13 @@ class NotifySettings {
   bool get whenFocused => _flag('notifyFocused', false);
 
   /// Heures calmes `(début, fin)` en heures pleines ; `null` : jamais.
-  (int, int)? get quiet {
-    final raw = prefs.getString('notifyQuiet') ?? '';
-    final parts = raw.split('-').map(int.tryParse).toList();
-    if (parts.length != 2 || parts.contains(null)) return null;
-    return (parts[0]!, parts[1]!);
-  }
+  (int, int)? get quiet => engine != null
+      ? engine!.quietHours
+      : parseQuiet(prefs.getString('notifyQuiet') ?? '');
 
   /// Comptes dont les nouveaux messages ne sont pas notifiés.
   Set<String> get muted {
+    if (engine != null) return engine!.mutedAccounts;
     try {
       return {
         for (final a

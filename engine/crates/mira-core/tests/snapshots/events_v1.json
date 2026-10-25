@@ -1,0 +1,253 @@
+{
+  "envelope": {
+    "seq": 42,
+    "at": 1700000000000,
+    "kind": {
+      "type": "mailbox_counters_updated",
+      "account": "acc-1",
+      "mailbox": "mb-1",
+      "total": 120,
+      "unread": 7
+    }
+  },
+  "events": {
+    "engine_started": {
+      "type": "engine_started"
+    },
+    "engine_stopping": {
+      "type": "engine_stopping"
+    },
+    "engine_fatal_error": {
+      "type": "engine_fatal_error",
+      "code": "internal.bug"
+    },
+    "account_added": {
+      "type": "account_added",
+      "account": "acc-1"
+    },
+    "account_updated": {
+      "type": "account_updated",
+      "account": "acc-1"
+    },
+    "account_deleted": {
+      "type": "account_deleted",
+      "account": "acc-1"
+    },
+    "account_state_changed": {
+      "type": "account_state_changed",
+      "account": "acc-1",
+      "state": {
+        "type": "connected"
+      }
+    },
+    "sync_started": {
+      "type": "sync_started",
+      "account": "acc-1",
+      "operation": "op-1"
+    },
+    "sync_progress": {
+      "type": "sync_progress",
+      "account": "acc-1",
+      "operation": "op-1",
+      "step": "headers",
+      "done": 10,
+      "total": 40
+    },
+    "sync_finished": {
+      "type": "sync_finished",
+      "account": "acc-1",
+      "operation": "op-1"
+    },
+    "sync_failed": {
+      "type": "sync_failed",
+      "account": "acc-1",
+      "operation": "op-1",
+      "code": "server.quota_exceeded"
+    },
+    "went_offline": {
+      "type": "went_offline",
+      "account": "acc-1"
+    },
+    "back_online": {
+      "type": "back_online",
+      "account": "acc-1"
+    },
+    "mailbox_created": {
+      "type": "mailbox_created",
+      "account": "acc-1",
+      "mailbox": "mb-1"
+    },
+    "mailbox_updated": {
+      "type": "mailbox_updated",
+      "account": "acc-1",
+      "mailbox": "mb-1"
+    },
+    "mailbox_deleted": {
+      "type": "mailbox_deleted",
+      "account": "acc-1",
+      "mailbox": "mb-1"
+    },
+    "mailbox_counters_updated": {
+      "type": "mailbox_counters_updated",
+      "account": "acc-1",
+      "mailbox": "mb-1",
+      "total": 120,
+      "unread": 7
+    },
+    "new_message_received": {
+      "type": "new_message_received",
+      "account": "acc-1",
+      "message": "msg-1",
+      "mailbox": "mb-1",
+      "silenced": true
+    },
+    "message_updated": {
+      "type": "message_updated",
+      "account": "acc-1",
+      "message": "msg-1"
+    },
+    "message_deleted": {
+      "type": "message_deleted",
+      "account": "acc-1",
+      "message": "msg-1"
+    },
+    "body_available": {
+      "type": "body_available",
+      "account": "acc-1",
+      "message": "msg-1"
+    },
+    "attachment_progress": {
+      "type": "attachment_progress",
+      "account": "acc-1",
+      "attachment": "att-1",
+      "operation": "op-1",
+      "done": 1,
+      "total": 2
+    },
+    "attachment_ready": {
+      "type": "attachment_ready",
+      "account": "acc-1",
+      "attachment": "att-1",
+      "operation": "op-1"
+    },
+    "thread_updated": {
+      "type": "thread_updated",
+      "account": "acc-1",
+      "thread": "thr-1"
+    },
+    "action_queued": {
+      "type": "action_queued",
+      "account": "acc-1",
+      "action": "act-1"
+    },
+    "action_applied": {
+      "type": "action_applied",
+      "account": "acc-1",
+      "action": "act-1"
+    },
+    "action_failed": {
+      "type": "action_failed",
+      "account": "acc-1",
+      "action": "act-1",
+      "code": "server.rejected",
+      "reason": "refusé"
+    },
+    "action_cancelled": {
+      "type": "action_cancelled",
+      "account": "acc-1",
+      "action": "act-1"
+    },
+    "send_scheduled": {
+      "type": "send_scheduled",
+      "account": "acc-1",
+      "action": "act-1",
+      "at": 1700000000000
+    },
+    "send_departed": {
+      "type": "send_departed",
+      "account": "acc-1",
+      "action": "act-1"
+    },
+    "send_failed": {
+      "type": "send_failed",
+      "account": "acc-1",
+      "action": "act-1",
+      "code": "network.timeout"
+    },
+    "sent_copy_stored": {
+      "type": "sent_copy_stored",
+      "account": "acc-1",
+      "action": "act-1"
+    },
+    "send_uncertain": {
+      "type": "send_uncertain",
+      "account": "acc-1",
+      "action": "act-1"
+    },
+    "quota_full": {
+      "type": "quota_full",
+      "account": "acc-1"
+    },
+    "certificate_needs_approval": {
+      "type": "certificate_needs_approval",
+      "account": "acc-1",
+      "host": "imap.example.org"
+    },
+    "rate_limited": {
+      "type": "rate_limited",
+      "account": "acc-1"
+    },
+    "mailbox_resynchronized": {
+      "type": "mailbox_resynchronized",
+      "account": "acc-1",
+      "mailbox": "mb-1"
+    },
+    "diagnostic": {
+      "type": "diagnostic",
+      "level": "warn",
+      "target": "sync",
+      "text": "message"
+    },
+    "operation_progress": {
+      "type": "operation_progress",
+      "operation": "op-1",
+      "done": 1,
+      "total": 3
+    },
+    "operation_finished": {
+      "type": "operation_finished",
+      "operation": "op-1"
+    },
+    "operation_failed": {
+      "type": "operation_failed",
+      "operation": "op-1",
+      "code": "network.offline"
+    },
+    "operation_cancelled": {
+      "type": "operation_cancelled",
+      "operation": "op-1"
+    },
+    "rule_changed": {
+      "type": "rule_changed",
+      "rule": "rule-1"
+    },
+    "rule_applied": {
+      "type": "rule_applied",
+      "account": "acc-1",
+      "rule": "rule-1",
+      "message": "msg-1"
+    },
+    "local_labels_changed": {
+      "type": "local_labels_changed"
+    },
+    "label_settings_changed": {
+      "type": "label_settings_changed"
+    },
+    "settings_changed": {
+      "type": "settings_changed",
+      "keys": [
+        "poll_secs"
+      ]
+    }
+  }
+}

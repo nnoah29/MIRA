@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../engine/account_setup.dart';
 import '../engine/engine_client.dart';
+import '../i18n/engine_errors.dart';
 import '../i18n/i18n.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
@@ -78,8 +79,7 @@ class _AddAccountPanelState extends State<AddAccountPanel> {
     }
   }
 
-  String _message(Object e) =>
-      e is EngineException ? e.message : t('Erreur inattendue : {0}', ['$e']);
+  String _message(Object e) => engineErrorText(e);
 
   void _selectProvider(ProviderInfo p) {
     setState(() {

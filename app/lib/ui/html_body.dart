@@ -79,7 +79,7 @@ class _MailHtmlState extends State<MailHtml> {
       textStyle: style,
       factoryBuilder: MailWidgetFactory.new,
       customWidgetBuilder: (e) =>
-          e.localName == 'img' ? _image(e, remoteOk) : null,
+          e.localName == 'img' ? _image(e, remoteOk, style) : null,
       customStylesBuilder: (e) => _styleOf(e, p, onPaper),
       onTapUrl: openLink,
     );
@@ -158,22 +158,30 @@ class _MailHtmlState extends State<MailHtml> {
     return null;
   }
 
-  Widget? _image(dom.Element e, bool remoteOk) {
-    final image = _provider((e.attributes['src'] ?? '').trim(), remoteOk);
-    if (image == null) return const SizedBox.shrink();
+  Widget? _image(dom.Element e, bool remoteOk, TextStyle style) {
     final width = _length(e, 'width');
     final height = _length(e, 'height');
-    final picture = _rounded(
-      e,
-      Image(
-        image: image,
-        width: width,
-        height: height,
-        fit: width != null && height != null ? BoxFit.fill : BoxFit.contain,
-        errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined),
-      ),
-      width,
-    );
+    if (_isTracker(width, height)) return const SizedBox.shrink();
+    final alt = (e.attributes['alt'] ?? '').trim();
+    final image = _provider((e.attributes['src'] ?? '').trim(), remoteOk);
+    if (image == null && alt.isEmpty) return const SizedBox.shrink();
+    final fallback = Text(alt, style: style.copyWith(fontSize: 13));
+    final picture = image == null
+        ? fallback
+        : _rounded(
+            e,
+            Image(
+              image: image,
+              width: width,
+              height: height,
+              fit: width != null && height != null
+                  ? BoxFit.fill
+                  : BoxFit.contain,
+              errorBuilder: (_, _, _) =>
+                  alt.isEmpty ? const SizedBox.shrink() : fallback,
+            ),
+            width,
+          );
     final loose = Align(
       alignment: _alignmentOf(e),
       widthFactor: 1,
@@ -201,6 +209,10 @@ class _MailHtmlState extends State<MailHtml> {
     return null;
   }
 }
+
+/// Pixel espion ou espaceur : 2 px ou moins sur un côté, jamais affiché.
+bool _isTracker(double? width, double? height) =>
+    (width != null && width <= 2) || (height != null && height <= 2);
 
 final _displayBlock = RegExp(
   r'(?<![-\w])display\s*:\s*block',

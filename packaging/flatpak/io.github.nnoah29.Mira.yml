@@ -19,7 +19,7 @@ modules:
     buildsystem: simple
     sources:
       - type: archive
-        path: ../out/mira-mail-1.1.5-x86_64.tar.gz
+        path: ../out/mira-mail-1.1.6-x86_64.tar.gz
     build-commands:
       - install -d /app/lib/mira-mail /app/bin
       - cp -a app/. /app/lib/mira-mail/

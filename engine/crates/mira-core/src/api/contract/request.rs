@@ -15,6 +15,7 @@ use super::rule_requests::RuleRequest;
 use super::search_requests::SearchRequest;
 use super::settings_requests::SettingsRequest;
 use super::sync_requests::SyncRequest;
+use super::template_requests::TemplateRequest;
 use super::thread_requests::ThreadRequest;
 use super::write::{ActionRequest, ComposeRequest, QueueRequest};
 
@@ -42,6 +43,7 @@ pub enum Request {
     LocalLabel(LocalLabelRequest),
     LabelSettings(LabelSettingsRequest),
     Settings(SettingsRequest),
+    Template(TemplateRequest),
 }
 
 /// Requêtes sur le moteur lui-même.

@@ -22,6 +22,7 @@ pub mod settings_domain;
 pub mod small_domains;
 pub mod snapshot;
 pub mod sync_domain;
+pub mod template_domain;
 pub mod write_domain;
 
 pub use write_domain::{numbered, write_requests, write_responses};
@@ -52,6 +53,7 @@ pub fn request_name(request: &Request) -> &'static str {
         Request::LocalLabel(_) => "local_label",
         Request::LabelSettings(_) => "label_settings",
         Request::Settings(_) => "settings",
+        Request::Template(_) => "template",
     }
 }
 

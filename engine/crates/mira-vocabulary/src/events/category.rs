@@ -20,4 +20,5 @@ pub enum EventCategory {
     LocalLabel,
     Label,
     Settings,
+    Template,
 }

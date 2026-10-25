@@ -248,6 +248,9 @@
       "keys": [
         "poll_secs"
       ]
+    },
+    "templates_changed": {
+      "type": "templates_changed"
     }
   }
 }

@@ -14,6 +14,7 @@ pub mod label_settings;
 pub mod local_labels;
 pub mod mailboxes;
 pub mod maintenance;
+pub mod message_templates;
 pub mod messages;
 pub mod mirror;
 pub mod parsed_cache;

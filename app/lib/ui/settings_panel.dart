@@ -14,6 +14,7 @@ import 'accounts_settings.dart';
 import 'contacts_settings.dart';
 import 'image_rules_section.dart';
 import 'labels_settings.dart';
+import 'templates_settings.dart';
 import 'maintenance_settings.dart';
 import 'notification_settings.dart';
 import 'rules_settings.dart';
@@ -40,6 +41,7 @@ List<String> _tabs(bool engine) => [
   t('Contacts'),
   if (engine) t('Libellés'),
   if (engine) t('Règles'),
+  if (engine) t('Modèles'),
   if (engine) t('Stockage'),
   t('À propos'),
 ];
@@ -411,7 +413,13 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 ],
               ),
             ]),
-            7 when s.source != null => box([const MaintenanceSettings()]),
+            7 when s.source?.templateAdmin != null => box([
+              TemplatesSettings(
+                admin: s.source!.templateAdmin!,
+                changes: s.source!.templateChanges,
+              ),
+            ]),
+            8 when s.source != null => box([const MaintenanceSettings()]),
             _ when s.source != null => box([const AccountsSettings()]),
             _ => box([
               srow(me.name, me.email, const SizedBox.shrink()),

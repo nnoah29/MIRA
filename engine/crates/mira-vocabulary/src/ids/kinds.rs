@@ -81,3 +81,10 @@ pub type ActionId = Id<ActionMarker>;
 pub type OperationId = Id<OperationMarker>;
 /// Identifiant de vue.
 pub type ViewId = Id<ViewMarker>;
+
+/// Marqueur des identifiants de modèle de message.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct TemplateMarker;
+
+/// Identifiant de modèle de message.
+pub type TemplateId = Id<TemplateMarker>;

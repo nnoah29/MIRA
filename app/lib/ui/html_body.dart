@@ -11,6 +11,7 @@ import '../state/image_policy.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import 'body_skeleton.dart';
+import 'bottom_baseline.dart';
 import 'mail_widget_factory.dart';
 
 /// Au-delà, l'analyse du HTML part dans un isolat (le surcoût ne vaut que pour les gros courriels).
@@ -168,19 +169,21 @@ class _MailHtmlState extends State<MailHtml> {
     final fallback = Text(alt, style: style.copyWith(fontSize: 13));
     final picture = image == null
         ? fallback
-        : _rounded(
-            e,
-            Image(
-              image: image,
-              width: width,
-              height: height,
-              fit: width != null && height != null
-                  ? BoxFit.fill
-                  : BoxFit.contain,
-              errorBuilder: (_, _, _) =>
-                  alt.isEmpty ? const SizedBox.shrink() : fallback,
+        : BottomBaseline(
+            child: _rounded(
+              e,
+              Image(
+                image: image,
+                width: width,
+                height: height,
+                fit: width != null && height != null
+                    ? BoxFit.fill
+                    : BoxFit.contain,
+                errorBuilder: (_, _, _) =>
+                    alt.isEmpty ? const SizedBox.shrink() : fallback,
+              ),
+              width,
             ),
-            width,
           );
     final loose = Align(
       alignment: _alignmentOf(e),

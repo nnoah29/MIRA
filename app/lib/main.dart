@@ -18,7 +18,7 @@ import 'state/folder_map.dart';
 import 'state/mail_notifier.dart';
 import 'state/store.dart';
 import 'theme/app_theme.dart';
-import 'ui/shell.dart';
+import 'ui/app_root.dart';
 
 const _forceW = int.fromEnvironment('KM_W');
 const _forceH = int.fromEnvironment('KM_H', defaultValue: 800);
@@ -113,7 +113,7 @@ class MiraApp extends StatelessWidget {
               ),
             )
           : child!,
-      home: const Shell(),
+      home: const AppRoot(),
     );
   }
 }

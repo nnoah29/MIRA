@@ -158,7 +158,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
         srow(
           t('Langue de l’application'),
           t(
-            'Choisis la langue de l’interface. Les messages fictifs restent en français.',
+            'Choisis la langue de l’interface et des messages fictifs de la démonstration.',
           ),
           Container(
             decoration: BoxDecoration(border: Border.all(color: p.line)),
@@ -426,6 +426,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
               children: [
                 for (var i = 0; i < _tabs(s.source != null).length; i++)
                   Hov(
+                    key: ValueKey('settings-tab-$i'),
                     onTap: () => setState(() => tab = i),
                     builder: (_, h) {
                       final on = tab == i;

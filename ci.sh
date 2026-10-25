@@ -18,6 +18,9 @@ step "Architecture (5.3, invariants 1-3)"
 step "Motifs interdits"
 "$root/tools/check-forbidden-patterns"
 
+step "Traductions de l'app (couverture de chaque langue)"
+"$root/tools/i18n-audit"
+
 cd "$root/engine"
 step "Formatage"
 cargo fmt --all --check

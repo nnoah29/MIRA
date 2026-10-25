@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import '../data/format.dart';
 import '../data/html_lite.dart';
 import '../data/models.dart';
+import '../i18n/i18n.dart';
 import '../state/local_labels.dart' show localLabelPrefix;
 import '../state/search_filters.dart';
 import 'account_admin.dart';
@@ -477,7 +478,7 @@ class EngineMailSource implements MailSource {
       from: from,
       to: d.to,
       cc: d.cc,
-      subject: d.subject.trim().isEmpty ? '(sans objet)' : d.subject,
+      subject: d.subject.trim().isEmpty ? t('(sans objet)') : d.subject,
       date: d.updatedAt,
       msgs: [
         Msg(from: from, date: d.updatedAt, body: body, att: d.attachments),
@@ -852,9 +853,9 @@ class EngineMailSource implements MailSource {
       m.loaded = true;
     }
     onProgress?.call();
-    _trace('corps ${m.ref}', clock);
+    _trace('corps ${m.ref}', clock); // i18n:ignore
     await _loadAttachments(m);
-    _trace('pièces jointes ${m.ref}', clock);
+    _trace('pièces jointes ${m.ref}', clock); // i18n:ignore
     return true;
   }
 

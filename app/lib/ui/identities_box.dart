@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../engine/engine_client.dart';
 import '../state/alias_hints.dart';
 import '../state/store.dart';
+import '../i18n/engine_errors.dart';
 import '../i18n/i18n.dart';
 import '../theme/app_theme.dart';
 import 'account_form_widgets.dart';
@@ -57,8 +58,7 @@ class _IdentitiesBoxState extends State<IdentitiesBox> {
     }
   }
 
-  String _msg(Object e) =>
-      e is EngineException ? e.message : t('Erreur inattendue : {0}', ['$e']);
+  String _msg(Object e) => engineErrorText(e);
 
   Future<void> _run(Future<void> Function() job, {String? done}) async {
     setState(() {
@@ -80,7 +80,7 @@ class _IdentitiesBoxState extends State<IdentitiesBox> {
   Future<void> _add() => _run(() async {
     final address = newAddress.text.trim();
     if (!_addr.hasMatch(address)) {
-      throw EngineException(
+      throw EngineException.local(
         'invalid_input.address',
         t('Adresse e-mail invalide.'),
       );

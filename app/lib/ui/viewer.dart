@@ -823,7 +823,7 @@ class _Page extends StatelessWidget {
                 ),
               ),
               Text(
-                'PAGE $n / $total',
+                t('PAGE {0} / {1}', [n, total]),
                 style: Fonts.mono(
                   size: 8 * z,
                   color: soft,

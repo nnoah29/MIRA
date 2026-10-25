@@ -39,6 +39,7 @@ Answer answerTo(MailStore s, String q) {
   bool has(String re) => RegExp(re).hasMatch(ql);
 
   if (has(r'r[ée]sum|summar')) {
+    // i18n:ignore
     if (m == null) return Answer(needCtx);
     final body = plainOf(last!.body);
     final atts = m.msgs.expand((x) => x.att).toList();
@@ -59,7 +60,7 @@ Answer answerTo(MailStore s, String q) {
     );
   }
   if (has(
-    r'r[ée]dig|r[ée]ponds|r[ée]ponse|brouillon|[ée]cris|write|draft|repl',
+    r'r[ée]dig|r[ée]ponds|r[ée]ponse|brouillon|[ée]cris|write|draft|repl', // i18n:ignore
   )) {
     if (m == null || m.folder == 'drafts') return Answer(needCtx);
     final first = (isMine(last!.from.email) ? m.to[0] : last.from).name.split(
@@ -94,6 +95,7 @@ Answer answerTo(MailStore s, String q) {
     );
   }
   if (has(r'urgent|prioritaire|[àa] r[ée]pondre|trie|priority|to reply')) {
+    // i18n:ignore
     final l = inbox.where((x) => x.flags.contains('needs')).toList()
       ..sort((a, b) => b.date - a.date);
     return l.isNotEmpty

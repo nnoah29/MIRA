@@ -1,0 +1,292 @@
+#!/usr/bin/env python3
+"""Audit de la traduction de l'app : textes utilisés par `t()` / `tn()` contre textes traduits, textes français écrits en dur.
+
+Usage : i18n-audit [--json] [--lang CODE]... [dossier-app]   (code de sortie 1 s'il manque une traduction ou un texte)
+        i18n-audit --init CODE [dossier-app]                  crée lib/i18n/lang/CODE.dart avec tous les textes, à traduire
+Le français est la langue source : chaque texte de l'app est sa propre clé de traduction (`t('Texte')`).
+`tkey('Texte')` déclare un texte affiché plus tard par `t(valeur)` ; dans un contexte constant, `// i18n:key N` sur la ligne (N : rang du littéral, tous si absent) ou un bloc
+`// i18n:keys-begin` … `// i18n:keys-end` d'entrées `'code': 'texte'` (les textes sont des clés). Un fichier entier de contenu fictif (démonstration) porte `// i18n:ignore-file`. Un texte français volontairement hors traduction
+(motif de recherche, donnée de démonstration…) porte `// i18n:ignore` sur sa ligne.
+"""
+import glob, json, os, re, sys
+
+ACCENTS = re.compile(r"[àâäçéèêëîïôöùûüÿœÀÂÇÉÈÊËÎÏÔÙÛÜŒ’…«»]")
+FR_WORDS = re.compile(r"\b(le|la|les|des|du|un|une|et|ou|pour|avec|sans|vous|ton|ta|tes|votre|est|pas|sur|dans|aucun|aucune|nouveau|erreur|impossible|choisis|ajouter|supprimer|enregistrer|annuler|fermer)\b", re.I)
+PLURAL_SUFFIX = re.compile(r"#(zero|one|two|few|many|other)$")
+SINK_CALLS = {"Text", "toast", "Btn", "Mono", "SnackBar", "Tooltip"}
+SINK_NAMES = {"label", "tip", "hint", "hintText", "tooltip", "title", "subtitle", "semanticLabel", "text", "message", "labelText", "helperText", "errorText"}
+IGNORE_DIRS = ("lib/src/rust/", "lib/i18n/lang/")
+
+
+def skip_string(src, i):
+    """Position qui suit le littéral de chaîne simple commençant en `i` (dans une interpolation)."""
+    q = src[i]
+    i += 1
+    while i < len(src) and src[i] != q:
+        i += 2 if src[i] == "\\" else 1
+    return i + 1
+
+
+def tokenize(src, base=0):
+    """Rend les jetons `(genre, début, fin, texte, interpolé)` ; le code des interpolations `${…}` est lui aussi découpé."""
+    out, i, n = [], 0, len(src)
+    while i < n:
+        c = src[i]
+        if src.startswith("//", i):
+            i = src.find("\n", i)
+            i = n if i < 0 else i
+        elif src.startswith("/*", i):
+            i = src.find("*/", i)
+            i = n if i < 0 else i + 2
+        elif c in "'\"" or (c == "r" and i + 1 < n and src[i + 1] in "'\"" and not (i and (src[i - 1].isalnum() or src[i - 1] == "_"))):
+            raw = c == "r"
+            start = i
+            if raw:
+                i += 1
+            q = src[i]
+            triple = src.startswith(q * 3, i)
+            i += 3 if triple else 1
+            buf, interp, inner = [], False, []
+            while i < n:
+                ch = src[i]
+                if ch == "\\" and not raw:
+                    nxt = src[i + 1] if i + 1 < n else ""
+                    buf.append({"n": "\n", "t": "\t"}.get(nxt, nxt))
+                    i += 2
+                    continue
+                if (src.startswith(q * 3, i) if triple else ch == q):
+                    i += 3 if triple else 1
+                    break
+                if ch == "$" and not raw and i + 1 < n and (src[i + 1] == "{" or src[i + 1].isalpha() or src[i + 1] == "_"):
+                    interp = True
+                    if src[i + 1] == "{":
+                        depth, i = 1, i + 2
+                        begin = i
+                        while i < n and depth:
+                            if src[i] in "'\"":
+                                i = skip_string(src, i)
+                                continue
+                            depth += {"{": 1, "}": -1}.get(src[i], 0)
+                            i += 1
+                        inner.extend(tokenize(src[begin:i - 1], base + begin))
+                    else:
+                        i += 1
+                        while i < n and (src[i].isalnum() or src[i] == "_"):
+                            i += 1
+                    buf.append("\x00")
+                    continue
+                buf.append(ch)
+                i += 1
+            out.append(("str", start + base, i + base, "".join(buf), interp))
+            out.extend(inner)
+        elif c.isalpha() or c == "_":
+            j = i
+            while j < n and (src[j].isalnum() or src[j] == "_"):
+                j += 1
+            out.append(("id", i + base, j + base, src[i:j], False))
+            i = j
+        else:
+            if not c.isspace():
+                out.append(("p", i + base, i + base + 1, c, False))
+            i += 1
+    return out
+
+
+def first_args(toks, k, count):
+    """Littéraux et expressions des `count` premiers arguments de l'appel dont `(` est à toks[k]."""
+    args, cur, depth = [], [], 0
+    for tok in toks[k + 1:]:
+        if tok[0] == "p" and tok[3] in "([{":
+            depth += 1
+        elif tok[0] == "p" and tok[3] in ")]}":
+            if depth == 0:
+                break
+            depth -= 1
+        elif tok[0] == "p" and tok[3] == "," and depth == 0:
+            args.append(cur)
+            cur = []
+            if len(args) == count:
+                return args
+            continue
+        cur.append(tok)
+    args.append(cur)
+    return args[:count]
+
+
+def analyse(root):
+    used, dynamic, hard = {}, [], []
+    files = [f for f in glob.glob(os.path.join(root, "lib/**/*.dart"), recursive=True)
+             if not any(os.path.relpath(f, root).startswith(d) for d in IGNORE_DIRS)]
+    for f in sorted(files):
+        src = open(f, encoding="utf-8").read()
+        rel = os.path.relpath(f, root)
+        line = lambda pos: src.count("\n", 0, pos) + 1
+        text_lines = src.split("\n")
+        demo_file = "i18n:ignore-file" in src
+        toks = tokenize(src)
+        inside = set()
+        for k, tok in enumerate(toks):
+            if tok[0] != "id" or tok[3] not in ("t", "tn", "tkey"):
+                continue
+            prev = toks[k - 1] if k else None
+            if prev and (prev[0] == "p" and prev[3] == "." or prev[0] == "id" and prev[3] in ("String", "void", "Widget", "int", "bool")):
+                continue
+            if k + 1 >= len(toks) or toks[k + 1][3] != "(":
+                continue
+            wanted = (1, 2) if tok[3] == "tn" else (0,)
+            args = first_args(toks, k + 1, 3)
+            for idx in wanted:
+                if idx >= len(args):
+                    continue
+                lits = [x for x in args[idx] if x[0] == "str"]
+                for x in lits:
+                    inside.add(x[1])
+                    if x[4]:
+                        dynamic.append((rel, line(x[1]), "clé interpolée : " + x[3].replace("\x00", "${…}")))
+                    else:
+                        used.setdefault(x[3], []).append((rel, line(x[1])))
+                if not lits:
+                    dynamic.append((rel, line(tok[1]), "clé calculée (non vérifiable)"))
+        blocks = [
+            (m.end(), src.index("// i18n:keys-end", m.end()))
+            for m in re.finditer(r"// i18n:keys-begin[^\n]*\n", src)
+        ]
+        for begin, end in blocks:
+            region = [x for x in toks if x[0] == "str" and begin <= x[1] < end]
+            for x in region[1::2]:
+                used.setdefault(x[3], []).append((rel, line(x[1])))
+                inside.add(x[1])
+            for x in region[0::2]:
+                inside.add(x[1])
+        sink = set()
+        for k, tok in enumerate(toks[:-2]):
+            nxt = toks[k + 1:k + 3]
+            direct = tok[0] == "id" and tok[3] in SINK_CALLS and nxt[0][3] == "(" and nxt[1][0] == "str"
+            named = tok[0] == "id" and tok[3] in SINK_NAMES and nxt[0][3] == ":" and nxt[1][0] == "str"
+            if direct or named:
+                sink.add(nxt[1][1])
+        for tok in toks:
+            if tok[0] != "str" or tok[1] in inside:
+                continue
+            text = tok[3].replace("\x00", "")
+            if len(text.strip()) < 3:
+                continue
+            marked = text_lines[line(tok[1]) - 1]
+            if demo_file and "i18n:key" not in marked:
+                continue
+            declared = re.search(r"i18n:key(?: (\d+))?", marked)
+            if declared:
+                rank = [x for x in toks if x[0] == "str" and line(x[1]) == line(tok[1])].index(tok) + 1
+                if declared.group(1) in (None, str(rank)):
+                    used.setdefault(tok[3], []).append((rel, line(tok[1])))
+                continue
+            if "i18n:ignore" in marked or "i18n:ignore" in text_lines[min(line(tok[1]), len(text_lines) - 1)]:
+                continue
+            looks_texty = re.search(r"[A-Za-zÀ-ÿ]{3}", text) and not re.fullmatch(r"[a-z0-9_./:#@%$\-]+|[A-Z0-9_]+", text.strip())
+            if tok[1] in sink and looks_texty or ACCENTS.search(text) or len(FR_WORDS.findall(text)) >= 2:
+                hard.append((rel, line(tok[1]), tok[3].replace("\x00", "${…}")))
+    return used, dynamic, hard
+
+
+def load_lang(root, code):
+    path = os.path.join(root, f"lib/i18n/lang/{code}.dart")
+    if not os.path.exists(path):
+        path = os.path.join(root, f"lib/i18n/{code}.dart")
+    table, key, buf, part = {}, None, [], "key"
+    for tok in tokenize(open(path, encoding="utf-8").read()):
+        if tok[0] == "str":
+            buf.append(tok[3])
+        elif tok[0] == "p" and tok[3] == ":" and part == "key" and buf:
+            key, buf, part = "".join(buf), [], "value"
+        elif tok[0] == "p" and tok[3] == "," and part == "value":
+            table[key] = "".join(buf)
+            key, buf, part = None, [], "key"
+        elif tok[0] != "str" and part == "key":
+            buf = []
+    return table
+
+
+def placeholders(text):
+    return set(re.findall(r"\{\d+\}", text))
+
+
+def lang_codes(root):
+    files = glob.glob(os.path.join(root, "lib/i18n/lang/*.dart"))
+    return sorted(os.path.splitext(os.path.basename(f))[0] for f in files)
+
+
+def init_language(root, code, used):
+    path = os.path.join(root, f"lib/i18n/lang/{code}.dart")
+    if os.path.exists(path):
+        sys.exit(f"{path} existe déjà")
+    quote = lambda x: "'" + x.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n").replace("$", "\\$") + "'"
+    rows = "".join(f"  {quote(k)}: '',\n" for k in sorted(used) if k.strip())
+    open(path, "w", encoding="utf-8").write(
+        f"// Traductions françaises → {code} : un texte vide n'est pas traduit (l'app montre alors la langue de repli).\n"
+        f"const Map<String, String> {code}Strings = {{\n{rows}}};\n")
+    print(f"{path} créé avec {len(used)} textes ; ajoute `{code}(...)` à l'enum AppLang (docs/I18N.md)")
+
+
+def app_languages(root):
+    """Codes des langues déclarées dans l'enum `AppLang`."""
+    text = open(os.path.join(root, "lib/i18n/i18n.dart"), encoding="utf-8").read()
+    return [c for c in re.findall(r"^\s+\w+\('(\w+)', '\w+', '[^']+', ", text, re.M) ]
+
+
+def packaging_gaps(root, codes):
+    """Traductions manquantes des métadonnées du paquet Linux : le texte par défaut est l'anglais."""
+    base = os.path.join(root, "..", "packaging", "common")
+    desktop = open(os.path.join(base, "io.github.nnoah29.Mira.desktop"), encoding="utf-8").read()
+    meta = open(os.path.join(base, "io.github.nnoah29.Mira.metainfo.xml"), encoding="utf-8").read()
+    description = re.search(r"<description>(.*?)</description>", meta, re.S).group(1)
+    default_items = len(re.findall(r"<(?:p|li)>", description))
+    gaps = {}
+    for code in codes:
+        if code == "en":
+            continue
+        missing = [f"{key}[{code}]" for key in ("GenericName", "Comment", "Keywords") if f"{key}[{code}]=" not in desktop]
+        if f'<summary xml:lang="{code}">' not in meta:
+            missing.append(f"summary xml:lang={code}")
+        if len(re.findall(rf'<(?:p|li) xml:lang="{code}">', description)) != default_items:
+            missing.append(f"description xml:lang={code} ({default_items} paragraphes et puces)")
+        if missing:
+            gaps[code] = missing
+    return gaps
+
+
+def main():
+    argv = sys.argv[1:]
+    as_json = "--json" in argv
+    langs = [argv[i + 1] for i, a in enumerate(argv) if a == "--lang"]
+    init = [argv[i + 1] for i, a in enumerate(argv) if a == "--init"]
+    paths = [a for a in argv if not a.startswith("--") and a not in langs + init]
+    root = paths[0] if paths else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "app")
+    used, dynamic, hard = analyse(root)
+    if init:
+        init_language(root, init[0], used)
+        return 0
+    langs = langs or lang_codes(root)
+    report = {"keys": len(used), "dynamic": dynamic, "hardcoded": hard, "languages": {}, "packaging": packaging_gaps(root, app_languages(root))}
+    for code in langs:
+        table = load_lang(root, code)
+        report["languages"][code] = {
+            "missing": sorted(k for k in used if k.strip() and not table.get(k, "").strip()),
+            "unused": sorted(k for k in table if PLURAL_SUFFIX.sub("", k) not in used),
+            "placeholders": sorted(k for k, v in table.items() if v and not placeholders(v) <= placeholders(k)),
+        }
+    if as_json:
+        print(json.dumps(report, ensure_ascii=False, indent=1))
+    else:
+        print(f"{len(used)} textes utilisés par t()/tn()/tkey(), {len(dynamic)} appels à clé calculée, {len(hard)} textes français écrits en dur")
+        for code, r in report["languages"].items():
+            print(f"[{code}] manquants : {len(r['missing'])}, paramètres incohérents : {len(r['placeholders'])}, traduits mais inutilisés : {len(r['unused'])}")
+        for code, gaps in report["packaging"].items():
+            print(f"[{code}] paquet Linux : " + ", ".join(gaps))
+        for rel, lineno, text in hard[:20]:
+            print(f"  en dur : {rel}:{lineno}  {text[:70]}")
+    bad = bool(hard) or bool(report["packaging"]) or any(r["missing"] or r["placeholders"] for r in report["languages"].values())
+    return 1 if bad else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

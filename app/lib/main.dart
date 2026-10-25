@@ -31,8 +31,9 @@ Future<void> main() async {
   GoogleFonts.config.allowRuntimeFetching =
       false; // polices embarquées dans assets/google_fonts
   await Fonts.preload();
-  await initializeDateFormatting('fr_FR');
-  await initializeDateFormatting('en_US');
+  for (final l in AppLang.values) {
+    await initializeDateFormatting(l.dateLocale);
+  }
   final prefs = await SharedPreferences.getInstance();
   final source = await openEngineSource(prefs);
   final store = MailStore(prefs, watchWallpaper: true, source: source);
@@ -58,7 +59,9 @@ Future<MailSource?> openEngineSource(SharedPreferences prefs) async {
       folderMap: decodeFolderMap(prefs.getString('folderMap')),
     );
   } catch (e) {
-    stderr.writeln('MIRA : moteur indisponible, données de démonstration ($e)');
+    stderr.writeln(
+      'MIRA : moteur indisponible, données de démonstration ($e)',
+    ); // i18n:ignore
     return null;
   }
 }
@@ -68,7 +71,7 @@ Future<Uint8List> androidSecretsKey() async {
   final key = await const MethodChannel('mira/keystore')
       .invokeMethod<Uint8List>('secretsKey');
   if (key == null || key.length != 32) {
-    throw StateError('clé du trousseau indisponible');
+    throw StateError('clé du trousseau indisponible'); // i18n:ignore
   }
   return key;
 }
@@ -88,7 +91,7 @@ class MiraApp extends StatelessWidget {
       theme: buildTheme(dark, accent: accent, pal: wall),
       themeAnimationDuration: Duration.zero,
       locale: lang.locale,
-      supportedLocales: const [Locale('fr'), Locale('en')],
+      supportedLocales: [for (final l in AppLang.values) l.locale],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

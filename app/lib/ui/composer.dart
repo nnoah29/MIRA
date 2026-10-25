@@ -102,7 +102,7 @@ class _ComposerState extends State<Composer> {
       }
       s.touch();
     } catch (_) {
-      s.toast('Impossible d’ouvrir le sélecteur de fichiers', err: true);
+      s.toast(t('Impossible d’ouvrir le sélecteur de fichiers'), err: true);
     }
   }
 

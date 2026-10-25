@@ -283,7 +283,11 @@ void showSnoozePop(BuildContext anchor) {
 void showSchedPop(BuildContext anchor) {
   Pops.show(anchor, 'sched', (ctx, close) {
     final s = ctx.read<MailStore>();
-    final items = ['Dans 1 heure', 'Demain 08:00', 'Lundi 08:00']; // clés FR
+    final items = [
+      tkey('Dans 1 heure'),
+      tkey('Demain 08:00'),
+      tkey('Lundi 08:00'),
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -896,7 +900,12 @@ Future<void> showAddAccountDialog(BuildContext context) async {
                       style: Fonts.sans(size: 13.5, color: p.dim),
                     ),
                     const SizedBox(height: 20),
-                    field(t('Nom'), name, hint: 'Noah Toffa', autofocus: true),
+                    field(
+                      t('Nom'),
+                      name,
+                      hint: 'Noah Toffa', // i18n:ignore
+                      autofocus: true,
+                    ),
                     field(
                       t('Adresse e-mail'),
                       email,

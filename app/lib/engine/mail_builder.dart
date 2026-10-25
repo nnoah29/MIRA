@@ -1,4 +1,5 @@
 import '../data/models.dart';
+import '../i18n/i18n.dart';
 import 'mappers.dart';
 
 /// Regroupe des résumés du moteur en conversations de l'interface, pour un dossier donné.
@@ -39,7 +40,7 @@ Mail _conversation(
     to: peopleOf(last['to']),
     cc: peopleOf(last['cc']),
     subject: '${last['subject']}'.isEmpty
-        ? '(sans objet)'
+        ? t('(sans objet)')
         : '${last['subject']}',
     date: _dateOf(last),
     unread: sorted.any((m) => (m['flags'] as Map?)?['seen'] != true),

@@ -233,7 +233,7 @@ void main() {
       expect(find.byKey(const ValueKey('form-info')), findsOneWidget);
       expect(engine.last('account.add_account'), isNull);
       engine.failWith = const EngineException(
-        'auth.failed',
+        'authentication.rejected',
         'Identifiants refusés par le serveur',
       );
       await tester.tap(find.byKey(const ValueKey('btn-test')));

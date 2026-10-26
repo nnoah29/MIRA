@@ -54,6 +54,8 @@ class SettingsPanel extends StatefulWidget {
 
 class _SettingsPanelState extends State<SettingsPanel> {
   int tab = 0;
+  final _pageCtl = PageController();
+  final _tabKeys = <int, GlobalKey>{};
   final ruleDraft = ValueNotifier<Rule?>(null);
   late final TextEditingController sigCtl;
 
@@ -67,7 +69,66 @@ class _SettingsPanelState extends State<SettingsPanel> {
   void dispose() {
     sigCtl.dispose();
     ruleDraft.dispose();
+    _pageCtl.dispose();
     super.dispose();
+  }
+
+  /// Change d'onglet : la page glisse si l'onglet est voisin, saute sinon.
+  void _goTo(int i) {
+    final far = (i - tab).abs() > 1;
+    setState(() => tab = i);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _revealTab(i));
+    if (!_pageCtl.hasClients) return;
+    if (far) return _pageCtl.jumpToPage(i);
+    _pageCtl.animateToPage(
+      i,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  /// Suit le doigt : met à jour l'onglet actif quand une page s'est installée.
+  void _pageChanged(int i) {
+    if (i == tab) return;
+    setState(() => tab = i);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _revealTab(i));
+  }
+
+  /// Recale la page affichée si l'onglet a changé sans geste (ex. ajout de compte).
+  void _syncPage() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_pageCtl.hasClients) return;
+      final page = _pageCtl.page;
+      if (page == null || page == tab.toDouble()) return;
+      if (_pageCtl.position.isScrollingNotifier.value) return;
+      _pageCtl.jumpToPage(tab);
+    });
+  }
+
+  /// Pages d'onglets qui suivent le doigt (mobile).
+  Widget _pagedContent(int count, double hp, Widget Function(int) contentFor) {
+    _syncPage();
+    return PageView.builder(
+      controller: _pageCtl,
+      itemCount: count,
+      onPageChanged: _pageChanged,
+      itemBuilder: (_, i) => ScrollArea(
+        key: ValueKey('settings-page-$i'),
+        padding: EdgeInsets.fromLTRB(hp, 0, hp, 40),
+        child: contentFor(i),
+      ),
+    );
+  }
+
+  /// Fait défiler la barre d'onglets pour montrer l'onglet choisi.
+  void _revealTab(int i) {
+    final ctx = _tabKeys[i]?.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(
+      ctx,
+      alignment: .5,
+      duration: const Duration(milliseconds: 200),
+    );
   }
 
   @override
@@ -159,9 +220,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
     if (s.wantsAddAccount && s.source != null) tab = 3;
     final aboutTab = _tabs(s.source != null).length - 1;
-    final content = tab == aboutTab
+    Widget contentFor(int index) => index == aboutTab
         ? box([const AboutSettings()])
-        : switch (tab) {
+        : switch (index) {
             0 => box([
               srow(
                 t('Langue de l’application'),
@@ -464,46 +525,51 @@ class _SettingsPanelState extends State<SettingsPanel> {
             child: Row(
               children: [
                 for (var i = 0; i < _tabs(s.source != null).length; i++)
-                  Hov(
-                    key: ValueKey('settings-tab-$i'),
-                    onTap: () => setState(() => tab = i),
-                    builder: (_, h) {
-                      final on = tab == i;
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 130),
-                        padding: const EdgeInsets.fromLTRB(2, 10, 2, 11),
-                        margin: const EdgeInsets.only(right: 28),
-                        decoration: BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(
-                              color: on ? p.accent : Colors.transparent,
-                              width: 2,
+                  KeyedSubtree(
+                    key: _tabKeys.putIfAbsent(i, GlobalKey.new),
+                    child: Hov(
+                      key: ValueKey('settings-tab-$i'),
+                      onTap: () => _goTo(i),
+                      builder: (_, h) {
+                        final on = tab == i;
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 130),
+                          padding: const EdgeInsets.fromLTRB(2, 10, 2, 11),
+                          margin: const EdgeInsets.only(right: 28),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: on ? p.accent : Colors.transparent,
+                                width: 2,
+                              ),
                             ),
                           ),
-                        ),
-                        child: Mono(
-                          _tabs(s.source != null)[i],
-                          ls: .14,
-                          color: on ? p.accent : (h ? p.text : p.muted),
-                          height: null,
-                        ),
-                      );
-                    },
+                          child: Mono(
+                            _tabs(s.source != null)[i],
+                            ls: .14,
+                            color: on ? p.accent : (h ? p.text : p.muted),
+                            height: null,
+                          ),
+                        );
+                      },
+                    ),
                   ),
               ],
             ),
           ),
         ),
         Expanded(
-          child: ScrollArea(
-            padding: EdgeInsets.fromLTRB(hp, 0, hp, 40),
-            child: FadeSlideIn(
-              key: ValueKey(tab),
-              from: const Offset(0, 8),
-              duration: const Duration(milliseconds: 220),
-              child: content,
-            ),
-          ),
+          child: w <= 760
+              ? _pagedContent(_tabs(s.source != null).length, hp, contentFor)
+              : ScrollArea(
+                  padding: EdgeInsets.fromLTRB(hp, 0, hp, 40),
+                  child: FadeSlideIn(
+                    key: ValueKey(tab),
+                    from: const Offset(0, 8),
+                    duration: const Duration(milliseconds: 220),
+                    child: contentFor(tab),
+                  ),
+                ),
         ),
       ],
     );

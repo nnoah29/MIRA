@@ -107,62 +107,95 @@ class _ContactRowState extends State<_ContactRow> {
   @override
   Widget build(BuildContext context) {
     final s = context.read<MailStore>();
-    final p = context.pal;
     final e = widget.entry;
+    final mobile = MediaQuery.sizeOf(context).width <= 760;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
+      padding: EdgeInsets.only(bottom: mobile ? 18 : 10),
+      child: mobile ? _stacked(s, e) : _inline(s, e),
+    );
+  }
+
+  /// Ligne sur une seule rangée (grand écran).
+  Widget _inline(MailStore s, ContactEntry e) => Row(
+    children: [
+      Avatar(_typed.isEmpty ? e.email : _typed, size: 36),
+      const SizedBox(width: 14),
+      SizedBox(width: 230, child: _nameField(e)),
+      const SizedBox(width: 14),
+      Expanded(child: _info(e)),
+      const SizedBox(width: 12),
+      _deleteButton(s, e),
+      const SizedBox(width: 8),
+      _saveButton(s, e),
+    ],
+  );
+
+  /// Ligne sur trois niveaux : nom et corbeille, détails, enregistrement (mobile).
+  Widget _stacked(MailStore s, ContactEntry e) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
         children: [
           Avatar(_typed.isEmpty ? e.email : _typed, size: 36),
           const SizedBox(width: 14),
-          SizedBox(
-            width: 230,
-            child: FormField2(
-              fieldKey: ValueKey('contact-name-${e.email}'),
-              label: '',
-              hint: e.email,
-              controller: name,
-              onChanged: (_) => setState(() {}),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  e.email,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Fonts.sans(size: 14, color: p.text),
-                ),
-                Mono(
-                  '${t('{0} messages', ['${e.count}'])} · ${rowTime(e.last)}',
-                  size: 10.5,
-                  height: null,
-                  color: p.dim,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          IBtn(
-            'trash',
-            key: ValueKey('contact-delete-${e.email}'),
-            tip: t('Supprimer ce contact'),
-            onTap: () {
-              s.forgetContact(e.email);
-              s.toast(t('Contact supprimé'));
-            },
-          ),
+          Expanded(child: _nameField(e)),
           const SizedBox(width: 8),
-          Btn(
-            key: ValueKey('contact-save-${e.email}'),
-            label: t('Enregistrer'),
-            onTap: _changed ? () => _save(s) : null,
-          ),
+          _deleteButton(s, e),
         ],
       ),
-    );
-  }
+      const SizedBox(height: 8),
+      Padding(padding: const EdgeInsets.only(left: 50), child: _info(e)),
+      const SizedBox(height: 8),
+      Padding(
+        padding: const EdgeInsets.only(left: 50),
+        child: _saveButton(s, e),
+      ),
+    ],
+  );
+
+  /// Champ de saisie du nom affiché du contact.
+  Widget _nameField(ContactEntry e) => FormField2(
+    fieldKey: ValueKey('contact-name-${e.email}'),
+    label: '',
+    hint: e.email,
+    controller: name,
+    onChanged: (_) => setState(() {}),
+  );
+
+  /// Adresse du contact, nombre de messages et date du dernier.
+  Widget _info(ContactEntry e) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        e.email,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Fonts.sans(size: 14, color: context.pal.text),
+      ),
+      Mono(
+        '${t('{0} messages', ['${e.count}'])} · ${rowTime(e.last)}',
+        size: 10.5,
+        height: null,
+        color: context.pal.dim,
+      ),
+    ],
+  );
+
+  /// Bouton d'oubli du contact.
+  Widget _deleteButton(MailStore s, ContactEntry e) => IBtn(
+    'trash',
+    key: ValueKey('contact-delete-${e.email}'),
+    tip: t('Supprimer ce contact'),
+    onTap: () {
+      s.forgetContact(e.email);
+      s.toast(t('Contact supprimé'));
+    },
+  );
+
+  /// Bouton d'enregistrement du nom, actif seulement s'il a changé.
+  Widget _saveButton(MailStore s, ContactEntry e) => Btn(
+    key: ValueKey('contact-save-${e.email}'),
+    label: t('Enregistrer'),
+    onTap: _changed ? () => _save(s) : null,
+  );
 }

@@ -8,6 +8,7 @@ import 'package:mira/i18n/i18n.dart';
 import 'package:mira/main.dart';
 import 'package:mira/state/store.dart';
 import 'package:mira/theme/app_theme.dart';
+import 'package:mira/ui/step_animator.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -37,6 +38,8 @@ Future<void> teardown(WidgetTester tester, MailStore store) async {
 }
 
 void main() {
+  setUpAll(() => StepAnimator.frameCap = null);
+
   testWidgets('démarrage : liste, premier message ouvert, compteurs', (
     tester,
   ) async {

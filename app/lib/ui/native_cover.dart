@@ -1,13 +1,19 @@
+import 'dart:io';
+
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 /// Les vues natives (vue web GTK sous Linux) sont posées par-dessus Flutter : ce que Flutter superpose passerait dessous.
 /// Les popovers ouverts publient ici leur rectangle à l'écran, les modales hors navigateur leur nombre.
 class NativeCover {
+  /// Sous Android, les vues natives se composent avec Flutter : rien à replier ni à masquer.
+  static final bool active = Platform.isLinux;
+
   static final covers = ValueNotifier<Map<Object, Rect>>(const {});
   static final modals = ValueNotifier<int>(0);
 
   static void _set(Object id, Rect? rect) => _later(() {
+    if (!active) return;
     final next = Map.of(covers.value);
     rect == null ? next.remove(id) : next[id] = rect;
     covers.value = next;
@@ -41,7 +47,9 @@ class _CoversNativeViewsState extends State<CoversNativeViews> {
   void initState() {
     super.initState();
     if (widget.modal) {
-      NativeCover._later(() => NativeCover.modals.value++);
+      NativeCover._later(() {
+        if (NativeCover.active) NativeCover.modals.value++;
+      });
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) => _publish());
     }
@@ -57,7 +65,9 @@ class _CoversNativeViewsState extends State<CoversNativeViews> {
   @override
   void dispose() {
     if (widget.modal) {
-      NativeCover._later(() => NativeCover.modals.value--);
+      NativeCover._later(() {
+        if (NativeCover.active) NativeCover.modals.value--;
+      });
     } else {
       NativeCover._set(this, null);
     }

@@ -15,8 +15,8 @@ final _heavyCss = RegExp(
   r'(@media|@font-face|position\s*:\s*(absolute|fixed)|float\s*:|background(-image)?\s*:[^;"}]*url\()',
 );
 
-/// Sous Linux, le corps HTML s'affiche dans une vraie vue web (WebKitGTK) ; ailleurs, par le moteur de widgets.
-final bool webViewEnabled = Platform.isLinux;
+/// Sous Linux (WebKitGTK) et Android (WebView), le corps HTML s'affiche dans une vraie vue web ; ailleurs, par le moteur de widgets.
+final bool webViewEnabled = Platform.isLinux || Platform.isAndroid;
 
 /// Le HTML est-il assez simple (texte, liens, citations, quelques images) pour se passer de la vue web ?
 bool isSimpleHtml(String html) {

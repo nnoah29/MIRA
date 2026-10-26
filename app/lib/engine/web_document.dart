@@ -16,15 +16,20 @@ const _noOwnScroll =
     '<style>html{overflow-y:hidden !important}'
     'html,body{height:auto !important;min-height:0 !important}</style>';
 
+/// Sur mobile, la page se met en page à la largeur de l'écran (sans cela, la vue la suppose large de 980 px et la réduit).
+const _viewport =
+    '<meta name="viewport" content="width=device-width, initial-scale=1">';
+
 /// Document à afficher dans la vue web : le HTML reçu, tel quel, avec les images `cid:` remplacées par leurs données.
 /// La politique de contenu est la toute première balise, avant tout script que contiendrait le courriel (seul le `doctype` la précède, pour garder le mode de rendu).
 String webDocument(
   String html, {
   required bool remoteImages,
   Map<String, Uint8List> inline = const {},
+  bool viewport = false,
 }) {
   final meta =
-      '<meta http-equiv="Content-Security-Policy" content="${contentPolicy(remoteImages: remoteImages)}">$_noOwnScroll';
+      '<meta http-equiv="Content-Security-Policy" content="${contentPolicy(remoteImages: remoteImages)}">${viewport ? _viewport : ''}$_noOwnScroll';
   final body = _inlineImages(html, inline);
   final doctype = _doctype.firstMatch(body);
   final at = doctype?.end ?? 0;

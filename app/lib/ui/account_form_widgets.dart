@@ -149,8 +149,9 @@ class FormField2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.pal;
+    final mobile = MediaQuery.sizeOf(context).width <= 760;
     return SizedBox(
-      width: width,
+      width: mobile && width != null ? double.infinity : width,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -218,38 +219,48 @@ class Segments<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.pal;
-    return Container(
-      decoration: BoxDecoration(border: Border.all(color: p.line)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final (i, o) in options.indexed)
-            Hov(
-              key: ValueKey('$keyPrefix-${o.$1}'),
-              onTap: () => onChanged(o.$1),
-              builder: (_, h) => Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 9,
-                ),
-                decoration: BoxDecoration(
-                  color: value == o.$1 ? p.accentSoft : null,
-                  border: i > 0
-                      ? Border(left: BorderSide(color: p.line))
-                      : null,
-                ),
-                child: Mono(
-                  o.$2,
-                  ls: .12,
-                  color: value == o.$1 ? p.accent : (h ? p.text : p.muted),
-                  height: null,
-                ),
-              ),
-            ),
-        ],
-      ),
+    final narrow = MediaQuery.sizeOf(context).width <= 760;
+    return LayoutBuilder(
+      builder: (_, box) {
+        final stacked = narrow && box.hasBoundedWidth;
+        final cells = [
+          for (final (i, o) in options.indexed) _cell(p, i, o, stacked),
+        ];
+        return Container(
+          decoration: BoxDecoration(border: Border.all(color: p.line)),
+          child: stacked
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: cells,
+                )
+              : Row(mainAxisSize: MainAxisSize.min, children: cells),
+        );
+      },
     );
   }
+
+  /// Une cellule du choix, séparée de la précédente par un filet.
+  Widget _cell(Pal p, int i, (T, String) o, bool mobile) => Hov(
+    key: ValueKey('$keyPrefix-${o.$1}'),
+    onTap: () => onChanged(o.$1),
+    builder: (_, h) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: BoxDecoration(
+        color: value == o.$1 ? p.accentSoft : null,
+        border: i == 0
+            ? null
+            : mobile
+            ? Border(top: BorderSide(color: p.line))
+            : Border(left: BorderSide(color: p.line)),
+      ),
+      child: Mono(
+        o.$2,
+        ls: .12,
+        color: value == o.$1 ? p.accent : (h ? p.text : p.muted),
+        height: null,
+      ),
+    ),
+  );
 }
 
 /// Libellé lisible d'une méthode d'authentification du moteur.
@@ -324,6 +335,36 @@ class ServerFields extends StatelessWidget {
             ),
           ],
         ),
+      ],
+    );
+  }
+}
+
+/// Deux blocs côte à côte sur grand écran, empilés sur mobile.
+class SideBySide extends StatelessWidget {
+  final double leftWidth;
+  final Widget left, right;
+  const SideBySide({
+    super.key,
+    required this.leftWidth,
+    required this.left,
+    required this.right,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.sizeOf(context).width <= 760) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [left, const SizedBox(height: 10), right],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(width: leftWidth, child: left),
+        const SizedBox(width: 12),
+        Expanded(child: right),
       ],
     );
   }

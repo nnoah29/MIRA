@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart' show LaunchMode, launchUrl;
 
 import '../data/models.dart';
 import '../i18n/i18n.dart';
@@ -30,6 +31,9 @@ Future<bool> openLink(String url) async {
   final uri = Uri.tryParse(url);
   if (uri == null || !const {'http', 'https', 'mailto'}.contains(uri.scheme)) {
     return false;
+  }
+  if (Platform.isAndroid) {
+    return launchUrl(uri, mode: LaunchMode.externalApplication);
   }
   if (!Platform.isLinux) return false;
   await Process.run('xdg-open', [url]);

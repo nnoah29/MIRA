@@ -32,5 +32,6 @@ pub(super) fn action_family(action: &RuleAction) -> &'static str {
         A::AddLocalLabel { .. } | A::RemoveLocalLabel { .. } => "local_labels",
         A::SuppressNotification => "notification",
         A::StopProcessing => "chaining",
+        A::ReplyWithTemplate { .. } => "reply",
     }
 }

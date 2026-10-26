@@ -1,16 +1,16 @@
 //! Monde de test : comptes et boîtes connus, et règle valide de référence.
 
-use crate::support_rules::probe::{cond, rule, text};
+#[allow(unused_imports)]
+pub use crate::support_rules::valid_rule::{valid_rule, with_action};
 use mira_core::rules::validate::RuleWorld;
-use mira_vocabulary::{
-    AccountId, ConditionTest, LocalLabelId, MailboxId, Rule, RuleAction, RuleScope, TextOp,
-};
+use mira_vocabulary::{AccountId, LocalLabelId, MailboxId, TemplateId};
 
 /// Comptes et boîtes (boîte, compte) existants
 pub struct FakeWorld {
     pub accounts: Vec<&'static str>,
     pub mailboxes: Vec<(&'static str, &'static str)>,
     pub labels: Vec<&'static str>,
+    pub templates: Vec<&'static str>,
 }
 
 impl RuleWorld for FakeWorld {
@@ -31,6 +31,11 @@ impl RuleWorld for FakeWorld {
     fn local_label_exists(&self, label: &LocalLabelId) -> bool {
         self.labels.contains(&label.as_str())
     }
+
+    /// Vrai si le modèle figure dans la liste
+    fn template_exists(&self, template: &TemplateId) -> bool {
+        self.templates.contains(&template.as_str())
+    }
 }
 
 /// Monde de référence : acc-1 et acc-2, boîte mb-1 à acc-1, boîte mb-2 à acc-2
@@ -39,25 +44,6 @@ pub fn world() -> FakeWorld {
         accounts: vec!["acc-1", "acc-2"],
         mailboxes: vec![("mb-1", "acc-1"), ("mb-2", "acc-2")],
         labels: vec!["lab-1"],
+        templates: vec!["tpl-1"],
     }
-}
-
-/// Règle correcte limitée à acc-1, qui range dans mb-1
-pub fn valid_rule() -> Rule {
-    let test = ConditionTest::Subject {
-        matcher: text(TextOp::Contains, "facture"),
-    };
-    let actions = vec![RuleAction::MoveTo {
-        mailbox: MailboxId::from_raw("mb-1"),
-    }];
-    let mut result = rule("r1", vec![vec![cond(test)]], actions);
-    result.scope = RuleScope::Accounts(vec![AccountId::from_raw("acc-1")]);
-    result
-}
-
-/// Règle valide dont l'unique action est remplacée
-pub fn with_action(action: RuleAction) -> Rule {
-    let mut rule = valid_rule();
-    rule.actions = vec![action];
-    rule
 }

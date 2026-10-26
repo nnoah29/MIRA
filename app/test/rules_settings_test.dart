@@ -5,9 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mira/engine/engine_client.dart';
 import 'package:mira/engine/rule_admin.dart';
+import 'package:mira/engine/template_admin.dart';
 import 'package:mira/theme/app_theme.dart';
 import 'package:mira/ui/rule_editor.dart';
 import 'package:mira/ui/rules_settings.dart';
+
+import 'fake_template_engine.dart';
 
 Map<String, dynamic> view(String id, bool enabled, Map<String, dynamic> st) => {
   'rule': {
@@ -94,6 +97,7 @@ List<Map> requestsOf(FakeRulesEngine engine, String op) => [
 Future<FakeRulesEngine> pumpList(
   WidgetTester tester, {
   Stream<void> changes = const Stream.empty(),
+  TemplateAdmin? templateAdmin,
 }) async {
   final engine = FakeRulesEngine();
   await tester.binding.setSurfaceSize(const Size(900, 1600));
@@ -107,6 +111,7 @@ Future<FakeRulesEngine> pumpList(
             admin: RuleAdmin(engine),
             accounts: const {'a1': 'a1@example.org'},
             changes: changes,
+            templateAdmin: templateAdmin,
           ),
         ),
       ),
@@ -202,4 +207,13 @@ void main() {
       expect(sent['idempotency_key'], isNotEmpty);
     },
   );
+
+  testWidgets('les modèles sont lus pour l\'action de réponse', (t) async {
+    final templates = FakeTemplateEngine();
+    await pumpList(t, templateAdmin: TemplateAdmin(templates));
+    expect([
+      for (final c in templates.calls)
+        if ((c['request'] as Map)['op'] == 'list_templates') c,
+    ], isNotEmpty);
+  });
 }

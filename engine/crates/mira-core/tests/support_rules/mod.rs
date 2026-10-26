@@ -11,3 +11,4 @@ pub mod builders;
 pub mod fixtures;
 pub mod labels;
 pub mod probe;
+pub mod valid_rule;

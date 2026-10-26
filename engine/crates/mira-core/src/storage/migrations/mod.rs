@@ -18,6 +18,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("v010_label_settings.sql"),
     include_str!("v011_engine_settings.sql"),
     include_str!("v012_message_templates.sql"),
+    include_str!("v013_rule_reply_drafts.sql"),
 ];
 
 /// Applique, dans une transaction, les migrations pas encore appliquées

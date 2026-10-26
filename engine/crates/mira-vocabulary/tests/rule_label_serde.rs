@@ -37,3 +37,17 @@ fn label_actions_are_tagged_and_round_trip() {
     let back: Vec<RuleAction> = serde_json::from_value(shown).unwrap();
     assert_eq!(back, vec![add, remove]);
 }
+
+/// L'action « répondre avec un modèle » est étiquetée `reply_with_template` et survit à un aller-retour
+#[test]
+fn reply_with_template_is_tagged_and_round_trips() {
+    let action = RuleAction::ReplyWithTemplate {
+        template: mira_vocabulary::TemplateId::from_raw("tpl-1"),
+    };
+    let value = serde_json::to_value(&action).unwrap();
+    assert_eq!(
+        value,
+        json!({"type": "reply_with_template", "template": "tpl-1"})
+    );
+    assert_eq!(serde_json::from_value::<RuleAction>(value).unwrap(), action);
+}

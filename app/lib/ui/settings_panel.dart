@@ -403,6 +403,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 admin: s.source!.ruleAdmin!,
                 accounts: {for (final a in s.accounts) a.id: a.email},
                 changes: s.source!.ruleChanges,
+                templateAdmin: s.source!.templateAdmin,
                 labels: [
                   if (s.localLabelsOnEngine)
                     for (final e in s.localLabels.defs.entries)

@@ -1168,6 +1168,12 @@ class MailStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  void openNav() {
+    if (navOpen) return;
+    navOpen = true;
+    notifyListeners();
+  }
+
   void closeNav() {
     if (!navOpen) return;
     navOpen = false;
@@ -1439,6 +1445,9 @@ class MailStore extends ChangeNotifier {
 
   /// Demande Réglages › Comptes avec l'onglet d'ajout ouvert ; consommé par l'écran des comptes.
   bool wantsAddAccount = false;
+
+  /// Retour système consommé par l'écran affiché dans le volet (vrai si traité).
+  bool Function()? paneBack;
 
   /// Ouvre l'ajout de compte : onglet « Ajouter » des réglages des comptes (moteur réel).
   void openAddAccount() {

@@ -21,7 +21,13 @@ final _addr = RegExp(r'^[^\s@<>,;]+@[^\s@<>,;]+\.[^\s@<>,;]+$');
 class IdentitiesBox extends StatefulWidget {
   final AccountDetail account;
   final AccountAdmin admin;
-  const IdentitiesBox({super.key, required this.account, required this.admin});
+  final bool showTitle;
+  const IdentitiesBox({
+    super.key,
+    required this.account,
+    required this.admin,
+    this.showTitle = true,
+  });
 
   @override
   State<IdentitiesBox> createState() => _IdentitiesBoxState();
@@ -204,14 +210,16 @@ class _IdentitiesBoxState extends State<IdentitiesBox> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Mono(
-            t('IDENTITÉS D’ENVOI'),
-            size: 10.5,
-            ls: .12,
-            color: p.muted,
-            height: null,
-          ),
-          const SizedBox(height: 8),
+          if (widget.showTitle) ...[
+            Mono(
+              t('IDENTITÉS D’ENVOI'),
+              size: 10.5,
+              ls: .12,
+              color: p.muted,
+              height: null,
+            ),
+            const SizedBox(height: 8),
+          ],
           if (list == null)
             const SizedBox(
               height: 24,

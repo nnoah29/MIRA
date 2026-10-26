@@ -15,6 +15,7 @@ class RuleEditor extends StatefulWidget {
   final Map<String, String> accounts;
   final Map<String, List<RuleChoice>> mailboxes;
   final List<RuleChoice> labels;
+  final List<RuleChoice> templates;
   final Future<void> Function(Rule) onSave;
   final Future<RulePreview> Function(Rule) onPreview;
   final VoidCallback? onCancel;
@@ -25,6 +26,7 @@ class RuleEditor extends StatefulWidget {
     required this.accounts,
     this.mailboxes = const {},
     this.labels = const [],
+    this.templates = const [],
     required this.onSave,
     required this.onPreview,
     this.onCancel,
@@ -88,6 +90,7 @@ class _RuleEditorState extends State<RuleEditor> {
   /// Boîtes proposées aux actions : celles du seul compte de la portée.
   Map<String, List<RuleChoice>> get _actionOptions => {
     'label': widget.labels,
+    'template': widget.templates,
     'mailbox': _single
         ? widget.mailboxes[_scopeAccounts.single] ?? const []
         : const [],

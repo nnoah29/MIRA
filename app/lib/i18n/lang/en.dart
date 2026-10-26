@@ -60,6 +60,7 @@ const Map<String, String> enStrings = {
   'Plus': 'More',
   'Sélectionner': 'Select',
   'Rien ici': 'Nothing here',
+  'Retour': 'Back',
   'Ce dossier est vide.': 'This folder is empty.',
   'Aucun résultat': 'No results',
   'Aucun message ne correspond à « {0} ».': 'No message matches “{0}”.',
@@ -605,6 +606,7 @@ const Map<String, String> enStrings = {
   'Marquer comme spam': 'Mark as spam',
   'Ne pas notifier': 'Do not notify',
   'Arrêter le traitement': 'Stop processing',
+  'Préparer une réponse avec un modèle': 'Prepare a reply with a template',
   'Choisir…': 'Choose…',
   '{0} (introuvable)': '{0} (not found)',
   '<': '<',
@@ -688,10 +690,12 @@ const Map<String, String> enStrings = {
   'RÉCEPTION · IMAP': 'RECEIVING · IMAP',
   'Réglages détaillés du protocole : IMAP pour recevoir, SMTP pour envoyer.':
       'Detailed protocol settings: IMAP to receive, SMTP to send.',
+  'GÉNÉRAL': 'GENERAL',
   'SERVEUR': 'SERVER',
   'SERVEURS': 'SERVERS',
   'SIGNATURE': 'SIGNATURE',
   'SUPPRESSION': 'DELETION',
+  'SYNCHRONISATION': 'SYNCHRONIZATION',
   'SYNCHRONISER LES … DERNIERS JOURS': 'SYNC THE LAST … DAYS',
   'Saisis le mot de passe.': 'Enter the password.',
   'Saisis une adresse (nom@domaine.com) ou un domaine (domaine.com).':

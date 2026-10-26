@@ -16,6 +16,9 @@ pub fn apply_actions(
             RuleAction::RemoveLocalLabel { label } => change_label(label, false, outcome, labels),
             RuleAction::StopProcessing => stop = true,
             RuleAction::SuppressNotification => outcome.silenced = true,
+            RuleAction::ReplyWithTemplate { template } => {
+                outcome.reply_templates.push(template.clone());
+            }
             other => outcome.actions.extend(translate(other)),
         }
     }
@@ -59,6 +62,7 @@ fn translate(action: &RuleAction) -> Option<ActionKind> {
         RuleAction::AddLocalLabel { .. }
         | RuleAction::RemoveLocalLabel { .. }
         | RuleAction::SuppressNotification
+        | RuleAction::ReplyWithTemplate { .. }
         | RuleAction::StopProcessing => None,
     }
 }

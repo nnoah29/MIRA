@@ -12,7 +12,9 @@ pub(crate) mod state;
 mod threading;
 
 pub use attachments::{MAX_ATTACHMENT_BYTES, attach_file, remove_attachment};
-pub use create::{create_blank, create_forward, create_reply, create_reply_all};
+pub use create::{
+    RuleReplyText, create_blank, create_forward, create_reply, create_reply_all, create_rule_reply,
+};
 pub use delete::delete_draft;
 pub use edit::{DraftEdit, edit_draft};
 pub use scheduling::{cancel_send, schedule_send};

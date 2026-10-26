@@ -11,8 +11,10 @@ import '../i18n/i18n.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import 'account_form_widgets.dart';
+import 'account_list_rows.dart';
 import 'account_tabs.dart';
 import 'add_account_panel.dart';
+import 'collapsible_section.dart';
 import 'html_body.dart';
 import 'identities_box.dart';
 import 'pending_actions.dart';
@@ -42,17 +44,34 @@ class AccountsSettings extends StatefulWidget {
 class _AccountsSettingsState extends State<AccountsSettings> {
   late final AccountAdmin admin;
   late final AccountSetup setup;
+  late final MailStore _store;
   List<AccountDetail>? accounts;
-  String? error, selectedId;
-  bool adding = false;
+  String? error, selectedId, openId;
+  bool adding = false, _mobile = false;
 
   @override
   void initState() {
     super.initState();
-    final src = context.read<MailStore>().source!;
+    _store = context.read<MailStore>();
+    final src = _store.source!;
     admin = src.admin!;
     setup = src.setup!;
+    _store.paneBack = _handleBack;
     unawaited(load());
+  }
+
+  @override
+  void dispose() {
+    if (_store.paneBack == _handleBack) _store.paneBack = null;
+    super.dispose();
+  }
+
+  /// Retour système sur mobile : de la page d'un compte vers la liste (vrai si traité).
+  bool _handleBack() {
+    if (!_mobile || !(adding || openId != null)) return false;
+    setState(() => adding = false);
+    setState(() => openId = null);
+    return true;
   }
 
   Future<void> load() async {
@@ -91,6 +110,8 @@ class _AccountsSettingsState extends State<AccountsSettings> {
         child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
       );
     }
+    _mobile = MediaQuery.sizeOf(context).width <= 760;
+    if (_mobile) return _mobileLayout(list);
     final current =
         list.where((a) => a.id == selectedId).firstOrNull ?? list.firstOrNull;
     return Column(
@@ -122,8 +143,84 @@ class _AccountsSettingsState extends State<AccountsSettings> {
       setState(() {
         adding = false;
         selectedId = id;
+        openId = id;
       });
     }
+  }
+
+  /// Mobile : la liste des comptes, ou la page d'un compte (ou d'ajout) quand on en ouvre une.
+  Widget _mobileLayout(List<AccountDetail> list) {
+    final open = list.where((a) => a.id == openId).firstOrNull;
+    if (!adding && open == null) return _mobileList(list);
+    return _mobileDetail(open);
+  }
+
+  /// Une ligne par compte, puis l'ajout d'un compte.
+  Widget _mobileList(List<AccountDetail> list) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      for (final a in list)
+        AccountListRow(
+          key: ValueKey('account-head-${a.id}'),
+          account: a,
+          stateText: stateLabel(a).$1,
+          bad: stateLabel(a).$2,
+          onTap: () => setState(() => openId = a.id),
+        ),
+      AddAccountRow(
+        key: const ValueKey('settings-add-account'),
+        onTap: () => setState(() => adding = true),
+      ),
+    ],
+  );
+
+  /// En-tête avec retour, puis la page du compte ouvert ou le formulaire d'ajout.
+  Widget _mobileDetail(AccountDetail? open) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _mobileHeader(open),
+      if (adding)
+        AddAccountPanel(
+          key: const ValueKey('add-account-inline'),
+          embedded: true,
+          onAdded: _added,
+        )
+      else if (open != null)
+        AccountCard(
+          key: ValueKey('account-${open.id}'),
+          account: open,
+          admin: admin,
+          setup: setup,
+          onChanged: changed,
+        ),
+    ],
+  );
+
+  /// Flèche de retour vers la liste et nom du compte affiché.
+  Widget _mobileHeader(AccountDetail? open) {
+    final p = context.pal;
+    final title = adding
+        ? t('Ajouter un compte')
+        : (open?.displayName.isEmpty ?? true)
+        ? open?.address ?? ''
+        : open!.displayName;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+      child: Row(
+        children: [
+          IBtn('arrowl', tip: t('Retour'), onTap: _handleBack),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Fonts.sans(size: 16, w: FontWeight.w500, color: p.text),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Un onglet par compte, sur une seule ligne qui défile vers la droite ; l'ajout d'un compte reste épinglé au bout.
@@ -307,98 +404,21 @@ class _AccountCardState extends State<AccountCard> {
   );
 
   Widget _details(Pal p) {
+    if (MediaQuery.sizeOf(context).width <= 760) return _detailsMobile(p);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (a.needsAuth) _reauthBlock(p),
-          _row(
-            p,
-            t('NOM DU COMPTE'),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 300,
-                  child: FormField2(
-                    fieldKey: ValueKey('name-${a.id}'),
-                    label: '',
-                    controller: name,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Btn(
-                  key: ValueKey('save-name-${a.id}'),
-                  label: t('Enregistrer'),
-                  onTap: busy ? null : _saveName,
-                ),
-              ],
-            ),
-          ),
-          _row(
-            p,
-            t('SYNCHRONISER LES … DERNIERS JOURS'),
-            Segments<int>(
-              keyPrefix: 'window-${a.id}',
-              options: const [
-                (30, '30'),
-                (90, '90'),
-                (180, '180'),
-                (365, '365'),
-              ],
-              value: a.windowDays,
-              onChanged: busy
-                  ? (_) {}
-                  : (d) => _run(
-                      () => widget.admin.setWindowDays(a.id, d),
-                      done: t('Fenêtre de synchronisation modifiée.'),
-                    ),
-            ),
-          ),
+          _row(p, t('NOM DU COMPTE'), _nameEditor()),
+          _row(p, t('SYNCHRONISER LES … DERNIERS JOURS'), _windowPicker()),
           _row(
             p,
             t('DOSSIERS SYNCHRONISÉS'),
             SyncedMailboxes(account: a, admin: widget.admin),
           ),
-          _row(
-            p,
-            t('COMPTE'),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    Btn(
-                      key: ValueKey('sync-${a.id}'),
-                      icon: 'refresh',
-                      label: t('Synchroniser maintenant'),
-                      onTap: busy || a.paused
-                          ? null
-                          : () => _run(
-                              () => widget.setup.startSync(a.id),
-                              done: t('Synchronisation lancée.'),
-                            ),
-                    ),
-                    Btn(
-                      key: ValueKey('pause-${a.id}'),
-                      label: a.paused ? t('Reprendre') : t('Mettre en pause'),
-                      onTap: busy
-                          ? null
-                          : () => _run(
-                              () => a.paused
-                                  ? widget.admin.resume(a.id)
-                                  : widget.admin.pause(a.id),
-                            ),
-                    ),
-                  ],
-                ),
-                SyncStatusLine(account: a, admin: widget.admin),
-              ],
-            ),
-          ),
+          _row(p, t('COMPTE'), _accountActions()),
           _row(
             p,
             t('ACTIONS EN ATTENTE'),
@@ -407,37 +427,169 @@ class _AccountCardState extends State<AccountCard> {
           if (a.imap != null) _serversBlock(p),
           IdentitiesBox(account: a, admin: widget.admin),
           _dangerBlock(p),
-          if (busy)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Text(
-                t('En cours…'),
-                style: Fonts.sans(size: 14, color: p.muted),
-              ),
-            ),
-          if (error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Text(
-                error!,
-                key: ValueKey('error-${a.id}'),
-                style: Fonts.sans(size: 14, color: p.accent),
-              ),
-            ),
-          if (info != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: SelectableText(
-                info!,
-                key: ValueKey('info-${a.id}'),
-                style: Fonts.sans(size: 14, color: p.muted),
-              ),
-            ),
-          const SizedBox(height: 10),
+          ..._feedback(p),
         ],
       ),
     );
   }
+
+  /// Page d'un compte sur mobile : sections repliables, « Général » ouverte.
+  Widget _detailsMobile(Pal p) => Padding(
+    padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (a.needsAuth) _reauthBlock(p),
+        CollapsibleSection(
+          title: t('GÉNÉRAL'),
+          initiallyOpen: true,
+          child: _generalBody(p),
+        ),
+        CollapsibleSection(title: t('SYNCHRONISATION'), child: _syncBody(p)),
+        if (a.imap != null)
+          CollapsibleSection(title: t('SERVEURS'), child: _serversBody(p)),
+        CollapsibleSection(
+          title: t('IDENTITÉS D’ENVOI'),
+          child: IdentitiesBox(
+            account: a,
+            admin: widget.admin,
+            showTitle: false,
+          ),
+        ),
+        CollapsibleSection(title: t('SUPPRESSION'), child: _dangerBody(p)),
+        ..._feedback(p),
+      ],
+    ),
+  );
+
+  /// Contenu de « Général » : nom, synchronisation immédiate, actions en attente.
+  Widget _generalBody(Pal p) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _row(p, t('NOM DU COMPTE'), _nameEditor()),
+      _row(p, t('COMPTE'), _accountActions()),
+      _row(
+        p,
+        t('ACTIONS EN ATTENTE'),
+        PendingActions(account: a, admin: widget.admin),
+      ),
+    ],
+  );
+
+  /// Contenu de « Synchronisation » : fenêtre de jours et dossiers suivis.
+  Widget _syncBody(Pal p) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _row(p, t('SYNCHRONISER LES … DERNIERS JOURS'), _windowPicker()),
+      _row(
+        p,
+        t('DOSSIERS SYNCHRONISÉS'),
+        SyncedMailboxes(account: a, admin: widget.admin),
+      ),
+    ],
+  );
+
+  /// Champ du nom du compte et son bouton d'enregistrement.
+  Widget _nameEditor() => Wrap(
+    spacing: 12,
+    runSpacing: 10,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    children: [
+      SizedBox(
+        width: 300,
+        child: FormField2(
+          fieldKey: ValueKey('name-${a.id}'),
+          label: '',
+          controller: name,
+        ),
+      ),
+      Btn(
+        key: ValueKey('save-name-${a.id}'),
+        label: t('Enregistrer'),
+        onTap: busy ? null : _saveName,
+      ),
+    ],
+  );
+
+  /// Choix de la fenêtre de synchronisation en jours.
+  Widget _windowPicker() => Segments<int>(
+    keyPrefix: 'window-${a.id}',
+    options: const [(30, '30'), (90, '90'), (180, '180'), (365, '365')],
+    value: a.windowDays,
+    onChanged: busy
+        ? (_) {}
+        : (d) => _run(
+            () => widget.admin.setWindowDays(a.id, d),
+            done: t('Fenêtre de synchronisation modifiée.'),
+          ),
+  );
+
+  /// Boutons de synchronisation et de pause, avec la ligne d'état.
+  Widget _accountActions() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: [
+          Btn(
+            key: ValueKey('sync-${a.id}'),
+            icon: 'refresh',
+            label: t('Synchroniser maintenant'),
+            onTap: busy || a.paused
+                ? null
+                : () => _run(
+                    () => widget.setup.startSync(a.id),
+                    done: t('Synchronisation lancée.'),
+                  ),
+          ),
+          Btn(
+            key: ValueKey('pause-${a.id}'),
+            label: a.paused ? t('Reprendre') : t('Mettre en pause'),
+            onTap: busy
+                ? null
+                : () => _run(
+                    () => a.paused
+                        ? widget.admin.resume(a.id)
+                        : widget.admin.pause(a.id),
+                  ),
+          ),
+        ],
+      ),
+      SyncStatusLine(account: a, admin: widget.admin),
+    ],
+  );
+
+  /// Indications d'activité, d'erreur et de succès en bas de la page du compte.
+  List<Widget> _feedback(Pal p) => [
+    if (busy)
+      Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Text(
+          t('En cours…'),
+          style: Fonts.sans(size: 14, color: p.muted),
+        ),
+      ),
+    if (error != null)
+      Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Text(
+          error!,
+          key: ValueKey('error-${a.id}'),
+          style: Fonts.sans(size: 14, color: p.accent),
+        ),
+      ),
+    if (info != null)
+      Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: SelectableText(
+          info!,
+          key: ValueKey('info-${a.id}'),
+          style: Fonts.sans(size: 14, color: p.muted),
+        ),
+      ),
+    const SizedBox(height: 10),
+  ];
 
   Widget _reauthBlock(Pal p) => Container(
     margin: const EdgeInsets.only(bottom: 18),
@@ -487,91 +639,89 @@ class _AccountCardState extends State<AccountCard> {
     ),
   );
 
-  Widget _serversBlock(Pal p) => _row(
-    p,
-    t('SERVEURS'),
-    Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ServerFields(
-          title: t('RÉCEPTION · IMAP'),
-          keyPrefix: 'imap-${a.id}',
-          host: imapHost,
-          port: imapPort,
-          security: imapSec,
-          onSecurity: (v) => setState(() => imapSec = v),
-          onEdited: () {},
-        ),
-        const SizedBox(height: 16),
-        ServerFields(
-          title: t('ENVOI · SMTP'),
-          keyPrefix: 'smtp-${a.id}',
-          host: smtpHost,
-          port: smtpPort,
-          security: smtpSec,
-          onSecurity: (v) => setState(() => smtpSec = v),
-          onEdited: () {},
-        ),
-        const SizedBox(height: 14),
-        Btn(
-          key: ValueKey('save-servers-${a.id}'),
-          label: t('Enregistrer les serveurs'),
-          onTap: busy ? null : _saveServers,
-        ),
-      ],
-    ),
+  Widget _serversBlock(Pal p) => _row(p, t('SERVEURS'), _serversBody(p));
+
+  /// Champs IMAP et SMTP du compte avec le bouton d'enregistrement.
+  Widget _serversBody(Pal p) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      ServerFields(
+        title: t('RÉCEPTION · IMAP'),
+        keyPrefix: 'imap-${a.id}',
+        host: imapHost,
+        port: imapPort,
+        security: imapSec,
+        onSecurity: (v) => setState(() => imapSec = v),
+        onEdited: () {},
+      ),
+      const SizedBox(height: 16),
+      ServerFields(
+        title: t('ENVOI · SMTP'),
+        keyPrefix: 'smtp-${a.id}',
+        host: smtpHost,
+        port: smtpPort,
+        security: smtpSec,
+        onSecurity: (v) => setState(() => smtpSec = v),
+        onEdited: () {},
+      ),
+      const SizedBox(height: 14),
+      Btn(
+        key: ValueKey('save-servers-${a.id}'),
+        label: t('Enregistrer les serveurs'),
+        onTap: busy ? null : _saveServers,
+      ),
+    ],
   );
 
-  Widget _dangerBlock(Pal p) => _row(
-    p,
-    t('SUPPRESSION'),
-    confirmDelete
-        ? Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(border: Border.all(color: p.accent)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  a.pendingActions > 0
-                      ? t('{0} action(s) en attente seront perdues. ', [
-                              '${a.pendingActions}',
-                            ]) +
-                            t(
-                              'Messages locaux, brouillons et identifiants de ce compte seront effacés de MIRA ; le courrier reste sur le serveur.',
-                            )
-                      : t(
-                          'Messages locaux, brouillons et identifiants de ce compte seront effacés de MIRA ; le courrier reste sur le serveur.',
-                        ),
-                  style: Fonts.sans(size: 14, color: p.text),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 10,
-                  children: [
-                    Btn(
-                      key: ValueKey('confirm-delete-${a.id}'),
-                      icon: 'trash',
-                      label: t('Supprimer définitivement'),
-                      go: true,
-                      onTap: busy
-                          ? null
-                          : () => _run(() => widget.admin.delete(a.id)),
-                    ),
-                    Btn(
-                      label: t('Annuler'),
-                      onTap: () => setState(() => confirmDelete = false),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          )
-        : Btn(
-            key: ValueKey('delete-${a.id}'),
-            icon: 'trash',
-            label: t('Supprimer ce compte'),
-            onTap: () => setState(() => confirmDelete = true),
+  Widget _dangerBlock(Pal p) => _row(p, t('SUPPRESSION'), _dangerBody(p));
+
+  /// Bouton de suppression du compte, puis sa confirmation.
+  Widget _dangerBody(Pal p) => confirmDelete
+      ? Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(border: Border.all(color: p.accent)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                a.pendingActions > 0
+                    ? t('{0} action(s) en attente seront perdues. ', [
+                            '${a.pendingActions}',
+                          ]) +
+                          t(
+                            'Messages locaux, brouillons et identifiants de ce compte seront effacés de MIRA ; le courrier reste sur le serveur.',
+                          )
+                    : t(
+                        'Messages locaux, brouillons et identifiants de ce compte seront effacés de MIRA ; le courrier reste sur le serveur.',
+                      ),
+                style: Fonts.sans(size: 14, color: p.text),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 10,
+                children: [
+                  Btn(
+                    key: ValueKey('confirm-delete-${a.id}'),
+                    icon: 'trash',
+                    label: t('Supprimer définitivement'),
+                    go: true,
+                    onTap: busy
+                        ? null
+                        : () => _run(() => widget.admin.delete(a.id)),
+                  ),
+                  Btn(
+                    label: t('Annuler'),
+                    onTap: () => setState(() => confirmDelete = false),
+                  ),
+                ],
+              ),
+            ],
           ),
-  );
+        )
+      : Btn(
+          key: ValueKey('delete-${a.id}'),
+          icon: 'trash',
+          label: t('Supprimer ce compte'),
+          onTap: () => setState(() => confirmDelete = true),
+        );
 }

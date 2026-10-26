@@ -4,6 +4,7 @@ use mira_vocabulary::{AccountId, MailboxId, MiraError, Rule, RuleAction, RuleSco
 
 use super::condition_targets::check_condition_targets;
 use super::local_labels::check_local_labels;
+use super::templates::check_templates;
 use super::world::RuleWorld;
 use crate::actions::errors::input::invalid_parameter;
 
@@ -27,6 +28,7 @@ pub(super) fn check_world(rule: &Rule, world: &dyn RuleWorld) -> Result<(), Mira
     check_scope_accounts(rule, world)?;
     check_condition_targets(rule, world)?;
     check_local_labels(rule, world)?;
+    check_templates(rule, world)?;
     if !rule.actions.iter().any(depends_on_account_mailbox) {
         return Ok(());
     }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -32,10 +33,21 @@ const _jitter = 2.0;
 const _pageScript =
     '''
 (function() {
-  var handler = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.$_channel;
+  if (window.__miraPage) return;
+  window.__miraPage = true;
+  var webkit = window.webkit && window.webkit.messageHandlers;
+  var handler = (webkit && webkit.$_channel) || window.$_channel;
   if (!handler) return;
+  var fit = !webkit;
   function post(message) { try { handler.postMessage(JSON.stringify(message)); } catch (_) {} }
+  function fitWidth() {
+    if (!fit || !document.body) return;
+    document.body.style.zoom = 1;
+    var width = document.documentElement.clientWidth, content = document.documentElement.scrollWidth;
+    if (width > 0 && content > width + 1) document.body.style.zoom = width / content;
+  }
   function measure(loaded) {
+    fitWidth();
     post({height: Math.ceil(document.documentElement.getBoundingClientRect().height), loaded: loaded === true});
   }
   window.addEventListener('wheel', function(event) {
@@ -44,13 +56,16 @@ const _pageScript =
     var unit = event.deltaMode === 1 ? 40 : event.deltaMode === 2 ? window.innerHeight : 1;
     post({wheel: event.deltaY * unit, at: event.timeStamp, notch: event.wheelDeltaY !== 0 && event.wheelDeltaY % 120 === 0});
   }, {passive: false, capture: true});
-  document.addEventListener('DOMContentLoaded', function() {
+  function start() {
     measure();
     if (window.ResizeObserver) {
       new ResizeObserver(measure).observe(document.documentElement);
       if (document.body) new ResizeObserver(measure).observe(document.body);
     }
-  });
+    if (document.readyState === 'complete') measure(true);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
   window.addEventListener('load', function() { measure(true); });
   window.addEventListener('resize', measure);
 })();
@@ -82,7 +97,7 @@ class _WebMailBodyState extends State<WebMailBody>
     duration: _curtainDuration,
   );
   Timer? _fallback;
-  bool _revealed = false;
+  bool _revealed = false, _injectLate = false;
   final _wheel = WheelFling();
   double _height = _initialHeight;
   double? _width;
@@ -126,15 +141,27 @@ class _WebMailBodyState extends State<WebMailBody>
     await _controller.setJavaScriptMode(JavaScriptMode.unrestricted);
     await _controller.setBackgroundColor(Colors.white);
     await _controller.setNavigationDelegate(
-      NavigationDelegate(onNavigationRequest: _onNavigate),
+      NavigationDelegate(
+        onNavigationRequest: _onNavigate,
+        onPageFinished: _onPageFinished,
+      ),
     );
     await _controller.addJavaScriptChannel(
       _channel,
       onMessageReceived: _onMessage,
     );
-    await _controller.addUserScript(
-      const WebViewUserScript(source: _pageScript),
-    );
+    try {
+      await _controller.addUserScript(
+        const WebViewUserScript(source: _pageScript),
+      );
+    } on Object {
+      _injectLate = true;
+    }
+  }
+
+  /// Sans script de début de document (vieille vue web), le script de page est injecté une fois la page chargée.
+  void _onPageFinished(String url) {
+    if (_injectLate) unawaited(_controller.runJavaScript(_pageScript));
   }
 
   @override
@@ -155,6 +182,7 @@ class _WebMailBodyState extends State<WebMailBody>
         widget.html,
         remoteImages: widget.remoteImages,
         inline: widget.inline,
+        viewport: Platform.isAndroid,
       ),
     );
   }

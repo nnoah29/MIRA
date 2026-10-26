@@ -39,6 +39,7 @@ Map<String, dynamic> fullRule(Map<String, dynamic> scope) => {
     {'type': 'mark_read', 'read': true},
     {'type': 'move_to', 'mailbox': 'mb-1'},
     {'type': 'suppress_notification'},
+    {'type': 'reply_with_template', 'template': 'tpl-1'},
   ],
   'schema_version': 1,
 };

@@ -9,6 +9,7 @@ mod matchers;
 mod regexes;
 mod status;
 mod structure;
+mod templates;
 mod world;
 
 use mira_vocabulary::{MiraError, Rule};

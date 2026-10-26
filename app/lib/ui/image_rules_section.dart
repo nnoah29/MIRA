@@ -188,36 +188,46 @@ class _Choice extends StatelessWidget {
       ImageAction.always,
       ImageAction.never,
     ];
-    return Container(
-      decoration: BoxDecoration(border: Border.all(color: p.line)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final (i, a) in opts.indexed)
-            Hov(
-              key: ValueKey('$keyPrefix-${a.name}'),
-              onTap: () => onChanged(a),
-              builder: (_, h) => Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: value == a ? p.accentSoft : null,
-                  border: i > 0
-                      ? Border(left: BorderSide(color: p.line))
-                      : null,
-                ),
-                child: Mono(
-                  _label(a),
-                  ls: .12,
-                  color: value == a ? p.accent : (h ? p.text : p.muted),
-                  height: null,
-                ),
-              ),
-            ),
-        ],
-      ),
+    final narrow = MediaQuery.sizeOf(context).width <= 760;
+    return LayoutBuilder(
+      builder: (_, box) {
+        final stacked = narrow && box.hasBoundedWidth;
+        final cells = [
+          for (final (i, a) in opts.indexed) _cell(p, i, a, stacked),
+        ];
+        return Container(
+          decoration: BoxDecoration(border: Border.all(color: p.line)),
+          child: stacked
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: cells,
+                )
+              : Row(mainAxisSize: MainAxisSize.min, children: cells),
+        );
+      },
     );
   }
+
+  /// Une option du choix, séparée de la précédente par un filet.
+  Widget _cell(Pal p, int i, ImageAction a, bool mobile) => Hov(
+    key: ValueKey('$keyPrefix-${a.name}'),
+    onTap: () => onChanged(a),
+    builder: (_, h) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: value == a ? p.accentSoft : null,
+        border: i == 0
+            ? null
+            : mobile
+            ? Border(top: BorderSide(color: p.line))
+            : Border(left: BorderSide(color: p.line)),
+      ),
+      child: Mono(
+        _label(a),
+        ls: .12,
+        color: value == a ? p.accent : (h ? p.text : p.muted),
+        height: null,
+      ),
+    ),
+  );
 }

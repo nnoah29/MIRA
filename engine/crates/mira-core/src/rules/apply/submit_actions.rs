@@ -4,6 +4,7 @@ use mira_vocabulary::{AccountId, EventKind, IdempotencyKey, MessageId, MiraError
 
 use super::context_loader::load_for_message;
 use super::label_changes::apply_label_changes;
+use super::reply_drafts::create_reply_drafts;
 use crate::actions::{QueueContext, SubmitRequest, submit};
 use crate::labels::refresh_inbox_counters;
 use crate::rules::evaluate::evaluate;
@@ -54,6 +55,7 @@ pub fn apply_rules_with(
     let outcome = evaluate(&loaded.rules, &loaded.context);
     let account = &loaded.context.summary.account;
     submit_outcome(queue, quirks, account, message, &outcome)?;
+    create_reply_drafts(queue, &loaded.context.summary, &outcome.reply_templates)?;
     let thread = loaded.context.summary.thread.as_ref();
     let labeled = queue.db.write(|tx| {
         let changed = apply_label_changes(tx, thread, &outcome.label_changes)?;

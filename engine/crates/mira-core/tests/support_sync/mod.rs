@@ -10,6 +10,7 @@ pub mod mail;
 pub mod mirror;
 pub mod provider;
 pub mod provider_builders;
+pub mod reply_rules;
 pub mod rules;
 pub mod scenarios;
 pub mod supervised;

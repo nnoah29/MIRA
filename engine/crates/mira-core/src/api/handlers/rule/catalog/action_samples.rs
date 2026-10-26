@@ -1,6 +1,6 @@
 //! Une instance de chaque variante d'action, dont le catalogue lit l'étiquette et les paramètres.
 
-use mira_vocabulary::{LocalLabelId, MailboxId, RuleAction};
+use mira_vocabulary::{LocalLabelId, MailboxId, RuleAction, TemplateId};
 
 /// Une instance de chaque variante d'action, dans l'ordre du catalogue
 pub(super) fn action_samples() -> Vec<RuleAction> {
@@ -26,5 +26,8 @@ pub(super) fn action_samples() -> Vec<RuleAction> {
         },
         RuleAction::SuppressNotification,
         RuleAction::StopProcessing,
+        RuleAction::ReplyWithTemplate {
+            template: TemplateId::from_raw(""),
+        },
     ]
 }

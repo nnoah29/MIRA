@@ -9,6 +9,8 @@ import 'assistant_panel.dart';
 import 'composer.dart';
 import 'mail_list.dart';
 import 'overlays.dart';
+import 'push_stack.dart';
+import 'side_drawer.dart';
 import 'reader.dart';
 import 'add_account_panel.dart';
 import 'settings_panel.dart';
@@ -179,7 +181,11 @@ class _ShellState extends State<Shell> with WidgetsBindingObserver {
         ],
       );
     } else {
-      split = paneOpen ? const PaneView_() : MailsColumn();
+      split = PushStack(
+        base: MailsColumn(),
+        detail: paneOpen ? PaneSwitcher(child: paneChild(s)) : null,
+        onBack: s.closePane,
+      );
     }
 
     final main = Column(
@@ -200,7 +206,7 @@ class _ShellState extends State<Shell> with WidgetsBindingObserver {
           if (didPop) return;
           if (s.navOpen) {
             s.closeNav();
-          } else {
+          } else if (!(s.paneBack?.call() ?? false)) {
             s.closePane();
           }
         },
@@ -218,31 +224,19 @@ class _ShellState extends State<Shell> with WidgetsBindingObserver {
                       Expanded(child: main),
                     ],
                   ),
-                  if (mobile) ...[
+                  if (mobile)
                     Positioned.fill(
-                      child: IgnorePointer(
-                        ignoring: !s.navOpen,
-                        child: GestureDetector(
-                          onTap: s.closeNav,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 220),
-                            color: s.navOpen
-                                ? const Color(0x80000000)
-                                : Colors.transparent,
-                          ),
+                      child: SideDrawer(
+                        open: s.navOpen,
+                        edgeEnabled: !paneOpen,
+                        onOpen: s.openNav,
+                        onClose: s.closeNav,
+                        width: (w * .86).clamp(0, 300).toDouble(),
+                        child: Sidebar(
+                          width: (w * .86).clamp(0, 300).toDouble(),
                         ),
                       ),
                     ),
-                    AnimatedPositioned(
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.ease,
-                      left: s.navOpen ? 0 : -(w * .86).clamp(0, 300).toDouble(),
-                      top: 0,
-                      bottom: 0,
-                      width: (w * .86).clamp(0, 300).toDouble(),
-                      child: Sidebar(width: (w * .86).clamp(0, 300).toDouble()),
-                    ),
-                  ],
                   const ToastHost(),
                   HelpModal(),
                 ],
@@ -255,53 +249,62 @@ class _ShellState extends State<Shell> with WidgetsBindingObserver {
   }
 }
 
-/// Panneau droit : lecteur, rédaction, assistant, paramètres ou état vide.
+/// Contenu du panneau droit selon la vue active : lecteur, rédaction, assistant, paramètres ou état vide.
+Widget paneChild(MailStore s) {
+  switch (s.view) {
+    case PaneView.compose:
+      return s.c == null
+          ? const SizedBox.shrink()
+          : Composer(s.c!, key: ObjectKey(s.c));
+    case PaneView.assistant:
+      return const AssistantPanel(key: ValueKey('assistant'));
+    case PaneView.settings:
+      return const SettingsPanel(key: ValueKey('settings'));
+    case PaneView.addAccount:
+      return const AddAccountPanel(key: ValueKey('add-account'));
+    case PaneView.read:
+      final m = s.byId(s.open);
+      return m != null
+          ? Reader(m, key: const ValueKey('reader'))
+          : const _Empty(key: ValueKey('empty'));
+    case PaneView.empty:
+      return const _Empty(key: ValueKey('empty'));
+  }
+}
+
+/// Fondu + léger glissement à chaque changement de contenu du panneau.
+class PaneSwitcher extends StatelessWidget {
+  final Widget child;
+  const PaneSwitcher({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) => AnimatedSwitcher(
+    duration: const Duration(milliseconds: 200),
+    switchInCurve: Curves.easeOutCubic,
+    transitionBuilder: (c, a) => FadeTransition(
+      opacity: a,
+      child: SlideTransition(
+        position: Tween(
+          begin: const Offset(.012, 0),
+          end: Offset.zero,
+        ).animate(a),
+        child: c,
+      ),
+    ),
+    layoutBuilder: (current, previous) =>
+        Stack(fit: StackFit.expand, children: [...previous, ?current]),
+    child: child,
+  );
+}
+
+/// Panneau droit des écrans larges.
 // ignore: camel_case_types
 class PaneView_ extends StatelessWidget {
   const PaneView_({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final s = context.watch<MailStore>();
-    final Widget child;
-    switch (s.view) {
-      case PaneView.compose:
-        child = s.c == null
-            ? const SizedBox.shrink()
-            : Composer(s.c!, key: ObjectKey(s.c));
-      case PaneView.assistant:
-        child = const AssistantPanel(key: ValueKey('assistant'));
-      case PaneView.settings:
-        child = const SettingsPanel(key: ValueKey('settings'));
-      case PaneView.addAccount:
-        child = const AddAccountPanel(key: ValueKey('add-account'));
-      case PaneView.read:
-        final m = s.byId(s.open);
-        child = m != null
-            ? Reader(m, key: const ValueKey('reader'))
-            : const _Empty(key: ValueKey('empty'));
-      case PaneView.empty:
-        child = const _Empty(key: ValueKey('empty'));
-    }
-    // Fondu + léger glissement à chaque changement de contenu du panneau.
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 200),
-      switchInCurve: Curves.easeOutCubic,
-      transitionBuilder: (c, a) => FadeTransition(
-        opacity: a,
-        child: SlideTransition(
-          position: Tween(
-            begin: const Offset(.012, 0),
-            end: Offset.zero,
-          ).animate(a),
-          child: c,
-        ),
-      ),
-      layoutBuilder: (current, previous) =>
-          Stack(fit: StackFit.expand, children: [...previous, ?current]),
-      child: child,
-    );
-  }
+  Widget build(BuildContext context) =>
+      PaneSwitcher(child: paneChild(context.watch<MailStore>()));
 }
 
 class _Empty extends StatelessWidget {

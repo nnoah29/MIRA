@@ -15,7 +15,7 @@ Une règle s'exécute automatiquement sur les nouveaux messages et déclenche de
 | Architecture | Évaluateur pur dans le moteur, branché sur la synchro, actions soumises par la file existante. |
 | Boîtes concernées | Toutes sauf Envoyés, Brouillons, Corbeille et Spam. |
 
-Hors périmètre v1 : condition sur le corps complet, conditions sur en-têtes bruts, groupes imbriqués, supprimer définitivement, transférer, répondre automatiquement, appliquer aux messages existants.
+Hors périmètre v1 : condition sur le corps complet, conditions sur en-têtes bruts, groupes imbriqués, supprimer définitivement, transférer, répondre automatiquement (envoi sans relecture ; `ReplyWithTemplate` prépare seulement un brouillon), appliquer aux messages existants.
 
 ## 2. Types (`mira-vocabulary`)
 
@@ -50,6 +50,7 @@ JSON étiqueté (`type`, snake_case), comme `ActionKind`.
 | Nettoyage | `Trash`, `MarkSpam { spam }` | `Trash`, `MarkSpam` |
 | Notification | `SuppressNotification` | propre aux règles |
 | Enchaînement | `StopProcessing` | propre aux règles |
+| Réponse | `ReplyWithTemplate { template }` | brouillon de réponse au message, corps rendu depuis le modèle (jamais envoyé) |
 
 ## 3. Stockage (SQLite, par profil)
 

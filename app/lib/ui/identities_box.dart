@@ -131,49 +131,69 @@ class _IdentitiesBoxState extends State<IdentitiesBox> {
             style: Fonts.sans(size: 13, color: p.dim),
           ),
           const SizedBox(height: 10),
-          for (final h in hints)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      h.address,
-                      style: Fonts.sans(size: 14.5, color: p.text),
-                    ),
-                  ),
-                  Mono(
-                    [
-                      if (h.sentAs > 0) t('expéditeur ×{0}', ['${h.sentAs}']),
-                      if (h.receivedAt > 0)
-                        t('destinataire ×{0}', ['${h.receivedAt}']),
-                    ].join(' · '),
-                    size: 10.5,
-                    color: p.muted,
-                    height: null,
-                  ),
-                  const SizedBox(width: 10),
-                  Btn(
-                    key: ValueKey('hint-${h.address}'),
-                    icon: 'plus',
-                    label: t('Ajouter'),
-                    onTap: busy
-                        ? null
-                        : () => _run(
-                            () => widget.admin.addIdentity(
-                              accountId: widget.account.id,
-                              address: h.address,
-                              displayName: widget.account.displayName,
-                            ),
-                          ),
-                  ),
-                ],
-              ),
-            ),
+          for (final h in hints) _hintRow(p, h),
         ],
       ),
     );
   }
+
+  /// Une adresse détectée avec ses compteurs et son bouton d'ajout ; empilée sur mobile.
+  Widget _hintRow(Pal p, AliasHint h) {
+    final address = Text(
+      h.address,
+      style: Fonts.sans(size: 14.5, color: p.text),
+    );
+    final stats = Mono(
+      [
+        if (h.sentAs > 0) t('expéditeur ×{0}', ['${h.sentAs}']),
+        if (h.receivedAt > 0) t('destinataire ×{0}', ['${h.receivedAt}']),
+      ].join(' · '),
+      size: 10.5,
+      color: p.muted,
+      height: null,
+    );
+    final add = Btn(
+      key: ValueKey('hint-${h.address}'),
+      icon: 'plus',
+      label: t('Ajouter'),
+      onTap: busy ? null : () => _addHint(h),
+    );
+    final mobile = MediaQuery.sizeOf(context).width <= 760;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: mobile
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                address,
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(child: stats),
+                    add,
+                  ],
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                Expanded(child: address),
+                stats,
+                const SizedBox(width: 10),
+                add,
+              ],
+            ),
+    );
+  }
+
+  /// Ajoute l'adresse détectée comme identité du compte.
+  Future<void> _addHint(AliasHint h) => _run(
+    () => widget.admin.addIdentity(
+      accountId: widget.account.id,
+      address: h.address,
+      displayName: widget.account.displayName,
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -242,42 +262,32 @@ class _IdentitiesBoxState extends State<IdentitiesBox> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 280,
-                      child: Column(
-                        children: [
-                          FormField2(
-                            fieldKey: ValueKey(
-                              'new-id-address-${widget.account.id}',
-                            ),
-                            label: t('ADRESSE'),
-                            controller: newAddress,
-                            hint: 'alias@exemple.com',
-                          ),
-                          const SizedBox(height: 10),
-                          FormField2(
-                            fieldKey: ValueKey(
-                              'new-id-name-${widget.account.id}',
-                            ),
-                            label: t('NOM AFFICHÉ'),
-                            controller: newName,
-                          ),
-                        ],
+                SideBySide(
+                  leftWidth: 280,
+                  left: Column(
+                    children: [
+                      FormField2(
+                        fieldKey: ValueKey(
+                          'new-id-address-${widget.account.id}',
+                        ),
+                        label: t('ADRESSE'),
+                        controller: newAddress,
+                        hint: 'alias@exemple.com',
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FormField2(
-                        fieldKey: ValueKey('new-id-sig-${widget.account.id}'),
-                        label: t('SIGNATURE'),
-                        controller: newSignature,
-                        maxLines: 5,
+                      const SizedBox(height: 10),
+                      FormField2(
+                        fieldKey: ValueKey('new-id-name-${widget.account.id}'),
+                        label: t('NOM AFFICHÉ'),
+                        controller: newName,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  right: FormField2(
+                    fieldKey: ValueKey('new-id-sig-${widget.account.id}'),
+                    label: t('SIGNATURE'),
+                    controller: newSignature,
+                    maxLines: 5,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Wrap(
@@ -389,45 +399,37 @@ class _IdentityRowState extends State<_IdentityRow> {
             ],
           ),
           const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 260,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    FormField2(
-                      fieldKey: ValueKey('id-name-${i.id}'),
-                      label: t('NOM AFFICHÉ'),
-                      controller: name,
-                    ),
-                    const SizedBox(height: 10),
-                    Btn(
-                      key: ValueKey('save-identity-${i.id}'),
-                      label: t('Enregistrer'),
-                      onTap: widget.busy
-                          ? null
-                          : () => widget.onSave(
-                              name.text.trim().isEmpty
-                                  ? i.displayName
-                                  : name.text.trim(),
-                              sig.text,
-                            ),
-                    ),
-                  ],
+          SideBySide(
+            leftWidth: 260,
+            left: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FormField2(
+                  fieldKey: ValueKey('id-name-${i.id}'),
+                  label: t('NOM AFFICHÉ'),
+                  controller: name,
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FormField2(
-                  fieldKey: ValueKey('id-sig-${i.id}'),
-                  label: t('SIGNATURE'),
-                  controller: sig,
-                  maxLines: 5,
+                const SizedBox(height: 10),
+                Btn(
+                  key: ValueKey('save-identity-${i.id}'),
+                  label: t('Enregistrer'),
+                  onTap: widget.busy
+                      ? null
+                      : () => widget.onSave(
+                          name.text.trim().isEmpty
+                              ? i.displayName
+                              : name.text.trim(),
+                          sig.text,
+                        ),
                 ),
-              ),
-            ],
+              ],
+            ),
+            right: FormField2(
+              fieldKey: ValueKey('id-sig-${i.id}'),
+              label: t('SIGNATURE'),
+              controller: sig,
+              maxLines: 5,
+            ),
           ),
         ],
       ),

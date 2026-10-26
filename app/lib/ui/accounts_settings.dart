@@ -316,8 +316,10 @@ class _AccountCardState extends State<AccountCard> {
           _row(
             p,
             t('NOM DU COMPTE'),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+            Wrap(
+              spacing: 12,
+              runSpacing: 10,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 SizedBox(
                   width: 300,
@@ -327,7 +329,6 @@ class _AccountCardState extends State<AccountCard> {
                     controller: name,
                   ),
                 ),
-                const SizedBox(width: 12),
                 Btn(
                   key: ValueKey('save-name-${a.id}'),
                   label: t('Enregistrer'),

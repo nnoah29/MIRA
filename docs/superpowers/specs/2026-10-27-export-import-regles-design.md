@@ -51,8 +51,8 @@ Deux variantes ajoutées à `RuleRequest`, deux à `RuleResponse` :
 - `ImportReport { entries: Vec<ImportEntry> }`, avec `ImportEntry { position: u32, name: String, outcome: ImportOutcome }` et `ImportOutcome` ∈ `Imported`, `Replaced`, `AlreadyPresent`, `Refused { reason }`.
 - `reason` est un code stable : `unknown_account`, `unknown_mailbox`, `unknown_label`, `unknown_template`, `invalid_rule` (porte l'erreur du validateur de règles existant).
 - Erreurs de fichier entier : `invalid_input.yaml_syntax` (avec ligne et colonne, sans extrait du contenu), `invalid_input.export_version_unsupported`, `invalid_input.export_kind_mismatch`, `invalid_input.export_too_large`.
-- `ImportRules` est idempotent par clé : même clé, même rapport rejoué, aucune écriture ni événement ; même clé avec un autre contenu → conflit d'idempotence.
-- Événement `RulesChanged` (existant) émis une fois après une importation qui a écrit quelque chose, jamais après une lecture, un rejeu ou un import sans effet.
+- `ImportRules` est idempotent par clé : même clé, même rapport rejoué (stocké dans une colonne `result` ajoutée à `rule_idempotency`, migration v014), aucune écriture ni événement ; même clé avec un autre contenu → conflit d'idempotence.
+- Événement `RuleChanged` (existant) émis une fois par règle écrite (importée ou remplacée), jamais après une lecture, un rejeu ou un import sans effet.
 
 ## Comportement de l'import
 

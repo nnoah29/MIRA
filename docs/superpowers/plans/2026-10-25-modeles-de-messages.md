@@ -71,7 +71,7 @@
   - `Tx::template_idempotency_entry(&self, &IdempotencyKey)` et `record_template_idempotency(&self, &IdempotencyKey, &TemplateIdempotencyEntry)` (même forme que les libellés)
   - Erreurs : `invalid_input.template_name_empty`, `invalid_input.template_name_taken`, `invalid_input.template_too_long`, `not_found.template`.
 
-- [ ] **Step 1: Écrire les tests de rendu (`templates_render.rs`)** — appels directs à `mira_core::templates::render`. Noms et assertions :
+- [x] **Step 1: Écrire les tests de rendu (`templates_render.rs`)** — appels directs à `mira_core::templates::render`. Noms et assertions :
   - `each_variable_is_replaced` : un contexte complet (`contact.nom = "Durand"`, `contact.prénom = "Léa"`, `contact.email = "lea@x.fr"`, `date = "25/10/2026"`, `heure = "14:30"`, `moi.nom = "Noah"`, `moi.email = "n@x.fr"`, `objet = "Devis"`) ; chaque `{{variable}}` du texte devient la valeur, `unresolved` est vide.
   - `spaces_inside_braces_are_tolerated` : `{{ date }}` → `25/10/2026`.
   - `unknown_variable_stays_visible_and_is_listed` : `{{truc}}` reste, `unresolved == ["truc"]`.
@@ -80,13 +80,13 @@
   - `value_is_not_resubstituted` : `contact.nom = "{{date}}"` → le texte contient `{{date}}` littéral, `unresolved` vide.
   - `unclosed_braces_do_not_fail` : `"Bonjour {{contact.nom"` revient inchangé.
 
-- [ ] **Step 2: Lancer pour voir l'échec** — `cd engine && cargo test -p mira-core --test templates_render` ; attendu : erreur de compilation (module `templates` absent).
+- [x] **Step 2: Lancer pour voir l'échec** — `cd engine && cargo test -p mira-core --test templates_render` ; attendu : erreur de compilation (module `templates` absent).
 
-- [ ] **Step 3: Implémenter le vocabulaire et le rendu** — types ci-dessus. `variables.rs` : `enum TemplateVariable { ContactName, ContactFirstName, ContactEmail, Date, Time, MyName, MyEmail, Subject }`, `fn parse(name: &str) -> Option<TemplateVariable>` et `fn value(&self, context: &RenderContext) -> Option<&str>` (un `match` exhaustif ; une valeur vide donne `None`). `render.rs` : balayage unique de gauche à droite repérant `{{`…`}}`, nom nettoyé par `trim` ; un `{{` sans `}}` est recopié tel quel.
+- [x] **Step 3: Implémenter le vocabulaire et le rendu** — types ci-dessus. `variables.rs` : `enum TemplateVariable { ContactName, ContactFirstName, ContactEmail, Date, Time, MyName, MyEmail, Subject }`, `fn parse(name: &str) -> Option<TemplateVariable>` et `fn value(&self, context: &RenderContext) -> Option<&str>` (un `match` exhaustif ; une valeur vide donne `None`). `render.rs` : balayage unique de gauche à droite repérant `{{`…`}}`, nom nettoyé par `trim` ; un `{{` sans `}}` est recopié tel quel.
 
-- [ ] **Step 4: Relancer** — `cargo test -p mira-core --test templates_render` ; attendu : 7 tests PASS.
+- [x] **Step 4: Relancer** — `cargo test -p mira-core --test templates_render` ; attendu : 7 tests PASS.
 
-- [ ] **Step 5: Écrire les tests de stockage (`storage_templates.rs`)**, en s'inspirant de `storage_events.rs` pour ouvrir une base de test :
+- [x] **Step 5: Écrire les tests de stockage (`storage_templates.rs`)**, en s'inspirant de `storage_events.rs` pour ouvrir une base de test :
   - `insert_then_list_sorted_case_insensitive`
   - `name_is_unique_ignoring_case_and_trim` (Review Focus 1) → `invalid_input.template_name_taken`
   - `empty_name_is_refused` → `template_name_empty`
@@ -95,11 +95,11 @@
   - `delete_unknown_is_not_found` → `not_found.template`
   - `migration_applies_on_existing_database` : base à `user_version = 11`, ouverture, `schema_version() == 12` et table présente.
 
-- [ ] **Step 6: Implémenter migration et dépôt** — `v012_message_templates.sql` : `message_templates (id TEXT PRIMARY KEY, name TEXT NOT NULL, name_key TEXT NOT NULL UNIQUE, subject TEXT, body TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)` et `template_idempotency (key TEXT PRIMARY KEY, operation TEXT NOT NULL, fingerprint TEXT NOT NULL, result TEXT NOT NULL)`. Ajouter `include_str!("v012_message_templates.sql")` à `MIGRATIONS` ; corriger les tests existants qui figent `schema_version()` à 11 (`grep -rn "schema_version" engine/crates`), chemin d'import seulement ou valeur attendue 12. Dépôt : mêmes conventions que `local_labels` (`rows.rs` avec `COLUMNS`, `name_key`, erreurs ; `read.rs` ; `write.rs` ; `idempotency.rs`). Les bornes vivent dans `rows.rs` (constantes `MAX_NAME`, `MAX_SUBJECT`, `MAX_BODY`).
+- [x] **Step 6: Implémenter migration et dépôt** — `v012_message_templates.sql` : `message_templates (id TEXT PRIMARY KEY, name TEXT NOT NULL, name_key TEXT NOT NULL UNIQUE, subject TEXT, body TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)` et `template_idempotency (key TEXT PRIMARY KEY, operation TEXT NOT NULL, fingerprint TEXT NOT NULL, result TEXT NOT NULL)`. Ajouter `include_str!("v012_message_templates.sql")` à `MIGRATIONS` ; corriger les tests existants qui figent `schema_version()` à 11 (`grep -rn "schema_version" engine/crates`), chemin d'import seulement ou valeur attendue 12. Dépôt : mêmes conventions que `local_labels` (`rows.rs` avec `COLUMNS`, `name_key`, erreurs ; `read.rs` ; `write.rs` ; `idempotency.rs`). Les bornes vivent dans `rows.rs` (constantes `MAX_NAME`, `MAX_SUBJECT`, `MAX_BODY`).
 
-- [ ] **Step 7: Relancer** — `cargo test -p mira-core --test storage_templates --test templates_render` ; `cargo clippy -p mira-core -p mira-vocabulary --all-targets -- -D warnings` ; `tools/check-norms` ; attendu : tout vert.
+- [x] **Step 7: Relancer** — `cargo test -p mira-core --test storage_templates --test templates_render` ; `cargo clippy -p mira-core -p mira-vocabulary --all-targets -- -D warnings` ; `tools/check-norms` ; attendu : tout vert.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add engine docs
@@ -123,7 +123,7 @@ git commit -m "feat(modèles): entité, migration v012, dépôt et rendu des var
   - `Request::Template(TemplateRequest)`, `Response::Template(TemplateResponse)`
   - `EventKind::TemplatesChanged` (catégorie `EventCategory::Template`, sans compte), émis après chaque écriture réussie, jamais après lecture ni rejeu d'une clé déjà jouée.
 
-- [ ] **Step 1: Écrire `api_templates.rs`** sur le modèle de `api_local_labels.rs` (même `Fixture`, helpers dans un module `support_template_api` à créer, calqué sur `support_label_api`) :
+- [x] **Step 1: Écrire `api_templates.rs`** sur le modèle de `api_local_labels.rs` (même `Fixture`, helpers dans un module `support_template_api` à créer, calqué sur `support_label_api`) :
   - `create_then_list_returns_templates_sorted`
   - `create_with_same_key_replays_without_duplicate_or_event` (invariant 18)
   - `same_key_other_payload_is_idempotency_conflict`
@@ -135,17 +135,17 @@ git commit -m "feat(modèles): entité, migration v012, dépôt et rendu des var
   - `reads_emit_no_event` : liste, lecture et rendu n'émettent rien ; `changed_count` égal au nombre d'écritures.
   - `template_content_never_appears_in_errors_or_events` : un corps `SECRET-MARK-42` n'apparaît dans aucun message d'erreur ni payload d'événement.
 
-- [ ] **Step 2: Lancer pour voir l'échec** — `cd engine && cargo test -p mira-core --test api_templates` ; attendu : erreur de compilation.
+- [x] **Step 2: Lancer pour voir l'échec** — `cd engine && cargo test -p mira-core --test api_templates` ; attendu : erreur de compilation.
 
-- [ ] **Step 3: Implémenter contrat, handlers et événement** — un fichier par opération, `route` en `match` exhaustif (comme `local_label/mod.rs`). `create.rs` suit `local_label/create.rs` (`TemplateCommand` copié de `LabelCommand` dans `idempotency.rs`, `announce` dans `writing.rs`). `update.rs` et `delete.rs` : mêmes contrôles que `rename.rs` / `delete.rs`. Ajouter `TemplatesChanged` aux trois `match` de `kind.rs` (`category`, `account`) et `Template` à `EventCategory`.
+- [x] **Step 3: Implémenter contrat, handlers et événement** — un fichier par opération, `route` en `match` exhaustif (comme `local_label/mod.rs`). `create.rs` suit `local_label/create.rs` (`TemplateCommand` copié de `LabelCommand` dans `idempotency.rs`, `announce` dans `writing.rs`). `update.rs` et `delete.rs` : mêmes contrôles que `rename.rs` / `delete.rs`. Ajouter `TemplatesChanged` aux trois `match` de `kind.rs` (`category`, `account`) et `Template` à `EventCategory`.
 
-- [ ] **Step 4: Instantanés de contrat** — créer `template_domain.rs` (exemples de chaque requête et réponse, comme `local_label_domain.rs`) et le brancher dans `snapshot.rs` ; régénérer : `MIRA_UPDATE_SNAPSHOT=1 cargo test -p mira-core --test contract_snapshot_requests_and_responses --test contract_snapshot_events` puis **relire le diff** de `tests/snapshots/contract_v1.json` et `events_v1.json` (seuls des ajouts attendus). `contract_snapshot_templates.rs` vérifie la forme des 6 requêtes et 4 réponses.
+- [x] **Step 4: Instantanés de contrat** — créer `template_domain.rs` (exemples de chaque requête et réponse, comme `local_label_domain.rs`) et le brancher dans `snapshot.rs` ; régénérer : `MIRA_UPDATE_SNAPSHOT=1 cargo test -p mira-core --test contract_snapshot_requests_and_responses --test contract_snapshot_events` puis **relire le diff** de `tests/snapshots/contract_v1.json` et `events_v1.json` (seuls des ajouts attendus). `contract_snapshot_templates.rs` vérifie la forme des 6 requêtes et 4 réponses.
 
-- [ ] **Step 5: Relancer** — `cargo test -p mira-core` (toutes les suites touchées par le contrat et les événements) ; `cargo test` dans `bridge/` (le pont ne doit rien exiger de plus) ; `cargo clippy --all-targets -- -D warnings` ; `tools/check-norms`, `tools/check-architecture` ; attendu : vert.
+- [x] **Step 5: Relancer** — `cargo test -p mira-core` (toutes les suites touchées par le contrat et les événements) ; `cargo test` dans `bridge/` (le pont ne doit rien exiger de plus) ; `cargo clippy --all-targets -- -D warnings` ; `tools/check-norms`, `tools/check-architecture` ; attendu : vert.
 
-- [ ] **Step 6: Consigner la décision** dans `docs/DECISIONS-AGENT.md` (contexte / choix / raison / retour arrière : points (a) à (c) des contraintes globales).
+- [x] **Step 6: Consigner la décision** dans `docs/DECISIONS-AGENT.md` (contexte / choix / raison / retour arrière : points (a) à (c) des contraintes globales).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add engine docs
@@ -170,19 +170,19 @@ git commit -m "feat(modèles): API des modèles de messages, événement Templat
   - `class Templates extends ChangeNotifier` (liste en mémoire, `reload()`), exposé par `MailStore`
   - `EventEffect.templates`, route `'templates_changed': {EventEffect.templates}`
 
-- [ ] **Step 1: Écrire les tests** (même style que `local_label_admin_test.dart` : faux `EngineClient`) :
+- [x] **Step 1: Écrire les tests** (même style que `local_label_admin_test.dart` : faux `EngineClient`) :
   - `template_admin_test.dart` : `list` décode ; `create` envoie `domain: template`, `op: create_template` avec une clé `idempotency_key` non vide et différente à chaque appel ; `render` décode `unresolved`.
   - `templates_state_test.dart` : l'événement `templates_changed` déclenche un rechargement ; une erreur du moteur est exposée sans vider la liste.
   - `templates_settings_test.dart` : créer, renommer, supprimer (avec confirmation) ; nom en double → message traduit ; barre de variables : toucher `contact.nom` insère `{{contact.nom}}` au curseur.
   - `event_routes_test.dart` : la table nomme `templates_changed` (le test existant compare à `events_v1.json`).
 
-- [ ] **Step 2: Lancer pour voir l'échec** — `cd app && flutter test test/template_admin_test.dart` ; attendu : fichier source absent.
+- [x] **Step 2: Lancer pour voir l'échec** — `cd app && flutter test test/template_admin_test.dart` ; attendu : fichier source absent.
 
-- [ ] **Step 3: Implémenter** — `template_admin.dart` calqué sur `local_label_admin.dart` (`_send`, clé `ui-template-create-…`). Brancher `EventEffect.templates` dans `event_routes.dart` et le `switch` de `engine_mail_source.dart` ; exposer `templateAdmin` dans `MailSource`. `templates_settings.dart` : liste, éditeur (nom, objet, corps), barre de variables (les 8), suppression avec confirmation, erreurs via `i18n/engine_errors.dart` (`invalid_input.template_name_empty`, `template_name_taken`, `template_too_long`, `not_found.template`). Ajouter l'entrée dans `settings_panel.dart` (nouvel onglet, garde `s.source?.templateAdmin != null` comme `labelSettingsAdmin`). Textes dans `i18n` ; `i18n_coverage_test` doit rester vert.
+- [x] **Step 3: Implémenter** — `template_admin.dart` calqué sur `local_label_admin.dart` (`_send`, clé `ui-template-create-…`). Brancher `EventEffect.templates` dans `event_routes.dart` et le `switch` de `engine_mail_source.dart` ; exposer `templateAdmin` dans `MailSource`. `templates_settings.dart` : liste, éditeur (nom, objet, corps), barre de variables (les 8), suppression avec confirmation, erreurs via `i18n/engine_errors.dart` (`invalid_input.template_name_empty`, `template_name_taken`, `template_too_long`, `not_found.template`). Ajouter l'entrée dans `settings_panel.dart` (nouvel onglet, garde `s.source?.templateAdmin != null` comme `labelSettingsAdmin`). Textes dans `i18n` ; `i18n_coverage_test` doit rester vert.
 
-- [ ] **Step 4: Relancer** — `flutter test test/template_admin_test.dart test/templates_state_test.dart test/templates_settings_test.dart test/event_routes_test.dart test/events_contract_test.dart test/i18n_coverage_test.dart` ; `flutter analyze` ; attendu : vert.
+- [x] **Step 4: Relancer** — `flutter test test/template_admin_test.dart test/templates_state_test.dart test/templates_settings_test.dart test/event_routes_test.dart test/events_contract_test.dart test/i18n_coverage_test.dart` ; `flutter analyze` ; attendu : vert.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app
@@ -205,7 +205,7 @@ git commit -m "feat(app): gestion des modèles de messages (liste, édition, var
   - `Future<EngineTemplate?> showTemplatePicker(BuildContext, List<EngineTemplate>)` : recherche par nom, Échap ferme sans résultat.
   - `bool slashOpensPicker(String text, int cursor)` : vrai si le caractère avant le curseur est `/` précédé d'un début de ligne ou d'un espace.
 
-- [ ] **Step 1: Écrire les tests** :
+- [x] **Step 1: Écrire les tests** :
   - `template_context_test.dart` : « Léa Durand <lea@x.fr> » donne `contact.prénom = "Léa"` ; aucun destinataire → pas de clé `contact` ; date et heure formatées pour une `DateTime` fixe.
   - `template_picker_test.dart` : la saisie filtre la liste ; Entrée valide ; Échap ferme sans valeur.
   - `composer_templates_test.dart` :
@@ -214,13 +214,13 @@ git commit -m "feat(app): gestion des modèles de messages (liste, édition, var
     - Variables non résolues : restent en clair, le message « N variables à compléter » apparaît.
     - Modèle supprimé entre l'ouverture du sélecteur et l'insertion (Review Focus 6) : l'erreur traduite s'affiche, le corps n'est pas modifié, la liste est rechargée.
 
-- [ ] **Step 2: Lancer pour voir l'échec** — `cd app && flutter test test/template_context_test.dart` ; attendu : fichier source absent.
+- [x] **Step 2: Lancer pour voir l'échec** — `cd app && flutter test test/template_context_test.dart` ; attendu : fichier source absent.
 
-- [ ] **Step 3: Implémenter** — `template_context.dart` et `template_picker.dart` en fichiers séparés ; dans `composer.dart`, seulement le branchement (bouton dans `_FmtBar`, appel de `slashOpensPicker` depuis `_onBody`), la logique reste dans les nouveaux fichiers. Surbrillance des variables non résolues via le contrôleur riche existant, ou à défaut une ligne d'état sous l'éditeur si `RichController` ne s'y prête pas (consigner le choix dans `DECISIONS-AGENT.md`).
+- [x] **Step 3: Implémenter** — `template_context.dart` et `template_picker.dart` en fichiers séparés ; dans `composer.dart`, seulement le branchement (bouton dans `_FmtBar`, appel de `slashOpensPicker` depuis `_onBody`), la logique reste dans les nouveaux fichiers. Surbrillance des variables non résolues via le contrôleur riche existant, ou à défaut une ligne d'état sous l'éditeur si `RichController` ne s'y prête pas (consigner le choix dans `DECISIONS-AGENT.md`).
 
-- [ ] **Step 4: Relancer** — `flutter test test/template_context_test.dart test/template_picker_test.dart test/composer_templates_test.dart` puis la suite complète `flutter test` (le composeur est partagé) ; `flutter analyze` ; attendu : vert.
+- [x] **Step 4: Relancer** — `flutter test test/template_context_test.dart test/template_picker_test.dart test/composer_templates_test.dart` puis la suite complète `flutter test` (le composeur est partagé) ; `flutter analyze` ; attendu : vert.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app docs

@@ -75,3 +75,12 @@ pub fn assert_refusal_report(report: &RuleImportReport) {
     ];
     assert_eq!(seen, names);
 }
+
+/// Requête d'import de ce texte, sans remplacement
+pub fn import_request(yaml: &str, key_text: &str) -> mira_core::api::Request {
+    mira_core::api::Request::Rule(mira_core::api::RuleRequest::ImportRules {
+        yaml: yaml.to_string(),
+        replace_existing: false,
+        idempotency_key: mira_vocabulary::IdempotencyKey(key_text.to_string()),
+    })
+}

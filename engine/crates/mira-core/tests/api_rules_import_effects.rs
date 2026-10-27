@@ -9,10 +9,12 @@ mod support_rule_api;
 mod support_write;
 
 use mira_core::profile::ProfilePaths;
+use support_api::leaks::{events_text, failure_text};
 use support_api::queries::event_kinds;
 use support_imap::within;
 use support_rule_api::calls::list;
 use support_rule_api::portability::{exported_items, file_of, import, variant};
+use support_rule_api::refusals::import_request;
 use support_rule_api::samples::changed_rules;
 use support_rule_api::writes::create_named;
 use support_write::fixture::Fixture;
@@ -73,23 +75,32 @@ async fn database_failure_mid_import_writes_nothing() {
     .await;
 }
 
-/// Ni les erreurs ni les événements ne portent le contenu des règles
+/// Ni les erreurs (syntaxe, panne de la base) ni les événements ne portent le contenu des règles
 #[tokio::test]
 async fn import_never_leaks_rule_content_in_errors_or_events() {
     within(async {
         let f = Fixture::start().await;
         create_named(f.engine(), &["A"]).await;
         let base = exported_items(f.engine()).await.remove(0);
-        let error = import(f.engine(), "mira_export: [\nSECRET-MARK-42", false, "k-1")
-            .await
-            .unwrap_err();
-        assert!(!error.contains("SECRET-MARK-42"));
-        let secret = variant(&base, "n1", "SECRET-MARK-42");
-        import(f.engine(), &file_of(vec![secret]), false, "k-2")
-            .await
-            .unwrap();
-        let events = format!("{:?}", event_kinds(f.engine()).await);
-        assert!(!events.contains("SECRET-MARK-42"));
+        let trigger = "CREATE TRIGGER boom BEFORE INSERT ON rules WHEN NEW.name = 'SECRET-MARK-42' \
+                       BEGIN SELECT RAISE(ABORT, 'panne'); END;";
+        let paths = ProfilePaths::resolve(&f.config.profile, &f.config.environment).unwrap();
+        let db = rusqlite::Connection::open(paths.database).unwrap();
+        db.execute_batch(trigger).unwrap();
+        let failing = file_of(vec![variant(&base, "n1", "SECRET-MARK-42")]);
+        let storage = failure_text(f.engine(), import_request(&failing, "k-1")).await;
+        let syntax = failure_text(
+            f.engine(),
+            import_request("mira_export: [\nSECRET-MARK-42", "k-2"),
+        )
+        .await;
+        assert!(storage.contains("local_storage."), "{storage}");
+        assert!(syntax.contains("invalid_input.yaml_syntax"), "{syntax}");
+        db.execute_batch("DROP TRIGGER boom").unwrap();
+        import(f.engine(), &failing, false, "k-3").await.unwrap();
+        for text in [&storage, &syntax, &events_text(f.engine()).await] {
+            assert!(!text.contains("SECRET-MARK-42"), "{text}");
+        }
     })
     .await;
 }

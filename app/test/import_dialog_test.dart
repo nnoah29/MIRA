@@ -78,6 +78,7 @@ void main() {
           body: FileImportReportView(
             report: _report(),
             refusal: rulesRefusalText,
+            wording: rulesWording(),
           ),
         ),
       ),
@@ -128,12 +129,15 @@ void main() {
           body: FileImportReportView(
             report: report,
             refusal: labelsRefusalText,
+            wording: labelsWording(),
           ),
         ),
       ),
     );
     expect(find.textContaining('Couleur invalide'), findsOneWidget);
     expect(find.textContaining('Trop de libellés'), findsOneWidget);
-    expect(find.textContaining('2 refusées'), findsOneWidget);
+    expect(find.textContaining('2 refusés'), findsOneWidget);
+    expect(find.textContaining('Libellé 1'), findsOneWidget);
+    expect(find.textContaining('Règle'), findsNothing);
   });
 }

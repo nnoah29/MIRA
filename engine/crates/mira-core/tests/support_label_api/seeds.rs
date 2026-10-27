@@ -1,7 +1,7 @@
 //! Libellés de départ, suppression en bloc et sort « refusé » pour les tests d'import.
 
-use mira_core::api::{Engine, LocalLabelRequest};
-use mira_vocabulary::{LabelImportOutcome, LabelImportRefusal};
+use mira_core::api::{Engine, LocalLabelRequest, Request};
+use mira_vocabulary::{IdempotencyKey, LabelImportOutcome, LabelImportRefusal};
 
 use super::calls::{call, labels};
 use super::files::create_colored;
@@ -38,4 +38,13 @@ pub async fn pairs(engine: &Engine) -> Vec<(String, u32)> {
         .into_iter()
         .map(|l| (l.name, l.color))
         .collect()
+}
+
+/// Requête d'import de ce texte, sans remplacement
+pub fn import_request(yaml: &str, key_text: &str) -> Request {
+    Request::LocalLabel(LocalLabelRequest::ImportLocalLabelsFile {
+        yaml: yaml.to_string(),
+        replace_existing: false,
+        idempotency_key: IdempotencyKey(key_text.to_string()),
+    })
 }

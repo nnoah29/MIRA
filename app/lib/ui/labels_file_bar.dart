@@ -59,7 +59,13 @@ class _LabelsFileBarState extends State<LabelsFileBar> {
       yaml,
       replaceExisting: replace,
     );
-    if (mounted) await showFileImportReport(context, report, labelsRefusalText);
+    if (!mounted) return;
+    await showFileImportReport(
+      context,
+      report,
+      labelsRefusalText,
+      labelsWording(),
+    );
   });
 
   @override

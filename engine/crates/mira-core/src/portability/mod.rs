@@ -4,4 +4,5 @@ pub mod digest;
 pub mod envelope;
 pub mod labels;
 pub mod rules;
+mod scan;
 mod syntax;

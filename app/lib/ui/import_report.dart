@@ -7,14 +7,46 @@ import '../theme/app_theme.dart';
 import 'import_dialog.dart';
 import 'widgets.dart';
 
+/// Mots d'un rapport d'import, accordés à ce qu'on importe : règles ou libellés.
+class ImportWording {
+  final String Function(int position, String name, String reason) entry;
+  final String Function(int n) imported, replaced, present, refused;
+  const ImportWording(
+    this.entry,
+    this.imported,
+    this.replaced,
+    this.present,
+    this.refused,
+  );
+}
+
+/// Mots du rapport d'un import de règles (féminin).
+ImportWording rulesWording() => ImportWording(
+  (position, name, reason) =>
+      t('Règle {0} « {1} » : {2}', [position, name, reason]),
+  (n) => tn(n, 'importée', 'importées'),
+  (n) => tn(n, 'remplacée', 'remplacées'),
+  (n) => tn(n, 'déjà présente', 'déjà présentes'),
+  (n) => tn(n, 'refusée', 'refusées'),
+);
+
+/// Mots du rapport d'un import de libellés (masculin).
+ImportWording labelsWording() => ImportWording(
+  (position, name, reason) =>
+      t('Libellé {0} « {1} » : {2}', [position, name, reason]),
+  (n) => tn(n, 'importé', 'importés'),
+  (n) => tn(n, 'remplacé', 'remplacés'),
+  (n) => tn(n, 'déjà présent', 'déjà présents'),
+  (n) => tn(n, 'refusé', 'refusés'),
+);
+
 /// Résumé chiffré d'un import, sans les compteurs à zéro.
-String importSummary(FileImportReport r) {
+String importSummary(FileImportReport r, ImportWording w) {
   final parts = [
-    if (r.imported > 0) tn(r.imported, 'importée', 'importées'),
-    if (r.replaced > 0) tn(r.replaced, 'remplacée', 'remplacées'),
-    if (r.alreadyPresent > 0)
-      tn(r.alreadyPresent, 'déjà présente', 'déjà présentes'),
-    if (r.refused > 0) tn(r.refused, 'refusée', 'refusées'),
+    if (r.imported > 0) w.imported(r.imported),
+    if (r.replaced > 0) w.replaced(r.replaced),
+    if (r.alreadyPresent > 0) w.present(r.alreadyPresent),
+    if (r.refused > 0) w.refused(r.refused),
   ];
   return parts.isEmpty
       ? t('Rien à importer dans le fichier.')
@@ -44,10 +76,12 @@ String rulesRefusalText(FileImportEntry e) => switch (e.reason) {
 class FileImportReportView extends StatelessWidget {
   final FileImportReport report;
   final String Function(FileImportEntry) refusal;
+  final ImportWording wording;
   const FileImportReportView({
     super.key,
     required this.report,
     required this.refusal,
+    required this.wording,
   });
 
   @override
@@ -58,14 +92,14 @@ class FileImportReportView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          importSummary(report),
+          importSummary(report, wording),
           style: Fonts.sans(size: 14, w: FontWeight.w500, color: p.text),
         ),
         for (final e in report.entries.where((e) => e.refused))
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-              t('Règle {0} « {1} » : {2}', [e.position, e.name, refusal(e)]),
+              wording.entry(e.position, e.name, refusal(e)),
               style: Fonts.sans(size: 13.5, color: p.accent),
             ),
           ),
@@ -79,6 +113,7 @@ Future<void> showFileImportReport(
   BuildContext context,
   FileImportReport report,
   String Function(FileImportEntry) refusal,
+  ImportWording wording,
 ) => showDialog<void>(
   context: context,
   builder: (c) => ImportDialogShell(
@@ -88,7 +123,7 @@ Future<void> showFileImportReport(
         style: Fonts.sans(size: 16, w: FontWeight.w600, color: c.pal.text),
       ),
       const SizedBox(height: 12),
-      FileImportReportView(report: report, refusal: refusal),
+      FileImportReportView(report: report, refusal: refusal, wording: wording),
       const SizedBox(height: 16),
       Align(
         alignment: Alignment.centerRight,

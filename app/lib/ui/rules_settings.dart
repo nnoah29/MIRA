@@ -181,7 +181,12 @@ class _RulesSettingsState extends State<RulesSettings> {
       );
       await _load();
       if (mounted) {
-        await showFileImportReport(context, report, rulesRefusalText);
+        await showFileImportReport(
+          context,
+          report,
+          rulesRefusalText,
+          rulesWording(),
+        );
       }
     } catch (e) {
       if (mounted) setState(() => error = fileErrorText(e));

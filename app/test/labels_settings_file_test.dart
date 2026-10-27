@@ -133,7 +133,7 @@ void main() {
       );
       expect(call['yaml'], 'mira_export: {}\n');
       expect(call['replace_existing'], true);
-      expect(find.textContaining('1 importée'), findsOneWidget);
+      expect(find.textContaining('1 importé'), findsOneWidget);
     },
   );
 

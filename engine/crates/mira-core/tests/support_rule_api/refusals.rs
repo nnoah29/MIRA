@@ -9,7 +9,16 @@ use super::portability::{outcomes, variant};
 
 /// Règle exportée, copiée sous ce nom avec ce champ remplacé
 fn broken(base: &Value, name: &str, field: &str, new: Value) -> Value {
-    let mut copy = variant(base, &format!("id-{name}"), name);
+    let mut copy = variant(
+        base,
+        &format!(
+            "id-{}",
+            name.chars()
+                .filter(char::is_ascii_alphanumeric)
+                .collect::<String>()
+        ),
+        name,
+    );
     copy[field] = new;
     copy
 }

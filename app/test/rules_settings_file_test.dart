@@ -12,6 +12,7 @@ import 'package:mira/ui/rules_settings.dart';
 class _Engine implements EngineClient {
   final calls = <Map<String, dynamic>>[];
   EngineException? importFails;
+  List<String> skipped = [];
 
   @override
   Future<Map<String, dynamic>> call(Map<String, dynamic> request) async {
@@ -25,7 +26,7 @@ class _Engine implements EngineClient {
       },
       'export_rules' => {
         'type': 'rules_export',
-        'data': {'yaml': 'mira_export: {}\n'},
+        'data': {'yaml': 'mira_export: {}\n', 'skipped': skipped},
       },
       'import_rules' => _imported(),
       _ => {'type': 'done'},
@@ -65,8 +66,11 @@ Future<_Engine> _pump(
   required Future<Uri?> Function(String, Uint8List) saveFile,
   required Future<String?> Function() pickFile,
   EngineException? importFails,
+  List<String> skipped = const [],
 }) async {
-  final engine = _Engine()..importFails = importFails;
+  final engine = _Engine()
+    ..importFails = importFails
+    ..skipped = [...skipped];
   await t.binding.setSurfaceSize(const Size(900, 1600));
   addTearDown(() => t.binding.setSurfaceSize(null));
   await t.pumpWidget(
@@ -163,5 +167,20 @@ void main() {
     await t.pumpAndSettle();
     expect(find.textContaining('Fichier YAML invalide'), findsOneWidget);
     expect(find.textContaining('ligne 3, colonne 5'), findsOneWidget);
+  });
+
+  testWidgets('un export qui écarte une règle la nomme à l’utilisateur', (
+    t,
+  ) async {
+    await _pump(
+      t,
+      saveFile: (n, b) async => Uri.file('/tmp/$n'),
+      pickFile: () async => null,
+      skipped: ['Factures'],
+    );
+    await t.tap(find.byKey(const ValueKey('export-rules')));
+    await t.pumpAndSettle();
+    expect(find.textContaining('une cible a disparu'), findsOneWidget);
+    expect(find.textContaining('Factures'), findsOneWidget);
   });
 }

@@ -44,14 +44,16 @@ String rulesExportName(DateTime now) {
   return 'mira-regles-${now.year}-${two(now.month)}-${two(now.day)}.yaml';
 }
 
-/// Exporte les règles dans le fichier choisi par l'utilisateur.
-Future<void> exportRulesFile(
+/// Exporte les règles dans le fichier choisi ; rend les noms des règles laissées de côté.
+Future<List<String>> exportRulesFile(
   RuleAdmin admin,
   SaveFile save,
   DateTime now,
 ) async {
-  final yaml = await admin.exportRules();
-  await save(rulesExportName(now), Uint8List.fromList(utf8.encode(yaml)));
+  final export = await admin.exportRules();
+  final bytes = Uint8List.fromList(utf8.encode(export.yaml));
+  await save(rulesExportName(now), bytes);
+  return export.skipped;
 }
 
 /// Erreur d'un fichier d'export dite à l'utilisateur, avec la ligne et la colonne d'une erreur de syntaxe.
@@ -64,3 +66,9 @@ String fileErrorText(Object error) {
   if (at == null) return text;
   return '$text (${t('ligne {0}, colonne {1}', [at.group(1), at.group(2)])})';
 }
+
+/// Avertissement après un export qui a écarté des règles dont une cible (libellé, modèle, boîte, compte) a disparu.
+String skippedNotice(List<String> names) => t(
+  '{0} non exportée(s), une cible a disparu : {1}',
+  [names.length, names.join(', ')],
+);

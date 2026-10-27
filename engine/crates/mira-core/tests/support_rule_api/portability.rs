@@ -1,19 +1,26 @@
 //! Export et import YAML des règles par la façade, et lecture de leurs éléments.
 
 use mira_core::api::{Engine, Response, RuleRequest, RuleResponse};
-use mira_core::portability::envelope::{unwrap, wrap};
-use mira_vocabulary::{RuleImportOutcome, RuleImportReport};
+use mira_core::portability::envelope::unwrap;
+use mira_vocabulary::RuleImportReport;
 use serde_json::Value;
 
 use super::calls::{key, rule_call};
 
-/// Texte YAML exporté, ou code d'erreur
-pub async fn export_yaml(engine: &Engine) -> Result<String, String> {
+pub use super::files::{file_of, outcomes, variant};
+
+/// Texte YAML exporté et noms des règles laissées de côté, ou code d'erreur
+pub async fn export_response(engine: &Engine) -> Result<(String, Vec<String>), String> {
     match rule_call(engine, RuleRequest::ExportRules).await {
-        Ok(Response::Rule(RuleResponse::RulesExport { yaml })) => Ok(yaml),
+        Ok(Response::Rule(RuleResponse::RulesExport { yaml, skipped })) => Ok((yaml, skipped)),
         Ok(other) => panic!("réponse inattendue : {other:?}"),
         Err(error) => Err(error.code),
     }
+}
+
+/// Texte YAML exporté, ou code d'erreur
+pub async fn export_yaml(engine: &Engine) -> Result<String, String> {
+    export_response(engine).await.map(|(yaml, _)| yaml)
 }
 
 /// Règles du fichier exporté, dans l'ordre du fichier
@@ -39,26 +46,4 @@ pub async fn import(
         Ok(other) => panic!("réponse inattendue : {other:?}"),
         Err(error) => Err(error.code),
     }
-}
-
-/// Fichier d'export portant ces règles
-pub fn file_of(items: Vec<Value>) -> String {
-    wrap("rules", "rules", items).unwrap()
-}
-
-/// Sorts du rapport, dans l'ordre du fichier
-pub fn outcomes(report: &RuleImportReport) -> Vec<RuleImportOutcome> {
-    report
-        .entries
-        .iter()
-        .map(|entry| entry.outcome.clone())
-        .collect()
-}
-
-/// Copie d'une règle exportée sous un autre identifiant et un autre nom
-pub fn variant(item: &Value, id: &str, name: &str) -> Value {
-    let mut copy = item.clone();
-    copy["id"] = Value::String(id.to_string());
-    copy["name"] = Value::String(name.to_string());
-    copy
 }

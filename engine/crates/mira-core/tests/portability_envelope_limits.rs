@@ -58,3 +58,14 @@ fn alias_bomb_is_refused_without_blowup() {
     let error = unwrap(&format!("{head}{levels}"), "rules", "rules").unwrap_err();
     assert!(error.code.starts_with("invalid_input."), "{}", error.code);
 }
+
+/// Une ancre plate répétée par des alias produit un document énorme : refusé avant toute analyse
+#[test]
+fn flat_alias_expansion_is_refused() {
+    let anchor = format!("[{}]", "x, ".repeat(1500));
+    let aliases = "*a, ".repeat(3000);
+    let head = "mira_export:\n  kind: rules\n  version: 1\nrules:\n";
+    let text = format!("{head}  - a: &a {anchor}\n    b: [{aliases}]\n");
+    let code = code_of(unwrap(&text, "rules", "rules"));
+    assert_eq!(code, "invalid_input.yaml_syntax");
+}

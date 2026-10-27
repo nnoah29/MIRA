@@ -109,10 +109,10 @@ class RuleAdmin {
     return RuleCatalog.fromJson(_inner(r));
   }
 
-  /// Toutes les règles en texte YAML portable, pour les enregistrer dans un fichier.
-  Future<String> exportRules() async {
+  /// Les règles en texte YAML portable, pour un fichier ; celles dont une cible a disparu sont nommées à part.
+  Future<RulesExport> exportRules() async {
     final r = await client.call(req('rule', 'export_rules'));
-    return _inner(r)['yaml'] as String;
+    return RulesExport.fromJson(_inner(r));
   }
 
   /// Importe le texte d'un fichier YAML ; les règles déjà présentes sont ignorées sauf [replaceExisting].

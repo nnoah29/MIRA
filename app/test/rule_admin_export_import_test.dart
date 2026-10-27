@@ -70,14 +70,18 @@ void main() {
       'type': 'rule',
       'data': {
         'type': 'rules_export',
-        'data': {'yaml': 'mira_export: {}\n'},
+        'data': {
+          'yaml': 'mira_export: {}\n',
+          'skipped': ['Factures'],
+        },
       },
     });
-    final yaml = await RuleAdmin(engine).exportRules();
+    final export = await RuleAdmin(engine).exportRules();
     final request = engine.calls.single;
     expect(request['domain'], 'rule');
     expect((request['request'] as Map)['op'], 'export_rules');
-    expect(yaml, 'mira_export: {}\n');
+    expect(export.yaml, 'mira_export: {}\n');
+    expect(export.skipped, ['Factures']);
   });
 
   test(

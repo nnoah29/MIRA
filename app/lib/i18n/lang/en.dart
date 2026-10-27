@@ -515,6 +515,8 @@ const Map<String, String> enStrings = {
   'Cette règle apparaît déjà plus haut dans le fichier':
       'This rule already appears earlier in the file',
   'Fichier YAML invalide': 'Invalid YAML file',
+  '{0} non exportée(s), une cible a disparu : {1}':
+      '{0} not exported, a target no longer exists: {1}',
   'Exporter': 'Export',
   'Importer': 'Import',
   'Importer des règles': 'Import rules',

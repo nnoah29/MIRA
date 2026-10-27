@@ -46,6 +46,6 @@ pub enum RuleResponse {
     Status(RuleStatus),
     Preview(RulePreview),
     Catalog(RuleCatalog),
-    RulesExport { yaml: String },
+    RulesExport { yaml: String, skipped: Vec<String> },
     RulesImport(RuleImportReport),
 }

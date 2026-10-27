@@ -10,11 +10,13 @@ mod support_rule_api;
 mod support_template_api;
 mod support_write;
 
+use mira_core::portability::envelope::unwrap;
 use mira_vocabulary::{Rule, RuleAction};
 use support_imap::within;
 use support_rule_api::calls::create;
-use support_rule_api::portability::export_yaml;
+use support_rule_api::portability::{export_response, export_yaml};
 use support_rule_api::samples::{only, subject_rule};
+use support_rule_api::writes::create_named;
 use support_write::fixture::Fixture;
 
 /// Règle du compte qui classe, étiquette et répond avec un modèle
@@ -62,17 +64,24 @@ async fn export_uses_portable_references() {
     .await;
 }
 
-/// Un libellé supprimé sous une règle fait échouer l'export avec une erreur typée
+/// Une règle dont le libellé a disparu est laissée de côté et nommée ; les autres sont exportées
 #[tokio::test]
-async fn export_with_dangling_reference_fails_typed() {
+async fn export_skips_rule_with_dangling_reference_and_names_it() {
     within(async {
         let f = Fixture::start().await;
         let (rule, label_id, _) = referencing_rule(&f).await;
         create(f.engine(), rule, "k-r").await.unwrap();
+        create_named(f.engine(), &["Saine"]).await;
         let id = mira_vocabulary::LocalLabelId::from_raw(label_id);
         f.db.write(|tx| tx.delete_local_label(&id)).unwrap();
-        let error = export_yaml(f.engine()).await.unwrap_err();
-        assert_eq!(error, "invalid_input.parameter");
+        let (yaml, skipped) = export_response(f.engine()).await.unwrap();
+        let items = unwrap(&yaml, "rules", "rules").unwrap();
+        let names: Vec<_> = items
+            .iter()
+            .map(|item| item["name"].as_str().unwrap())
+            .collect();
+        assert_eq!(names, ["Saine"]);
+        assert_eq!(skipped, ["Factures"]);
     })
     .await;
 }

@@ -153,11 +153,16 @@ class _RulesSettingsState extends State<RulesSettings> {
     }
   }
 
-  /// Enregistre toutes les règles dans un fichier YAML choisi par l'utilisateur.
+  /// Enregistre les règles dans un fichier YAML choisi ; signale celles qu'une cible disparue a écartées.
   Future<void> _export() async {
     try {
-      await exportRulesFile(widget.admin, widget.saveFile, widget.clock());
-      if (mounted) setState(() => error = null);
+      final skipped = await exportRulesFile(
+        widget.admin,
+        widget.saveFile,
+        widget.clock(),
+      );
+      if (!mounted) return;
+      setState(() => error = skipped.isEmpty ? null : skippedNotice(skipped));
     } catch (e) {
       if (mounted) setState(() => error = fileErrorText(e));
     }

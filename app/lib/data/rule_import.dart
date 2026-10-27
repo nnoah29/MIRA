@@ -48,3 +48,15 @@ class RuleImportReport {
           RuleImportEntry.fromJson((e as Map).cast<String, dynamic>()),
       ]);
 }
+
+/// Texte YAML exporté et noms des règles laissées de côté parce qu'une de leurs cibles a disparu.
+class RulesExport {
+  final String yaml;
+  final List<String> skipped;
+  const RulesExport(this.yaml, this.skipped);
+
+  factory RulesExport.fromJson(Map<String, dynamic> json) => RulesExport(
+    json['yaml'] as String,
+    [for (final n in (json['skipped'] as List? ?? const [])) n as String],
+  );
+}

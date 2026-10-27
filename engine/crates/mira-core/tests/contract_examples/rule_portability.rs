@@ -50,6 +50,7 @@ fn sample_report() -> RuleImportReport {
 pub fn responses() -> Vec<Named<Response>> {
     let export = RuleResponse::RulesExport {
         yaml: "mira_export: {}\n".to_string(),
+        skipped: vec!["Factures".to_string()],
     };
     vec![
         ("rule.rules_export".to_string(), Response::Rule(export)),

@@ -1800,6 +1800,9 @@
     "rule.rules_export": {
       "data": {
         "data": {
+          "skipped": [
+            "Factures"
+          ],
           "yaml": "mira_export: {}\n"
         },
         "type": "rules_export"

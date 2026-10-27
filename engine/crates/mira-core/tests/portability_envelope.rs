@@ -39,3 +39,19 @@ fn syntax_error_reports_line_and_column_without_content() {
     assert!(error.message.contains("ligne") && error.message.contains("colonne"));
     assert!(!error.message.contains("SECRET-MARK-42"));
 }
+
+/// Une ancre YAML est refusée avec un message qui la nomme
+#[test]
+fn anchor_is_refused_with_explicit_message() {
+    let text = document("rules", 1, "[&a x]");
+    let error = unwrap(&text, "rules", "rules").unwrap_err();
+    assert_eq!(error.code, "invalid_input.yaml_syntax");
+    assert!(error.message.contains("ancres"), "{}", error.message);
+}
+
+/// Une esperluette au milieu d'un mot ou suivie d'un blanc n'est pas une ancre
+#[test]
+fn ampersand_inside_text_is_not_an_anchor() {
+    let text = document("rules", 1, "[\"R&D\", \"Tom & Jerry\"]");
+    assert_eq!(unwrap(&text, "rules", "rules").unwrap().len(), 2);
+}

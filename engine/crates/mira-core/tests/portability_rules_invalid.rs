@@ -32,3 +32,29 @@ fn empty_id_is_invalid() {
     let error = from_portable(value, &FakeRefs::default()).unwrap_err();
     assert_eq!(error, PortableError::Invalid);
 }
+
+/// Un identifiant trop long est invalide
+#[test]
+fn overlong_id_is_invalid() {
+    let value = with_field(portable(), "id", json!("x".repeat(65)));
+    let error = from_portable(value, &FakeRefs::default()).unwrap_err();
+    assert_eq!(error, PortableError::Invalid);
+}
+
+/// Un identifiant avec retour à la ligne ou caractère hors alphabet est invalide
+#[test]
+fn id_outside_the_engine_alphabet_is_invalid() {
+    for id in ["a\nb", "règle", "a b", "../x"] {
+        let value = with_field(portable(), "id", json!(id));
+        let error = from_portable(value, &FakeRefs::default()).unwrap_err();
+        assert_eq!(error, PortableError::Invalid, "{id:?}");
+    }
+}
+
+/// Une règle d'un format de schéma futur est refusée
+#[test]
+fn future_schema_version_is_invalid() {
+    let value = with_field(portable(), "schema_version", json!(99));
+    let error = from_portable(value, &FakeRefs::default()).unwrap_err();
+    assert_eq!(error, PortableError::Invalid);
+}

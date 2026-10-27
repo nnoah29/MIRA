@@ -21,6 +21,16 @@ Future<Uri?> saveWithPicker(String name, Uint8List bytes) =>
 /// Taille au-delà de laquelle le fichier n'est pas lu : le moteur le refuserait de toute façon.
 const maxRulesFileBytes = 2 * 1024 * 1024;
 
+/// Refuse un fichier de plus de 2 Mo avec le code du moteur, que sa taille ait été connue avant lecture ou non.
+void ensureRulesFileSize(int bytes) {
+  if (bytes > maxRulesFileBytes) {
+    throw const EngineException(
+      'invalid_input.export_too_large',
+      'export file too large',
+    );
+  }
+}
+
 /// Boîte d'ouverture du système, limitée aux fichiers `.yaml` et `.yml`.
 Future<String?> pickYamlWithPicker() async {
   final found = await FilePicker.pickFiles(
@@ -29,20 +39,27 @@ Future<String?> pickYamlWithPicker() async {
   );
   if (found.isEmpty) return null;
   final file = found.first;
-  if ((await file.length() ?? 0) > maxRulesFileBytes) {
-    throw const EngineException(
-      'invalid_input.export_too_large',
-      'export file too large',
-    );
-  }
-  return utf8.decode(await file.readAsBytes(), allowMalformed: true);
+  ensureRulesFileSize(await file.length() ?? 0);
+  final bytes = await file.readAsBytes();
+  ensureRulesFileSize(bytes.length);
+  return utf8.decode(bytes, allowMalformed: true);
 }
 
-/// Nom du fichier d'export du jour, par exemple `mira-regles-2026-10-27.yaml`.
-String rulesExportName(DateTime now) {
+/// Nom d'un fichier d'export du jour, par exemple `mira-regles-2026-10-27.yaml`.
+String _dated(String prefix, DateTime now) {
   String two(int n) => n.toString().padLeft(2, '0');
-  return 'mira-regles-${now.year}-${two(now.month)}-${two(now.day)}.yaml';
+  return 'mira-$prefix-${now.year}-${two(now.month)}-${two(now.day)}.yaml';
 }
+
+/// Nom du fichier d'export des règles du jour.
+String rulesExportName(DateTime now) => _dated('regles', now);
+
+/// Nom du fichier d'export des libellés du jour.
+String labelsExportName(DateTime now) => _dated('libelles', now);
+
+/// Enregistre un texte YAML sous ce nom, là où l'utilisateur le choisit.
+Future<void> saveYamlText(SaveFile save, String name, String yaml) =>
+    save(name, Uint8List.fromList(utf8.encode(yaml)));
 
 /// Exporte les règles dans le fichier choisi ; rend les noms des règles laissées de côté.
 Future<List<String>> exportRulesFile(
@@ -51,8 +68,7 @@ Future<List<String>> exportRulesFile(
   DateTime now,
 ) async {
   final export = await admin.exportRules();
-  final bytes = Uint8List.fromList(utf8.encode(export.yaml));
-  await save(rulesExportName(now), bytes);
+  await saveYamlText(save, rulesExportName(now), export.yaml);
   return export.skipped;
 }
 

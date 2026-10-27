@@ -11,7 +11,7 @@ import '../theme/app_theme.dart';
 import 'rule_editor.dart';
 import 'rule_widgets.dart';
 import 'rules_file_flow.dart';
-import 'rules_import_dialog.dart';
+import 'import_dialog.dart';
 import '../theme/icons.dart';
 import 'widgets.dart';
 
@@ -180,7 +180,9 @@ class _RulesSettingsState extends State<RulesSettings> {
         replaceExisting: replace,
       );
       await _load();
-      if (mounted) await showRulesImportReport(context, report);
+      if (mounted) {
+        await showFileImportReport(context, report, rulesRefusalText);
+      }
     } catch (e) {
       if (mounted) setState(() => error = fileErrorText(e));
     }

@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import '../data/rule_import.dart';
+import '../data/file_import.dart';
 import '../data/rule_models.dart';
 import 'engine_client.dart';
 
@@ -116,7 +116,7 @@ class RuleAdmin {
   }
 
   /// Importe le texte d'un fichier YAML ; les règles déjà présentes sont ignorées sauf [replaceExisting].
-  Future<RuleImportReport> importRules(
+  Future<FileImportReport> importRules(
     String yaml, {
     bool replaceExisting = false,
   }) async {
@@ -127,6 +127,6 @@ class RuleAdmin {
         'idempotency_key': _key('import'),
       }),
     );
-    return RuleImportReport.fromJson(_inner(r));
+    return FileImportReport.fromJson(_inner(r));
   }
 }

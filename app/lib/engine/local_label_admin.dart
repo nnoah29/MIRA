@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import '../data/file_import.dart';
 import 'engine_client.dart';
 
 /// Libellé local tel que le moteur le tient : identifiant, nom, couleur ARGB.
@@ -121,5 +122,24 @@ class LocalLabelAdmin {
       (m['assignments'] as num).toInt(),
       (m['ignored'] as num).toInt(),
     );
+  }
+
+  /// Les libellés en texte YAML portable (nom et couleur), pour un fichier.
+  Future<String> exportLabelsFile() async {
+    final r = await _send('export_local_labels_file') as Map;
+    return r['yaml'] as String;
+  }
+
+  /// Importe le texte d'un fichier YAML ; les libellés déjà présents sont ignorés sauf [replaceExisting].
+  Future<FileImportReport> importLabelsFile(
+    String yaml, {
+    bool replaceExisting = false,
+  }) async {
+    final r = await _send('import_local_labels_file', {
+      'yaml': yaml,
+      'replace_existing': replaceExisting,
+      'idempotency_key': _key('file-import'),
+    });
+    return FileImportReport.fromJson((r as Map).cast<String, dynamic>());
   }
 }

@@ -1,11 +1,11 @@
 /// Sort d'une règle du fichier importé : importée, remplacée, déjà présente ou refusée.
-class RuleImportEntry {
+class FileImportEntry {
   final int position;
   final String name;
   final String outcome;
   final String? reason;
   final String? code;
-  const RuleImportEntry(
+  const FileImportEntry(
     this.position,
     this.name,
     this.outcome, {
@@ -16,10 +16,10 @@ class RuleImportEntry {
   /// Vrai quand la règle n'a pas pu être importée.
   bool get refused => outcome == 'refused';
 
-  factory RuleImportEntry.fromJson(Map<String, dynamic> json) {
+  factory FileImportEntry.fromJson(Map<String, dynamic> json) {
     final outcome = (json['outcome'] as Map).cast<String, dynamic>();
     final reason = (outcome['reason'] as Map?)?.cast<String, dynamic>();
-    return RuleImportEntry(
+    return FileImportEntry(
       json['position'] as int,
       json['name'] as String,
       outcome['type'] as String,
@@ -30,9 +30,9 @@ class RuleImportEntry {
 }
 
 /// Rapport d'import : une ligne par règle du fichier, dans l'ordre du fichier.
-class RuleImportReport {
-  final List<RuleImportEntry> entries;
-  const RuleImportReport(this.entries);
+class FileImportReport {
+  final List<FileImportEntry> entries;
+  const FileImportReport(this.entries);
 
   int _count(String outcome) =>
       entries.where((e) => e.outcome == outcome).length;
@@ -42,10 +42,10 @@ class RuleImportReport {
   int get alreadyPresent => _count('already_present');
   int get refused => _count('refused');
 
-  factory RuleImportReport.fromJson(Map<String, dynamic> json) =>
-      RuleImportReport([
+  factory FileImportReport.fromJson(Map<String, dynamic> json) =>
+      FileImportReport([
         for (final e in json['entries'] as List)
-          RuleImportEntry.fromJson((e as Map).cast<String, dynamic>()),
+          FileImportEntry.fromJson((e as Map).cast<String, dynamic>()),
       ]);
 }
 

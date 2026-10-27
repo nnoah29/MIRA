@@ -4,7 +4,7 @@ import '../i18n/i18n.dart';
 import '../theme/app_theme.dart';
 import 'widgets.dart';
 
-export 'rules_import_report.dart';
+export 'import_report.dart';
 
 /// Cadre commun des boîtes de dialogue d'import : fond du panneau, filet, largeur bornée.
 class ImportDialogShell extends StatelessWidget {
@@ -32,12 +32,47 @@ class ImportDialogShell extends StatelessWidget {
   }
 }
 
-/// Demande s'il faut remplacer les règles existantes ; rend `null` si l'on annule.
+/// Demande s'il faut remplacer les éléments existants ; rend `null` si l'on annule.
+Future<bool?> showImportOptionsDialog(
+  BuildContext context, {
+  required String title,
+  required String note,
+  required String replaceLabel,
+}) => showDialog<bool>(
+  context: context,
+  builder: (_) =>
+      _ImportOptions(title: title, note: note, replaceLabel: replaceLabel),
+);
+
+/// Boîte d'import des règles ; rend l'état de la case « Remplacer », `null` si l'on annule.
 Future<bool?> showRulesImportDialog(BuildContext context) =>
-    showDialog<bool>(context: context, builder: (_) => const _ImportOptions());
+    showImportOptionsDialog(
+      context,
+      title: t('Importer des règles'),
+      note: t(
+        'Les règles déjà présentes sont laissées telles quelles, sauf si tu coches la case.',
+      ),
+      replaceLabel: t('Remplacer les règles existantes'),
+    );
+
+/// Boîte d'import des libellés ; rend l'état de la case « Remplacer », `null` si l'on annule.
+Future<bool?> showLabelsImportDialog(BuildContext context) =>
+    showImportOptionsDialog(
+      context,
+      title: t('Importer des libellés'),
+      note: t(
+        'Les libellés déjà présents sont laissés tels quels, sauf si tu coches la case.',
+      ),
+      replaceLabel: t('Remplacer les libellés existants'),
+    );
 
 class _ImportOptions extends StatefulWidget {
-  const _ImportOptions();
+  final String title, note, replaceLabel;
+  const _ImportOptions({
+    required this.title,
+    required this.note,
+    required this.replaceLabel,
+  });
 
   @override
   State<_ImportOptions> createState() => _ImportOptionsState();
@@ -52,16 +87,11 @@ class _ImportOptionsState extends State<_ImportOptions> {
     return ImportDialogShell(
       children: [
         Text(
-          t('Importer des règles'),
+          widget.title,
           style: Fonts.sans(size: 16, w: FontWeight.w600, color: p.text),
         ),
         const SizedBox(height: 10),
-        Text(
-          t(
-            'Les règles déjà présentes sont laissées telles quelles, sauf si tu coches la case.',
-          ),
-          style: Fonts.sans(size: 13.5, color: p.dim),
-        ),
+        Text(widget.note, style: Fonts.sans(size: 13.5, color: p.dim)),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -72,7 +102,7 @@ class _ImportOptionsState extends State<_ImportOptions> {
             ),
             Expanded(
               child: Text(
-                t('Remplacer les règles existantes'),
+                widget.replaceLabel,
                 style: Fonts.sans(size: 14, color: p.text),
               ),
             ),

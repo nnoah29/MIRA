@@ -17,6 +17,7 @@ pub mod response_samples;
 pub mod responses_legacy;
 pub mod responses_read;
 pub mod rule_domain;
+pub mod rule_portability;
 pub mod search_domain;
 pub mod settings_domain;
 pub mod small_domains;

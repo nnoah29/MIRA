@@ -5,6 +5,7 @@ mod apply_existing_submit;
 mod catalog;
 mod create;
 mod delete;
+mod export;
 mod get;
 mod idempotency;
 mod list;
@@ -17,7 +18,8 @@ mod update;
 mod validate;
 mod writing;
 
-use mira_vocabulary::MiraError;
+use mira_vocabulary::error::codes::internal;
+use mira_vocabulary::{ErrorCategory, MiraError};
 
 use crate::api::contract::{Response, RuleRequest, RuleRequest as R};
 use crate::api::engine::Engine;
@@ -43,5 +45,11 @@ pub(crate) async fn route(engine: &Engine, request: RuleRequest) -> Result<Respo
             apply_existing::handle_apply_rule_to_existing(engine, &rule, key).await
         }
         R::ListRuleCatalog => catalog::handle_list_rule_catalog(),
+        R::ExportRules => export::handle_export_rules(engine),
+        R::ImportRules { .. } => Err(MiraError::new(
+            ErrorCategory::Internal,
+            internal::BUG,
+            "import des règles non implémenté",
+        )),
     }
 }

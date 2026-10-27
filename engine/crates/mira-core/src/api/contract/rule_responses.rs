@@ -1,6 +1,6 @@
 //! Réponses du domaine « règles » : règle avec son statut, aperçu, catalogue des conditions et actions.
 
-use mira_vocabulary::{MessageId, Rule};
+use mira_vocabulary::{MessageId, Rule, RuleImportReport};
 use serde::{Deserialize, Serialize};
 
 use crate::rules::validate::RuleStatus;
@@ -46,4 +46,6 @@ pub enum RuleResponse {
     Status(RuleStatus),
     Preview(RulePreview),
     Catalog(RuleCatalog),
+    RulesExport { yaml: String },
+    RulesImport(RuleImportReport),
 }

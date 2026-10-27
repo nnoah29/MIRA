@@ -28,6 +28,9 @@ pub use domain::message_template::{ContactInfo, MessageTemplate, RenderContext, 
 pub use domain::page::{Page, PageRequest};
 pub use domain::rule::action::RuleAction;
 pub use domain::rule::condition::{Condition, ConditionGroup};
+pub use domain::rule::import_report::{
+    RuleImportEntry, RuleImportOutcome, RuleImportRefusal, RuleImportReport,
+};
 pub use domain::rule::matcher::{AddressField, Comparison, RecipientKind, TextMatcher, TextOp};
 pub use domain::rule::rule::{CURRENT_RULE_SCHEMA_VERSION, Rule, RuleScope};
 pub use domain::rule::test::ConditionTest;

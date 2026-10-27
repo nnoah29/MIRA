@@ -92,6 +92,7 @@ pub fn requests() -> Vec<Named<Request>> {
         },
         RuleRequest::ListRuleCatalog,
     ]);
+    items.extend(super::rule_portability::requests());
     let ops: Vec<&str> = items.iter().map(op_name).collect();
     let names = numbered("rule", &ops);
     names
@@ -138,7 +139,8 @@ pub fn responses() -> Vec<Named<Response>> {
         ("rule.catalog", RuleResponse::Catalog(sample_catalog())),
     ];
     let wrap = |(name, inner): (&str, RuleResponse)| (name.to_string(), Response::Rule(inner));
-    items.into_iter().map(wrap).collect()
+    let extra = super::rule_portability::responses();
+    items.into_iter().map(wrap).chain(extra).collect()
 }
 
 /// Nom de l'opération, par `match` exhaustif
@@ -155,5 +157,7 @@ pub fn op_name(request: &RuleRequest) -> &'static str {
         RuleRequest::PreviewRule { .. } => "preview_rule",
         RuleRequest::ApplyRuleToExisting { .. } => "apply_rule_to_existing",
         RuleRequest::ListRuleCatalog => "list_rule_catalog",
+        RuleRequest::ExportRules => "export_rules",
+        RuleRequest::ImportRules { .. } => "import_rules",
     }
 }

@@ -64,6 +64,7 @@ pub fn requests() -> Vec<Named<Request>> {
     items.extend(label_requests());
     items.push(LocalLabelRequest::ListLocalLabelAssignments);
     items.extend(assignment_requests());
+    items.extend(super::label_portability::requests());
     let ops: Vec<&str> = items.iter().map(op_name).collect();
     numbered("local_label", &ops)
         .into_iter()
@@ -77,11 +78,8 @@ pub fn responses() -> Vec<Named<Response>> {
         thread: ThreadId::from_raw("thread-1"),
         labels: vec![LocalLabelId::from_raw("label-1")],
     };
-    let report = ImportReport {
-        labels: 1,
-        assignments: 1,
-        ignored: 0,
-    };
+    #[rustfmt::skip]
+    let report = ImportReport { labels: 1, assignments: 1, ignored: 0 };
     let items = [
         (
             "local_label.label",
@@ -100,7 +98,8 @@ pub fn responses() -> Vec<Named<Response>> {
     ];
     let wrap =
         |(name, inner): (&str, LocalLabelResponse)| (name.to_string(), Response::LocalLabel(inner));
-    items.into_iter().map(wrap).collect()
+    let extra = super::label_portability::responses();
+    items.into_iter().map(wrap).chain(extra).collect()
 }
 
 /// Nom de l'opération, par `match` exhaustif
@@ -114,5 +113,7 @@ pub fn op_name(request: &LocalLabelRequest) -> &'static str {
         LocalLabelRequest::SetLocalLabel { .. } => "set_local_label",
         LocalLabelRequest::ListLocalLabelAssignments => "list_local_label_assignments",
         LocalLabelRequest::ImportLocalLabels { .. } => "import_local_labels",
+        LocalLabelRequest::ExportLocalLabelsFile => "export_local_labels_file",
+        LocalLabelRequest::ImportLocalLabelsFile { .. } => "import_local_labels_file",
     }
 }

@@ -8,5 +8,7 @@
 //! Support des tests du domaine « local_label » de la façade : appels, fils du miroir, événements.
 
 pub mod calls;
+pub mod files;
+pub mod seeds;
 pub mod settings;
 pub mod threads;

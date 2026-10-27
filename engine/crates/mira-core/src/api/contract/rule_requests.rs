@@ -44,4 +44,10 @@ pub enum RuleRequest {
         idempotency_key: IdempotencyKey,
     },
     ListRuleCatalog,
+    ExportRules,
+    ImportRules {
+        yaml: String,
+        replace_existing: bool,
+        idempotency_key: IdempotencyKey,
+    },
 }

@@ -16,7 +16,7 @@ use contract_examples::snapshot::snapshot_path;
 use mira_core::api::{Request, Response};
 use serde_json::Value;
 
-/// Les onze opérations du domaine ont un exemple nommé d'après leur `op`, qui survit à un aller-retour JSON
+/// Les treize opérations du domaine ont un exemple nommé d'après leur `op`, qui survit à un aller-retour JSON
 #[test]
 fn every_rule_operation_has_an_example_that_round_trips() {
     let mut distinct = BTreeSet::new();
@@ -29,7 +29,7 @@ fn every_rule_operation_has_an_example_that_round_trips() {
         assert_eq!(back, request, "requête {name}");
         distinct.insert(tag);
     }
-    assert_eq!(distinct.len(), 11);
+    assert_eq!(distinct.len(), 13);
 }
 
 /// Chaque exemple de réponse appartient au domaine règles et survit à un aller-retour JSON

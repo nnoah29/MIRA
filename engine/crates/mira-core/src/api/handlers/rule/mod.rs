@@ -5,8 +5,12 @@ mod apply_existing_submit;
 mod catalog;
 mod create;
 mod delete;
+mod export;
 mod get;
 mod idempotency;
+mod import;
+mod import_one;
+mod import_replay;
 mod list;
 mod preview;
 mod preview_scan;
@@ -43,5 +47,9 @@ pub(crate) async fn route(engine: &Engine, request: RuleRequest) -> Result<Respo
             apply_existing::handle_apply_rule_to_existing(engine, &rule, key).await
         }
         R::ListRuleCatalog => catalog::handle_list_rule_catalog(),
+        R::ExportRules => export::handle_export_rules(engine),
+        R::ImportRules { yaml, replace_existing, idempotency_key: key } => {
+            import::handle_import_rules(engine, yaml, replace_existing, key)
+        }
     }
 }

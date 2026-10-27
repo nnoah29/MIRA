@@ -1,6 +1,6 @@
 //! Réponses du domaine « libellés locaux » : libellé, liste, poses, rapport de reprise.
 
-use mira_vocabulary::{LocalLabel, LocalLabelAssignment};
+use mira_vocabulary::{LabelImportReport, LocalLabel, LocalLabelAssignment};
 use serde::{Deserialize, Serialize};
 
 /// Bilan d'une reprise : libellés créés ou réutilisés, poses reprises, clés de conversation ignorées.
@@ -19,5 +19,7 @@ pub enum LocalLabelResponse {
     Labels(Vec<LocalLabel>),
     Assignments(Vec<LocalLabelAssignment>),
     Imported(ImportReport),
+    LabelsFileExport { yaml: String },
+    LabelsFileImport(LabelImportReport),
     Done,
 }

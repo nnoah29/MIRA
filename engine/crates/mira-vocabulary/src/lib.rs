@@ -20,6 +20,9 @@ pub use domain::auth::{AuthMethod, AuthMethodKind, OAuthSettings, SecretKind, Se
 pub use domain::draft::{Draft, DraftAttachment, DraftState};
 pub use domain::engine_settings::{EngineSettings, MAX_POLL_SECS, MIN_POLL_SECS, QuietHours};
 pub use domain::identity::Identity;
+pub use domain::label_import_report::{
+    LabelImportEntry, LabelImportOutcome, LabelImportRefusal, LabelImportReport,
+};
 pub use domain::label_settings::{CounterMode, LabelKind, LabelRef, LabelSettings};
 pub use domain::local_label::{LocalLabel, LocalLabelAssignment};
 pub use domain::mailbox::{Mailbox, MailboxRole, SyncMarker};

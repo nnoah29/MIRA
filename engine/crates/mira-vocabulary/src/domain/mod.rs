@@ -8,6 +8,7 @@ pub mod auth;
 pub mod draft;
 pub mod engine_settings;
 pub mod identity;
+pub mod label_import_report;
 pub mod label_settings;
 pub mod local_label;
 pub mod mailbox;

@@ -4,24 +4,16 @@ use std::collections::HashSet;
 
 use mira_vocabulary::{IdempotencyKey, MiraError, RuleId, RuleImportEntry, RuleImportReport};
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 
 use super::idempotency::{Replay, WriteCommand};
 use super::import_one::import_item;
 use super::writing::announce;
 use crate::api::contract::{Response, RuleResponse};
 use crate::api::engine::Engine;
+use crate::portability::digest::digest_of;
 use crate::portability::envelope::unwrap;
 use crate::portability::rules::StoredRefs;
 use crate::storage::Tx;
-
-/// Empreinte hexadécimale du texte, pour ne pas mémoriser le fichier entier avec la clé
-fn digest_of(text: &str) -> String {
-    Sha256::digest(text.as_bytes())
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect()
-}
 
 /// Importe les règles du fichier ; la même clé rejouée rend le même rapport sans rien écrire
 pub(crate) fn handle_import_rules(

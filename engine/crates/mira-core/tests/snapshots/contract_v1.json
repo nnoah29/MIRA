@@ -457,6 +457,12 @@
         "op": "delete_local_label"
       }
     },
+    "local_label.export_local_labels_file": {
+      "domain": "local_label",
+      "request": {
+        "op": "export_local_labels_file"
+      }
+    },
     "local_label.import_local_labels": {
       "domain": "local_label",
       "request": {
@@ -471,6 +477,15 @@
           }
         ],
         "op": "import_local_labels"
+      }
+    },
+    "local_label.import_local_labels_file": {
+      "domain": "local_label",
+      "request": {
+        "idempotency_key": "key-1",
+        "op": "import_local_labels_file",
+        "replace_existing": true,
+        "yaml": "mira_export:\n  kind: local_labels\n  version: 1\nlabels: []\n"
       }
     },
     "local_label.list_local_label_assignments": {
@@ -1450,6 +1465,66 @@
           }
         ],
         "type": "labels"
+      },
+      "type": "local_label"
+    },
+    "local_label.labels_file_export": {
+      "data": {
+        "data": {
+          "yaml": "mira_export: {}\n"
+        },
+        "type": "labels_file_export"
+      },
+      "type": "local_label"
+    },
+    "local_label.labels_file_import": {
+      "data": {
+        "data": {
+          "entries": [
+            {
+              "name": "Compta",
+              "outcome": {
+                "type": "imported"
+              },
+              "position": 1
+            },
+            {
+              "name": "Voyages",
+              "outcome": {
+                "type": "replaced"
+              },
+              "position": 2
+            },
+            {
+              "name": "Banque",
+              "outcome": {
+                "type": "already_present"
+              },
+              "position": 3
+            },
+            {
+              "name": "Rouge",
+              "outcome": {
+                "reason": {
+                  "type": "invalid_color"
+                },
+                "type": "refused"
+              },
+              "position": 4
+            },
+            {
+              "name": "compta",
+              "outcome": {
+                "reason": {
+                  "type": "duplicate_in_file"
+                },
+                "type": "refused"
+              },
+              "position": 5
+            }
+          ]
+        },
+        "type": "labels_file_import"
       },
       "type": "local_label"
     },

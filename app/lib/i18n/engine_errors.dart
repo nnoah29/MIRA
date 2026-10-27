@@ -39,14 +39,23 @@ const engineErrorTexts = <String, String>{
   'invalid_input.contract_version':
       'Version incompatible entre l’app et le moteur',
   'invalid_input.cursor': 'Page demandée invalide',
+  'invalid_input.export_kind_mismatch':
+      'Ce fichier n’est pas un export de règles',
+  'invalid_input.export_too_large':
+      'Fichier d’export trop gros (2 Mo et 500 éléments au plus)',
+  'invalid_input.export_version_unsupported':
+      'Version du format d’export non prise en charge',
   'invalid_input.idempotency_conflict':
       'Cette opération a déjà été faite autrement',
   'invalid_input.missing_parameter': 'Un champ obligatoire est vide',
   'invalid_input.parameter': 'Valeur invalide',
+  'invalid_input.rule_duplicate_in_file':
+      'Cette règle apparaît déjà plus haut dans le fichier',
   'invalid_input.template_name_empty': 'Le nom du modèle est vide',
   'invalid_input.template_name_taken': 'Un modèle porte déjà ce nom',
   'invalid_input.template_too_long':
       'Le nom, l’objet ou le texte du modèle est trop long',
+  'invalid_input.yaml_syntax': 'Fichier YAML invalide',
   'local_storage.corrupted': 'Base de données locale corrompue',
   'local_storage.disk_full': 'Disque plein',
   'local_storage.io': 'Erreur de lecture ou d’écriture sur le disque',

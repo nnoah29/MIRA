@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
@@ -9,6 +10,8 @@ import '../i18n/i18n.dart';
 import '../theme/app_theme.dart';
 import 'rule_editor.dart';
 import 'rule_widgets.dart';
+import 'rules_file_flow.dart';
+import 'rules_import_dialog.dart';
 import '../theme/icons.dart';
 import 'widgets.dart';
 
@@ -21,6 +24,9 @@ class RulesSettings extends StatefulWidget {
   final TemplateAdmin? templateAdmin;
   final ValueNotifier<Rule?>? draft;
   final Future<void> Function(int matched)? onApplied;
+  final Future<Uri?> Function(String name, Uint8List bytes) saveFile;
+  final Future<String?> Function() pickFile;
+  final DateTime Function() clock;
   const RulesSettings({
     super.key,
     required this.admin,
@@ -30,6 +36,9 @@ class RulesSettings extends StatefulWidget {
     this.templateAdmin,
     this.draft,
     this.onApplied,
+    this.saveFile = saveWithPicker,
+    this.pickFile = pickYamlWithPicker,
+    this.clock = DateTime.now,
   });
 
   @override
@@ -141,6 +150,34 @@ class _RulesSettingsState extends State<RulesSettings> {
       await widget.onApplied?.call(done.matched);
     } catch (e) {
       if (mounted) setState(() => error = '$e');
+    }
+  }
+
+  /// Enregistre toutes les règles dans un fichier YAML choisi par l'utilisateur.
+  Future<void> _export() async {
+    try {
+      await exportRulesFile(widget.admin, widget.saveFile, widget.clock());
+      if (mounted) setState(() => error = null);
+    } catch (e) {
+      if (mounted) setState(() => error = fileErrorText(e));
+    }
+  }
+
+  /// Lit un fichier YAML, demande si l'on remplace les règles existantes, importe puis montre le rapport.
+  Future<void> _import() async {
+    try {
+      final yaml = await widget.pickFile();
+      if (yaml == null || !mounted) return;
+      final replace = await showRulesImportDialog(context);
+      if (replace == null) return;
+      final report = await widget.admin.importRules(
+        yaml,
+        replaceExisting: replace,
+      );
+      await _load();
+      if (mounted) await showRulesImportReport(context, report);
+    } catch (e) {
+      if (mounted) setState(() => error = fileErrorText(e));
     }
   }
 
@@ -317,16 +354,29 @@ class _RulesSettingsState extends State<RulesSettings> {
             itemBuilder: (_, i) => _row(i),
           ),
           const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Btn(
-              key: const ValueKey('add-rule'),
-              icon: 'plus',
-              label: t('Ajouter une règle'),
-              onTap: () => setState(
-                () => editing = Rule(id: '', name: t('Nouvelle règle')),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              Btn(
+                key: const ValueKey('add-rule'),
+                icon: 'plus',
+                label: t('Ajouter une règle'),
+                onTap: () => setState(
+                  () => editing = Rule(id: '', name: t('Nouvelle règle')),
+                ),
               ),
-            ),
+              Btn(
+                key: const ValueKey('import-rules'),
+                label: t('Importer'),
+                onTap: _import,
+              ),
+              Btn(
+                key: const ValueKey('export-rules'),
+                label: t('Exporter'),
+                onTap: _export,
+              ),
+            ],
           ),
         ],
       ),

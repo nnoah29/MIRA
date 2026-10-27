@@ -29,3 +29,5 @@ pub const EXPORT_VERSION_UNSUPPORTED: ErrorCode =
 pub const EXPORT_KIND_MISMATCH: ErrorCode = ErrorCode("invalid_input.export_kind_mismatch");
 /// Fichier d'export trop gros (taille ou nombre d'éléments).
 pub const EXPORT_TOO_LARGE: ErrorCode = ErrorCode("invalid_input.export_too_large");
+/// Règle d'un fichier d'import dont l'identifiant figure déjà plus haut dans le même fichier.
+pub const RULE_DUPLICATE_IN_FILE: ErrorCode = ErrorCode("invalid_input.rule_duplicate_in_file");

@@ -8,6 +8,9 @@ mod delete;
 mod export;
 mod get;
 mod idempotency;
+mod import;
+mod import_one;
+mod import_replay;
 mod list;
 mod preview;
 mod preview_scan;
@@ -18,8 +21,7 @@ mod update;
 mod validate;
 mod writing;
 
-use mira_vocabulary::error::codes::internal;
-use mira_vocabulary::{ErrorCategory, MiraError};
+use mira_vocabulary::MiraError;
 
 use crate::api::contract::{Response, RuleRequest, RuleRequest as R};
 use crate::api::engine::Engine;
@@ -46,10 +48,8 @@ pub(crate) async fn route(engine: &Engine, request: RuleRequest) -> Result<Respo
         }
         R::ListRuleCatalog => catalog::handle_list_rule_catalog(),
         R::ExportRules => export::handle_export_rules(engine),
-        R::ImportRules { .. } => Err(MiraError::new(
-            ErrorCategory::Internal,
-            internal::BUG,
-            "import des règles non implémenté",
-        )),
+        R::ImportRules { yaml, replace_existing, idempotency_key: key } => {
+            import::handle_import_rules(engine, yaml, replace_existing, key)
+        }
     }
 }

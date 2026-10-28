@@ -7,3 +7,6 @@ __pycache__/
 .idea/
 packaging/out/
 graphify-out/
+
+# Notes internes de développement
+docs/dev/

@@ -6,8 +6,8 @@ Le **moteur** est une bibliothèque asynchrone (la façade `Engine`, contrat d'A
 
 - Architecture de référence (source de vérité, lecture seule) : `docs/MIRA-architecture-reference.md`.
 - Ce qui a réellement été implémenté : `docs/ARCHITECTURE-IMPLEMENTEE.md`.
-- Écarts proposés à la référence : `docs/PROPOSITIONS-REFERENCE.md`.
-- Lire le code en venant du C++ : `docs/GUIDE-RUST-POUR-CPP.md`.
+- Écarts proposés à la référence : `docs/dev/PROPOSITIONS-REFERENCE.md`.
+- Lire le code en venant du C++ : `docs/dev/GUIDE-RUST-POUR-CPP.md`.
 
 ## Prérequis
 
@@ -87,8 +87,8 @@ Règle de frontière : le cœur ne nomme aucun fournisseur, les providers sont p
 |---|---|
 | `docs/MIRA-architecture-reference.md` | Architecture de référence (lecture seule) |
 | `docs/ARCHITECTURE-IMPLEMENTEE.md` | Ce qui est réellement implémenté, module par module |
-| `docs/GUIDE-RUST-POUR-CPP.md` | Lire le code Rust quand on vient du C++ |
-| `docs/DECISIONS-AGENT.md` | Décisions d'implémentation (contexte / choix / raison / retour arrière) |
-| `docs/PROPOSITIONS-REFERENCE.md` | Corrections proposées à la référence |
-| `docs/specs/` | Spécifications par jalon (dont `J8-J9-facade-cli.md`, CLI retiré depuis) |
+| `docs/dev/GUIDE-RUST-POUR-CPP.md` | Lire le code Rust quand on vient du C++ |
+| `docs/dev/DECISIONS-AGENT.md` | Décisions d'implémentation (contexte / choix / raison / retour arrière) |
+| `docs/dev/PROPOSITIONS-REFERENCE.md` | Corrections proposées à la référence |
+| `docs/dev/specs/` | Spécifications par jalon (dont `J8-J9-facade-cli.md`, CLI retiré depuis) |
 | `docs/GIT_WORKFLOW.md` | Conventions Git (lecture seule) |

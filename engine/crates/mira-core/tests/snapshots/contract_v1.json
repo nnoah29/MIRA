@@ -1091,6 +1091,23 @@
         }
       }
     },
+    "system_label.list_system_label_assignments": {
+      "domain": "system_label",
+      "request": {
+        "op": "list_system_label_assignments"
+      }
+    },
+    "system_label.set_system_label": {
+      "domain": "system_label",
+      "request": {
+        "kind": "waiting",
+        "on": true,
+        "op": "set_system_label",
+        "threads": [
+          "thread-1"
+        ]
+      }
+    },
     "template.create_template": {
       "domain": "template",
       "request": {
@@ -2087,6 +2104,27 @@
         "type": "status"
       },
       "type": "sync"
+    },
+    "system_label.assignments": {
+      "data": {
+        "data": [
+          {
+            "kinds": [
+              "waiting",
+              "mention"
+            ],
+            "thread": "thread-1"
+          }
+        ],
+        "type": "assignments"
+      },
+      "type": "system_label"
+    },
+    "system_label.done": {
+      "data": {
+        "type": "done"
+      },
+      "type": "system_label"
     },
     "template.done": {
       "data": {

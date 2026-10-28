@@ -8,7 +8,8 @@ use serde_json::Value;
 
 use super::{
     Named, all_responses, label_settings_domain, local_label_domain, request_name, request_texts,
-    rule_domain, settings_domain, sync_domain, template_domain, write_requests, write_responses,
+    rule_domain, settings_domain, sync_domain, system_label_domain, template_domain,
+    write_requests, write_responses,
 };
 
 /// Chemin du fichier d'instantané versionné
@@ -32,6 +33,7 @@ fn named_requests() -> Vec<Named<Request>> {
         .chain(sync_domain::requests())
         .chain(rule_domain::requests())
         .chain(local_label_domain::requests())
+        .chain(system_label_domain::requests())
         .chain(label_settings_domain::requests())
         .chain(settings_domain::requests())
         .chain(template_domain::requests())
@@ -45,6 +47,7 @@ fn named_responses() -> Vec<Named<Response>> {
         .chain(sync_domain::responses())
         .chain(rule_domain::responses())
         .chain(local_label_domain::responses())
+        .chain(system_label_domain::responses())
         .chain(label_settings_domain::responses())
         .chain(settings_domain::responses())
         .chain(template_domain::responses())

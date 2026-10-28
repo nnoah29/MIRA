@@ -15,6 +15,7 @@ use super::rule_requests::RuleRequest;
 use super::search_requests::SearchRequest;
 use super::settings_requests::SettingsRequest;
 use super::sync_requests::SyncRequest;
+use super::system_label_requests::SystemLabelRequest;
 use super::template_requests::TemplateRequest;
 use super::thread_requests::ThreadRequest;
 use super::write::{ActionRequest, ComposeRequest, QueueRequest};
@@ -41,6 +42,7 @@ pub enum Request {
     Sync(SyncRequest),
     Rule(RuleRequest),
     LocalLabel(LocalLabelRequest),
+    SystemLabel(SystemLabelRequest),
     LabelSettings(LabelSettingsRequest),
     Settings(SettingsRequest),
     Template(TemplateRequest),

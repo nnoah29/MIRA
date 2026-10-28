@@ -17,5 +17,6 @@ pub mod message_template;
 pub mod page;
 pub mod rule;
 pub mod servers;
+pub mod system_label;
 pub mod thread;
 pub mod view;

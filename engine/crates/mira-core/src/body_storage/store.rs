@@ -22,5 +22,6 @@ pub(crate) fn store_parsed_body(
     let has_files = parsed.attachments.iter().any(|part| !part.inline);
     tx.set_message_body_summary(&message.id, &preview_text(&parsed.text_body), has_files)?;
     tx.index_message(&message.id, &message.subject, addresses, &parsed.text_body)?;
+    tx.mark_message_thread_labels_dirty(&message.id)?;
     tx.set_content_state(&message.id, ContentState::BodyPresent)
 }

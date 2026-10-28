@@ -20,6 +20,7 @@ pub use contract::{
     NewIdentity, OperationRequest, OutboxEntry, ProviderRequest, QueueRequest, RemoteContentTarget,
     Request, Response, RuleCatalog, RulePreview, RuleRequest, RuleResponse, RuleView,
     SearchRequest, SecretInput, SettingsRequest, SettingsResponse, SyncRequest, SyncResponse,
-    SyncScope, TargetSelection, TemplateRequest, TemplateResponse, ThreadRequest, WriteResponse,
+    SyncScope, SystemLabelRequest, SystemLabelResponse, TargetSelection, TemplateRequest,
+    TemplateResponse, ThreadRequest, WriteResponse,
 };
 pub use engine::Engine;

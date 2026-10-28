@@ -30,6 +30,8 @@ import 'message_actions.dart';
 import 'engine_client.dart';
 import 'mail_builder.dart';
 import 'mappers.dart';
+import '../state/local_labels.dart' show threadKeyOf;
+import 'system_label_admin.dart';
 
 /// Données réelles : comptes, boîtes et messages lus dans le moteur Rust.
 class EngineMailSource implements MailSource {
@@ -127,6 +129,9 @@ class EngineMailSource implements MailSource {
 
   @override
   LocalLabelAdmin get localLabelAdmin => LocalLabelAdmin(client);
+
+  @override
+  SystemLabelAdmin get systemLabelAdmin => SystemLabelAdmin(client);
 
   @override
   LabelSettingsAdmin get labelSettingsAdmin => LabelSettingsAdmin(client);
@@ -288,6 +293,10 @@ class EngineMailSource implements MailSource {
         _signal(_ruleChanges);
       case EventEffect.localLabels:
         _signal(_labelChanges);
+      case EventEffect.systemLabels:
+        for (final a in accounts) {
+          _schedule(a.id);
+        }
       case EventEffect.labelSettings:
         _signal(_settingsChanges);
       case EventEffect.settings:
@@ -393,7 +402,7 @@ class EngineMailSource implements MailSource {
     ];
     _dropDraftCopies(byFolder, mine);
     final outgoing = await _outbox(account, all);
-    return [
+    final built = [
       for (final e in byFolder.entries)
         ...mailsOfFolder(
           e.key,
@@ -404,6 +413,21 @@ class EngineMailSource implements MailSource {
       ...mine.map((d) => _draftMail(account, d)),
       ...outgoing,
     ];
+    await _applySystemLabels(built);
+    return built;
+  }
+
+  /// Pose sur chaque conversation les marqueurs que le moteur a détectés ; un moteur sans libellés système n'en pose aucun.
+  Future<void> _applySystemLabels(List<Mail> mails) async {
+    try {
+      final assigned = await SystemLabelAdmin(client).assignments();
+      for (final m in mails) {
+        final kinds = assigned[threadKeyOf(m.id)] ?? const <String>{};
+        m.flags = [...m.flags.where((f) => !systemKinds.contains(f)), ...kinds];
+      }
+    } catch (_) {
+      return;
+    }
   }
 
   /// Tous les brouillons du moteur, y compris ceux programmés ou en cours d'envoi ; une lecture ratée n'efface rien.

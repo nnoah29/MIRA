@@ -37,6 +37,7 @@ class FakeEngine implements EngineClient {
   final extraInbox = <Map<String, dynamic>>[];
   final localLabels = <Map<String, dynamic>>[];
   final localPoses = <Map<String, dynamic>>[];
+  final systemPoses = <Map<String, dynamic>>[];
   final labelWrites = <Map<String, dynamic>>[];
   bool importFails = false;
   bool hideInbox = false;
@@ -542,6 +543,11 @@ class FakeEngine implements EngineClient {
         return _settingsAnswer();
       case 'local_label.list_local_labels':
         return _labelAnswer('labels', localLabels);
+      case 'system_label.list_system_label_assignments':
+        return {
+          'type': 'system_label',
+          'data': {'type': 'assignments', 'data': systemPoses},
+        };
       case 'local_label.list_local_label_assignments':
         return _labelAnswer('assignments', localPoses);
       case 'local_label.import_local_labels':
@@ -1065,6 +1071,23 @@ void main() {
     expect(box.where((m) => m.folder == 'spam').length, 1);
     expect(box.any((m) => m.folder == 'archive'), isFalse);
   });
+
+  test(
+    'les marqueurs système du moteur deviennent des marqueurs de conversation',
+    () async {
+      final fake = FakeEngine();
+      fake.extraInbox.add(fake._msg('m30', 'Avis', thread: 't30'));
+      fake.systemPoses.add({
+        'thread': 't30',
+        'kinds': ['mention'],
+      });
+      final src = await EngineMailSource.load(fake);
+      final inbox = src.boxes['acc1']!.where((m) => m.folder == 'inbox');
+      expect(inbox.where((m) => m.flags.contains('mention')).map((m) => m.id), [
+        'acc1/inbox/t30',
+      ]);
+    },
+  );
 
   test('deux messages du même fil forment une conversation', () async {
     final src = await EngineMailSource.load(FakeEngine());

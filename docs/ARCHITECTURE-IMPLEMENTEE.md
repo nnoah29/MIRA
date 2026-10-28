@@ -1,6 +1,6 @@
 # Architecture implémentée — correspondance décisions → code
 
-État au 2026-10-14, branche `feat/E-01-engine-overnight`, dernier commit `34ef005`. Tout ce qui suit a été vérifié par lecture du code ou par commande (comptages, `grep`). Les chemins sont relatifs à `engine/crates/` ; **`C/`** abrège `mira-core/src/`. La référence (`docs/MIRA-architecture-reference.md`) reste l'autorité ; les décisions d'implémentation sont dans `docs/DECISIONS-AGENT.md` (AG-xx) ; les écarts proposés à la référence dans `docs/PROPOSITIONS-REFERENCE.md` (PR-xx).
+État au 2026-10-14, branche `feat/E-01-engine-overnight`, dernier commit `34ef005`. Tout ce qui suit a été vérifié par lecture du code ou par commande (comptages, `grep`). Les chemins sont relatifs à `engine/crates/` ; **`C/`** abrège `mira-core/src/`. La référence (`docs/MIRA-architecture-reference.md`) reste l’autorité.
 
 Ce document décrit ce qui **existe**. Quand une décision n'a pas de code, ou qu'un comportement diffère de la référence, c'est écrit.
 
@@ -209,7 +209,7 @@ Limite des garde-fous : A8 liste encore `async_imap` alors que la dépendance a 
 
 ## 11. Limites connues et divergences
 
-Écarts à la référence et précisions : `docs/PROPOSITIONS-REFERENCE.md` (PR-01 à PR-17). Limites, avec leur décision :
+Limites, avec leur décision :
 
 **Non fait (reste de J10)**
 - `html::sanitize_html` est quadratique en profondeur d'imbrication (1 000 niveaux : 68 ms ; 10 000 : 5,3 s ; 100 000 : plus de 10 min). Aucune borne de taille ni de profondeur dans `C/html/`. Un mail hostile bloque la lecture (AG-34).

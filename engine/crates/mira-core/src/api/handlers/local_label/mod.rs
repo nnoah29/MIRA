@@ -4,9 +4,12 @@ mod assignments;
 mod checks;
 mod create;
 mod delete;
+mod export_file;
 mod idempotency;
 mod import;
 mod import_apply;
+mod import_file;
+mod import_file_one;
 mod list;
 mod recolor;
 mod rename;
@@ -22,31 +25,26 @@ use crate::api::engine::Engine;
 type Answer = Result<Response, MiraError>;
 
 /// Route une requête du domaine libellés locaux
+#[rustfmt::skip]
 pub(crate) async fn route(engine: &Engine, request: LocalLabelRequest) -> Answer {
     match request {
         R::ListLocalLabels => list::handle_list_local_labels(engine),
         R::ListLocalLabelAssignments => assignments::handle_list_assignments(engine),
         R::DeleteLocalLabel { label } => delete::handle_delete_local_label(engine, &label),
-        R::RenameLocalLabel { label, name } => {
-            rename::handle_rename_local_label(engine, &label, &name)
+        R::RenameLocalLabel { label, name } => rename::handle_rename_local_label(engine, &label, &name),
+        R::RecolorLocalLabel { label, color } => recolor::handle_recolor_local_label(engine, &label, color),
+        R::CreateLocalLabel { name, color, idempotency_key: key } => {
+            create::handle_create_local_label(engine, &name, color, key)
         }
-        R::RecolorLocalLabel { label, color } => {
-            recolor::handle_recolor_local_label(engine, &label, color)
+        R::SetLocalLabel { label, threads, on, idempotency_key: key } => {
+            set::handle_set_local_label(engine, &label, &threads, on, key)
         }
-        R::CreateLocalLabel {
-            name,
-            color,
-            idempotency_key,
-        } => create::handle_create_local_label(engine, &name, color, idempotency_key),
-        R::SetLocalLabel {
-            label,
-            threads,
-            on,
-            idempotency_key,
-        } => set::handle_set_local_label(engine, &label, &threads, on, idempotency_key),
-        R::ImportLocalLabels {
-            labels,
-            idempotency_key,
-        } => import::handle_import_local_labels(engine, &labels, idempotency_key),
+        R::ImportLocalLabels { labels, idempotency_key: key } => {
+            import::handle_import_local_labels(engine, &labels, key)
+        }
+        R::ExportLocalLabelsFile => export_file::handle_export_labels_file(engine),
+        R::ImportLocalLabelsFile { yaml, replace_existing, idempotency_key: key } => {
+            import_file::handle_import_labels_file(engine, yaml, replace_existing, key)
+        }
     }
 }

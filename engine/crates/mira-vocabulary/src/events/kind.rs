@@ -217,6 +217,7 @@ pub enum EventKind {
         message: MessageId,
     },
     LocalLabelsChanged,
+    SystemLabelsChanged,
     LabelSettingsChanged,
     SettingsChanged {
         keys: Vec<String>,
@@ -244,7 +245,7 @@ impl EventKind {
             K::QuotaFull { .. } | K::CertificateNeedsApproval { .. } | K::RateLimited { .. } | K::MailboxResynchronized { .. } => EventCategory::Alert,
             K::Diagnostic { .. } => EventCategory::Log,
             K::RuleChanged { .. } | K::RuleApplied { .. } => EventCategory::Rule,
-            K::LocalLabelsChanged => EventCategory::LocalLabel,
+            K::LocalLabelsChanged | K::SystemLabelsChanged => EventCategory::LocalLabel,
             K::LabelSettingsChanged => EventCategory::Label,
             K::SettingsChanged { .. } => EventCategory::Settings,
             K::TemplatesChanged => EventCategory::Template,
@@ -270,8 +271,8 @@ impl EventKind {
             | K::RuleApplied { account, .. } => Some(account),
             K::EngineStarted | K::EngineStopping | K::EngineFatalError { .. } | K::Diagnostic { .. }
             | K::OperationProgress { .. } | K::OperationFinished { .. } | K::OperationFailed { .. }
-            | K::OperationCancelled { .. } | K::RuleChanged { .. } | K::LocalLabelsChanged | K::LabelSettingsChanged
-            | K::SettingsChanged { .. } | K::TemplatesChanged => None,
+            | K::OperationCancelled { .. } | K::RuleChanged { .. } | K::LocalLabelsChanged | K::SystemLabelsChanged
+            | K::LabelSettingsChanged | K::SettingsChanged { .. } | K::TemplatesChanged => None,
         }
     }
 }

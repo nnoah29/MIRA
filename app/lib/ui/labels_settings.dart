@@ -10,12 +10,22 @@ import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
 import 'label_row.dart';
+import 'labels_file_bar.dart';
 import 'rule_widgets.dart';
+import 'rules_file_flow.dart';
 import 'widgets.dart';
 
 /// Onglet des libellés : tous les libellés (locaux, puis ceux de chaque compte) et leurs réglages.
 class LabelsSettings extends StatefulWidget {
-  const LabelsSettings({super.key});
+  final SaveFile saveFile;
+  final PickYaml pickFile;
+  final DateTime Function() clock;
+  const LabelsSettings({
+    super.key,
+    this.saveFile = saveWithPicker,
+    this.pickFile = pickYamlWithPicker,
+    this.clock = DateTime.now,
+  });
 
   @override
   State<LabelsSettings> createState() => _LabelsSettingsState();
@@ -102,6 +112,21 @@ class _LabelsSettingsState extends State<LabelsSettings> {
       await s.source!.labelAdmin!.delete(l.id);
     }
     await s.refreshLabelSettings();
+  }
+
+  /// Export et import des libellés locaux, quand le moteur les porte.
+  Widget _fileBar(MailStore s) {
+    final admin = s.source?.localLabelAdmin;
+    if (admin == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: LabelsFileBar(
+        admin: admin,
+        saveFile: widget.saveFile,
+        pickFile: widget.pickFile,
+        clock: widget.clock,
+      ),
+    );
   }
 
   /// Compteur de la barre latérale, commun à tous les libellés.
@@ -288,6 +313,7 @@ class _LabelsSettingsState extends State<LabelsSettings> {
           _counterBar(s),
           const SizedBox(height: 16),
           _adder(s),
+          _fileBar(s),
           if (s.labelOverviews.isEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 18),

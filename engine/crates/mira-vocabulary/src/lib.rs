@@ -20,6 +20,9 @@ pub use domain::auth::{AuthMethod, AuthMethodKind, OAuthSettings, SecretKind, Se
 pub use domain::draft::{Draft, DraftAttachment, DraftState};
 pub use domain::engine_settings::{EngineSettings, MAX_POLL_SECS, MIN_POLL_SECS, QuietHours};
 pub use domain::identity::Identity;
+pub use domain::label_import_report::{
+    LabelImportEntry, LabelImportOutcome, LabelImportRefusal, LabelImportReport,
+};
 pub use domain::label_settings::{CounterMode, LabelKind, LabelRef, LabelSettings};
 pub use domain::local_label::{LocalLabel, LocalLabelAssignment};
 pub use domain::mailbox::{Mailbox, MailboxRole, SyncMarker};
@@ -28,10 +31,14 @@ pub use domain::message_template::{ContactInfo, MessageTemplate, RenderContext, 
 pub use domain::page::{Page, PageRequest};
 pub use domain::rule::action::RuleAction;
 pub use domain::rule::condition::{Condition, ConditionGroup};
+pub use domain::rule::import_report::{
+    RuleImportEntry, RuleImportOutcome, RuleImportRefusal, RuleImportReport,
+};
 pub use domain::rule::matcher::{AddressField, Comparison, RecipientKind, TextMatcher, TextOp};
 pub use domain::rule::rule::{CURRENT_RULE_SCHEMA_VERSION, Rule, RuleScope};
 pub use domain::rule::test::ConditionTest;
 pub use domain::servers::{Security, ServerEndpoint, ServerSettings};
+pub use domain::system_label::{SystemLabelAssignment, SystemLabelKind};
 pub use domain::thread::Thread;
 pub use domain::view::{StandardView, ViewRef};
 pub use error::action::SuggestedAction;

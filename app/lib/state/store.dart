@@ -3370,7 +3370,10 @@ class MailStore extends ChangeNotifier {
       flagsBackup = [...orig.flags];
       orig.msgs.add(rmsg.copy());
       orig.flags = orig.flags.where((f) => f != 'needs').toList();
-      if (!orig.flags.contains('waiting')) orig.flags.add('waiting');
+      if (source == null && !orig.flags.contains('waiting')) {
+        orig.flags.add('waiting');
+      }
+      _clearNeeds(orig);
     }
     c = null;
     _leaveCompose();
@@ -3392,6 +3395,15 @@ class MailStore extends ChangeNotifier {
         }
         openCompose(init);
       },
+    );
+  }
+
+  /// Retire « à répondre » côté moteur : choix manuel valable jusqu'au prochain message du fil.
+  void _clearNeeds(Mail m) {
+    final admin = source?.systemLabelAdmin;
+    if (admin == null) return;
+    unawaited(
+      admin.set('needs', [threadKeyOf(m.id)], false).catchError((Object _) {}),
     );
   }
 

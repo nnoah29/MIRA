@@ -12,4 +12,5 @@ mod tx;
 
 pub use database::Database;
 pub use migrations::schema_version;
+pub use repositories::system_labels::SystemState;
 pub use tx::Tx;

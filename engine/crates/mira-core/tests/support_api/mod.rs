@@ -4,6 +4,7 @@
 pub mod endpoints;
 pub mod files;
 pub mod fixture;
+pub mod leaks;
 pub mod oauth;
 pub mod oauth_provider;
 pub mod oauth_requests;

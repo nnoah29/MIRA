@@ -14,6 +14,7 @@ import '../data/models.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
+import 'download_all_button.dart';
 import 'viewer.dart';
 import 'original_dialog.dart';
 import 'widgets.dart';
@@ -491,30 +492,39 @@ class _Thread extends StatelessWidget {
                                               color: h ? p.text : p.muted,
                                             ),
                                             const SizedBox(width: 12),
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  f.n,
-                                                  style: Fonts.sans(
-                                                    size: 15,
-                                                    color: h ? p.text : p.muted,
+                                            Flexible(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    f.n,
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: Fonts.sans(
+                                                      size: 15,
+                                                      color: h
+                                                          ? p.text
+                                                          : p.muted,
+                                                    ),
                                                   ),
-                                                ),
-                                                Mono(
-                                                  '${f.t} · ${f.s}',
-                                                  size: 10,
-                                                  ls: .12,
-                                                  height: null,
-                                                ),
-                                              ],
+                                                  Mono(
+                                                    '${f.t} · ${f.s}',
+                                                    size: 10,
+                                                    ls: .12,
+                                                    height: null,
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                           ],
                                         ),
                                       ),
                                     ),
+                                  if (msg.att.length > 1)
+                                    DownloadAllButton(msg.att),
                                 ],
                               ),
                             ),

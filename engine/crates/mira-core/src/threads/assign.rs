@@ -21,6 +21,7 @@ pub fn assign_thread(
         }
     };
     tx.set_thread(&summary.id, Some(&thread))?;
+    tx.mark_thread_labels_dirty(&thread)?;
     Ok(thread)
 }
 

@@ -457,6 +457,12 @@
         "op": "delete_local_label"
       }
     },
+    "local_label.export_local_labels_file": {
+      "domain": "local_label",
+      "request": {
+        "op": "export_local_labels_file"
+      }
+    },
     "local_label.import_local_labels": {
       "domain": "local_label",
       "request": {
@@ -471,6 +477,15 @@
           }
         ],
         "op": "import_local_labels"
+      }
+    },
+    "local_label.import_local_labels_file": {
+      "domain": "local_label",
+      "request": {
+        "idempotency_key": "key-1",
+        "op": "import_local_labels_file",
+        "replace_existing": true,
+        "yaml": "mira_export:\n  kind: local_labels\n  version: 1\nlabels: []\n"
       }
     },
     "local_label.list_local_label_assignments": {
@@ -766,11 +781,26 @@
         "rule": "rule-1"
       }
     },
+    "rule.export_rules": {
+      "domain": "rule",
+      "request": {
+        "op": "export_rules"
+      }
+    },
     "rule.get_rule": {
       "domain": "rule",
       "request": {
         "op": "get_rule",
         "rule": "rule-1"
+      }
+    },
+    "rule.import_rules": {
+      "domain": "rule",
+      "request": {
+        "idempotency_key": "key-1",
+        "op": "import_rules",
+        "replace_existing": false,
+        "yaml": "mira_export:\n  kind: rules\n  version: 1\nrules: []\n"
       }
     },
     "rule.list_rule_catalog": {
@@ -1059,6 +1089,23 @@
           "mailbox": "mailbox-1",
           "type": "mailbox"
         }
+      }
+    },
+    "system_label.list_system_label_assignments": {
+      "domain": "system_label",
+      "request": {
+        "op": "list_system_label_assignments"
+      }
+    },
+    "system_label.set_system_label": {
+      "domain": "system_label",
+      "request": {
+        "kind": "waiting",
+        "on": true,
+        "op": "set_system_label",
+        "threads": [
+          "thread-1"
+        ]
       }
     },
     "template.create_template": {
@@ -1438,6 +1485,66 @@
       },
       "type": "local_label"
     },
+    "local_label.labels_file_export": {
+      "data": {
+        "data": {
+          "yaml": "mira_export: {}\n"
+        },
+        "type": "labels_file_export"
+      },
+      "type": "local_label"
+    },
+    "local_label.labels_file_import": {
+      "data": {
+        "data": {
+          "entries": [
+            {
+              "name": "Compta",
+              "outcome": {
+                "type": "imported"
+              },
+              "position": 1
+            },
+            {
+              "name": "Voyages",
+              "outcome": {
+                "type": "replaced"
+              },
+              "position": 2
+            },
+            {
+              "name": "Banque",
+              "outcome": {
+                "type": "already_present"
+              },
+              "position": 3
+            },
+            {
+              "name": "Rouge",
+              "outcome": {
+                "reason": {
+                  "type": "invalid_color"
+                },
+                "type": "refused"
+              },
+              "position": 4
+            },
+            {
+              "name": "compta",
+              "outcome": {
+                "reason": {
+                  "type": "duplicate_in_file"
+                },
+                "type": "refused"
+              },
+              "position": 5
+            }
+          ]
+        },
+        "type": "labels_file_import"
+      },
+      "type": "local_label"
+    },
     "mailboxes": {
       "data": [
         {
@@ -1782,6 +1889,70 @@
       },
       "type": "rule"
     },
+    "rule.rules_export": {
+      "data": {
+        "data": {
+          "skipped": [
+            "Factures"
+          ],
+          "yaml": "mira_export: {}\n"
+        },
+        "type": "rules_export"
+      },
+      "type": "rule"
+    },
+    "rule.rules_import": {
+      "data": {
+        "data": {
+          "entries": [
+            {
+              "name": "Lettres",
+              "outcome": {
+                "type": "imported"
+              },
+              "position": 1
+            },
+            {
+              "name": "Factures",
+              "outcome": {
+                "type": "replaced"
+              },
+              "position": 2
+            },
+            {
+              "name": "Alertes",
+              "outcome": {
+                "type": "already_present"
+              },
+              "position": 3
+            },
+            {
+              "name": "Cassée",
+              "outcome": {
+                "reason": {
+                  "code": "invalid_input.parameter",
+                  "type": "invalid_rule"
+                },
+                "type": "refused"
+              },
+              "position": 4
+            },
+            {
+              "name": "Perdue",
+              "outcome": {
+                "reason": {
+                  "type": "unknown_label"
+                },
+                "type": "refused"
+              },
+              "position": 5
+            }
+          ]
+        },
+        "type": "rules_import"
+      },
+      "type": "rule"
+    },
     "rule.status": {
       "data": {
         "data": {
@@ -1933,6 +2104,27 @@
         "type": "status"
       },
       "type": "sync"
+    },
+    "system_label.assignments": {
+      "data": {
+        "data": [
+          {
+            "kinds": [
+              "waiting",
+              "mention"
+            ],
+            "thread": "thread-1"
+          }
+        ],
+        "type": "assignments"
+      },
+      "type": "system_label"
+    },
+    "system_label.done": {
+      "data": {
+        "type": "done"
+      },
+      "type": "system_label"
     },
     "template.done": {
       "data": {

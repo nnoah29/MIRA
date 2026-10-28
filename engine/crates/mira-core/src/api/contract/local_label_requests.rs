@@ -43,4 +43,10 @@ pub enum LocalLabelRequest {
         labels: Vec<ImportedLabel>,
         idempotency_key: IdempotencyKey,
     },
+    ExportLocalLabelsFile,
+    ImportLocalLabelsFile {
+        yaml: String,
+        replace_existing: bool,
+        idempotency_key: IdempotencyKey,
+    },
 }

@@ -17,7 +17,7 @@ pub(super) enum Replay {
 /// Commande d'écriture identifiée par sa clé, son opération et l'empreinte JSON de ses données.
 #[derive(Debug)]
 pub(super) struct WriteCommand {
-    key: IdempotencyKey,
+    pub(super) key: IdempotencyKey,
     operation: &'static str,
     fingerprint: String,
 }

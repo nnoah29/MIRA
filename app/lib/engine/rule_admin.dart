@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import '../data/file_import.dart';
 import '../data/rule_models.dart';
 import 'engine_client.dart';
 
@@ -106,5 +107,26 @@ class RuleAdmin {
   Future<RuleCatalog> catalog() async {
     final r = await client.call(req('rule', 'list_rule_catalog'));
     return RuleCatalog.fromJson(_inner(r));
+  }
+
+  /// Les règles en texte YAML portable, pour un fichier ; celles dont une cible a disparu sont nommées à part.
+  Future<RulesExport> exportRules() async {
+    final r = await client.call(req('rule', 'export_rules'));
+    return RulesExport.fromJson(_inner(r));
+  }
+
+  /// Importe le texte d'un fichier YAML ; les règles déjà présentes sont ignorées sauf [replaceExisting].
+  Future<FileImportReport> importRules(
+    String yaml, {
+    bool replaceExisting = false,
+  }) async {
+    final r = await client.call(
+      req('rule', 'import_rules', {
+        'yaml': yaml,
+        'replace_existing': replaceExisting,
+        'idempotency_key': _key('import'),
+      }),
+    );
+    return FileImportReport.fromJson(_inner(r));
   }
 }

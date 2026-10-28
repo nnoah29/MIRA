@@ -6,8 +6,6 @@ Le **moteur** est une bibliothèque asynchrone (la façade `Engine`, contrat d'A
 
 - Architecture de référence (source de vérité, lecture seule) : `docs/MIRA-architecture-reference.md`.
 - Ce qui a réellement été implémenté : `docs/ARCHITECTURE-IMPLEMENTEE.md`.
-- Écarts proposés à la référence : `docs/dev/PROPOSITIONS-REFERENCE.md`.
-- Lire le code en venant du C++ : `docs/dev/GUIDE-RUST-POUR-CPP.md`.
 
 ## Prérequis
 
@@ -46,7 +44,7 @@ Tous les tests réseau tournent contre les faux serveurs du crate `mira-testkit`
 ```
 CLAUDE.md  Makefile  ci.sh
 tools/      garde-fous : check-norms, check-architecture, check-forbidden-patterns (+ leurs auto-tests)
-docs/       référence, décisions (DECISIONS-AGENT.md), specs/ par jalon
+docs/       architecture de référence et documentation
 engine/     workspace Cargo (toolchain 1.99.0, édition 2024)
   crates/mira-vocabulary   types du domaine, erreurs et événements du contrat, interface Provider (serde + thiserror seulement)
   crates/mira-core         le moteur : stockage SQLite/FTS5, profil et verrou, client IMAP, analyse MIME, SMTP,
@@ -87,8 +85,4 @@ Règle de frontière : le cœur ne nomme aucun fournisseur, les providers sont p
 |---|---|
 | `docs/MIRA-architecture-reference.md` | Architecture de référence (lecture seule) |
 | `docs/ARCHITECTURE-IMPLEMENTEE.md` | Ce qui est réellement implémenté, module par module |
-| `docs/dev/GUIDE-RUST-POUR-CPP.md` | Lire le code Rust quand on vient du C++ |
-| `docs/dev/DECISIONS-AGENT.md` | Décisions d'implémentation (contexte / choix / raison / retour arrière) |
-| `docs/dev/PROPOSITIONS-REFERENCE.md` | Corrections proposées à la référence |
-| `docs/dev/specs/` | Spécifications par jalon (dont `J8-J9-facade-cli.md`, CLI retiré depuis) |
 | `docs/GIT_WORKFLOW.md` | Conventions Git (lecture seule) |

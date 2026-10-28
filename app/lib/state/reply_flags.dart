@@ -1,42 +1,35 @@
 import '../data/models.dart';
+import 'automated_senders.dart';
+import 'identity.dart';
 import 'local_labels.dart';
-
-/// Adresses et noms sous lesquels on peut me joindre ou me citer, en minuscules.
-class Identity {
-  final Set<String> addresses, names;
-  const Identity(this.addresses, this.names);
-
-  /// Identité à partir d'adresses et de noms d'affichage ; le prénom (3 lettres et plus) compte aussi.
-  factory Identity.from(Iterable<String> addresses, Iterable<String> names) {
-    final shown = names
-        .map((n) => n.trim().toLowerCase())
-        .where((n) => n.isNotEmpty);
-    return Identity(
-      {for (final a in addresses) a.toLowerCase()},
-      {
-        for (final n in shown) ...[
-          n,
-          if (n.split(' ').first.length > 2) n.split(' ').first,
-        ],
-      },
-    );
-  }
-
-  /// Cette adresse est-elle l'une des miennes ?
-  bool owns(String email) => addresses.contains(email.toLowerCase());
-}
 
 const _tracked = {'inbox', 'sent', 'archive'};
 
+/// Délai sans réponse avant qu'un message envoyé passe « en attente ».
+const waitingAfter = Duration(days: 2);
+
 /// Pose ou retire `mention` et `waiting` selon le dernier message de chaque fil, sans toucher aux autres marqueurs.
-void markMentionsAndWaiting(List<Mail> mails, Identity me) {
+void markMentionsAndWaiting(
+  List<Mail> mails,
+  Identity me, {
+  int? now,
+  Duration after = waitingAfter,
+}) {
+  final since =
+      (now ?? DateTime.now().millisecondsSinceEpoch) - after.inMilliseconds;
   final live = mails.where((m) => _tracked.contains(m.folder)).toList();
   final last = _lastOfThreads(live);
   for (final m in live) {
     final end = last[threadKeyOf(m.id)];
     final mine = end != null && me.owns(end.$2.from.email);
-    _set(m, 'waiting', mine && _awaitsOthers(end.$1, me));
-    _set(m, 'mention', end != null && !mine && _mentionsMe(end.$2, me));
+    final waiting =
+        end != null &&
+        mine &&
+        end.$2.date <= since &&
+        _awaitsOthers(end.$1, me);
+    final cited = end != null && !mine && _mentionedBy(end.$2, me);
+    _set(m, 'waiting', waiting);
+    _set(m, 'mention', cited);
   }
 }
 
@@ -54,9 +47,15 @@ Map<String, (Mail, Msg)> _lastOfThreads(List<Mail> mails) {
   return last;
 }
 
-/// Le message a-t-il au moins un destinataire autre que moi ?
-bool _awaitsOthers(Mail carrier, Identity me) =>
-    [...carrier.to, ...carrier.cc].any((p) => !me.owns(p.email));
+/// Le message a-t-il au moins un destinataire humain autre que moi ?
+bool _awaitsOthers(Mail carrier, Identity me) => [
+  ...carrier.to,
+  ...carrier.cc,
+].any((p) => !me.owns(p.email) && !isAutomated(p.email));
+
+/// Un expéditeur humain me cite-t-il dans ce message ?
+bool _mentionedBy(Msg msg, Identity me) =>
+    !isAutomated(msg.from.email) && _mentionsMe(msg, me);
 
 /// Le texte non cité du message contient-il mon adresse ou `@` suivi de mon nom ?
 bool _mentionsMe(Msg msg, Identity me) {

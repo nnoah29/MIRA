@@ -30,6 +30,7 @@ import 'message_actions.dart';
 import 'engine_client.dart';
 import 'mail_builder.dart';
 import 'mappers.dart';
+import '../state/identity.dart';
 import '../state/reply_flags.dart';
 
 /// Données réelles : comptes, boîtes et messages lus dans le moteur Rust.

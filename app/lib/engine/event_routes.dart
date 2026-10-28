@@ -21,6 +21,9 @@ enum EventEffect {
   /// Signale un changement des libellés locaux.
   localLabels,
 
+  /// Relit tous les comptes : les marqueurs système des conversations ont changé.
+  systemLabels,
+
   /// Signale un changement des réglages des libellés.
   labelSettings,
 
@@ -84,6 +87,7 @@ const Map<String, Set<EventEffect>> eventRoutes = {
   'rule_changed': {EventEffect.rules},
   'rule_applied': _none,
   'local_labels_changed': {EventEffect.localLabels},
+  'system_labels_changed': {EventEffect.systemLabels},
   'label_settings_changed': {EventEffect.labelSettings},
   'settings_changed': {EventEffect.settings},
   'templates_changed': {EventEffect.templates},

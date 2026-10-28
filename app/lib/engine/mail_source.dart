@@ -14,6 +14,7 @@ import 'rule_admin.dart';
 import 'maintenance_admin.dart';
 import 'message_actions.dart';
 import 'sync_state.dart';
+import 'system_label_admin.dart';
 
 /// Résultat d'une recherche sur le serveur : messages déjà connus du moteur, et nombre de ceux qu'il n'a pas synchronisés.
 class ServerSearch {
@@ -78,6 +79,9 @@ abstract class MailSource {
 
   /// Libellés locaux portés par le moteur (`null` : démonstration).
   LocalLabelAdmin? get localLabelAdmin;
+
+  /// Libellés système posés par le moteur (`null` : démonstration).
+  SystemLabelAdmin? get systemLabelAdmin;
 
   /// Signale chaque changement des libellés locaux côté moteur.
   Stream<void> get localLabelChanges;

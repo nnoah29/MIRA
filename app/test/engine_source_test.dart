@@ -1066,6 +1066,19 @@ void main() {
     expect(box.any((m) => m.folder == 'archive'), isFalse);
   });
 
+  test(
+    'un message qui cite le compte par @prénom porte le marqueur mention',
+    () async {
+      final fake = FakeEngine();
+      fake.extraInbox.add(fake._msg('m30', '@alice un avis ?', thread: 't30'));
+      final src = await EngineMailSource.load(fake);
+      final inbox = src.boxes['acc1']!.where((m) => m.folder == 'inbox');
+      expect(inbox.where((m) => m.flags.contains('mention')).map((m) => m.id), [
+        'acc1/inbox/t30',
+      ]);
+    },
+  );
+
   test('deux messages du même fil forment une conversation', () async {
     final src = await EngineMailSource.load(FakeEngine());
     final conv = src.boxes['acc1']!.firstWhere((m) => m.msgs.length == 2);

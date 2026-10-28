@@ -30,6 +30,7 @@ import 'message_actions.dart';
 import 'engine_client.dart';
 import 'mail_builder.dart';
 import 'mappers.dart';
+import '../state/reply_flags.dart';
 
 /// Données réelles : comptes, boîtes et messages lus dans le moteur Rust.
 class EngineMailSource implements MailSource {
@@ -393,7 +394,7 @@ class EngineMailSource implements MailSource {
     ];
     _dropDraftCopies(byFolder, mine);
     final outgoing = await _outbox(account, all);
-    return [
+    final built = [
       for (final e in byFolder.entries)
         ...mailsOfFolder(
           e.key,
@@ -404,6 +405,17 @@ class EngineMailSource implements MailSource {
       ...mine.map((d) => _draftMail(account, d)),
       ...outgoing,
     ];
+    markMentionsAndWaiting(built, _identityOf(account));
+    return built;
+  }
+
+  /// Adresses et noms du compte et de ses identités d'envoi.
+  Identity _identityOf(Account account) {
+    final known = identities[account.id] ?? const <IdentityDetail>[];
+    return Identity.from(
+      [account.email, for (final i in known) i.address],
+      [account.name, for (final i in known) i.displayName],
+    );
   }
 
   /// Tous les brouillons du moteur, y compris ceux programmés ou en cours d'envoi ; une lecture ratée n'efface rien.

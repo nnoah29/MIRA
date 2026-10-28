@@ -22,6 +22,7 @@ pub mod raw_sources;
 pub mod rules;
 pub mod search;
 pub mod server_ids;
+pub mod system_labels;
 pub mod thread_links;
 pub mod threads;
 pub mod token_meta;

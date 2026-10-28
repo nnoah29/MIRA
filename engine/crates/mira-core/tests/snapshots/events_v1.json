@@ -249,6 +249,9 @@
         "poll_secs"
       ]
     },
+    "system_labels_changed": {
+      "type": "system_labels_changed"
+    },
     "templates_changed": {
       "type": "templates_changed"
     }

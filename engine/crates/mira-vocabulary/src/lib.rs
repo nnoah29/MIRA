@@ -38,6 +38,7 @@ pub use domain::rule::matcher::{AddressField, Comparison, RecipientKind, TextMat
 pub use domain::rule::rule::{CURRENT_RULE_SCHEMA_VERSION, Rule, RuleScope};
 pub use domain::rule::test::ConditionTest;
 pub use domain::servers::{Security, ServerEndpoint, ServerSettings};
+pub use domain::system_label::{SystemLabelAssignment, SystemLabelKind};
 pub use domain::thread::Thread;
 pub use domain::view::{StandardView, ViewRef};
 pub use error::action::SuggestedAction;

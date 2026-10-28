@@ -1,6 +1,6 @@
 # MIRA — mémoire de session de l'agent
 
-Moteur Rust (backend) de MIRA, un client mail Linux offline-first ; son seul client est l'application Flutter, par le pont FFI (CLI et TUI retirés, AG-63). Session autonome de nuit.
+Moteur Rust (backend) de MIRA, un client mail Linux moderne et soigné (gratuit, libre, pas un onglet de navigateur) ; son seul client est l'application Flutter, par le pont FFI (CLI et TUI retirés, AG-63). Session autonome de nuit.
 **Source de vérité** : `docs/MIRA-architecture-reference.md` (lecture seule). **Vérité de départ** : `docs/ETAT/DECISIONS-DE-DEPART.md`.
 
 ## Reprise (début de chaque cycle et après chaque compaction)

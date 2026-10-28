@@ -1,6 +1,6 @@
 # MIRA — moteur (engine) Rust
 
-MIRA (*Mail Interface & Retrieval Application*) est un client mail Linux natif, multi-comptes et **offline-first** : le moteur tient un miroir local (SQLite + index plein texte FTS5) de chaque boîte IMAP, toutes les lectures se font sur ce miroir, et toutes les écritures sont d'abord enregistrées dans une file d'actions locale avant d'être rejouées vers le serveur (IMAP pour l'état des messages, SMTP pour l'envoi).
+MIRA (*Mail Interface & Retrieval Application*) est un client mail Linux natif, multi-comptes : le moteur tient un miroir local (SQLite + index plein texte FTS5) de chaque boîte IMAP, toutes les lectures se font sur ce miroir, et toutes les écritures sont d'abord enregistrées dans une file d'actions locale avant d'être rejouées vers le serveur (IMAP pour l'état des messages, SMTP pour l'envoi).
 
 Le **moteur** est une bibliothèque asynchrone (la façade `Engine`, contrat d'API versionné). Son seul client est l'application Flutter (`app/`), qui l'appelle par le pont FFI (`bridge/`). Le client en ligne de commande `mira` et le client plein écran (TUI) ont été retirés (AG-63).
 

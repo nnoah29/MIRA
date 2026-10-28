@@ -101,3 +101,9 @@ Les propositions PR-07 à PR-17 ont été ajoutées le 2026-10-14, après J9 : e
 **Proposition.** Remplacer, dans l'objectif 6 et D-04, « utilisable en ligne de commande » par « utilisable sans interface par sa façade (`Engine`) et son contrat sérialisé, testé de bout en bout contre le testkit » ; rendre sans objet l'invariant 6 (correspondance `Request` ↔ commande CLI) et PR-16 ; garder S1–S14 comme scénarios de la façade.
 **Raison.** Le contrat reste la seule frontière publique ; un CLI n'apporte plus rien qu'un test de façade ne vérifie, et coûte en maintenance et en ressources de CI.
 **Renvoi.** AG-63 ; `mira-core/tests/scenario_s*`.
+
+## PR-20 — Ne plus présenter MIRA comme « offline-first » (1, glossaire)
+**Contexte.** L'introduction (ch. 1) et le glossaire présentent MIRA comme un client « offline-first ». Ce n'est pas la raison d'être du projet : MIRA existe parce que les clients mail Linux disponibles étaient trop austères, payants ou enfermés dans un navigateur.
+**Proposition.** Au ch. 1, remplacer « Il fonctionne en mode **offline-first** : on peut lire, trier et rédiger sans connexion, et tout se rattrape quand le réseau revient » par une phrase de positionnement (client Linux moderne, soigné, libre et gratuit, natif) ; retirer l'entrée « Offline-first » du glossaire ou la rebaptiser « Miroir local ». Les mécanismes (lecture locale, file d'actions, écritures optimistes, S6–S8) restent inchangés : ce sont des choix d'architecture, pas un argument produit.
+**Raison.** Aligner la référence sur l'objectif réel du produit sans toucher aux invariants.
+**Renvoi.** `docs/MIRA-architecture-reference.md` ch. 1 et glossaire ; l'ensemble des fichiers hors référence a été aligné.

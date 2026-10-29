@@ -3,7 +3,6 @@
 use std::sync::Arc;
 
 use mira_core::accounts::NetworkPolicy;
-use mira_core::ai::AiProviderRegistry;
 use mira_core::api::EngineConfig;
 use mira_core::auth::OAuthClientConfig;
 use mira_core::ports::{KeyringSecretStore, SystemClock, UuidV7Ids};
@@ -11,6 +10,7 @@ use mira_core::profile::ProfileEnvironment;
 use mira_core::sync::{BackgroundSync, SupervisorConfig};
 use mira_vocabulary::ProfileId;
 
+use crate::ai_composition::build_ai_registry;
 use crate::composition::build_registry;
 use crate::oauth_file_load::oauth_config_from_process;
 
@@ -25,7 +25,7 @@ pub fn production_config_with_oauth(profile: ProfileId, oauth: OAuthClientConfig
         profile,
         environment: ProfileEnvironment::from_process(),
         registry: build_registry(),
-        ai_registry: AiProviderRegistry::new(),
+        ai_registry: build_ai_registry(),
         secrets: Arc::new(KeyringSecretStore),
         clock: Arc::new(SystemClock),
         ids: Arc::new(UuidV7Ids),

@@ -1352,15 +1352,23 @@ dependencies = [
 name = "mira-assembly"
 version = "0.1.0"
 dependencies = [
+ "mira-ai-anthropic",
+ "mira-ai-generic",
+ "mira-ai-google",
+ "mira-ai-groq",
+ "mira-ai-mistral",
+ "mira-ai-openai",
  "mira-core",
  "mira-provider-generic",
  "mira-provider-gmail",
  "mira-provider-outlook",
  "mira-provider-yahoo",
+ "mira-testkit",
  "mira-vocabulary",
  "ring",
  "serde",
  "tempfile",
+ "tokio",
  "toml",
  "tracing",
 ]

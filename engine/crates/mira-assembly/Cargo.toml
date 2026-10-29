@@ -17,6 +17,12 @@ mira-provider-gmail.workspace = true
 mira-provider-outlook.workspace = true
 mira-provider-yahoo.workspace = true
 mira-provider-generic.workspace = true
+mira-ai-anthropic.workspace = true
+mira-ai-openai.workspace = true
+mira-ai-google.workspace = true
+mira-ai-mistral.workspace = true
+mira-ai-groq.workspace = true
+mira-ai-generic.workspace = true
 serde.workspace = true
 toml.workspace = true
 tracing.workspace = true
@@ -28,3 +34,5 @@ toml = { version = "1", default-features = false, features = ["parse", "display"
 
 [dev-dependencies]
 tempfile.workspace = true
+tokio.workspace = true
+mira-testkit.workspace = true

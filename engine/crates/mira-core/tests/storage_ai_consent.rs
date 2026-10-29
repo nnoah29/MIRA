@@ -5,7 +5,7 @@
 mod support_ai_connections;
 
 use mira_core::storage::Database;
-use mira_vocabulary::{AiConnectionId, Timestamp};
+use mira_vocabulary::{AiConnectionId, AiModelList, Timestamp};
 use support_ai_connections::{code_of, connection, insert};
 
 /// Retirer le consentement remet la date à zéro ; une connexion inconnue est refusée
@@ -48,4 +48,27 @@ fn unreadable_models_cache_reads_as_absent() {
         .read(|tx| tx.require_ai_connection(&AiConnectionId::from_raw("c-1")))
         .unwrap();
     assert_eq!(single.label, "A");
+}
+
+/// Oublier les modèles vide la liste gardée ; une connexion inconnue est refusée
+#[test]
+fn clear_models_forgets_the_cached_list() {
+    let db = Database::open_in_memory().unwrap();
+    insert(&db, &connection("c-1", "A")).unwrap();
+    let id = AiConnectionId::from_raw("c-1");
+    let list = AiModelList {
+        models: vec![],
+        fetched_at: Timestamp::from_millis(9),
+    };
+    db.write(|tx| tx.save_ai_models(&id, &list)).unwrap();
+    db.write(|tx| tx.clear_ai_models(&id)).unwrap();
+    assert_eq!(
+        db.read(|tx| tx.require_ai_connection(&id)).unwrap().models,
+        None
+    );
+    let unknown = AiConnectionId::from_raw("absente");
+    assert_eq!(
+        code_of(db.write(|tx| tx.clear_ai_models(&unknown))),
+        "not_found.ai_connection"
+    );
 }

@@ -8,6 +8,7 @@
 //! Support des tests du domaine « Ai » de la façade : appels, lecture des réponses et fournisseurs de test.
 
 pub mod calls;
+pub mod destination;
 pub mod operations;
 pub mod providers;
 pub mod session;

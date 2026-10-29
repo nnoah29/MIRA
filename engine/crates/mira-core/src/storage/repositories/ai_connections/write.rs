@@ -101,4 +101,16 @@ impl Tx<'_> {
             .map_err(storage_error)?;
         ensure_changed(changed)
     }
+
+    /// Oublie la liste de modèles gardée ; inconnue : `not_found.ai_connection`
+    pub fn clear_ai_models(&self, id: &AiConnectionId) -> Result<(), MiraError> {
+        let changed = self
+            .sql()
+            .execute(
+                "UPDATE ai_connections SET models_json = NULL, models_fetched_at = NULL WHERE id = ?1",
+                [id.as_str()],
+            )
+            .map_err(storage_error)?;
+        ensure_changed(changed)
+    }
 }

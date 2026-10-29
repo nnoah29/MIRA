@@ -132,6 +132,8 @@ class FormField2 extends StatelessWidget {
   final double? width;
   final Key? fieldKey;
   final int maxLines;
+  final ValueChanged<String>? onSubmitted;
+  final bool autofocus;
   const FormField2({
     super.key,
     required this.label,
@@ -144,6 +146,8 @@ class FormField2 extends StatelessWidget {
     this.width,
     this.fieldKey,
     this.maxLines = 1,
+    this.onSubmitted,
+    this.autofocus = false,
   });
 
   @override
@@ -180,6 +184,8 @@ class FormField2 extends StatelessWidget {
                     minLines: maxLines,
                     maxLines: maxLines,
                     onChanged: onChanged,
+                    onSubmitted: onSubmitted,
+                    autofocus: autofocus,
                     cursorColor: p.accent,
                     cursorWidth: 1,
                     style: Fonts.sans(size: 15, color: p.text),

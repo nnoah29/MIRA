@@ -6,6 +6,7 @@ import '../engine/ai_models.dart';
 import '../i18n/i18n.dart';
 import '../state/ai_settings_state.dart';
 import '../theme/app_theme.dart';
+import 'account_form_widgets.dart';
 import 'ai_connection_card.dart';
 import 'widgets.dart';
 
@@ -71,23 +72,17 @@ class _AiAddConnectionState extends State<AiAddConnection> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextField(
-          key: const ValueKey('ai-new-label'),
+        FormField2(
+          fieldKey: const ValueKey('ai-new-label'),
           controller: label,
-          decoration: InputDecoration(
-            isDense: true,
-            labelText: t('Nom de la connexion'),
-          ),
+          label: t('Nom de la connexion'),
         ),
-        const SizedBox(height: 10),
-        TextField(
-          key: const ValueKey('ai-new-url'),
+        const SizedBox(height: 12),
+        FormField2(
+          fieldKey: const ValueKey('ai-new-url'),
           controller: url,
-          decoration: InputDecoration(
-            isDense: true,
-            labelText: t('Adresse du service'),
-            hintText: 'https://…', // i18n:ignore
-          ),
+          label: t('Adresse du service'),
+          hint: 'https://…', // i18n:ignore
         ),
         const SizedBox(height: 12),
         Row(

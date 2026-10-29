@@ -41,7 +41,7 @@ class AiModelPicker extends StatelessWidget {
       builder: (_, h) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: h ? p.surface2 : null,
+          color: h ? p.surface2 : p.bg,
           border: Border.all(color: p.line),
         ),
         child: Row(
@@ -50,7 +50,7 @@ class AiModelPicker extends StatelessWidget {
               child: Text(
                 chosen ? model : t('Choisir un modèle'),
                 overflow: TextOverflow.ellipsis,
-                style: Fonts.sans(size: 14, color: chosen ? p.text : p.dim),
+                style: Fonts.sans(size: 15, color: chosen ? p.text : p.dim),
               ),
             ),
             Ico('chev', size: 14, color: p.muted),
@@ -66,7 +66,7 @@ class AiModelPicker extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Mono(t('Modèle'), size: 10.5, ls: .18, height: null),
+        Mono(t('Modèle'), size: 10.5, ls: .12, color: p.muted, height: null),
         const SizedBox(height: 6),
         Builder(builder: (anchor) => _button(anchor, p)),
       ],

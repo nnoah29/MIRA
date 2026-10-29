@@ -7,6 +7,7 @@ import '../engine/ai_models.dart';
 import '../i18n/i18n.dart';
 import '../state/ai_settings_state.dart';
 import '../theme/app_theme.dart';
+import 'account_form_widgets.dart';
 import 'overlays.dart';
 
 /// Popover d'une connexion : choisir un modèle de la liste ou taper un autre nom.
@@ -59,25 +60,15 @@ class _AiModelPopupState extends State<AiModelPopup> {
     await widget.state.loadModels(id, refresh: true);
   }
 
-  InputDecoration _decoration(Pal p, String hint) => InputDecoration(
-    isDense: true,
-    hintText: hint,
-    hintStyle: Fonts.sans(size: 14, color: p.dim),
-    border: OutlineInputBorder(borderSide: BorderSide(color: p.line)),
-    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: p.line)),
-    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: p.accent)),
-  );
-
   Widget _field(Pal p, Key key, TextEditingController ctl, String hint) =>
       Padding(
         padding: const EdgeInsets.fromLTRB(6, 2, 6, 6),
-        child: TextField(
-          key: key,
+        child: FormField2(
+          fieldKey: key,
           controller: ctl,
+          label: '',
+          hint: hint,
           autofocus: true,
-          cursorColor: p.accent,
-          style: Fonts.sans(size: 14, color: p.text),
-          decoration: _decoration(p, hint),
           onChanged: (_) => setState(() {}),
           onSubmitted: freeText ? _choose : null,
         ),

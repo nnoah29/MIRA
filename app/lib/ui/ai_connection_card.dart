@@ -7,6 +7,7 @@ import '../i18n/i18n.dart';
 import '../state/ai_settings_state.dart';
 import '../theme/app_theme.dart';
 import 'ai_model_picker.dart';
+import 'account_form_widgets.dart';
 import 'widgets.dart';
 
 /// Nom du fournisseur tel que l'app l'affiche (le fournisseur libre se présente comme « Autre »).
@@ -153,19 +154,14 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
   );
 
   Widget _address(Pal p) => Row(
+    crossAxisAlignment: CrossAxisAlignment.end,
     children: [
       Expanded(
-        child: TextField(
-          key: ValueKey('ai-url-$id'),
+        child: FormField2(
+          fieldKey: ValueKey('ai-url-$id'),
           controller: urlCtl,
-          cursorColor: p.accent,
-          style: Fonts.sans(size: 14, color: p.text),
-          decoration: InputDecoration(
-            isDense: true,
-            labelText: t('Adresse du service'),
-            hintText: 'https://…', // i18n:ignore
-            border: OutlineInputBorder(borderSide: BorderSide(color: p.line)),
-          ),
+          label: t('Adresse du service'),
+          hint: 'https://…', // i18n:ignore
         ),
       ),
       const SizedBox(width: 8),
@@ -181,26 +177,15 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Expanded(
-            child: TextField(
-              key: ValueKey('ai-key-field-$id'),
+            child: FormField2(
+              fieldKey: ValueKey('ai-key-field-$id'),
               controller: keyCtl,
-              obscureText: true,
-              enableSuggestions: false,
-              autocorrect: false,
-              cursorColor: p.accent,
-              style: Fonts.sans(size: 14, color: p.text),
+              secret: true,
               onSubmitted: (_) => _saveKey(),
-              decoration: InputDecoration(
-                isDense: true,
-                labelText: c.hasKey
-                    ? t('Remplacer la clé d’API')
-                    : t('Clé d’API'),
-                border: OutlineInputBorder(
-                  borderSide: BorderSide(color: p.line),
-                ),
-              ),
+              label: c.hasKey ? t('Remplacer la clé d’API') : t('Clé d’API'),
             ),
           ),
           const SizedBox(width: 8),

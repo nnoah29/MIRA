@@ -15,11 +15,24 @@ expect() {
     out=$("$root/tools/check-architecture" "$tmp/engine" 2>&1)
     if [[ $? -eq 0 || "$out" != *"$rule"* ]]; then echo "ÉCHEC : la copie sabotée devrait violer $rule"; echo "$out"; fail=1; fi
 }
+expect_clean() {
+    local out
+    out=$("$root/tools/check-architecture" "$tmp/engine" 2>&1)
+    if [[ $? -ne 0 ]]; then echo "ÉCHEC : la copie modifiée devrait rester conforme"; echo "$out"; fail=1; fi
+}
 sabotage; echo 'mira-core.workspace = true' >> "$tmp/engine/crates/mira-provider-yahoo/Cargo.toml"; expect A2
 sabotage; echo 'mira-provider-gmail.workspace = true' >> "$tmp/engine/crates/mira-core/Cargo.toml"; expect A3
 sabotage; echo 'mira-core.workspace = true' >> "$tmp/engine/crates/mira-vocabulary/Cargo.toml"; expect A1
 sabotage; echo '//! Cas Gmail' >> "$tmp/engine/crates/mira-core/src/lib.rs"; expect A6
 sabotage; printf '//! x\npub fn f() { let _ = rusqlite::version(); }\n' > "$tmp/engine/crates/mira-core/src/registry/leak.rs"; expect A8
 sabotage; printf '//! x\npub const ADDRESS: &str = "x@ymail.com";\n' >> "$tmp/engine/crates/mira-core/src/lib.rs"; expect A6
+sabotage; echo 'mira-core.workspace = true' >> "$tmp/engine/crates/mira-ai-groq/Cargo.toml"; expect A2
+sabotage; echo 'mira-provider-generic.workspace = true' >> "$tmp/engine/crates/mira-ai-openai/Cargo.toml"; expect A2
+sabotage; echo '//! Cas Mistral' >> "$tmp/engine/crates/mira-core/src/lib.rs"; expect A6
+sabotage; printf '//! x\npub const URL: &str = "https://api.openai.com/v1";\n' >> "$tmp/engine/crates/mira-core/src/lib.rs"; expect A6
+sabotage; echo 'mira-ai-anthropic.workspace = true' >> "$tmp/engine/crates/mira-core/Cargo.toml"; expect A3
+sabotage; printf '//! x\npub fn f() { let _ = reqwest::Client::new(); }\n' > "$tmp/engine/crates/mira-core/src/registry/leak.rs"; expect A8
+sabotage; mkdir -p "$tmp/engine/crates/mira-core/src/ai"; printf '//! x\npub fn f() { let _ = reqwest::Client::new(); }\n' > "$tmp/engine/crates/mira-core/src/ai/net.rs"; expect_clean
+sabotage; printf '//! x\npub const FORMAT: &str = "AnthropicMessages OpenAiChat";\n' >> "$tmp/engine/crates/mira-core/src/lib.rs"; expect_clean
 [[ $fail -eq 0 ]] && echo "test-check-architecture : OK"
 exit $fail

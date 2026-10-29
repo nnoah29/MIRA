@@ -1307,6 +1307,48 @@ dependencies = [
 ]
 
 [[package]]
+name = "mira-ai-anthropic"
+version = "0.1.0"
+dependencies = [
+ "mira-vocabulary",
+]
+
+[[package]]
+name = "mira-ai-generic"
+version = "0.1.0"
+dependencies = [
+ "mira-vocabulary",
+]
+
+[[package]]
+name = "mira-ai-google"
+version = "0.1.0"
+dependencies = [
+ "mira-vocabulary",
+]
+
+[[package]]
+name = "mira-ai-groq"
+version = "0.1.0"
+dependencies = [
+ "mira-vocabulary",
+]
+
+[[package]]
+name = "mira-ai-mistral"
+version = "0.1.0"
+dependencies = [
+ "mira-vocabulary",
+]
+
+[[package]]
+name = "mira-ai-openai"
+version = "0.1.0"
+dependencies = [
+ "mira-vocabulary",
+]
+
+[[package]]
 name = "mira-assembly"
 version = "0.1.0"
 dependencies = [

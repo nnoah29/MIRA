@@ -3,11 +3,11 @@
 
 Vérifie, à partir de `cargo metadata` et des sources :
   A1  mira-vocabulary ne dépend (en normal) que de serde et thiserror ;
-  A2  un provider ne dépend (en normal) que de mira-vocabulary, et d'aucun autre crate mira-* en dev ;
-  A3  mira-core ne dépend d'aucun provider ni de l'assemblage (même en dev) ;
+  A2  un provider (mira-provider-*, mira-ai-*) ne dépend (en normal) que de mira-vocabulary, et d'aucun autre crate mira-* en dev ;
+  A3  mira-core ne dépend d'aucun provider (mail ou IA) ni de l'assemblage (même en dev) ;
   (A4, règle des clients CLI et TUI, retirée avec eux : l'app Flutter passe par le pont, hors de ce workspace) ;
   A5  mira-testkit ne dépend d'aucun crate mira-* (boîte noire) ;
-  A6  aucun nom de provider ni de fournisseur dans les sources de mira-core (invariant 1) ;
+  A6  aucun nom de provider ni de fournisseur (mail ou IA) dans les sources de mira-core (invariant 1) ;
   A7  aucun chargement dynamique (libloading, dlopen) dans le workspace (D-02) ;
   A8  chaque bibliothèque externe n'est utilisée que dans son module d'encapsulation du cœur (invariant 5, annexe H) ;
   A9  aucune notion d'écran ou de widget dans le cœur (invariant 4).
@@ -22,6 +22,7 @@ import sys
 
 VOCAB_ALLOWED = {"serde", "thiserror"}
 PROVIDER_NAMES = re.compile(r"gmail|googlemail|google|outlook|hotmail|office365|microsoft|yahoo|(?<![a-z])ymail|rocketmail|icloud", re.I)
+AI_PROVIDER_NAMES = re.compile(r"mistral|groq|gemini|generativelanguage|api\.anthropic|api\.openai", re.I)
 DYNAMIC_LOADING = {"libloading", "dlopen", "dlopen2", "libc-dlopen"}
 ENCAPSULATED = {
     "rusqlite": ("storage",),
@@ -30,7 +31,7 @@ ENCAPSULATED = {
     "async_imap": ("imap",),
     "lettre": ("smtp",),
     "mail_builder": ("smtp", "send"),
-    "reqwest": ("auth",),
+    "reqwest": ("auth", "ai"),
     "keyring": ("ports",),
     "ammonia": ("html",),
     "uuid": ("ports",),
@@ -67,14 +68,14 @@ def check_packages(packages):
                 errors.append(f"A1 mira-vocabulary dépend de {bad} (seuls serde et thiserror)")
             for bad in mira_every:
                 errors.append(f"A1 mira-vocabulary dépend de {bad}")
-        elif name.startswith("mira-provider-"):
+        elif name.startswith(("mira-provider-", "mira-ai-")):
             for bad in normal - {"mira-vocabulary"}:
                 errors.append(f"A2 {name} dépend de {bad} (seul mira-vocabulary)")
             for bad in mira_every - {"mira-vocabulary"}:
                 errors.append(f"A2 {name} dépend de {bad}")
         elif name == "mira-core":
             for bad in mira_every:
-                if bad.startswith("mira-provider-") or bad == "mira-assembly":
+                if bad.startswith(("mira-provider-", "mira-ai-")) or bad == "mira-assembly":
                     errors.append(f"A3 mira-core dépend de {bad}")
         elif name == "mira-testkit":
             for bad in {d for d in normal if d.startswith("mira-")}:
@@ -96,7 +97,7 @@ def check_core_sources(workspace):
             path = os.path.join(root, f)
             with open(path, encoding="utf-8") as fh:
                 for no, line in enumerate(fh, 1):
-                    m = PROVIDER_NAMES.search(line)
+                    m = PROVIDER_NAMES.search(line) or AI_PROVIDER_NAMES.search(line)
                     if m:
                         errors.append(f"A6 {path}:{no}: nom de fournisseur « {m.group(0)} » dans le cœur")
     return errors

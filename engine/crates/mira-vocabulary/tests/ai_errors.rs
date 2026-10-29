@@ -8,10 +8,9 @@ use mira_vocabulary::error::codes::{
 };
 use mira_vocabulary::{AiError, ErrorCode, EventCategory, EventKind, MiraError, OperationId};
 
-/// Chaque variante d'`AiError` donne son code stable, et `MiraError` le reprend
-#[test]
-fn every_ai_error_maps_to_its_code() {
-    let table: [(AiError, ErrorCode); 8] = [
+/// Table attendue : chaque variante d'`AiError` et son code stable.
+fn table() -> [(AiError, ErrorCode); 9] {
+    [
         (AiError::KeyRejected, authentication::AI_KEY_REJECTED),
         (AiError::ModelNotFound, not_found::AI_MODEL),
         (
@@ -21,6 +20,7 @@ fn every_ai_error_maps_to_its_code() {
             server::AI_RATE_LIMITED,
         ),
         (AiError::InputTooLarge, invalid_input::AI_INPUT_TOO_LARGE),
+        (AiError::UrlInvalid, invalid_input::AI_URL_INVALID),
         (AiError::Unavailable, server::AI_UNAVAILABLE),
         (AiError::BadResponse, server::AI_BAD_RESPONSE),
         (
@@ -28,8 +28,13 @@ fn every_ai_error_maps_to_its_code() {
             incompatible_state::AI_CONSENT_REQUIRED,
         ),
         (AiError::Cancelled, cancelled::BY_USER),
-    ];
-    for (error, code) in table {
+    ]
+}
+
+/// Chaque variante d'`AiError` donne son code stable, et `MiraError` le reprend
+#[test]
+fn every_ai_error_maps_to_its_code() {
+    for (error, code) in table() {
         assert_eq!(error.code(), code);
         let mira: MiraError = error.into();
         assert_eq!(mira.code, code.0);

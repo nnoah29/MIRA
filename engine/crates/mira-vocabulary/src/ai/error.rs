@@ -18,6 +18,8 @@ pub enum AiError {
     RateLimited { retry_after_secs: Option<u64> },
     #[error("texte trop long pour le service d'IA")]
     InputTooLarge,
+    #[error("adresse du service d'IA refusée")]
+    UrlInvalid,
     #[error("service d'IA indisponible")]
     Unavailable,
     #[error("réponse inattendue du service d'IA")]
@@ -36,6 +38,7 @@ impl AiError {
             Self::ModelNotFound => not_found::AI_MODEL,
             Self::RateLimited { .. } => server::AI_RATE_LIMITED,
             Self::InputTooLarge => invalid_input::AI_INPUT_TOO_LARGE,
+            Self::UrlInvalid => invalid_input::AI_URL_INVALID,
             Self::Unavailable => server::AI_UNAVAILABLE,
             Self::BadResponse => server::AI_BAD_RESPONSE,
             Self::ConsentRequired => incompatible_state::AI_CONSENT_REQUIRED,
@@ -51,7 +54,7 @@ impl AiError {
             Self::RateLimited { .. } | Self::Unavailable | Self::BadResponse => {
                 ErrorCategory::Server
             }
-            Self::InputTooLarge => ErrorCategory::InvalidInput,
+            Self::InputTooLarge | Self::UrlInvalid => ErrorCategory::InvalidInput,
             Self::ConsentRequired => ErrorCategory::IncompatibleState,
             Self::Cancelled => ErrorCategory::Cancelled,
         }

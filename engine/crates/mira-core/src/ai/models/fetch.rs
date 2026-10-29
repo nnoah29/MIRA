@@ -2,8 +2,8 @@
 
 use mira_vocabulary::{AiConnection, AiError, AiModelList, AiProviderDescriptor, MiraError};
 
-use super::access::{base_url_of, find_provider, key_for};
 use super::{filter_models, sort_models};
+use crate::ai::access::{base_url_of, find_provider, key_for};
 use crate::ai::transport::{TransportLimits, get_bounded};
 use crate::ai::wire::dispatch::decode_models;
 use crate::api::Engine;

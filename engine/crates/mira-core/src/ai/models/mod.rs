@@ -1,6 +1,5 @@
 //! Liste des modèles d'une connexion d'IA : relevé auprès du service, filtre, tri et cache.
 
-mod access;
 mod fetch;
 mod filter;
 mod sort;

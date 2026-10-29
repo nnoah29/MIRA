@@ -5,7 +5,7 @@ use serde_json::{Map, Value, json};
 
 use super::call::HttpCall;
 
-const CHAT_PATH: &str = "/chat/completions";
+pub(super) const CHAT_PATH: &str = "/chat/completions";
 const DEFAULT_MAX_OUTPUT_TOKENS: u32 = 4096;
 
 /// Construit l'appel de discussion diffusée ; la clé est ajoutée plus tard par le transport.

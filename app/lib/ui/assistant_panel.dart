@@ -7,27 +7,10 @@ import '../state/assistant.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
+import 'chat_markdown.dart';
+import 'demo_banner.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
-
-/// `**gras**` + sauts de ligne.
-List<InlineSpan> _fmtTx(String t, TextStyle base, Pal p) {
-  final out = <InlineSpan>[];
-  final re = RegExp(r'\*\*(.+?)\*\*');
-  var i = 0;
-  for (final m in re.allMatches(t)) {
-    if (m.start > i) out.add(TextSpan(text: t.substring(i, m.start)));
-    out.add(
-      TextSpan(
-        text: m.group(1),
-        style: Fonts.sansWeight(base, FontWeight.w500).copyWith(color: p.text),
-      ),
-    );
-    i = m.end;
-  }
-  if (i < t.length) out.add(TextSpan(text: t.substring(i)));
-  return out;
-}
 
 class AssistantPanel extends StatefulWidget {
   const AssistantPanel({super.key});
@@ -45,7 +28,10 @@ class _AssistantPanelState extends State<AssistantPanel> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => focus.requestFocus());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      focus.requestFocus();
+      context.read<MailStore>().chatCtl.refresh();
+    });
   }
 
   @override
@@ -71,6 +57,7 @@ class _AssistantPanelState extends State<AssistantPanel> {
     final narrow = w <= 1100;
     final hp = narrow ? 16.0 : 32.0;
     final m = s.byId(s.open);
+    final demo = s.chatCtl.demo;
 
     // Défilement automatique en bas à chaque mise à jour du fil.
     final sig =
@@ -121,7 +108,12 @@ class _AssistantPanelState extends State<AssistantPanel> {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Mono(t('En ligne'), height: null),
+                      Mono(
+                        demo
+                            ? t('Démonstration')
+                            : (s.chatCtl.connectionLabel ?? t('En ligne')),
+                        height: null,
+                      ),
                     ],
                   ),
                 ],
@@ -137,6 +129,15 @@ class _AssistantPanelState extends State<AssistantPanel> {
             ],
           ),
         ),
+        if (demo)
+          Padding(
+            padding: EdgeInsets.fromLTRB(hp, 0, hp, 8),
+            child: DemoBanner(
+              onSettings: s.source == null
+                  ? null
+                  : () => s.showView(PaneView.settings),
+            ),
+          ),
         Container(
           margin: EdgeInsets.fromLTRB(hp, 4, hp, 0),
           child: DashedBox(
@@ -291,13 +292,23 @@ class _AssistantPanelState extends State<AssistantPanel> {
                   children: [
                     Ico('spark', size: 13, color: p.dim),
                     const SizedBox(width: 8),
-                    Mono(t('Réponses simulées'), height: null),
+                    Mono(
+                      demo ? t('Réponses simulées') : t('Réponses de l’IA'),
+                      height: null,
+                    ),
                     const Spacer(),
-                    Hov(
-                      onTap: s.busy ? null : () => _send(s),
-                      builder: (_, _) => Opacity(
-                        opacity: s.busy ? .4 : 1,
-                        child: Container(
+                    if (s.busy)
+                      Btn(
+                        key: const ValueKey('chat-stop'),
+                        icon: 'x',
+                        label: t('Arrêter'),
+                        onTap: s.stopChat,
+                      )
+                    else
+                      Hov(
+                        onTap: () => _send(s),
+                        builder: (_, _) => Container(
+                          key: const ValueKey('chat-send'),
                           width: 34,
                           height: 34,
                           color: p.accent,
@@ -305,7 +316,6 @@ class _AssistantPanelState extends State<AssistantPanel> {
                           child: Ico('send', color: p.onAccent),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -333,7 +343,9 @@ class _Bubble extends StatelessWidget {
       color: me ? p.text : p.muted,
       height: 1.65,
     );
-    final shown = me ? msg.text : (msg.done ? t(msg.text) : msg.shown);
+    final shown = me
+        ? msg.text
+        : (msg.done ? (msg.fromEngine ? msg.text : t(msg.text)) : msg.shown);
     final width = MediaQuery.sizeOf(context).width;
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxW),
@@ -358,7 +370,12 @@ class _Bubble extends StatelessWidget {
               ),
               if (shown.isNotEmpty)
                 Text.rich(
-                  TextSpan(style: base, children: _fmtTx(shown, base, p)),
+                  TextSpan(
+                    style: base,
+                    children: me
+                        ? [TextSpan(text: shown)]
+                        : chatSpans(shown, base, p),
+                  ),
                 )
               else
                 const _Typing(),
@@ -408,6 +425,26 @@ class _Bubble extends StatelessWidget {
                   ),
                 ),
               ],
+              if (!me &&
+                  msg.done &&
+                  msg.fromEngine &&
+                  !msg.failed &&
+                  msg.text.isNotEmpty &&
+                  s.byId(s.open) != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Wrap(
+                    children: [
+                      Btn(
+                        key: const ValueKey('insert-in-reply'),
+                        icon: 'reply',
+                        label: t('Insérer dans une réponse'),
+                        go: true,
+                        onTap: () => s.useDraft(idx),
+                      ),
+                    ],
+                  ),
+                ),
               if (!me && msg.done && msg.refs != null && msg.refs!.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),

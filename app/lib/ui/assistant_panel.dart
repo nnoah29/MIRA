@@ -68,6 +68,51 @@ class _AssistantPanelState extends State<AssistantPanel> {
     }
   }
 
+  /// Texte du bandeau de contexte : sujet du mail ouvert, mail retiré ou aucun message.
+  String _ctxLabel(MailStore s, String? subject) {
+    if (subject == null) {
+      return t(
+        ' · aucun message sélectionné. Clique sur un mail dans la liste.',
+      );
+    }
+    return s.ctxDropped
+        ? t(' · retiré : l’assistant ne voit pas ce mail.')
+        : ' · $subject';
+  }
+
+  /// Boutons du bandeau : ouvrir ou retirer le contexte, ou le rétablir une fois retiré.
+  List<Widget> _ctxActions(MailStore s, bool hasMail) {
+    if (!hasMail) return const [];
+    const pad = EdgeInsets.symmetric(horizontal: 10, vertical: 6);
+    if (s.ctxDropped) {
+      return [
+        Btn(
+          key: const ValueKey('ctx-restore'),
+          label: t('Rétablir'),
+          padding: pad,
+          fontSize: 9.5,
+          onTap: s.restoreCtx,
+        ),
+      ];
+    }
+    return [
+      Btn(
+        key: const ValueKey('ctx-open'),
+        label: t('Ouvrir'),
+        padding: pad,
+        fontSize: 9.5,
+        onTap: s.openCtx,
+      ),
+      const SizedBox(width: 6),
+      IBtn(
+        'x',
+        key: const ValueKey('ctx-drop'),
+        tip: t('Retirer le contexte'),
+        onTap: s.dropCtx,
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = context.watch<MailStore>();
@@ -164,43 +209,22 @@ class _AssistantPanelState extends State<AssistantPanel> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             child: Row(
               children: [
-                Ico('inbox', color: p.muted),
+                KeyedSubtree(
+                  key: const ValueKey('ctx-icon'),
+                  child: Ico('inbox', color: p.muted),
+                ),
                 const SizedBox(width: 12),
+                Mono(t('Contexte'), color: p.accent, height: null),
                 Expanded(
-                  child: Text.rich(
-                    TextSpan(
-                      style: Fonts.sans(size: 14, color: p.muted),
-                      children: [
-                        WidgetSpan(
-                          alignment: PlaceholderAlignment.baseline,
-                          baseline: TextBaseline.alphabetic,
-                          child: Mono(
-                            t('Contexte'),
-                            color: p.accent,
-                            height: null,
-                          ),
-                        ),
-                        TextSpan(
-                          text: m != null
-                              ? ' · ${m.subject}'
-                              : t(
-                                  ' · aucun message sélectionné. Clique sur un mail dans la liste.',
-                                ),
-                        ),
-                      ],
-                    ),
+                  child: Text(
+                    _ctxLabel(s, m?.subject),
+                    key: const ValueKey('ctx-text'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Fonts.sans(size: 14, color: p.muted),
                   ),
                 ),
-                if (m != null)
-                  Btn(
-                    label: t('Ouvrir'),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    fontSize: 9.5,
-                    onTap: s.openCtx,
-                  ),
+                ..._ctxActions(s, m != null),
               ],
             ),
           ),

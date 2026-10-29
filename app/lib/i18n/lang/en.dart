@@ -1181,8 +1181,10 @@ const Map<String, String> enStrings = {
   'Aucun modèle ne correspond.': 'No model matches.',
   'Actualisation…': 'Refreshing…',
   'Saisir un autre nom…': 'Type another name…',
-  'Pour utiliser {0}, il te faut ta propre clé d’API, créée sur le site du service.':
-      'To use {0}, you need your own API key, created on the service’s website.',
-  'Un service compatible avec l’API d’OpenAI (serveur local, passerelle, autre fournisseur) : indique son adresse et ta propre clé d’API.':
-      'A service compatible with the OpenAI API (local server, gateway, other provider): give its address and your own API key.',
+  'Pour utiliser {0}, il te faut ta propre clé d’API, créée sur le site du service.': 'To use {0}, you need your own API key, created on the service’s website.',
+  'Un service compatible avec l’API d’OpenAI (serveur local, passerelle, autre fournisseur) : indique son adresse et ta propre clé d’API.': 'A service compatible with the OpenAI API (local server, gateway, other provider): give its address and your own API key.',
+  ' · retiré : l’assistant ne voit pas ce mail.':
+      ' · removed: the assistant cannot see this mail.',
+  'Retirer le contexte': 'Remove context',
+  'Rétablir': 'Restore',
 };

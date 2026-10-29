@@ -323,6 +323,7 @@ class MailStore extends ChangeNotifier {
   String sort = 'new';
   final Set<String> sel = <String>{};
   String? open;
+  String? ctxOff;
   PaneView view = PaneView.empty;
   late String theme;
 
@@ -3632,10 +3633,25 @@ class MailStore extends ChangeNotifier {
 
   Future<void> stopChat() => chatCtl.stop();
 
+  /// Dit si le mail ouvert a été retiré du contexte de l'assistant (valable pour ce mail seulement).
+  bool get ctxDropped => open != null && ctxOff == open;
+
+  /// Retire le mail ouvert du contexte de l'assistant.
+  void dropCtx() {
+    ctxOff = open;
+    notifyListeners();
+  }
+
+  /// Remet le mail ouvert dans le contexte de l'assistant.
+  void restoreCtx() {
+    ctxOff = null;
+    notifyListeners();
+  }
+
   /// Mail ouvert tel que l'assistant le reçoit : métadonnées et texte brut.
   ChatContextInput chatInput() {
     final m = byId(open);
-    if (m == null) return const ChatContextInput();
+    if (m == null || ctxDropped) return const ChatContextInput();
     return ChatContextInput(
       subject: m.subject,
       from: '${m.from.name} <${m.from.email}>',

@@ -1165,7 +1165,7 @@ const Map<String, String> enStrings = {
   'Effacer la clé': 'Clear the key',
   'Enregistrer la clé': 'Save the key',
   'Envoyer tes messages à {0} ?': 'Send your messages to {0}?',
-  'Intelligence artificielle': 'Artificial intelligence',
+  'IA': 'AI',
   'Modèles du service': 'Service models',
   'Nom de la connexion': 'Connection name',
   'Pour répondre, l’assistant envoie à {0} ta conversation et le texte du mail ouvert. Ce service applique sa propre politique de confidentialité. Rien n’est envoyé sans ton accord ; supprime la connexion dans les réglages pour le retirer.': 'To answer, the assistant sends your conversation and the text of the open mail to {0}. This service applies its own privacy policy. Nothing is sent without your consent; delete the connection in the settings to withdraw it.',

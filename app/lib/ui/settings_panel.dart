@@ -43,7 +43,7 @@ List<String> _tabs(bool engine) => [
   if (engine) t('Libellés'),
   if (engine) t('Règles'),
   if (engine) t('Modèles'),
-  if (engine) t('Intelligence artificielle'),
+  if (engine) t('IA'),
   if (engine) t('Stockage'),
   t('À propos'),
 ];

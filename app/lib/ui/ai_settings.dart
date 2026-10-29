@@ -1,4 +1,4 @@
-//! Réglages « Intelligence artificielle » : connexions, clés, modèles, essai, connexion par défaut.
+//! Réglages « IA » : connexions, clés, modèles, essai, connexion par défaut.
 
 import 'package:flutter/material.dart';
 
@@ -48,7 +48,7 @@ class _AiSettingsState extends State<AiSettings> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            t('Intelligence artificielle'),
+            t('IA'),
             style: Fonts.sans(size: 15, w: FontWeight.w500, color: p.text),
           ),
           const SizedBox(height: 2),

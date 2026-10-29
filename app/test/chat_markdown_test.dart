@@ -20,6 +20,17 @@ void main() {
     GoogleFonts.config.allowRuntimeFetching = false;
   });
 
+  testWidgets('surrounding_blank_lines_are_dropped', (tester) async {
+    expect(flat('\n\nBonjour\nle monde\n\n'), 'Bonjour\nle monde');
+    expect(flat('  \n  Bonjour'), 'Bonjour');
+    expect(plainFromMarkdown('\n\nBonjour\n'), 'Bonjour');
+  });
+
+  testWidgets('runs_of_blank_lines_collapse_to_one', (tester) async {
+    expect(flat('un\n\n\n\ndeux'), 'un\n\ndeux');
+    expect(plainFromMarkdown('un\n\n\n\ndeux'), 'un\n\ndeux');
+  });
+
   testWidgets('bold_italic_code_spans', (tester) async {
     await tester.runAsync(Fonts.preload);
     const text = 'un **gras**, un *penché* et du `code`';

@@ -55,10 +55,14 @@ TextSpan _styled(RegExpMatch m, TextStyle base, Pal p) {
   );
 }
 
+/// Texte sans blancs en tête ni en queue, et sans série de plus d'une ligne vide.
+String _tidy(String text) =>
+    text.trim().replaceAll(RegExp(r'\n[ \t]*(\n[ \t]*){2,}'), '\n\n');
+
 /// Réponse de l'IA en morceaux de texte stylés ; le HTML et les liens restent du texte brut.
 List<InlineSpan> chatSpans(String text, TextStyle base, Pal p) {
   final out = <InlineSpan>[];
-  final lines = text.split('\n');
+  final lines = _tidy(text).split('\n');
   for (var i = 0; i < lines.length; i++) {
     final (marker, rest) = _listLine(lines[i]);
     if (marker.isNotEmpty) out.add(TextSpan(text: marker));
@@ -70,7 +74,7 @@ List<InlineSpan> chatSpans(String text, TextStyle base, Pal p) {
 
 /// Le même texte sans marquage (pour l'insérer dans un mail) ; les listes gardent leur puce.
 String plainFromMarkdown(String text) =>
-    text.split('\n').map(_plainLine).join('\n');
+    _tidy(text).split('\n').map(_plainLine).join('\n');
 
 String _plainLine(String line) {
   final (marker, rest) = _listLine(line);

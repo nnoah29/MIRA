@@ -14,7 +14,13 @@ void main() {
         connection('ai-2', provider: 'anthropic', label: 'Pro'),
       ],
     );
-    expect(find.text('OpenAI'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('ai-card-ai-1')),
+        matching: find.text('OpenAI'),
+      ),
+      findsNothing,
+    );
     await tapKey(tester, 'ai-tab-anthropic');
     expect(find.text('Pro'), findsOneWidget);
     expect(find.text('Anthropic'), findsOneWidget);

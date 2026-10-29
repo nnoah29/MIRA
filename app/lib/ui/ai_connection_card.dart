@@ -110,23 +110,26 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
     if (ok == true) await widget.state.remove(id);
   }
 
-  Widget _head(Pal p, String title) => Row(
-    children: [
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              c.label,
-              style: Fonts.sans(size: 15, w: FontWeight.w500, color: p.text),
-            ),
-            if (title != c.label) ...[
-              const SizedBox(height: 2),
-              Text(title, style: Fonts.sans(size: 12.5, color: p.dim)),
-            ],
-          ],
+  Widget _title(Pal p, String title, bool own) {
+    if (!own && title == c.label) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          c.label,
+          style: Fonts.sans(size: 15, w: FontWeight.w500, color: p.text),
         ),
-      ),
+        if (title != c.label) ...[
+          const SizedBox(height: 2),
+          Text(title, style: Fonts.sans(size: 12.5, color: p.dim)),
+        ],
+      ],
+    );
+  }
+
+  Widget _head(Pal p, String title, bool own) => Row(
+    children: [
+      Expanded(child: _title(p, title, own)),
       Hov(
         key: ValueKey('ai-default-$id'),
         onTap: c.isDefault ? null : () => widget.state.setDefault(id),
@@ -194,11 +197,19 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
             label: t('Enregistrer la clé'),
             onTap: _saveKey,
           ),
+          if (c.hasKey) ...[
+            const SizedBox(width: 8),
+            Btn(
+              key: ValueKey('ai-key-clear-$id'),
+              label: t('Effacer la clé'),
+              onTap: () => widget.state.clearKey(id),
+            ),
+          ],
         ],
       ),
       if (c.hasKey)
         Padding(
-          padding: const EdgeInsets.only(top: 6),
+          padding: const EdgeInsets.only(top: 8),
           child: Row(
             children: [
               Icon(Icons.check, size: 14, color: p.accent),
@@ -208,40 +219,28 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
                 key: ValueKey('ai-key-saved-$id'),
                 style: Fonts.sans(size: 13, color: p.muted),
               ),
-              const Spacer(),
-              Btn(
-                key: ValueKey('ai-key-clear-$id'),
-                label: t('Effacer la clé'),
-                onTap: () => widget.state.clearKey(id),
-              ),
             ],
           ),
         ),
     ],
   );
 
-  Widget _test(Pal p, bool busy) {
+  Widget _testButton(bool busy) => Btn(
+    key: ValueKey('ai-test-$id'),
+    label: t('Tester'),
+    onTap: busy ? null : _testNow,
+  );
+
+  Widget _outcome(Pal p) {
     final outcome = widget.state.tests[id];
-    return Row(
-      children: [
-        Btn(
-          key: ValueKey('ai-test-$id'),
-          label: t('Tester'),
-          onTap: busy ? null : _testNow,
-        ),
-        const SizedBox(width: 12),
-        if (outcome != null)
-          Expanded(
-            child: Text(
-              outcome.ok ? t('Connexion réussie.') : outcome.error ?? '',
-              key: ValueKey('ai-test-result-$id'),
-              style: Fonts.sans(
-                size: 13.5,
-                color: outcome.ok ? p.muted : p.accent,
-              ),
-            ),
-          ),
-      ],
+    if (outcome == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Text(
+        outcome.ok ? t('Connexion réussie.') : outcome.error ?? '',
+        key: ValueKey('ai-test-result-$id'),
+        style: Fonts.sans(size: 13.5, color: outcome.ok ? p.muted : p.accent),
+      ),
     );
   }
 
@@ -257,22 +256,34 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: p.surface,
-        border: Border.all(color: c.isDefault ? p.accent : p.line),
+        border: Border.all(color: p.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _head(p, provider == null ? c.provider : aiProviderTitle(provider)),
-          const SizedBox(height: 14),
+          _head(
+            p,
+            provider == null ? c.provider : aiProviderTitle(provider),
+            provider?.editableUrl == true,
+          ),
+          const SizedBox(height: 16),
           if (provider?.editableUrl == true) ...[
             _address(p),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
           ],
           _key(p),
-          const SizedBox(height: 12),
-          AiModelPicker(state: state, connection: c),
-          const SizedBox(height: 12),
-          _test(p, busy),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: AiModelPicker(state: state, connection: c),
+              ),
+              const SizedBox(width: 8),
+              _testButton(busy),
+            ],
+          ),
+          _outcome(p),
         ],
       ),
     );

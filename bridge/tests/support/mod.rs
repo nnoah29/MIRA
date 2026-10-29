@@ -1,6 +1,8 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic, dead_code)]
 //! Support commun des tests du pont : configuration jetable du moteur et envoi d'une requête JSON.
 
+pub mod chat_fixture;
+
 use std::sync::Arc;
 
 use mira_assembly::accounts::NetworkPolicy;

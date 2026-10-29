@@ -2,6 +2,7 @@
 //! Seul `frb_generated` (code généré) contient du `unsafe` ; le reste du crate n'en a pas.
 
 pub mod api;
+pub mod chat_feed;
 pub mod envelope;
 pub mod events_feed;
 pub mod file_secrets;

@@ -34,6 +34,10 @@ Future<String> execute({required String requestJson}) =>
 Stream<String> watchEvents({BigInt? after}) =>
     RustLib.instance.api.crateApiEngineWatchEvents(after: after);
 
+/// Diffuse une génération d'IA (JSON `ChatStart`) en lignes JSON `started`, deltas ou `error` ; fermer le flux Dart l'annule.
+Stream<String> chatStream({required String requestJson}) =>
+    RustLib.instance.api.crateApiEngineChatStream(requestJson: requestJson);
+
 /// HTML d'origine d'un message, tel que reçu (sans assainissement) : `{html}` ou `{html: null}`.
 Future<String> getOriginalHtml({required String message}) =>
     RustLib.instance.api.crateApiEngineGetOriginalHtml(message: message);

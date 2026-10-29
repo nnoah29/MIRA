@@ -9,6 +9,7 @@
 
 pub mod calls;
 pub mod destination;
+pub mod flaky_store;
 pub mod operations;
 pub mod providers;
 pub mod session;

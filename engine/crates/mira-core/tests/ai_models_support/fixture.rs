@@ -35,10 +35,19 @@ impl ModelsFixture {
 
     /// Comme `start`, avec plusieurs fournisseurs enregistrés dans cet ordre, tous visant le faux serveur
     pub async fn start_many(providers: Vec<TestProvider>) -> Self {
+        Self::start_with_store(providers, |inner| inner).await
+    }
+
+    /// Comme `start_many`, avec un trousseau que le test habille à partir du trousseau mémoire gardé par la fixture
+    pub async fn start_with_store(
+        providers: Vec<TestProvider>,
+        wrap: impl FnOnce(Arc<MemorySecretStore>) -> Arc<dyn SecretStore>,
+    ) -> Self {
         let server = FakeAiServer::start().await.unwrap();
         let home = tempfile::tempdir().unwrap();
         let secrets = Arc::new(MemorySecretStore::new());
         let mut config = config_with_secrets(home.path(), Arc::clone(&secrets));
+        config.secrets = wrap(Arc::clone(&secrets));
         let mut registry = AiProviderRegistry::new();
         for mut provider in providers {
             provider.base_url = server.base_url();
@@ -84,16 +93,6 @@ impl ModelsFixture {
             .write(|tx| tx.insert_ai_connection(&connection, 1))
             .unwrap();
         connection
-    }
-
-    /// Rend illisible la liste de modèles gardée pour cette connexion, directement dans le fichier du profil
-    pub fn corrupt_models(&self, connection: &str) {
-        let raw = rusqlite::Connection::open(&self.database_path).unwrap();
-        raw.execute(
-            "UPDATE ai_connections SET models_json = 'pas du json', models_fetched_at = 5 WHERE id = ?1",
-            [connection],
-        )
-        .unwrap();
     }
 
     /// Relit la connexion telle qu'elle est en base

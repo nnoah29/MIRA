@@ -6,12 +6,12 @@ use super::connection_view::{done, key_location};
 use crate::api::contract::Response;
 use crate::api::engine::Engine;
 
-/// Supprime la connexion puis sa clé du trousseau ; inconnue : `not_found.ai_connection`
+/// Supprime la clé du trousseau puis la connexion, pour ne jamais laisser de clé orpheline ; inconnue : `not_found.ai_connection`
 pub(crate) fn handle_remove_ai_connection(
     engine: &Engine,
     id: &AiConnectionId,
 ) -> Result<Response, MiraError> {
-    engine.database.write(|tx| tx.delete_ai_connection(id))?;
     engine.config.secrets.delete(&key_location(engine, id))?;
+    engine.database.write(|tx| tx.delete_ai_connection(id))?;
     Ok(done())
 }

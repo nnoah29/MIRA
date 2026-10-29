@@ -28,6 +28,9 @@ pub(crate) fn handle_update_ai_connection(
         .filter(|model| !model.is_empty());
     let now = engine.config.clock.now().as_millis();
     let moved = base_url != current.base_url;
+    if moved {
+        engine.config.secrets.delete(&key_location(engine, id))?;
+    }
     engine.database.write(|tx| {
         tx.update_ai_connection(id, &label, base_url.as_deref(), model, now)?;
         if moved {
@@ -35,9 +38,6 @@ pub(crate) fn handle_update_ai_connection(
         }
         Ok(())
     })?;
-    if moved {
-        engine.config.secrets.delete(&key_location(engine, id))?;
-    }
     Ok(single(read_connection(engine, id)?))
 }
 

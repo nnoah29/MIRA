@@ -5,12 +5,15 @@ mod ai_models_support;
 mod support_ai_api;
 mod support_api;
 
+use std::sync::atomic::Ordering;
+
+use mira_core::api::AiRequest;
 use mira_core::ports::SecretStore;
 use mira_vocabulary::{AiConnection, AiSecretRef, ProfileId};
-use support_ai_api::calls::list;
+use support_ai_api::calls::{call, list};
 use support_ai_api::destination::prepared;
 use support_ai_api::operations::update;
-use support_ai_api::providers::started;
+use support_ai_api::providers::{started, started_with_flaky_delete};
 
 const OTHER_URL: &str = "http://127.0.0.1:9/v1";
 
@@ -58,5 +61,39 @@ async fn unchanged_url_keeps_key_consent_and_models() {
     assert!(kept.has_key);
     assert_eq!(kept.consent_at, ready.consent_at);
     assert_eq!(kept.models, ready.models);
+    assert!(f.secrets.get(&location(&ready)).unwrap().is_some());
+}
+
+/// Si la clé ne peut pas être supprimée, changer l'adresse n'écrit rien : adresse, consentement, modèles et clé restent
+#[tokio::test]
+async fn url_change_with_failing_key_delete_changes_nothing() {
+    let (f, fail) = started_with_flaky_delete().await;
+    let ready = prepared(&f).await;
+    fail.store(true, Ordering::SeqCst);
+    let refused = update(&f.engine, &ready.id, "B", Some(OTHER_URL), None).await;
+    assert_eq!(refused.unwrap_err(), "secrets.keyring_unavailable");
+    let stored = f.stored(&ready);
+    assert_eq!(stored.base_url, ready.base_url);
+    assert_eq!(stored.label, "A");
+    assert_eq!(stored.consent_at, ready.consent_at);
+    assert_eq!(stored.models, ready.models);
+    assert!(f.secrets.get(&location(&ready)).unwrap().is_some());
+    fail.store(false, Ordering::SeqCst);
+    let retried = update(&f.engine, &ready.id, "B", Some(OTHER_URL), None).await;
+    assert!(!retried.unwrap().has_key);
+}
+
+/// Si la clé ne peut pas être supprimée, la connexion reste, avec sa clé : rien n'est orphelin
+#[tokio::test]
+async fn remove_with_failing_key_delete_keeps_the_connection() {
+    let (f, fail) = started_with_flaky_delete().await;
+    let ready = prepared(&f).await;
+    fail.store(true, Ordering::SeqCst);
+    let request = AiRequest::RemoveAiConnection {
+        connection: ready.id.clone(),
+    };
+    let refused = call(&f.engine, request).await;
+    assert_eq!(refused.unwrap_err(), "secrets.keyring_unavailable");
+    assert_eq!(list(&f.engine).await.len(), 1);
     assert!(f.secrets.get(&location(&ready)).unwrap().is_some());
 }

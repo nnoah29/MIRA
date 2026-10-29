@@ -12,6 +12,7 @@ use super::startup::{
     apply_event_retention, check_client_version, open_profile, resume_interrupted_deletions,
     resume_pending_rules, start_background,
 };
+use crate::ai::chat::interrupt_running;
 use crate::auth::{CredentialVault, OAuthFlows};
 use crate::events::{EventBus, EventSink, EventSubscription};
 use crate::fetching::ServerSearchResults;
@@ -48,6 +49,7 @@ impl Engine {
         let sink: Arc<dyn EventSink> = Arc::new(events.clone());
         let operations = OperationRegistry::new(Arc::clone(&config.ids), sink);
         apply_event_retention(&config, &database);
+        interrupt_running(&database);
         events.emit(EventKind::EngineStarted)?;
         resume_interrupted_deletions(&config, &database, &events, &paths.attachments_cache);
         resume_pending_rules(&config, &database, &events);

@@ -49,3 +49,20 @@ pub fn insert_all(db: &Database, rows: &[(&str, &str, i64)]) {
 pub fn ids(rows: &[AiJournalEntry]) -> Vec<&str> {
     rows.iter().map(|row| row.id.as_str()).collect()
 }
+
+/// Historique de rétention : 2001 lignes récentes closes, une ancienne close et une ancienne restée `running`
+pub fn seed_history(db: &Database) {
+    db.write(|tx| {
+        for index in 0..2001 {
+            let at = 1_699_000_000_000 + index;
+            let mut row = entry(&format!("j-{index}"), &format!("op-{index}"), at);
+            row.outcome = "end_turn".to_string();
+            tx.insert_ai_journal(&row)?;
+        }
+        let mut old = entry("old", "op-old", 1);
+        old.outcome = "end_turn".to_string();
+        tx.insert_ai_journal(&old)?;
+        tx.insert_ai_journal(&entry("stuck", "op-stuck", 2))
+    })
+    .unwrap();
+}

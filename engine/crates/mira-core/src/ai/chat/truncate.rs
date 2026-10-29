@@ -39,6 +39,13 @@ fn cut(text: &str, budget: usize) -> String {
     kept
 }
 
+/// Nombre de caractères envoyés (consigne et messages), pour le journal.
+pub(super) fn request_chars(request: &ChatRequest) -> u32 {
+    let system = request.system.as_deref().map_or(0, char_count);
+    let messages: usize = request.messages.iter().map(|m| char_count(&m.text)).sum();
+    u32::try_from(system + messages).unwrap_or(u32::MAX)
+}
+
 /// Compte les caractères (et non les octets) d'un texte.
 fn char_count(text: &str) -> usize {
     text.chars().count()

@@ -45,3 +45,10 @@ fn decode_finish_reason_stop_and_length() {
         done(StopReason::MaxTokens)
     );
 }
+
+/// Un événement sans données ou fait d'espaces (signal de maintien) ne produit rien
+#[test]
+fn decode_empty_or_blank_data_yields_nothing() {
+    assert!(decode_chat_event(&event("")).unwrap().is_empty());
+    assert!(decode_chat_event(&event("  \t ")).unwrap().is_empty());
+}

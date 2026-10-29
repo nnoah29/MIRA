@@ -10,7 +10,7 @@ const DONE_MARKER: &str = "[DONE]";
 /// Décode un événement ; texte, consommation puis arrêt, dans cet ordre.
 pub fn decode_chat_event(event: &SseEvent) -> Result<Vec<ChatDelta>, AiError> {
     let data = event.data.trim();
-    if data == DONE_MARKER {
+    if data.is_empty() || data == DONE_MARKER {
         return Ok(Vec::new());
     }
     let chunk: Value = serde_json::from_str(data).map_err(|_| AiError::BadResponse)?;

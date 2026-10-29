@@ -74,6 +74,10 @@ class AiConnectionInfo {
               for (final m in list)
                 AiModelInfo.fromJson((m as Map).cast<String, dynamic>()),
             ],
+      allowedKinds: [
+        for (final k in (json['allowed_kinds'] as List? ?? const [])) '$k',
+      ],
+      masking: AiMasking.fromJson(json['masking']),
     );
   }
 }

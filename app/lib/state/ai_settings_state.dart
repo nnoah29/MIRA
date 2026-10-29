@@ -174,6 +174,14 @@ class AiSettingsState extends ChangeNotifier {
         tests.remove(c.id);
       });
 
+  /// Remplace la liste des types de contenu que la connexion peut recevoir.
+  Future<void> setAllowedContent(AiConnectionInfo c, List<String> kinds) =>
+      _act(c.id, () async => admin.setAllowedContent(c.id, kinds));
+
+  /// Règle le masquage des données sensibles de la connexion.
+  Future<void> setMasking(AiConnectionInfo c, AiMasking masking) =>
+      _act(c.id, () async => admin.setMasking(c.id, masking));
+
   /// Désigne la connexion par défaut.
   Future<void> setDefault(String id) =>
       _act(id, () async => admin.setDefault(id));

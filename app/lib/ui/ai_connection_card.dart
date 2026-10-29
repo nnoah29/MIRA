@@ -7,6 +7,7 @@ import '../i18n/i18n.dart';
 import '../state/ai_settings_state.dart';
 import '../theme/app_theme.dart';
 import 'ai_model_picker.dart';
+import 'ai_privacy_section.dart';
 import 'account_form_widgets.dart';
 import 'widgets.dart';
 
@@ -275,7 +276,9 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
           _key(p),
           const SizedBox(height: 16),
           AiModelPicker(state: state, connection: c),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
+          AiPrivacySection(state: state, connection: c),
+          const SizedBox(height: 16),
           Row(children: [_testButton(busy), const Spacer(), _controls(p)]),
           _outcome(p),
         ],

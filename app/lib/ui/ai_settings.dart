@@ -4,10 +4,13 @@ import 'package:flutter/material.dart';
 
 import '../engine/ai_admin.dart';
 import '../i18n/i18n.dart';
+import '../state/ai_journal_state.dart';
 import '../state/ai_settings_state.dart';
 import '../theme/app_theme.dart';
+import 'ai_journal_view.dart';
 import 'ai_provider_panel.dart';
 import 'ai_provider_tabs.dart';
+import 'rule_widgets.dart';
 
 /// Section des réglages qui gère les connexions aux services d'IA.
 class AiSettings extends StatefulWidget {
@@ -21,11 +24,14 @@ class AiSettings extends StatefulWidget {
 class _AiSettingsState extends State<AiSettings> {
   late final AiSettingsState state = AiSettingsState(widget.admin);
   String? selected;
+  bool showJournal = false;
+  late final AiJournalState journal = AiJournalState(widget.admin);
 
   @override
   void initState() {
     super.initState();
     state.addListener(_refresh);
+    journal.addListener(_refresh);
     state.load();
   }
 
@@ -36,9 +42,39 @@ class _AiSettingsState extends State<AiSettings> {
   @override
   void dispose() {
     state.removeListener(_refresh);
+    journal.removeListener(_refresh);
     state.dispose();
+    journal.dispose();
     super.dispose();
   }
+
+  void _showJournal(bool shown) {
+    if (shown == showJournal) return;
+    setState(() => showJournal = shown);
+    if (shown) journal.load();
+  }
+
+  Widget _switch() => Padding(
+    padding: const EdgeInsets.only(top: 16),
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: RuleSegment(
+        key: const ValueKey('ai-view-toggle'),
+        value: !showJournal,
+        onChanged: (connections) => _showJournal(!connections),
+        yes: t('Connexions'),
+        no: t('Journal'),
+      ),
+    ),
+  );
+
+  Widget _journal() => Padding(
+    padding: const EdgeInsets.only(top: 16),
+    child: AiJournalView(
+      state: journal,
+      providerNames: {for (final v in state.providers) v.id: v.name},
+    ),
+  );
 
   /// Onglets puis contenu du fournisseur choisi ; au départ, celui de la connexion par défaut.
   List<Widget> _providers() {
@@ -91,7 +127,8 @@ class _AiSettingsState extends State<AiSettings> {
                 style: Fonts.sans(size: 13.5, color: p.accent),
               ),
             ),
-          ..._providers(),
+          _switch(),
+          if (showJournal) _journal() else ..._providers(),
         ],
       ),
     );

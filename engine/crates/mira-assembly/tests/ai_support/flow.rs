@@ -58,6 +58,7 @@ pub async fn chat(fixture: &Fixture, id: &AiConnectionId, text: &str) -> ChatStr
         max_output_tokens: None,
         temperature: None,
         tools: Vec::new(),
+        context: Vec::new(),
     };
     let start = ChatStart {
         connection: Some(id.clone()),

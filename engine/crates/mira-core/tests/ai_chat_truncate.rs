@@ -21,6 +21,7 @@ fn request(system: Option<&str>, texts: &[&str]) -> ChatRequest {
         max_output_tokens: Some(100),
         temperature: None,
         tools: Vec::new(),
+        context: Vec::new(),
     }
 }
 

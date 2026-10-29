@@ -28,6 +28,7 @@ impl Progress {
                 self.usage = Some((input.max(input_tokens), output.max(output_tokens)));
                 None
             }
+            ChatDelta::Masked { .. } => None,
             ChatDelta::Done { reason } => {
                 self.stop.get_or_insert(reason);
                 None

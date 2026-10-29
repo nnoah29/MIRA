@@ -25,6 +25,8 @@ const engineErrorTexts = <String, String>{
       'Seule une action échouée peut être relancée',
   'incompatible_state.ai_consent_required':
       'Autorise d’abord l’envoi de texte à ce service d’IA',
+  'incompatible_state.ai_content_not_allowed':
+      'Ce service d’IA n’est pas autorisé à recevoir ce type de contenu',
   'incompatible_state.ai_key_missing':
       'Aucune clé enregistrée pour ce service d’IA',
   'incompatible_state.ai_model_missing': 'Choisis d’abord un modèle d’IA',
@@ -45,6 +47,8 @@ const engineErrorTexts = <String, String>{
   'invalid_input.address': 'Adresse e-mail invalide',
   'invalid_input.ai_input_too_large':
       'Le texte est trop long pour le service d’IA',
+  'invalid_input.ai_journal_limit':
+      'Nombre de lignes du journal des envois hors limites',
   'invalid_input.ai_key_invalid': 'Clé du service d’IA invalide',
   'invalid_input.ai_url_invalid': 'Adresse du service d’IA invalide',
   'invalid_input.contract_version':

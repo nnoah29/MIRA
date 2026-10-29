@@ -90,6 +90,7 @@ pub fn chat_json(connection: Option<&str>, text: &str) -> String {
         max_output_tokens: None,
         temperature: None,
         tools: Vec::new(),
+        context: Vec::new(),
     };
     let connection = connection.map(AiConnectionId::from_raw);
     serde_json::to_string(&ChatStart {

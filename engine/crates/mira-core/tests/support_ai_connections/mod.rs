@@ -1,7 +1,9 @@
 //! Aides communes aux tests du dépôt des connexions d'IA.
 
+pub mod profile;
+
 use mira_core::storage::Database;
-use mira_vocabulary::{AiConnection, AiConnectionId, AiProviderId, MiraError};
+use mira_vocabulary::{AiConnection, AiConnectionId, AiProviderId, MaskingSettings, MiraError};
 
 /// Connexion de test portant ce libellé, sans défaut ni consentement
 pub fn connection(id: &str, label: &str) -> AiConnection {
@@ -15,6 +17,8 @@ pub fn connection(id: &str, label: &str) -> AiConnection {
         has_key: false,
         consent_at: None,
         models: None,
+        allowed_kinds: Vec::new(),
+        masking: MaskingSettings::remote_default(),
     }
 }
 

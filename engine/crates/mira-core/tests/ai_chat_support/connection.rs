@@ -2,7 +2,7 @@
 
 use mira_core::api::ChatStart;
 use mira_vocabulary::{
-    AiConnection, AiConnectionId, AiProviderId, ChatMessage, ChatRequest, ChatRole,
+    AiConnection, AiConnectionId, AiProviderId, ChatMessage, ChatRequest, ChatRole, MaskingSettings,
 };
 
 use crate::ai_models_support::ModelsFixture;
@@ -24,6 +24,8 @@ pub fn add_chat_connection(
         has_key: false,
         consent_at: None,
         models: None,
+        allowed_kinds: Vec::new(),
+        masking: MaskingSettings::remote_default(),
     };
     fixture
         .db
@@ -60,6 +62,7 @@ pub fn user_request(text: &str) -> ChatRequest {
         max_output_tokens: None,
         temperature: None,
         tools: Vec::new(),
+        context: Vec::new(),
     }
 }
 

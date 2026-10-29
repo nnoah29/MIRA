@@ -37,3 +37,5 @@ pub const AI_INPUT_TOO_LARGE: ErrorCode = ErrorCode("invalid_input.ai_input_too_
 pub const AI_URL_INVALID: ErrorCode = ErrorCode("invalid_input.ai_url_invalid");
 /// Clé de service d'IA vide ou mal formée.
 pub const AI_KEY_INVALID: ErrorCode = ErrorCode("invalid_input.ai_key_invalid");
+/// Taille de page du journal des envois d'IA hors bornes.
+pub const AI_JOURNAL_LIMIT: ErrorCode = ErrorCode("invalid_input.ai_journal_limit");

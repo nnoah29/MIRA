@@ -44,13 +44,15 @@ fn migration_16_applies_on_existing_profile() {
     let path = dir.path().join("mira.sqlite3");
     drop(Database::open(&path).unwrap());
     let raw = rusqlite::Connection::open(&path).unwrap();
-    raw.execute_batch("DROP TABLE ai_connections; PRAGMA user_version = 15;")
-        .unwrap();
+    raw.execute_batch(
+        "DROP TABLE ai_journal; DROP TABLE ai_connections; PRAGMA user_version = 15;",
+    )
+    .unwrap();
     drop(raw);
     let db = Database::open(&path).unwrap();
-    assert_eq!(schema_version(), 16);
+    assert_eq!(schema_version(), 18);
     let version = db.read(|tx| Ok(tx.schema_version_on_disk())).unwrap();
-    assert_eq!(version, 16);
+    assert_eq!(version, 18);
     insert(&db, &connection("c-1", "A")).unwrap();
     assert!(
         db.read(|tx| tx.table_names())

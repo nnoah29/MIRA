@@ -2,7 +2,7 @@
 
 use mira_vocabulary::{
     AiConnection, AiConnectionId, AiModel, AiModelList, AiProviderDescriptor, AiProviderId,
-    AiQuirks, AuthScheme, Timestamp, WireFormat,
+    AiQuirks, AuthScheme, ContentKind, MaskingSettings, Timestamp, WireFormat,
 };
 
 /// Connexion d'exemple, avec liste de modèles gardée
@@ -17,6 +17,8 @@ pub fn sample_connection() -> AiConnection {
         has_key: true,
         consent_at: Some(Timestamp::from_millis(1_700_000_000_000)),
         models: Some(sample_models()),
+        allowed_kinds: vec![ContentKind::MailMessage],
+        masking: MaskingSettings::remote_default(),
     }
 }
 

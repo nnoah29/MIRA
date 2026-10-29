@@ -1,13 +1,14 @@
 //! Lignes de `ai_connections` et colonnes de la liste de modèles gardée.
 
 use mira_vocabulary::{
-    AiConnection, AiConnectionId, AiModelList, AiProviderId, MiraError, Timestamp,
+    AiConnection, AiConnectionId, AiModelList, AiProviderId, ContentKind, MaskingSettings,
+    MiraError, Timestamp,
 };
 use rusqlite::Row;
 
 use crate::storage::json_columns::{from_json, to_json};
 
-pub(super) const COLUMNS: &str = "id, provider_id, label, base_url, default_model, is_default, consent_at, models_json, models_fetched_at";
+pub(super) const COLUMNS: &str = "id, provider_id, label, base_url, default_model, is_default, consent_at, models_json, models_fetched_at, allowed_kinds, masking_json";
 
 /// Lit une ligne dans l'ordre de `COLUMNS` ; une liste de modèles illisible donne `models: None`
 pub(super) fn connection_from_row(
@@ -24,6 +25,15 @@ pub(super) fn connection_from_row(
         has_key: false,
         consent_at: consent_at.map(Timestamp::from_millis),
         models: None,
+        allowed_kinds: Vec::new(),
+        masking: MaskingSettings::default(),
+    };
+    let (allowed_kinds, masking) =
+        privacy_from_columns(&row.get::<_, String>(9)?, &row.get::<_, String>(10)?);
+    let connection = AiConnection {
+        allowed_kinds,
+        masking,
+        ..connection
     };
     let models = models_from_columns(row.get(7)?, row.get(8)?);
     Ok(models.map(|models| AiConnection {
@@ -57,4 +67,23 @@ pub(super) fn models_to_columns(
         )),
         None => Ok((None, None)),
     }
+}
+
+/// Relit types autorisés et masquage ; une colonne illisible donne le réglage le plus protecteur
+pub(super) fn privacy_from_columns(
+    kinds: &str,
+    masking: &str,
+) -> (Vec<ContentKind>, MaskingSettings) {
+    (
+        from_json(kinds).unwrap_or_default(),
+        from_json(masking).unwrap_or_default(),
+    )
+}
+
+/// Colonnes JSON des types autorisés et du masquage d'une connexion
+pub(super) fn privacy_to_columns(connection: &AiConnection) -> Result<(String, String), MiraError> {
+    Ok((
+        to_json(&connection.allowed_kinds)?,
+        to_json(&connection.masking)?,
+    ))
 }

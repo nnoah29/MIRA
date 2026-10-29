@@ -520,6 +520,10 @@ const Map<String, String> enStrings = {
       'Key rejected by the AI service: check it',
   'Autorise d’abord l’envoi de texte à ce service d’IA':
       'First allow sending text to this AI service',
+  'Ce service d’IA n’est pas autorisé à recevoir ce type de contenu':
+      'This AI service is not allowed to receive this type of content',
+  'Nombre de lignes du journal des envois hors limites':
+      'Send journal line count out of range',
   'Aucune clé enregistrée pour ce service d’IA':
       'No key saved for this AI service',
   'Choisis d’abord un modèle d’IA': 'First choose an AI model',

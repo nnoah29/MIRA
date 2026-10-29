@@ -1378,6 +1378,9 @@
     "ai.connection": {
       "data": {
         "data": {
+          "allowed_kinds": [
+            "mail_message"
+          ],
           "base_url": "https://ia.example.org/v1",
           "consent_at": 1700000000000,
           "default_model": "model-a",
@@ -1385,6 +1388,15 @@
           "id": "ai-1",
           "is_default": true,
           "label": "Mon service",
+          "masking": {
+            "categories": [
+              "iban",
+              "card",
+              "secret",
+              "otp"
+            ],
+            "mode": "mask"
+          },
           "models": {
             "fetched_at": 1700000000000,
             "models": [
@@ -1404,6 +1416,9 @@
       "data": {
         "data": [
           {
+            "allowed_kinds": [
+              "mail_message"
+            ],
             "base_url": "https://ia.example.org/v1",
             "consent_at": 1700000000000,
             "default_model": "model-a",
@@ -1411,6 +1426,15 @@
             "id": "ai-1",
             "is_default": true,
             "label": "Mon service",
+            "masking": {
+              "categories": [
+                "iban",
+                "card",
+                "secret",
+                "otp"
+              ],
+              "mode": "mask"
+            },
             "models": {
               "fetched_at": 1700000000000,
               "models": [

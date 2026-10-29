@@ -3,7 +3,7 @@
 
 use mira_vocabulary::{
     AiConnection, AiConnectionId, AiModel, AiModelList, AiProviderId, ChatDelta, ChatRequest,
-    StopReason, Timestamp,
+    ContentKind, MaskingMode, MaskingSettings, SensitiveCategory, StopReason, Timestamp,
 };
 use serde_json::json;
 
@@ -80,6 +80,11 @@ fn sample_connection() -> AiConnection {
             }],
             fetched_at: Timestamp::from_millis(2),
         }),
+        allowed_kinds: vec![ContentKind::MailMessage],
+        masking: MaskingSettings {
+            mode: MaskingMode::Mask,
+            categories: vec![SensitiveCategory::Iban],
+        },
     }
 }
 
@@ -95,6 +100,7 @@ fn connection_never_serializes_a_key_field() {
         .collect();
     names.sort_unstable();
     let expected = [
+        "allowed_kinds",
         "base_url",
         "consent_at",
         "default_model",
@@ -102,6 +108,7 @@ fn connection_never_serializes_a_key_field() {
         "id",
         "is_default",
         "label",
+        "masking",
         "models",
         "provider",
     ];

@@ -1,6 +1,6 @@
 //! Création d'une connexion d'IA : fournisseur connu, libellé et adresse contrôlés, jamais défaut d'office.
 
-use mira_vocabulary::{AiConnection, AiConnectionId, AiProviderId, MiraError};
+use mira_vocabulary::{AiConnection, AiConnectionId, AiProviderId, MaskingSettings, MiraError};
 
 use super::connection_view::{read_connection, single};
 use super::validate_label::validate_label;
@@ -28,7 +28,7 @@ pub(crate) fn handle_add_ai_connection(
     Ok(single(read_connection(engine, &id)?))
 }
 
-/// Connexion neuve : ni défaut, ni modèle, ni consentement, ni liste gardée
+/// Connexion neuve : ni défaut, ni modèle, ni consentement, ni type autorisé, masquage des distantes
 fn blank_connection(
     id: AiConnectionId,
     provider: &AiProviderId,
@@ -45,5 +45,7 @@ fn blank_connection(
         has_key: false,
         consent_at: None,
         models: None,
+        allowed_kinds: Vec::new(),
+        masking: MaskingSettings::remote_default(),
     }
 }

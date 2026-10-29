@@ -81,7 +81,9 @@ void main() {
     final store = await pumpPanel(tester, engine);
     await tester.tap(find.text('RÉSUME CE MAIL'));
     await tester.pump(const Duration(milliseconds: 300));
-    expect(jsonEncode(engine.chatStarts.single), contains('<mail>'));
+    final request = engine.chatStarts.single['request'] as Map;
+    expect((request['context'] as List).single['kind'], 'mail_message');
+    expect(jsonEncode(request['messages']), isNot(contains('<mail>')));
     await close(tester, store);
   });
 
@@ -98,7 +100,9 @@ void main() {
     expect(find.byKey(const ValueKey('ctx-open')), findsNothing);
     await tester.tap(find.text('RÉSUME CE MAIL'));
     await tester.pump(const Duration(milliseconds: 300));
-    expect(jsonEncode(engine.chatStarts.single), isNot(contains('<mail>')));
+    final request = engine.chatStarts.single['request'] as Map;
+    expect(request['context'], isEmpty);
+    expect(jsonEncode(request), isNot(contains('mail_message')));
     await close(tester, store);
   });
 

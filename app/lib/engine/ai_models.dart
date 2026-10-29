@@ -1,5 +1,9 @@
 //! Modèles de l'assistant d'IA tels que le moteur les décrit : fournisseurs, connexions, modèles, événements de chat.
 
+import 'ai_privacy_models.dart';
+
+export 'ai_privacy_models.dart';
+
 /// Fournisseur d'IA connu du moteur : identifiant, nom affiché, adresse de base et si elle se modifie.
 class AiProviderInfo {
   final String id;
@@ -37,6 +41,8 @@ class AiConnectionInfo {
   final bool hasKey;
   final bool consentGiven;
   final List<AiModelInfo>? models;
+  final List<String> allowedKinds;
+  final AiMasking masking;
   const AiConnectionInfo({
     required this.id,
     required this.provider,
@@ -47,6 +53,8 @@ class AiConnectionInfo {
     this.hasKey = false,
     this.consentGiven = false,
     this.models,
+    this.allowedKinds = const [],
+    this.masking = AiMasking.remoteDefault,
   });
 
   factory AiConnectionInfo.fromJson(Map<String, dynamic> json) {
@@ -85,6 +93,12 @@ class AiStarted extends AiChatEvent {
 class AiText extends AiChatEvent {
   final String text;
   const AiText(this.text);
+}
+
+/// Nombre de données sensibles masquées avant l'envoi (annoncé avant le premier texte).
+class AiMasked extends AiChatEvent {
+  final int count;
+  const AiMasked(this.count);
 }
 
 /// Nombre de jetons lus et produits.

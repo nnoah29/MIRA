@@ -8,6 +8,7 @@ import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
 import 'ai_consent_dialog.dart';
+import 'ai_content_dialog.dart';
 import 'chat_markdown.dart';
 import 'demo_banner.dart';
 import 'widgets.dart';
@@ -49,22 +50,33 @@ class _AssistantPanelState extends State<AssistantPanel> {
     if (t.trim().isEmpty || s.busy) return;
     input.clear();
     await s.sendChat(t);
-    if (mounted) await _askConsent(s);
+    if (!mounted) return;
+    await _askConsent(s);
+    if (mounted) await _askContent(s);
   }
 
   Future<void> _askConsent(MailStore s) async {
     final chat = s.chatCtl;
     final name = chat.consentProviderName;
     if (chat.consentConnectionId == null || name == null) return;
-    final agreed = await showAiConsentDialog(
+    final kinds = await showAiConsentDialog(
       context,
       name,
       host: chat.consentHost,
     );
+    if (kinds == null) return chat.declineConsent();
+    await chat.grantConsent(kinds);
+  }
+
+  Future<void> _askContent(MailStore s) async {
+    final chat = s.chatCtl;
+    final name = chat.contentProviderName;
+    if (chat.contentConnectionId == null || name == null) return;
+    final agreed = await showAiContentDialog(context, name, chat.contentKinds);
     if (agreed) {
-      await chat.grantConsent();
+      await chat.grantContent();
     } else {
-      chat.declineConsent();
+      chat.declineContent();
     }
   }
 
@@ -422,6 +434,19 @@ class _Bubble extends StatelessWidget {
                 )
               else if (!msg.done)
                 const _Typing(),
+              if (!me && msg.maskedCount > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    tn(
+                      msg.maskedCount,
+                      'donnée sensible masquée avant l’envoi',
+                      'données sensibles masquées avant l’envoi',
+                    ),
+                    key: const ValueKey('chat-masked-note'),
+                    style: Fonts.sans(size: 13, color: p.dim),
+                  ),
+                ),
               if (!me && msg.note != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),

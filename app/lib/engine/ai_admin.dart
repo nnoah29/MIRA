@@ -92,9 +92,45 @@ class AiAdmin {
     ];
   }
 
-  /// Enregistre l'accord de l'utilisateur pour envoyer ses textes à ce service.
-  Future<AiConnectionInfo> acknowledgeConsent(String id) async =>
-      _one(await _send('acknowledge_ai_consent', {'connection': id}));
+  /// Enregistre l'accord de l'utilisateur pour envoyer ses textes à ce service, pour les types [kinds].
+  Future<AiConnectionInfo> acknowledgeConsent(
+    String id, {
+    List<String> kinds = const [aiKindMail],
+  }) async => _one(
+    await _send('acknowledge_ai_consent', {'connection': id, 'kinds': kinds}),
+  );
+
+  /// Remplace la liste des types de contenu que ce service peut recevoir.
+  Future<AiConnectionInfo> setAllowedContent(
+    String id,
+    List<String> kinds,
+  ) async => _one(
+    await _send('set_ai_allowed_content', {'connection': id, 'kinds': kinds}),
+  );
+
+  /// Règle le masquage des données sensibles de cette connexion.
+  Future<AiConnectionInfo> setMasking(String id, AiMasking masking) async =>
+      _one(
+        await _send('set_ai_masking', {
+          'connection': id,
+          'masking': masking.toJson(),
+        }),
+      );
+
+  /// Envois récents à un service d'IA, les plus récents d'abord ; [before] reprend après cette ligne.
+  Future<List<AiJournalRow>> journal({int limit = 50, String? before}) async {
+    final items = await _send('list_ai_journal', {
+      'limit': limit,
+      'before': before,
+    });
+    return [
+      for (final v in items as List)
+        AiJournalRow.fromJson((v as Map).cast<String, dynamic>()),
+    ];
+  }
+
+  /// Efface tout le journal des envois.
+  Future<void> clearJournal() => _send('clear_ai_journal');
 
   /// Lance une génération (`ChatRequest`) ; sans [connection], la connexion par défaut sert.
   Stream<AiChatEvent> chat(Map<String, dynamic> request, {String? connection}) {
@@ -116,6 +152,7 @@ class AiAdmin {
       switch (line['type']) {
         'started' => [AiStarted('${line['operation']}')],
         'text' => [AiText('${line['text']}')],
+        'masked' => [AiMasked((line['count'] as num?)?.toInt() ?? 0)],
         'usage' => [
           AiUsage(
             (line['input_tokens'] as num?)?.toInt() ?? 0,

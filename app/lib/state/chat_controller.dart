@@ -12,17 +12,10 @@ import '../i18n/i18n.dart';
 import 'assistant.dart';
 import 'chat_context.dart';
 import 'chat_message.dart';
+import 'chat_pending.dart';
 
 /// Code d'erreur du moteur : l'utilisateur n'a pas encore autorisé l'envoi vers ce service.
 const consentRequiredCode = 'incompatible_state.ai_consent_required';
-
-class _Pending {
-  final AiConnectionInfo connection;
-  final String question;
-  final ChatContextInput input;
-  final String providerName;
-  const _Pending(this.connection, this.question, this.input, this.providerName);
-}
 
 /// Adresse de la machine locale : un service sans clé y reste utilisable.
 bool isLoopbackUrl(String? url) {
@@ -60,7 +53,8 @@ class ChatController extends ChangeNotifier {
   late List<ChatMsg> chat;
   bool busy = false;
   AiConnectionInfo? _connection;
-  _Pending? _consent;
+  ChatPending? _consent;
+  ChatPending? _content;
   _Run? _run;
   final Set<_Run> _orphans = {};
   Timer? _demoTimer;
@@ -87,6 +81,23 @@ class ChatController extends ChangeNotifier {
     final host = Uri.tryParse(_consent?.connection.baseUrl ?? '')?.host ?? '';
     return host.isEmpty ? null : host;
   }
+
+  /// Vrai quand l'envoi attend l'autorisation de ces types de contenu pour cette connexion.
+  bool needsContent(String connectionId, List<String> kinds) {
+    final pending = _content;
+    return pending != null &&
+        pending.connection.id == connectionId &&
+        kinds.every(pending.kinds.contains);
+  }
+
+  /// Connexion qui attend l'autorisation d'un type de contenu (`null` : aucune).
+  String? get contentConnectionId => _content?.connection.id;
+
+  /// Nom du service qui attend l'autorisation d'un type de contenu (`null` : aucun).
+  String? get contentProviderName => _content?.providerName;
+
+  /// Types de contenu en attente d'autorisation.
+  List<String> get contentKinds => _content?.kinds ?? const [];
 
   /// Relit les connexions pour savoir si une IA est utilisable.
   Future<void> refresh() async {
@@ -121,7 +132,7 @@ class ChatController extends ChangeNotifier {
       busy = false;
       return _demoSend(q);
     }
-    await _generate(ai, connection, q, input);
+    await _generate(ai, connection, q, input, 0);
   }
 
   void _demoSend(String q) {
@@ -160,11 +171,12 @@ class ChatController extends ChangeNotifier {
     AiConnectionInfo connection,
     String q,
     ChatContextInput input,
+    int stage,
   ) async {
     final user = ChatMsg(role: 'me', text: q);
     final reply = ChatMsg(role: 'ai', done: false, text: '', fromEngine: true);
     final request = buildChatStart(history: [...chat, user], input: input);
-    final origin = _Pending(connection, q, input, '');
+    final origin = ChatPending(connection, q, input, '', stage);
     chat
       ..add(user)
       ..add(reply);
@@ -182,7 +194,7 @@ class ChatController extends ChangeNotifier {
     await run.finished.future;
   }
 
-  void _onEvent(AiChatEvent event, _Run run, _Pending origin) {
+  void _onEvent(AiChatEvent event, _Run run, ChatPending origin) {
     if (event is AiStarted) return _started(run, event.operation);
     if (_run != run) return;
     final reply = run.reply;
@@ -193,12 +205,19 @@ class ChatController extends ChangeNotifier {
         reply.text += event.text;
         reply.shown = reply.text;
         notifyListeners();
+      case AiMasked():
+        reply.maskedCount = event.count;
+        notifyListeners();
       case AiUsage():
         break;
       case AiDone():
         _onDone(run, event);
-      case AiFailed() when event.code == consentRequiredCode:
+      case AiFailed()
+          when event.code == consentRequiredCode && origin.stage == 0:
         _askConsent(run, origin);
+      case AiFailed()
+          when event.code == contentNotAllowedCode && origin.stage < 2:
+        _askContent(run, origin);
       case AiFailed():
         final error = EngineException(event.code, event.message);
         _fail(run, engineErrorText(error));
@@ -282,27 +301,59 @@ class ChatController extends ChangeNotifier {
     return Future.value();
   }
 
-  void _askConsent(_Run run, _Pending origin) {
+  ChatPending _withdraw(_Run run, ChatPending origin) {
     final c = origin.connection;
     chat.remove(run.reply);
     chat.removeLast();
     final name = _providerNames[c.provider] ?? c.label;
-    _consent = _Pending(c, origin.question, origin.input, name);
+    return ChatPending(c, origin.question, origin.input, name, origin.stage);
+  }
+
+  void _askConsent(_Run run, ChatPending origin) {
+    _consent = _withdraw(run, origin);
     _finish(run);
   }
 
-  /// L'utilisateur accepte : le moteur enregistre l'accord, puis la question part.
-  Future<void> grantConsent() async {
+  void _askContent(_Run run, ChatPending origin) {
+    _content = _withdraw(run, origin);
+    _finish(run);
+  }
+
+  /// L'utilisateur accepte : le moteur enregistre l'accord pour les types [kinds], puis la question part.
+  Future<void> grantConsent([List<String> kinds = const [aiKindMail]]) async {
     final pending = _consent;
     final ai = admin();
     if (pending == null || ai == null || busy) return;
     _consent = null;
     try {
-      await ai.acknowledgeConsent(pending.connection.id);
+      await ai.acknowledgeConsent(pending.connection.id, kinds: kinds);
     } on Object catch (e) {
       return _note(pending.question, engineErrorText(e));
     }
-    await _generate(ai, pending.connection, pending.question, pending.input);
+    await _generate(ai, pending.connection, pending.question, pending.input, 1);
+  }
+
+  /// L'utilisateur autorise le type de contenu : il s'ajoute aux types de la connexion, puis la question repart une fois.
+  Future<void> grantContent() async {
+    final pending = _content;
+    final ai = admin();
+    if (pending == null || ai == null || busy) return;
+    _content = null;
+    final kinds = {...pending.connection.allowedKinds, ...pending.kinds};
+    try {
+      await ai.setAllowedContent(pending.connection.id, kinds.toList());
+    } on Object catch (e) {
+      return _note(pending.question, engineErrorText(e));
+    }
+    await _generate(ai, pending.connection, pending.question, pending.input, 2);
+  }
+
+  /// L'utilisateur refuse le type de contenu : sa question reste dans le fil, rien n'a été envoyé.
+  void declineContent() {
+    final pending = _content;
+    if (pending == null) return;
+    _content = null;
+    _note(pending.question, t('Non envoyé : contenu non autorisé.'));
   }
 
   /// L'utilisateur refuse : sa question reste dans le fil, rien n'a été envoyé.
@@ -348,6 +399,7 @@ class ChatController extends ChangeNotifier {
     _demoTimer?.cancel();
     _demoTimer = null;
     _consent = null;
+    _content = null;
     busy = false;
     if (run == null) return;
     if (!run.finished.isCompleted) run.finished.complete();

@@ -1171,7 +1171,6 @@ const Map<String, String> enStrings = {
   'IA': 'AI',
   'Modèles du service': 'Service models',
   'Nom de la connexion': 'Connection name',
-  'Pour répondre, l’assistant envoie à {0} ta conversation et le texte du mail ouvert. Ce service applique sa propre politique de confidentialité. Rien n’est envoyé sans ton accord ; supprime la connexion dans les réglages pour le retirer.': 'To answer, the assistant sends your conversation and the text of the open mail to {0}. This service applies its own privacy policy. Nothing is sent without your consent; delete the connection in the settings to withdraw it.',
   'Refuser': 'Decline',
   'Remplacer la clé d’API': 'Replace the API key',
   'Sa clé d’API est effacée de cet appareil.':
@@ -1191,4 +1190,15 @@ const Map<String, String> enStrings = {
       ' · removed: the assistant cannot see this mail.',
   'Retirer le contexte': 'Remove context',
   'Rétablir': 'Restore',
+  'Pour répondre, l’assistant envoie à {0} ta conversation et les contenus que tu autorises ci-dessous. Ce service applique sa propre politique de confidentialité. Rien n’est envoyé sans ton accord ; supprime la connexion dans les réglages pour le retirer.': 'To answer, the assistant sends your conversation and the content you allow below to {0}. This service applies its own privacy policy. Nothing is sent without your consent; delete the connection in the settings to withdraw it.',
+  'Contenu autorisé': 'Allowed content',
+  'Mail ouvert': 'Open mail',
+  'le mail ouvert': 'the open mail',
+  'Autoriser {0} à recevoir : {1} ?': 'Allow {0} to receive: {1}?',
+  'Ce contenu n’est pas encore autorisé pour ce service. Tu peux revenir sur ce choix dans les réglages de l’IA.': 'This content is not yet allowed for this service. You can change this choice in the AI settings.',
+  'Non envoyé : contenu non autorisé.': 'Not sent: content not allowed.',
+  'donnée sensible masquée avant l’envoi':
+      'sensitive item masked before sending',
+  'données sensibles masquées avant l’envoi':
+      'sensitive items masked before sending',
 };

@@ -16,6 +16,9 @@ class ChatMsg {
 
   /// Remarque affichée sous la réponse (arrêt, troncature) ; ne fait pas partie du texte renvoyé au modèle.
   String? note;
+
+  /// Nombre de données sensibles masquées avant l'envoi (0 : aucune ou masquage coupé).
+  int maskedCount;
   ChatMsg({
     required this.role,
     this.done = true,
@@ -26,5 +29,6 @@ class ChatMsg {
     this.fromEngine = false,
     this.failed = false,
     this.note,
+    this.maskedCount = 0,
   });
 }

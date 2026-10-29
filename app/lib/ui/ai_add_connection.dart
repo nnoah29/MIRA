@@ -1,4 +1,4 @@
-//! Ajout d'une connexion d'IA : un bouton par fournisseur, une adresse à saisir pour le fournisseur libre.
+//! Ajout d'une connexion pour un fournisseur : un bouton, et nom + adresse à saisir pour le fournisseur libre.
 
 import 'package:flutter/material.dart';
 
@@ -9,17 +9,22 @@ import '../theme/app_theme.dart';
 import 'ai_connection_card.dart';
 import 'widgets.dart';
 
-/// Liste des fournisseurs du moteur, chacun avec son bouton « Ajouter ».
+/// Bouton « Ajouter » d'un fournisseur ; le fournisseur libre demande d'abord nom et adresse.
 class AiAddConnection extends StatefulWidget {
   final AiSettingsState state;
-  const AiAddConnection({super.key, required this.state});
+  final AiProviderInfo provider;
+  const AiAddConnection({
+    super.key,
+    required this.state,
+    required this.provider,
+  });
 
   @override
   State<AiAddConnection> createState() => _AiAddConnectionState();
 }
 
 class _AiAddConnectionState extends State<AiAddConnection> {
-  AiProviderInfo? freeform;
+  bool freeform = false;
   final label = TextEditingController();
   final url = TextEditingController();
 
@@ -31,7 +36,7 @@ class _AiAddConnectionState extends State<AiAddConnection> {
   }
 
   Future<void> _add(AiProviderInfo p) async {
-    if (p.editableUrl) return setState(() => freeform = p);
+    if (p.editableUrl) return setState(() => freeform = true);
     await widget.state.addConnection(p.id, label: p.name);
   }
 
@@ -45,30 +50,19 @@ class _AiAddConnectionState extends State<AiAddConnection> {
     if (!mounted || widget.state.error != null) return;
     label.clear();
     url.clear();
-    setState(() => freeform = null);
+    setState(() => freeform = false);
   }
 
-  Widget _row(AiProviderInfo p, Pal p2) => Container(
-    key: ValueKey('ai-provider-${p.id}'),
-    padding: const EdgeInsets.symmetric(vertical: 10),
-    decoration: BoxDecoration(
-      border: Border(bottom: BorderSide(color: p2.lineSoft)),
-    ),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(
-            aiProviderTitle(p),
-            style: Fonts.sans(size: 15, color: p2.text),
-          ),
-        ),
-        Btn(
-          key: ValueKey('ai-add-${p.id}'),
-          icon: 'plus',
-          label: t('Ajouter'),
-          onTap: widget.state.busy.contains('new') ? null : () => _add(p),
-        ),
-      ],
+  Widget _button(AiProviderInfo p) => Align(
+    alignment: Alignment.centerLeft,
+    child: Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Btn(
+        key: ValueKey('ai-add-${p.id}'),
+        icon: 'plus',
+        label: t('Ajouter'),
+        onTap: widget.state.busy.contains('new') ? null : () => _add(p),
+      ),
     ),
   );
 
@@ -100,7 +94,7 @@ class _AiAddConnectionState extends State<AiAddConnection> {
           children: [
             Btn(
               label: t('Annuler'),
-              onTap: () => setState(() => freeform = null),
+              onTap: () => setState(() => freeform = false),
             ),
             const SizedBox(width: 10),
             Btn(
@@ -117,19 +111,7 @@ class _AiAddConnectionState extends State<AiAddConnection> {
 
   @override
   Widget build(BuildContext context) {
-    final p = context.pal;
-    final free = freeform;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          t('Ajouter une connexion'),
-          style: Fonts.sans(size: 14, w: FontWeight.w500, color: p.text),
-        ),
-        const SizedBox(height: 6),
-        for (final provider in widget.state.providers) _row(provider, p),
-        if (free != null) _form(free, p),
-      ],
-    );
+    final p = widget.provider;
+    return freeform ? _form(p, context.pal) : _button(p);
   }
 }

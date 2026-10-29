@@ -37,6 +37,22 @@ class AiSettingsState extends ChangeNotifier {
     return null;
   }
 
+  /// Connexions d'un fournisseur, dans l'ordre du moteur.
+  List<AiConnectionInfo> connectionsOf(String providerId) => [
+    for (final c in connections)
+      if (c.provider == providerId) c,
+  ];
+
+  /// Onglet à montrer d'abord : fournisseur de la connexion par défaut, sinon le premier.
+  String? initialProviderId() {
+    for (final c in connections) {
+      if (c.isDefault && providers.any((p) => p.id == c.provider)) {
+        return c.provider;
+      }
+    }
+    return providers.isEmpty ? null : providers.first.id;
+  }
+
   /// Charge fournisseurs et connexions.
   Future<void> load() async {
     try {

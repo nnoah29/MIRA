@@ -6,8 +6,8 @@ import '../engine/ai_admin.dart';
 import '../i18n/i18n.dart';
 import '../state/ai_settings_state.dart';
 import '../theme/app_theme.dart';
-import 'ai_add_connection.dart';
-import 'ai_connection_card.dart';
+import 'ai_provider_panel.dart';
+import 'ai_provider_tabs.dart';
 
 /// Section des réglages qui gère les connexions aux services d'IA.
 class AiSettings extends StatefulWidget {
@@ -20,6 +20,7 @@ class AiSettings extends StatefulWidget {
 
 class _AiSettingsState extends State<AiSettings> {
   late final AiSettingsState state = AiSettingsState(widget.admin);
+  String? selected;
 
   @override
   void initState() {
@@ -37,6 +38,29 @@ class _AiSettingsState extends State<AiSettings> {
     state.removeListener(_refresh);
     state.dispose();
     super.dispose();
+  }
+
+  /// Onglets puis contenu du fournisseur choisi ; au départ, celui de la connexion par défaut.
+  List<Widget> _providers() {
+    final shown = selected ??= state.initialProviderId();
+    if (shown == null) return const [];
+    final current = state.providers.firstWhere(
+      (p) => p.id == shown,
+      orElse: () => state.providers.first,
+    );
+    return [
+      AiProviderTabs(
+        providers: state.providers,
+        connections: state.connections,
+        selected: current.id,
+        onSelect: (id) => setState(() => selected = id),
+      ),
+      AiProviderPanel(
+        key: ValueKey('ai-panel-${current.id}'),
+        state: state,
+        provider: current,
+      ),
+    ];
   }
 
   @override
@@ -67,14 +91,7 @@ class _AiSettingsState extends State<AiSettings> {
                 style: Fonts.sans(size: 13.5, color: p.accent),
               ),
             ),
-          for (final c in state.connections)
-            AiConnectionCard(
-              key: ValueKey('ai-card-key-${c.id}'),
-              state: state,
-              connection: c,
-            ),
-          const SizedBox(height: 22),
-          AiAddConnection(state: state),
+          ..._providers(),
         ],
       ),
     );

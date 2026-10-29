@@ -1,73 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mira/engine/ai_admin.dart';
 import 'package:mira/engine/engine_client.dart';
 import 'package:mira/i18n/engine_errors.dart';
-import 'package:mira/theme/app_theme.dart';
-import 'package:mira/ui/ai_settings.dart';
 
-import 'fake_ai_engine.dart';
-
-Map<String, dynamic> provider(String id, String name, {bool free = false}) => {
-  'id': id,
-  'display_name': name,
-  'base_url': 'https://example.org/v1',
-  'base_url_editable': free,
-};
-
-Map<String, dynamic> connection(
-  String id, {
-  String provider = 'openai',
-  bool isDefault = false,
-  bool hasKey = false,
-  String? model,
-  String? baseUrl,
-}) => {
-  'id': id,
-  'provider': provider,
-  'label': 'Connexion $id',
-  'base_url': baseUrl,
-  'default_model': model,
-  'is_default': isDefault,
-  'has_key': hasKey,
-  'consent_at': null,
-  'models': null,
-};
-
-Future<FakeAiEngine> pumpSettings(
-  WidgetTester tester, {
-  List<Map<String, dynamic>> connections = const [],
-}) async {
-  final engine = FakeAiEngine()
-    ..providers.addAll([
-      provider('openai', 'OpenAI'),
-      provider('anthropic', 'Anthropic'),
-      provider('generic', 'Compatible OpenAI', free: true),
-    ])
-    ..connections.addAll(connections);
-  await tester.binding.setSurfaceSize(const Size(900, 2400));
-  addTearDown(() => tester.binding.setSurfaceSize(null));
-  await tester.pumpWidget(
-    MaterialApp(
-      theme: buildTheme(false),
-      home: Scaffold(
-        body: SingleChildScrollView(child: AiSettings(admin: AiAdmin(engine))),
-      ),
-    ),
-  );
-  await tester.pumpAndSettle();
-  return engine;
-}
-
-String fieldText(WidgetTester tester, String key) =>
-    tester.widget<TextField>(find.byKey(ValueKey(key))).controller!.text;
+import 'ai_settings_harness.dart';
 
 void main() {
-  testWidgets('lists_all_providers_from_engine', (tester) async {
-    await pumpSettings(tester);
+  testWidgets('a_card_does_not_repeat_the_provider_name', (tester) async {
+    await pumpSettings(
+      tester,
+      connections: [
+        connection('ai-1', label: 'OpenAI'),
+        connection('ai-2', provider: 'anthropic', label: 'Pro'),
+      ],
+    );
     expect(find.text('OpenAI'), findsOneWidget);
+    await tapKey(tester, 'ai-tab-anthropic');
+    expect(find.text('Pro'), findsOneWidget);
     expect(find.text('Anthropic'), findsOneWidget);
-    expect(find.text('Autre (compatible OpenAI)'), findsOneWidget);
   });
 
   testWidgets('generic_shows_url_field_others_do_not', (tester) async {
@@ -78,6 +28,7 @@ void main() {
     expect(find.byKey(const ValueKey('ai-url-ai-0')), findsNothing);
     expect(find.text('Connexion OpenAI'), findsNothing);
     expect(engine.requestsOf('add_ai_connection').single['base_url'], isNull);
+    await tapKey(tester, 'ai-tab-generic');
     await tester.tap(find.byKey(const ValueKey('ai-add-generic')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('ai-new-url')), findsOneWidget);
@@ -138,41 +89,6 @@ void main() {
       find.byKey(const ValueKey('ai-key-field-ai-1')),
     );
     expect(field.obscureText, isTrue);
-  });
-
-  testWidgets('model_picker_shows_engine_models_and_accepts_free_text', (
-    tester,
-  ) async {
-    final engine = await pumpSettings(
-      tester,
-      connections: [connection('ai-1', hasKey: true, model: 'm1')],
-    );
-    engine.models.addAll([
-      {'id': 'm1', 'created_at': 1},
-      {'id': 'm2', 'created_at': 2},
-    ]);
-    expect(fieldText(tester, 'ai-model-field-ai-1'), 'm1');
-    await tester.tap(find.byKey(const ValueKey('ai-model-refresh-ai-1')));
-    await tester.pumpAndSettle();
-    expect(engine.requestsOf('list_ai_models').single['refresh'], isTrue);
-    await tester.tap(find.byKey(const ValueKey('ai-model-menu-ai-1')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('ai-model-ai-1-m2')));
-    await tester.pumpAndSettle();
-    expect(
-      engine.requestsOf('update_ai_connection').last['default_model'],
-      'm2',
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey('ai-model-field-ai-1')),
-      'mon-modele',
-    );
-    await tester.testTextInput.receiveAction(TextInputAction.done);
-    await tester.pumpAndSettle();
-    expect(
-      engine.requestsOf('update_ai_connection').last['default_model'],
-      'mon-modele',
-    );
   });
 
   testWidgets(
@@ -258,7 +174,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('ai-key-save-ai-0')));
     await tester.pumpAndSettle();
     expect(engine.connections.single['default_model'], 'recent');
-    expect(fieldText(tester, 'ai-model-field-ai-0'), 'recent');
+    expect(modelButtonText(tester, 'ai-0'), 'recent');
     await tester.tap(find.byKey(const ValueKey('ai-test-ai-0')));
     await tester.pumpAndSettle();
     expect(engine.requestsOf('update_ai_connection'), hasLength(1));
@@ -276,24 +192,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('ai-test-ai-1')));
     await tester.pumpAndSettle();
     expect(engine.requestsOf('update_ai_connection'), isEmpty);
-    expect(fieldText(tester, 'ai-model-field-ai-1'), 'mine');
-  });
-
-  testWidgets('typed_model_is_committed_on_focus_loss', (tester) async {
-    final engine = await pumpSettings(
-      tester,
-      connections: [connection('ai-1', hasKey: true, model: 'm1')],
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey('ai-model-field-ai-1')),
-      'libre',
-    );
-    FocusManager.instance.primaryFocus?.unfocus();
-    await tester.pumpAndSettle();
-    expect(
-      engine.requestsOf('update_ai_connection').last['default_model'],
-      'libre',
-    );
+    expect(modelButtonText(tester, 'ai-1'), 'mine');
   });
 
   testWidgets('test_saves_the_typed_key_first_and_clears_the_field', (

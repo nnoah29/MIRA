@@ -2,7 +2,9 @@
 
 use mira_assembly::api::{ChatStart, ChatStream, OperationRequest, Request};
 use mira_assembly::mira_vocabulary::error::codes::internal;
-use mira_assembly::mira_vocabulary::{ChatDelta, ErrorCategory, MiraError, OperationId};
+use mira_assembly::mira_vocabulary::{
+    AiError, ChatDelta, ErrorCategory, MiraError, OperationId, StopReason,
+};
 use serde_json::json;
 
 use crate::session::current;
@@ -33,9 +35,17 @@ async fn cancel_chat(operation: &OperationId) {
     let _ = engine.execute(request).await;
 }
 
-/// Ligne annonçant l'opération, pour que le client puisse l'annuler.
-fn started_line(operation: &OperationId) -> String {
-    json!({"type": "started", "operation": operation}).to_string()
+/// Ligne terminale de secours quand le flux s'arrête sans `done` alors que le client écoute encore.
+pub fn closing_line(finished: bool, open: bool) -> Option<String> {
+    if finished || !open {
+        return None;
+    }
+    let code = AiError::Unavailable.code().0.to_string();
+    let reason = StopReason::Failed {
+        code,
+        retry_after_secs: None,
+    };
+    serde_json::to_string(&ChatDelta::Done { reason }).ok()
 }
 
 /// Envoie `started`, puis chaque delta (JSON) à `emit`, ou une seule ligne `error` ; si `emit` rend faux, annule.
@@ -47,15 +57,20 @@ pub async fn pump_chat(request_json: &str, mut emit: impl FnMut(String) -> bool)
             return;
         }
     };
-    let mut open = emit(started_line(&stream.operation));
-    while open && let Some(delta) = stream.next().await {
-        let finished = matches!(delta, ChatDelta::Done { .. });
+    let started = json!({"type": "started", "operation": stream.operation});
+    let mut open = emit(started.to_string());
+    let mut finished = false;
+    while open
+        && !finished
+        && let Some(delta) = stream.next().await
+    {
+        finished = matches!(delta, ChatDelta::Done { .. });
         open = serde_json::to_string(&delta).is_ok_and(&mut emit);
-        if finished {
-            return;
-        }
     }
-    if !open {
+    if let Some(line) = closing_line(finished, open) {
+        emit(line);
+    }
+    if !open && !finished {
         cancel_chat(&stream.operation).await;
     }
 }

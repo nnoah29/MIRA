@@ -51,12 +51,11 @@ async fn consent_required_is_an_error_line_with_code() {
 /// Une demande illisible donne une seule ligne d'erreur qui ne reprend pas son texte.
 #[tokio::test(flavor = "multi_thread")]
 async fn invalid_request_json_is_an_error_line() {
-    let f = start().await;
+    let _fixture = start().await;
     let lines = collect_lines("{ceci n'est pas du JSON SECRET-TEXTE").await;
     assert_eq!(lines.len(), 1, "{lines:?}");
     assert_eq!(lines[0]["type"], "error");
     assert!(!lines[0].to_string().contains("SECRET-TEXTE"));
-    drop(f);
     assert!(runtime::close().await.contains("\"ok\":true"));
 }
 

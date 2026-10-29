@@ -29,6 +29,13 @@ abstract class EngineClient {
   Future<void> close();
 }
 
+/// Moteur capable de diffuser une génération d'IA ; les moteurs factices sans IA ne l'implémentent pas.
+abstract interface class ChatStreamingClient {
+  /// Génération d'IA (`ChatStart`) : une ligne par morceau (`started`, `text`, `usage`, `done`, `error`) ;
+  /// fermer l'abonnement l'annule.
+  Stream<Map<String, dynamic>> chatStream(Map<String, dynamic> start);
+}
+
 /// Ouvre l'enveloppe `{ok, data | error}` ; lève [EngineException] si `ok` est faux.
 Map<String, dynamic> openEnvelope(String json) {
   final env = jsonDecode(json) as Map<String, dynamic>;

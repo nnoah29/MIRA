@@ -7,6 +7,7 @@ import '../state/assistant.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
+import 'ai_consent_dialog.dart';
 import 'chat_markdown.dart';
 import 'demo_banner.dart';
 import 'widgets.dart';
@@ -42,11 +43,24 @@ class _AssistantPanelState extends State<AssistantPanel> {
     super.dispose();
   }
 
-  void _send(MailStore s, [String? q]) {
+  Future<void> _send(MailStore s, [String? q]) async {
     final t = q ?? input.text;
     if (t.trim().isEmpty || s.busy) return;
     input.clear();
-    s.sendChat(t);
+    await s.sendChat(t);
+    if (mounted) await _askConsent(s);
+  }
+
+  Future<void> _askConsent(MailStore s) async {
+    final chat = s.chatCtl;
+    final name = chat.consentProviderName;
+    if (chat.consentConnectionId == null || name == null) return;
+    final agreed = await showAiConsentDialog(context, name);
+    if (agreed) {
+      await chat.grantConsent();
+    } else {
+      chat.declineConsent();
+    }
   }
 
   @override

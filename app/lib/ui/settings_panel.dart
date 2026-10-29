@@ -12,6 +12,7 @@ import 'about_settings.dart';
 import 'body_renderer.dart';
 import 'accounts_settings.dart';
 import 'contacts_settings.dart';
+import 'ai_settings.dart';
 import 'image_rules_section.dart';
 import 'labels_settings.dart';
 import 'templates_settings.dart';
@@ -42,6 +43,7 @@ List<String> _tabs(bool engine) => [
   if (engine) t('Libellés'),
   if (engine) t('Règles'),
   if (engine) t('Modèles'),
+  if (engine) t('Intelligence artificielle'),
   if (engine) t('Stockage'),
   t('À propos'),
 ];
@@ -481,7 +483,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 changes: s.source!.templateChanges,
               ),
             ]),
-            8 when s.source != null => box([const MaintenanceSettings()]),
+            8 when s.aiAdmin != null => box([AiSettings(admin: s.aiAdmin!)]),
+            9 when s.source != null => box([const MaintenanceSettings()]),
             _ when s.source != null => box([const AccountsSettings()]),
             _ => box([
               srow(me.name, me.email, const SizedBox.shrink()),

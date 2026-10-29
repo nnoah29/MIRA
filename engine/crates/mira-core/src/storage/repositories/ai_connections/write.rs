@@ -1,4 +1,4 @@
-//! Écritures sur les connexions d'IA : création, mise à jour, suppression, défaut, consentement, modèles.
+//! Écritures sur les connexions d'IA : création, mise à jour, suppression, défaut, modèles.
 
 use mira_vocabulary::{AiConnection, AiConnectionId, AiModelList, MiraError};
 use rusqlite::params;
@@ -84,18 +84,6 @@ impl Tx<'_> {
             )
             .map_err(storage_error)?;
         Ok(())
-    }
-
-    /// Note la date du consentement, une seule fois : une date déjà posée est gardée
-    pub fn set_ai_consent(&self, id: &AiConnectionId, now: i64) -> Result<(), MiraError> {
-        let changed = self
-            .sql()
-            .execute(
-                "UPDATE ai_connections SET consent_at = COALESCE(consent_at, ?2) WHERE id = ?1",
-                params![id.as_str(), now],
-            )
-            .map_err(storage_error)?;
-        ensure_changed(changed)
     }
 
     /// Garde la liste de modèles relevée et sa date ; inconnue : `not_found.ai_connection`

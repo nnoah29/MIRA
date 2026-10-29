@@ -4,6 +4,7 @@ use mira_vocabulary::{EventFilter, OperationId};
 use serde::{Deserialize, Serialize};
 
 use super::account_requests::AccountRequest;
+use super::ai_requests::AiRequest;
 use super::auth_requests::AuthRequest;
 use super::identity_requests::IdentityRequest;
 use super::label_settings_requests::LabelSettingsRequest;
@@ -46,6 +47,7 @@ pub enum Request {
     LabelSettings(LabelSettingsRequest),
     Settings(SettingsRequest),
     Template(TemplateRequest),
+    Ai(AiRequest),
 }
 
 /// Requêtes sur le moteur lui-même.

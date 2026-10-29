@@ -1,5 +1,6 @@
 //! Moteur ouvert avec un fournisseur de test, faux serveur d'IA et accès direct à la base du profil.
 
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use mira_core::ai::AiProviderRegistry;
@@ -23,18 +24,26 @@ pub struct ModelsFixture {
     pub db: Database,
     pub secrets: Arc<MemorySecretStore>,
     pub server: FakeAiServer,
+    pub database_path: PathBuf,
 }
 
 impl ModelsFixture {
     /// Ouvre un moteur dont le registre d'IA contient ce fournisseur, dont l'adresse est celle du faux serveur
-    pub async fn start(mut provider: TestProvider) -> Self {
+    pub async fn start(provider: TestProvider) -> Self {
+        Self::start_many(vec![provider]).await
+    }
+
+    /// Comme `start`, avec plusieurs fournisseurs enregistrés dans cet ordre, tous visant le faux serveur
+    pub async fn start_many(providers: Vec<TestProvider>) -> Self {
         let server = FakeAiServer::start().await.unwrap();
-        provider.base_url = server.base_url();
         let home = tempfile::tempdir().unwrap();
         let secrets = Arc::new(MemorySecretStore::new());
         let mut config = config_with_secrets(home.path(), Arc::clone(&secrets));
         let mut registry = AiProviderRegistry::new();
-        registry.register(Arc::new(provider));
+        for mut provider in providers {
+            provider.base_url = server.base_url();
+            registry.register(Arc::new(provider));
+        }
         config.ai_registry = registry;
         let paths = ProfilePaths::resolve(&config.profile, &config.environment).unwrap();
         let engine = Engine::open(config, CONTRACT_VERSION).unwrap();
@@ -45,6 +54,7 @@ impl ModelsFixture {
             db,
             secrets,
             server,
+            database_path: paths.database,
         }
     }
 
@@ -74,6 +84,16 @@ impl ModelsFixture {
             .write(|tx| tx.insert_ai_connection(&connection, 1))
             .unwrap();
         connection
+    }
+
+    /// Rend illisible la liste de modèles gardée pour cette connexion, directement dans le fichier du profil
+    pub fn corrupt_models(&self, connection: &str) {
+        let raw = rusqlite::Connection::open(&self.database_path).unwrap();
+        raw.execute(
+            "UPDATE ai_connections SET models_json = 'pas du json', models_fetched_at = 5 WHERE id = ?1",
+            [connection],
+        )
+        .unwrap();
     }
 
     /// Relit la connexion telle qu'elle est en base

@@ -4,7 +4,8 @@ use std::sync::Arc;
 
 use mira_vocabulary::error::codes::{incompatible_state, not_found};
 use mira_vocabulary::{
-    AiConnection, AiError, AiProvider, AiProviderDescriptor, AiSecretRef, ErrorCategory, MiraError,
+    AiConnection, AiError, AiProvider, AiProviderDescriptor, AiProviderId, AiSecretRef,
+    ErrorCategory, MiraError,
 };
 
 use crate::api::Engine;
@@ -16,17 +17,21 @@ pub(crate) fn find_provider(
     engine: &Engine,
     connection: &AiConnection,
 ) -> Result<Arc<dyn AiProvider>, MiraError> {
-    engine
-        .config
-        .ai_registry
-        .find(&connection.provider)
-        .ok_or_else(|| {
-            MiraError::new(
-                ErrorCategory::NotFound,
-                not_found::AI_PROVIDER,
-                "fournisseur d'IA inconnu",
-            )
-        })
+    find_provider_by_id(engine, &connection.provider)
+}
+
+/// Retrouve un fournisseur par son identifiant dans le registre, sinon `not_found.ai_provider`.
+pub(crate) fn find_provider_by_id(
+    engine: &Engine,
+    provider: &AiProviderId,
+) -> Result<Arc<dyn AiProvider>, MiraError> {
+    engine.config.ai_registry.find(provider).ok_or_else(|| {
+        MiraError::new(
+            ErrorCategory::NotFound,
+            not_found::AI_PROVIDER,
+            "fournisseur d'IA inconnu",
+        )
+    })
 }
 
 /// Adresse de base : celle de la connexion si elle en a une, sinon celle du fournisseur.

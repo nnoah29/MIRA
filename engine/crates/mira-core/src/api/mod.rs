@@ -15,14 +15,15 @@ pub use chat_stream::{ChatStart, ChatStream};
 pub use config::EngineConfig;
 pub use contract::{
     AccountChanges, AccountDraft, AccountRequest, AccountStatus, AccountSyncStatus, ActionRequest,
-    AttachmentTarget, AuthRequest, CatalogEntry, ComposeRequest, ContractInfo, CredentialInput,
-    DraftChanges, DraftMode, EngineRequest, EngineStatus, EventRequest, IdentityRequest,
-    ImportReport, ImportedLabel, LabelOverview, LabelSettingsRequest, LabelSettingsResponse,
-    LocalLabelRequest, LocalLabelResponse, MailboxRequest, MaintenanceRequest, MessageRequest,
-    NewIdentity, OperationRequest, OutboxEntry, ProviderRequest, QueueRequest, RemoteContentTarget,
-    Request, Response, RuleCatalog, RulePreview, RuleRequest, RuleResponse, RuleView,
-    SearchRequest, SecretInput, SettingsRequest, SettingsResponse, SyncRequest, SyncResponse,
-    SyncScope, SystemLabelRequest, SystemLabelResponse, TargetSelection, TemplateRequest,
-    TemplateResponse, ThreadRequest, WriteResponse,
+    AiRequest, AiResponse, AttachmentTarget, AuthRequest, CatalogEntry, ComposeRequest,
+    ContractInfo, CredentialInput, DraftChanges, DraftMode, EngineRequest, EngineStatus,
+    EventRequest, IdentityRequest, ImportReport, ImportedLabel, LabelOverview,
+    LabelSettingsRequest, LabelSettingsResponse, LocalLabelRequest, LocalLabelResponse,
+    MailboxRequest, MaintenanceRequest, MessageRequest, NewIdentity, OperationRequest, OutboxEntry,
+    ProviderRequest, QueueRequest, RemoteContentTarget, Request, Response, RuleCatalog,
+    RulePreview, RuleRequest, RuleResponse, RuleView, SearchRequest, SecretInput, SettingsRequest,
+    SettingsResponse, SyncRequest, SyncResponse, SyncScope, SystemLabelRequest,
+    SystemLabelResponse, TargetSelection, TemplateRequest, TemplateResponse, ThreadRequest,
+    WriteResponse,
 };
 pub use engine::Engine;

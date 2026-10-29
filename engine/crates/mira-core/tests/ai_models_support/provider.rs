@@ -12,6 +12,7 @@ pub struct TestProvider {
     pub auth: AuthScheme,
     pub format: WireFormat,
     pub exclusions: Vec<String>,
+    pub editable: bool,
 }
 
 impl TestProvider {
@@ -23,6 +24,7 @@ impl TestProvider {
             auth: AuthScheme::Bearer,
             format: WireFormat::OpenAiChat,
             exclusions: Vec::new(),
+            editable: true,
         }
     }
 }
@@ -40,7 +42,7 @@ impl AiProvider for TestProvider {
             model_exclusions: self.exclusions.clone(),
             static_headers: Vec::new(),
             quirks: AiQuirks::default(),
-            base_url_editable: true,
+            base_url_editable: self.editable,
         }
     }
 }

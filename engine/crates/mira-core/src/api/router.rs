@@ -5,9 +5,9 @@ use mira_vocabulary::MiraError;
 use super::contract::{Request, Response};
 use super::engine::Engine;
 use super::handlers::{
-    account, action, auth, compose, engine, event, identity, label_settings, local_label, mailbox,
-    maintenance, message, operation, provider, queue, rule, search, settings, sync, system_label,
-    template, thread,
+    account, action, ai, auth, compose, engine, event, identity, label_settings, local_label,
+    mailbox, maintenance, message, operation, provider, queue, rule, search, settings, sync,
+    system_label, template, thread,
 };
 
 /// Dirige une requête vers le routeur de son domaine
@@ -35,5 +35,6 @@ pub(crate) async fn route(engine_ref: &Engine, request: Request) -> Result<Respo
         Request::LabelSettings(request) => label_settings::route(engine_ref, request).await,
         Request::Settings(request) => settings::route(engine_ref, request).await,
         Request::Template(request) => template::route(engine_ref, request).await,
+        Request::Ai(request) => ai::route(engine_ref, request).await,
     }
 }

@@ -9,7 +9,7 @@ use crate::storage::json_columns::{from_json, to_json};
 
 pub(super) const COLUMNS: &str = "id, provider_id, label, base_url, default_model, is_default, consent_at, models_json, models_fetched_at";
 
-/// Lit une ligne dans l'ordre de `COLUMNS` ; la liste de modèles illisible est une erreur de stockage
+/// Lit une ligne dans l'ordre de `COLUMNS` ; une liste de modèles illisible donne `models: None`
 pub(super) fn connection_from_row(
     row: &Row<'_>,
 ) -> rusqlite::Result<Result<AiConnection, MiraError>> {
@@ -32,14 +32,14 @@ pub(super) fn connection_from_row(
     }))
 }
 
-/// Reconstitue la liste de modèles à partir de ses deux colonnes
+/// Reconstitue la liste de modèles à partir de ses deux colonnes ; un cache illisible est jeté, il se relève
 pub(super) fn models_from_columns(
     json: Option<String>,
     fetched_at: Option<i64>,
 ) -> Result<Option<AiModelList>, MiraError> {
     match (json, fetched_at) {
-        (Some(text), Some(millis)) => Ok(Some(AiModelList {
-            models: from_json(&text)?,
+        (Some(text), Some(millis)) => Ok(from_json(&text).ok().map(|models| AiModelList {
+            models,
             fetched_at: Timestamp::from_millis(millis),
         })),
         _ => Ok(None),

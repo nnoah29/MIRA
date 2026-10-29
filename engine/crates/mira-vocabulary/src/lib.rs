@@ -45,6 +45,7 @@ pub use domain::rule::import_report::{
 pub use domain::rule::matcher::{AddressField, Comparison, RecipientKind, TextMatcher, TextOp};
 pub use domain::rule::rule::{CURRENT_RULE_SCHEMA_VERSION, Rule, RuleScope};
 pub use domain::rule::test::ConditionTest;
+pub use domain::secret_location::{AiSecretRef, SecretLocation};
 pub use domain::servers::{Security, ServerEndpoint, ServerSettings};
 pub use domain::system_label::{SystemLabelAssignment, SystemLabelKind};
 pub use domain::thread::Thread;

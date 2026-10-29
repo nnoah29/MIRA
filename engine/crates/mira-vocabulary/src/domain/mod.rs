@@ -16,6 +16,7 @@ pub mod message;
 pub mod message_template;
 pub mod page;
 pub mod rule;
+pub mod secret_location;
 pub mod servers;
 pub mod system_label;
 pub mod thread;

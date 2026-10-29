@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 
 use mira_assembly::mira_vocabulary::error::codes::secrets;
-use mira_assembly::mira_vocabulary::{ErrorCategory, MiraError, SecretRef};
+use mira_assembly::mira_vocabulary::{ErrorCategory, MiraError, SecretLocation};
 use mira_assembly::ports::{SecretStore, SecretValue};
 use ring::aead::{AES_256_GCM, Aad, LessSafeKey, NONCE_LEN, Nonce, UnboundKey};
 use ring::rand::{SecureRandom, SystemRandom};
@@ -105,7 +105,7 @@ impl FileSecretStore {
 
 impl SecretStore for FileSecretStore {
     /// Enregistre ou remplace le secret
-    fn put(&self, key: &SecretRef, value: &SecretValue) -> Result<(), MiraError> {
+    fn put(&self, key: &dyn SecretLocation, value: &SecretValue) -> Result<(), MiraError> {
         let value = value.expose().to_string();
         self.update(|entries| {
             entries.insert(key.storage_key(), value);
@@ -113,7 +113,7 @@ impl SecretStore for FileSecretStore {
     }
 
     /// Relit le secret, ou rien s'il n'existe pas
-    fn get(&self, key: &SecretRef) -> Result<Option<SecretValue>, MiraError> {
+    fn get(&self, key: &dyn SecretLocation) -> Result<Option<SecretValue>, MiraError> {
         let _guard = self.lock.lock().map_err(|_| unavailable("trousseau"))?;
         Ok(self
             .load()?
@@ -122,7 +122,7 @@ impl SecretStore for FileSecretStore {
     }
 
     /// Supprime le secret ; absent, ce n'est pas une erreur
-    fn delete(&self, key: &SecretRef) -> Result<(), MiraError> {
+    fn delete(&self, key: &dyn SecretLocation) -> Result<(), MiraError> {
         self.update(|entries| {
             entries.remove(&key.storage_key());
         })

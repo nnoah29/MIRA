@@ -1,7 +1,7 @@
 //! Trousseau du système (SecretService sous Linux) via la bibliothèque `keyring`.
 
 use mira_vocabulary::error::codes::secrets;
-use mira_vocabulary::{ErrorCategory, ErrorCode, MiraError, SecretRef};
+use mira_vocabulary::{ErrorCategory, ErrorCode, MiraError, SecretLocation};
 
 use super::blocking::run_blocking_call;
 use super::store::SecretStore;
@@ -15,14 +15,14 @@ pub struct KeyringSecretStore;
 
 impl KeyringSecretStore {
     /// Ouvre l'entrée du trousseau qui correspond à la référence
-    fn entry(key: &SecretRef) -> Result<keyring::Entry, MiraError> {
+    fn entry(key: &dyn SecretLocation) -> Result<keyring::Entry, MiraError> {
         keyring::Entry::new(SERVICE_NAME, &key.storage_key()).map_err(|error| translate(&error))
     }
 }
 
 impl SecretStore for KeyringSecretStore {
     /// Enregistre le secret dans le trousseau système
-    fn put(&self, key: &SecretRef, value: &SecretValue) -> Result<(), MiraError> {
+    fn put(&self, key: &dyn SecretLocation, value: &SecretValue) -> Result<(), MiraError> {
         run_blocking_call(|| {
             Self::entry(key)?
                 .set_password(value.expose())
@@ -31,7 +31,7 @@ impl SecretStore for KeyringSecretStore {
     }
 
     /// Relit le secret, ou rien si le trousseau n'a pas d'entrée
-    fn get(&self, key: &SecretRef) -> Result<Option<SecretValue>, MiraError> {
+    fn get(&self, key: &dyn SecretLocation) -> Result<Option<SecretValue>, MiraError> {
         run_blocking_call(|| match Self::entry(key)?.get_password() {
             Ok(value) => Ok(Some(SecretValue::new(value))),
             Err(keyring::Error::NoEntry) => Ok(None),
@@ -40,7 +40,7 @@ impl SecretStore for KeyringSecretStore {
     }
 
     /// Supprime l'entrée du trousseau ; une entrée absente n'est pas une erreur
-    fn delete(&self, key: &SecretRef) -> Result<(), MiraError> {
+    fn delete(&self, key: &dyn SecretLocation) -> Result<(), MiraError> {
         run_blocking_call(|| match Self::entry(key)?.delete_credential() {
             Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
             Err(error) => Err(translate(&error)),

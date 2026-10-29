@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::sync::{Mutex, MutexGuard};
 
 use mira_vocabulary::error::codes::secrets;
-use mira_vocabulary::{ErrorCategory, MiraError, SecretRef};
+use mira_vocabulary::{ErrorCategory, MiraError, SecretLocation};
 
 use super::store::SecretStore;
 use super::value::SecretValue;
@@ -48,18 +48,18 @@ impl MemorySecretStore {
 
 impl SecretStore for MemorySecretStore {
     /// Enregistre ou remplace le secret en mémoire
-    fn put(&self, key: &SecretRef, value: &SecretValue) -> Result<(), MiraError> {
+    fn put(&self, key: &dyn SecretLocation, value: &SecretValue) -> Result<(), MiraError> {
         self.open()?.insert(key.storage_key(), value.clone());
         Ok(())
     }
 
     /// Relit le secret enregistré, s'il existe
-    fn get(&self, key: &SecretRef) -> Result<Option<SecretValue>, MiraError> {
+    fn get(&self, key: &dyn SecretLocation) -> Result<Option<SecretValue>, MiraError> {
         Ok(self.open()?.get(&key.storage_key()).cloned())
     }
 
     /// Supprime le secret s'il existe
-    fn delete(&self, key: &SecretRef) -> Result<(), MiraError> {
+    fn delete(&self, key: &dyn SecretLocation) -> Result<(), MiraError> {
         self.open()?.remove(&key.storage_key());
         Ok(())
     }

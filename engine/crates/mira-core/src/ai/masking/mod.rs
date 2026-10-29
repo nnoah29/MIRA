@@ -4,15 +4,19 @@
 mod apply;
 mod card;
 mod contact;
+mod context;
 mod debug;
 mod detect;
+mod entropy;
 mod iban;
 mod otp;
 mod placeholder;
 mod restore;
 mod scan;
 mod secret;
+mod structured;
 
 pub use apply::Masker;
 pub use detect::{Found, detect};
+pub use entropy::shannon;
 pub use restore::Restorer;

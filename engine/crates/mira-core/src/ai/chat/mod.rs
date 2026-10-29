@@ -5,6 +5,7 @@ mod answer;
 mod context;
 mod ending;
 mod events;
+mod flush;
 mod guard;
 mod journal;
 mod kinds;

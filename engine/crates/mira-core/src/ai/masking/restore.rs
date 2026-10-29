@@ -60,16 +60,26 @@ impl Restorer {
         self.pending.len()
     }
 
-    /// Dit si le texte est un repère connu, le début d'un repère connu, ou un simple crochet.
+    /// Dit si le texte est un repère connu, le début d'un repère connu, ou un simple crochet ; la casse ne compte pas.
     fn read_bracket(&self, rest: &str) -> Bracket {
-        let known = self
-            .table
-            .iter()
-            .position(|(placeholder, _)| rest.starts_with(placeholder.as_str()));
+        let bytes = rest.as_bytes();
+        let known = self.table.iter().position(|(placeholder, _)| {
+            bytes
+                .get(..placeholder.len())
+                .is_some_and(|head| head.eq_ignore_ascii_case(placeholder.as_bytes()))
+        });
         match known {
             Some(index) => Bracket::Known(index),
-            None if self.table.iter().any(|(p, _)| p.starts_with(rest)) => Bracket::Pending,
+            None if self.table.iter().any(|(p, _)| begins(p, bytes)) => Bracket::Pending,
             None => Bracket::Plain,
         }
     }
+}
+
+/// Dit si ces octets sont le début, à la casse près, de ce repère.
+fn begins(placeholder: &str, bytes: &[u8]) -> bool {
+    placeholder
+        .as_bytes()
+        .get(..bytes.len())
+        .is_some_and(|head| head.eq_ignore_ascii_case(bytes))
 }

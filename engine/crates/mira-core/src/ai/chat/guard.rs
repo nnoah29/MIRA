@@ -5,11 +5,12 @@ use std::time::Duration;
 
 use mira_vocabulary::ChatDelta;
 use tokio::sync::mpsc;
-use tokio::time::{Instant, interval_at};
+use tokio::time::{Instant, interval_at, timeout};
 
 use crate::operations::OperationHandle;
 
 const CANCEL_CHECK: Duration = Duration::from_millis(100);
+const CANCEL_GRACE: Duration = Duration::from_secs(2);
 
 /// Raison pour laquelle une attente a été abandonnée.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -53,5 +54,10 @@ impl<'a> Guard<'a> {
             Ok(Err(_)) => Err(Interrupt::Abandoned),
             Err(interrupt) => Err(interrupt),
         }
+    }
+
+    /// Après une annulation, tente encore de remettre le delta, sans attendre un lecteur qui ne lit plus.
+    pub(super) async fn send_after_cancel(&self, delta: ChatDelta) {
+        let _ = timeout(CANCEL_GRACE, self.deltas.send(delta)).await;
     }
 }

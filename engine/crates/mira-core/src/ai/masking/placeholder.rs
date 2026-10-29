@@ -5,7 +5,8 @@ use std::sync::LazyLock;
 use mira_vocabulary::SensitiveCategory;
 use regex::Regex;
 
-static EXISTING: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(r"\[[A-Z]+_[0-9]+\]").ok());
+static EXISTING: LazyLock<Option<Regex>> =
+    LazyLock::new(|| Regex::new(r"(?i-u)\[[A-Z]+_[0-9]+\]").ok());
 
 /// Libellé du repère d'une catégorie, comme dans `[IBAN_1]`.
 pub(super) fn label(category: SensitiveCategory) -> &'static str {
@@ -19,12 +20,12 @@ pub(super) fn label(category: SensitiveCategory) -> &'static str {
     }
 }
 
-/// Repères qui ressemblent aux nôtres et figurent déjà dans le texte d'origine.
+/// Repères qui ressemblent aux nôtres, quelle que soit leur casse, et figurent déjà dans le texte d'origine (en majuscules).
 pub(super) fn existing(text: &str) -> Vec<String> {
     EXISTING.as_ref().map_or_else(Vec::new, |pattern| {
         pattern
             .find_iter(text)
-            .map(|m| m.as_str().to_string())
+            .map(|m| m.as_str().to_ascii_uppercase())
             .collect()
     })
 }

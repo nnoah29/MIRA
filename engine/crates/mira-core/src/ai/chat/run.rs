@@ -8,6 +8,7 @@ use tokio::sync::{mpsc, oneshot};
 use super::answer::Answer;
 use super::ending::Ending;
 use super::events::{emit_finished, emit_started};
+use super::flush::flush_pending;
 use super::guard::Guard;
 use super::journal::{close_row, finish_of};
 use super::prepare::ChatPlan;
@@ -47,7 +48,7 @@ pub(crate) async fn run(task: ChatTask) {
     let mut progress = Progress::new(Answer::new(std::mem::take(&mut plan.masker)));
     let guard = Guard::new(&handle, &deltas);
     let ending = converse(&plan, &guard, &mut progress).await;
-    let ending = settle(deliver_usage(ending, &guard, &progress).await, &handle);
+    let ending = settle(deliver_rest(ending, &guard, &mut progress).await, &handle);
     close_row(
         &database,
         handle.id(),
@@ -62,8 +63,9 @@ pub(crate) async fn run(task: ChatTask) {
     emit_finished(&events, &handle, &progress, &ending, elapsed);
 }
 
-/// Remet la consommation agrégée avant la fin d'une génération aboutie ou échouée.
-async fn deliver_usage(ending: Ending, guard: &Guard<'_>, progress: &Progress) -> Ending {
+/// Remet le texte retenu, puis la consommation agrégée d'une génération aboutie ou échouée.
+async fn deliver_rest(ending: Ending, guard: &Guard<'_>, progress: &mut Progress) -> Ending {
+    let ending = flush_pending(ending, guard, progress).await;
     let (Ending::Finished(_) | Ending::Failed(_), Some(usage)) = (&ending, progress.usage_delta())
     else {
         return ending;

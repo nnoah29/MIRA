@@ -110,8 +110,10 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
     if (ok == true) await widget.state.remove(id);
   }
 
+  bool _sameTitle(AiProviderInfo? provider) =>
+      provider == null || aiProviderTitle(provider) == c.label;
+
   Widget _title(Pal p, String title, bool own) {
-    if (!own && title == c.label) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -127,9 +129,9 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
     );
   }
 
-  Widget _head(Pal p, String title, bool own) => Row(
+  Widget _controls(Pal p) => Row(
+    mainAxisSize: MainAxisSize.min,
     children: [
-      Expanded(child: _title(p, title, own)),
       Hov(
         key: ValueKey('ai-default-$id'),
         onTap: c.isDefault ? null : () => widget.state.setDefault(id),
@@ -156,18 +158,16 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
     ],
   );
 
-  Widget _address(Pal p) => Row(
-    crossAxisAlignment: CrossAxisAlignment.end,
+  Widget _address(Pal p) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Expanded(
-        child: FormField2(
-          fieldKey: ValueKey('ai-url-$id'),
-          controller: urlCtl,
-          label: t('Adresse du service'),
-          hint: 'https://…', // i18n:ignore
-        ),
+      FormField2(
+        fieldKey: ValueKey('ai-url-$id'),
+        controller: urlCtl,
+        label: t('Adresse du service'),
+        hint: 'https://…', // i18n:ignore
       ),
-      const SizedBox(width: 8),
+      const SizedBox(height: 10),
       Btn(
         key: ValueKey('ai-url-save-$id'),
         label: t('Enregistrer'),
@@ -176,22 +176,35 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
     ],
   );
 
+  Widget _saved(Pal p) => Padding(
+    padding: const EdgeInsets.only(left: 14),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.check, size: 14, color: p.accent),
+        const SizedBox(width: 6),
+        Text(
+          t('Clé enregistrée'),
+          key: ValueKey('ai-key-saved-$id'),
+          style: Fonts.sans(size: 13, color: p.muted),
+        ),
+      ],
+    ),
+  );
+
   Widget _key(Pal p) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
+      FormField2(
+        fieldKey: ValueKey('ai-key-field-$id'),
+        controller: keyCtl,
+        secret: true,
+        onSubmitted: (_) => _saveKey(),
+        label: c.hasKey ? t('Remplacer la clé d’API') : t('Clé d’API'),
+      ),
+      const SizedBox(height: 10),
       Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Expanded(
-            child: FormField2(
-              fieldKey: ValueKey('ai-key-field-$id'),
-              controller: keyCtl,
-              secret: true,
-              onSubmitted: (_) => _saveKey(),
-              label: c.hasKey ? t('Remplacer la clé d’API') : t('Clé d’API'),
-            ),
-          ),
-          const SizedBox(width: 8),
           Btn(
             key: ValueKey('ai-key-save-$id'),
             label: t('Enregistrer la clé'),
@@ -204,24 +217,10 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
               label: t('Effacer la clé'),
               onTap: () => widget.state.clearKey(id),
             ),
+            _saved(p),
           ],
         ],
       ),
-      if (c.hasKey)
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Row(
-            children: [
-              Icon(Icons.check, size: 14, color: p.accent),
-              const SizedBox(width: 6),
-              Text(
-                t('Clé enregistrée'),
-                key: ValueKey('ai-key-saved-$id'),
-                style: Fonts.sans(size: 13, color: p.muted),
-              ),
-            ],
-          ),
-        ),
     ],
   );
 
@@ -261,28 +260,23 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _head(
-            p,
-            provider == null ? c.provider : aiProviderTitle(provider),
-            provider?.editableUrl == true,
-          ),
-          const SizedBox(height: 16),
+          if (provider?.editableUrl == true || !_sameTitle(provider)) ...[
+            _title(
+              p,
+              provider == null ? c.provider : aiProviderTitle(provider),
+              true,
+            ),
+            const SizedBox(height: 16),
+          ],
           if (provider?.editableUrl == true) ...[
             _address(p),
             const SizedBox(height: 16),
           ],
           _key(p),
           const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: AiModelPicker(state: state, connection: c),
-              ),
-              const SizedBox(width: 8),
-              _testButton(busy),
-            ],
-          ),
+          AiModelPicker(state: state, connection: c),
+          const SizedBox(height: 10),
+          Row(children: [_testButton(busy), const Spacer(), _controls(p)]),
           _outcome(p),
         ],
       ),

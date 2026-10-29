@@ -26,6 +26,22 @@ void main() {
     expect(find.text('Anthropic'), findsOneWidget);
   });
 
+  testWidgets('card_layout_puts_buttons_under_their_field', (tester) async {
+    await pumpSettings(
+      tester,
+      connections: [connection('ai-1', label: 'OpenAI', hasKey: true)],
+    );
+    Offset at(String key) => tester.getTopLeft(find.byKey(ValueKey(key)));
+    final card = at('ai-card-ai-1');
+    final field = tester.getBottomLeft(
+      find.byKey(const ValueKey('ai-key-field-ai-1')),
+    );
+    expect(at('ai-key-save-ai-1').dy, greaterThanOrEqualTo(field.dy));
+    expect(at('ai-key-clear-ai-1').dy, at('ai-key-save-ai-1').dy);
+    expect(at('ai-test-ai-1').dy, greaterThan(at('ai-model-button-ai-1').dy));
+    expect(at('ai-key-field-ai-1').dy - card.dy, lessThan(75));
+  });
+
   testWidgets('generic_shows_url_field_others_do_not', (tester) async {
     final engine = await pumpSettings(tester);
     await tester.tap(find.byKey(const ValueKey('ai-add-openai')));

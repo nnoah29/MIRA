@@ -27,3 +27,9 @@ pub const ACTION_NOT_RETRYABLE: ErrorCode = ErrorCode("incompatible_state.action
 pub const MAILBOX_CHANGED: ErrorCode = ErrorCode("incompatible_state.mailbox_changed");
 /// La synchronisation en arrière-plan n'est pas active dans ce moteur.
 pub const SYNC_DISABLED: ErrorCode = ErrorCode("incompatible_state.sync_disabled");
+/// L'utilisateur n'a pas encore consenti à l'envoi de texte à ce service d'IA.
+pub const AI_CONSENT_REQUIRED: ErrorCode = ErrorCode("incompatible_state.ai_consent_required");
+/// La connexion d'IA n'a pas de clé enregistrée.
+pub const AI_KEY_MISSING: ErrorCode = ErrorCode("incompatible_state.ai_key_missing");
+/// Aucun modèle d'IA n'est choisi pour cette connexion.
+pub const AI_MODEL_MISSING: ErrorCode = ErrorCode("incompatible_state.ai_model_missing");

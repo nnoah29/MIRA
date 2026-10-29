@@ -516,6 +516,25 @@ const Map<String, String> enStrings = {
       'Export file too large (2 MB and 500 items at most)',
   'Version du format d’export non prise en charge':
       'Export format version not supported',
+  'Clé refusée par le service d’IA : vérifie-la':
+      'Key rejected by the AI service: check it',
+  'Autorise d’abord l’envoi de texte à ce service d’IA':
+      'First allow sending text to this AI service',
+  'Aucune clé enregistrée pour ce service d’IA':
+      'No key saved for this AI service',
+  'Choisis d’abord un modèle d’IA': 'First choose an AI model',
+  'Le texte est trop long pour le service d’IA':
+      'The text is too long for the AI service',
+  'Clé du service d’IA invalide': 'Invalid AI service key',
+  'Adresse du service d’IA invalide': 'Invalid AI service address',
+  'Connexion d’IA introuvable': 'AI connection not found',
+  'Modèle d’IA introuvable': 'AI model not found',
+  'Service d’IA inconnu': 'Unknown AI service',
+  'Réponse inattendue du service d’IA':
+      'Unexpected response from the AI service',
+  'Le service d’IA limite le nombre de requêtes : réessaie plus tard':
+      'The AI service is limiting requests: try again later',
+  'Service d’IA indisponible': 'AI service unavailable',
   'Cette règle apparaît déjà plus haut dans le fichier':
       'This rule already appears earlier in the file',
   'Fichier YAML invalide': 'Invalid YAML file',

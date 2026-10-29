@@ -31,3 +31,9 @@ pub const EXPORT_KIND_MISMATCH: ErrorCode = ErrorCode("invalid_input.export_kind
 pub const EXPORT_TOO_LARGE: ErrorCode = ErrorCode("invalid_input.export_too_large");
 /// Règle d'un fichier d'import dont l'identifiant figure déjà plus haut dans le même fichier.
 pub const RULE_DUPLICATE_IN_FILE: ErrorCode = ErrorCode("invalid_input.rule_duplicate_in_file");
+/// Texte trop long pour le service d'IA.
+pub const AI_INPUT_TOO_LARGE: ErrorCode = ErrorCode("invalid_input.ai_input_too_large");
+/// Adresse de service d'IA invalide.
+pub const AI_URL_INVALID: ErrorCode = ErrorCode("invalid_input.ai_url_invalid");
+/// Clé de service d'IA vide ou mal formée.
+pub const AI_KEY_INVALID: ErrorCode = ErrorCode("invalid_input.ai_key_invalid");

@@ -223,6 +223,18 @@ pub enum EventKind {
         keys: Vec<String>,
     },
     TemplatesChanged,
+    AiChatStarted {
+        operation: OperationId,
+        provider: String,
+        model: String,
+    },
+    AiChatFinished {
+        operation: OperationId,
+        input_tokens: Option<u32>,
+        output_tokens: Option<u32>,
+        duration_ms: u64,
+        outcome: String,
+    },
 }
 
 impl EventKind {
@@ -249,6 +261,7 @@ impl EventKind {
             K::LabelSettingsChanged => EventCategory::Label,
             K::SettingsChanged { .. } => EventCategory::Settings,
             K::TemplatesChanged => EventCategory::Template,
+            K::AiChatStarted { .. } | K::AiChatFinished { .. } => EventCategory::Ai,
         }
     }
 
@@ -272,7 +285,8 @@ impl EventKind {
             K::EngineStarted | K::EngineStopping | K::EngineFatalError { .. } | K::Diagnostic { .. }
             | K::OperationProgress { .. } | K::OperationFinished { .. } | K::OperationFailed { .. }
             | K::OperationCancelled { .. } | K::RuleChanged { .. } | K::LocalLabelsChanged | K::SystemLabelsChanged
-            | K::LabelSettingsChanged | K::SettingsChanged { .. } | K::TemplatesChanged => None,
+            | K::LabelSettingsChanged | K::SettingsChanged { .. } | K::TemplatesChanged | K::AiChatStarted { .. }
+            | K::AiChatFinished { .. } => None,
         }
     }
 }

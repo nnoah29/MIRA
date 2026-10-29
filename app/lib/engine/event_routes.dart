@@ -91,6 +91,8 @@ const Map<String, Set<EventEffect>> eventRoutes = {
   'label_settings_changed': {EventEffect.labelSettings},
   'settings_changed': {EventEffect.settings},
   'templates_changed': {EventEffect.templates},
+  'ai_chat_started': _none,
+  'ai_chat_finished': _none,
 };
 
 /// Effets d'un événement ; un type inconnu (moteur plus récent que l'app) n'en a aucun.

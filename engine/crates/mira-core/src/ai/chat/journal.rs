@@ -66,7 +66,7 @@ pub(super) fn close_row(
 pub(super) fn finish_of(progress: &Progress, ending: &Ending) -> AiJournalFinish {
     let (input_tokens, output_tokens) = progress.tokens();
     AiJournalFinish {
-        masked: 0,
+        masked: progress.answer.masked(),
         input_tokens,
         output_tokens,
         outcome: ending.outcome(),

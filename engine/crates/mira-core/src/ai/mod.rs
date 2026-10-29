@@ -3,6 +3,7 @@
 pub(crate) mod access;
 pub(crate) mod base_url;
 pub mod chat;
+pub mod masking;
 pub mod models;
 pub mod registry;
 pub mod sse;

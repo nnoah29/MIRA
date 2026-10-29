@@ -1,7 +1,7 @@
 //! Types autorisés, requêtes avec contexte et lecture du journal pour les tests de confidentialité.
 
 use mira_core::api::ChatStart;
-use mira_vocabulary::{AiConnection, AiJournalEntry, ContentKind, ContextPart};
+use mira_vocabulary::{AiConnection, AiJournalEntry, ContentKind, ContextPart, MaskingSettings};
 
 use super::connection::chat_start;
 use crate::ai_models_support::ModelsFixture;
@@ -11,6 +11,14 @@ pub fn allow_kinds(fixture: &ModelsFixture, connection: &AiConnection, kinds: &[
     fixture
         .db
         .write(|tx| tx.set_ai_allowed_kinds(&connection.id, kinds))
+        .unwrap();
+}
+
+/// Impose ce réglage de masquage à cette connexion
+pub fn set_masking(fixture: &ModelsFixture, connection: &AiConnection, masking: &MaskingSettings) {
+    fixture
+        .db
+        .write(|tx| tx.set_ai_masking(&connection.id, masking))
         .unwrap();
 }
 

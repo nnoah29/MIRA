@@ -47,9 +47,19 @@ async fn pump(
     }
     drop(body);
     match forward(reader.finish(), format, guard, progress).await {
-        Ok(()) => progress.end_of_stream(),
+        Ok(()) => conclude(guard, progress).await,
         Err(ending) => ending,
     }
+}
+
+/// Remet ce que la restitution gardait en attente, puis dit comment le flux s'est terminé.
+async fn conclude(guard: &Guard<'_>, progress: &mut Progress) -> Ending {
+    for delta in progress.answer.flush() {
+        if let Err(interrupt) = guard.send(delta).await {
+            return interrupt.into();
+        }
+    }
+    progress.end_of_stream()
 }
 
 /// Décode les événements, retient l'usage et l'arrêt, transmet le texte au lecteur.
@@ -61,7 +71,7 @@ async fn forward(
 ) -> Result<(), Ending> {
     for event in events {
         for delta in decode_event(format, &event).map_err(Ending::Failed)? {
-            if let Some(delta) = progress.absorb(delta) {
+            for delta in progress.absorb(delta) {
                 guard.send(delta).await?;
             }
         }

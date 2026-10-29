@@ -5,6 +5,7 @@ use std::sync::Arc;
 use mira_vocabulary::{ChatDelta, Timestamp};
 use tokio::sync::{mpsc, oneshot};
 
+use super::answer::Answer;
 use super::ending::Ending;
 use super::events::{emit_finished, emit_started};
 use super::guard::Guard;
@@ -32,7 +33,7 @@ pub(crate) struct ChatTask {
 /// Mène la génération ; le `Done` final n'est visible du lecteur qu'une fois l'opération close.
 pub(crate) async fn run(task: ChatTask) {
     let ChatTask {
-        plan,
+        mut plan,
         handle,
         operations,
         events,
@@ -43,7 +44,7 @@ pub(crate) async fn run(task: ChatTask) {
     } = task;
     let started = clock.now();
     emit_started(&events, &handle, &plan);
-    let mut progress = Progress::default();
+    let mut progress = Progress::new(Answer::new(std::mem::take(&mut plan.masker)));
     let guard = Guard::new(&handle, &deltas);
     let ending = converse(&plan, &guard, &mut progress).await;
     let ending = settle(deliver_usage(ending, &guard, &progress).await, &handle);

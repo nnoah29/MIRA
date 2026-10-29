@@ -5,13 +5,14 @@ use std::fmt;
 use mira_vocabulary::error::codes::{incompatible_state, not_found};
 use mira_vocabulary::{
     AiConnection, AiConnectionId, AiError, AiProviderDescriptor, AiProviderId, ChatRequest,
-    ContentKind, ErrorCategory, MiraError,
+    ContentKind, ErrorCategory, MaskingSettings, MiraError,
 };
 
 use super::context::render_context;
 use super::kinds::{check_kinds, distinct_kinds};
 use super::truncate::{MAX_INPUT_CHARS, request_chars, truncate_request};
 use crate::ai::access::{base_url_of, find_provider, is_loopback_url, key_for};
+use crate::ai::masking::Masker;
 use crate::api::{ChatStart, Engine};
 use crate::ports::SecretValue;
 
@@ -22,6 +23,7 @@ pub(crate) struct ChatPlan {
     pub(crate) key: SecretValue,
     pub(crate) model: String,
     pub(crate) request: ChatRequest,
+    pub(crate) masker: Masker,
     pub(crate) connection: AiConnectionId,
     pub(crate) provider: AiProviderId,
     pub(crate) local: bool,
@@ -42,7 +44,7 @@ pub(crate) fn prepare(engine: &Engine, start: ChatStart) -> Result<ChatPlan, Mir
     let model = resolve_model(&start.request, &connection)?;
     let kinds = distinct_kinds(&start.request.context);
     let parts = u32::try_from(start.request.context.len()).unwrap_or(u32::MAX);
-    let request = truncate_request(render_context(start.request), MAX_INPUT_CHARS);
+    let (request, masker) = shape_request(start.request, &connection.masking);
     Ok(ChatPlan {
         descriptor,
         base_url,
@@ -55,7 +57,23 @@ pub(crate) fn prepare(engine: &Engine, start: ChatStart) -> Result<ChatPlan, Mir
         parts,
         chars: request_chars(&request),
         request,
+        masker,
     })
+}
+
+/// Rend le contexte, masque les textes envoyés (pas la consigne), puis tronque ; rend aussi la table du masquage.
+fn shape_request(request: ChatRequest, masking: &MaskingSettings) -> (ChatRequest, Masker) {
+    let mut masker = Masker::new(masking);
+    let mut request = render_context(request);
+    masker.reserve(request.system.as_deref().unwrap_or_default());
+    request
+        .messages
+        .iter()
+        .for_each(|m| masker.reserve(&m.text));
+    for message in &mut request.messages {
+        message.text = masker.mask(&message.text);
+    }
+    (truncate_request(request, MAX_INPUT_CHARS), masker)
 }
 
 /// Relit la connexion désignée, ou la connexion par défaut ; absente, `not_found.ai_connection`.

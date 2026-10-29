@@ -4,6 +4,7 @@
 use std::sync::Arc;
 
 use mira_assembly::accounts::NetworkPolicy;
+use mira_assembly::ai::AiProviderRegistry;
 use mira_assembly::api::EngineConfig;
 use mira_assembly::auth::OAuthClientConfig;
 use mira_assembly::build_registry;
@@ -40,6 +41,7 @@ pub fn config(home: &std::path::Path, port: u16, smtp_port: u16) -> EngineConfig
             home: None,
         },
         registry: build_registry(),
+        ai_registry: AiProviderRegistry::new(),
         secrets: Arc::new(MemorySecretStore::new()),
         clock: Arc::new(ManualClock::new(Timestamp::from_millis(1_704_100_000_000))),
         ids: Arc::new(SequentialIds::new()),

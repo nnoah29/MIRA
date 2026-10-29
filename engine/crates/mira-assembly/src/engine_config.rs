@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use mira_core::accounts::NetworkPolicy;
+use mira_core::ai::AiProviderRegistry;
 use mira_core::api::EngineConfig;
 use mira_core::auth::OAuthClientConfig;
 use mira_core::ports::{KeyringSecretStore, SystemClock, UuidV7Ids};
@@ -24,6 +25,7 @@ pub fn production_config_with_oauth(profile: ProfileId, oauth: OAuthClientConfig
         profile,
         environment: ProfileEnvironment::from_process(),
         registry: build_registry(),
+        ai_registry: AiProviderRegistry::new(),
         secrets: Arc::new(KeyringSecretStore),
         clock: Arc::new(SystemClock),
         ids: Arc::new(UuidV7Ids),

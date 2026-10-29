@@ -1,6 +1,6 @@
-//! Requêtes du domaine « assistant d'IA » : connexions, clés, modèles, consentement.
+//! Requêtes du domaine « assistant d'IA » : connexions, clés, modèles, consentement, confidentialité, journal.
 
-use mira_vocabulary::{AiConnectionId, AiProviderId};
+use mira_vocabulary::{AiConnectionId, AiProviderId, ContentKind, MaskingSettings};
 use serde::{Deserialize, Serialize};
 
 use super::secret_input::SecretInput;
@@ -44,5 +44,25 @@ pub enum AiRequest {
     },
     AcknowledgeAiConsent {
         connection: AiConnectionId,
+        #[serde(default = "default_consent_kinds")]
+        kinds: Vec<ContentKind>,
     },
+    SetAiAllowedContent {
+        connection: AiConnectionId,
+        kinds: Vec<ContentKind>,
+    },
+    SetAiMasking {
+        connection: AiConnectionId,
+        masking: MaskingSettings,
+    },
+    ListAiJournal {
+        limit: u32,
+        before: Option<String>,
+    },
+    ClearAiJournal,
+}
+
+/// Types autorisés par un consentement sans liste : le mail ouvert, comme avant le contrat 1.2.
+fn default_consent_kinds() -> Vec<ContentKind> {
+    vec![ContentKind::MailMessage]
 }

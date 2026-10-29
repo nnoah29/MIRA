@@ -1,9 +1,9 @@
-//! Exemples du domaine « assistant d'IA » : connexions, clés, modèles.
+//! Exemples du domaine « assistant d'IA » : connexions, clés, modèles, confidentialité et journal.
 
 use mira_core::api::{AiRequest, AiResponse, Request, Response, SecretInput};
-use mira_vocabulary::{AiConnectionId, AiProviderId};
+use mira_vocabulary::{AiConnectionId, AiProviderId, ContentKind, MaskingSettings};
 
-use super::ai_samples::{sample_connection, sample_models, sample_provider};
+use super::ai_samples::{sample_connection, sample_journal, sample_models, sample_provider};
 use super::{Named, numbered};
 
 /// Les opérations de gestion : fournisseurs, création, mise à jour, suppression
@@ -31,6 +31,25 @@ fn management_requests(id: &AiConnectionId) -> Vec<AiRequest> {
     ]
 }
 
+/// Les opérations de confidentialité : types autorisés, masquage, journal des envois
+fn privacy_requests(id: &AiConnectionId) -> Vec<AiRequest> {
+    vec![
+        AiRequest::SetAiAllowedContent {
+            connection: id.clone(),
+            kinds: vec![ContentKind::MailMessage],
+        },
+        AiRequest::SetAiMasking {
+            connection: id.clone(),
+            masking: MaskingSettings::remote_default(),
+        },
+        AiRequest::ListAiJournal {
+            limit: 50,
+            before: Some("journal-1".to_string()),
+        },
+        AiRequest::ClearAiJournal,
+    ]
+}
+
 /// Une requête par opération de `AiRequest`
 pub fn requests() -> Vec<Named<Request>> {
     let id = AiConnectionId::from_raw("ai-1");
@@ -50,8 +69,12 @@ pub fn requests() -> Vec<Named<Request>> {
             connection: id.clone(),
             refresh: true,
         },
-        AiRequest::AcknowledgeAiConsent { connection: id },
+        AiRequest::AcknowledgeAiConsent {
+            connection: id.clone(),
+            kinds: vec![ContentKind::MailMessage, ContentKind::MailList],
+        },
     ]);
+    items.extend(privacy_requests(&id));
     let ops: Vec<&str> = items.iter().map(op_name).collect();
     numbered("ai", &ops)
         .into_iter()
@@ -72,6 +95,7 @@ pub fn responses() -> Vec<Named<Response>> {
         ),
         ("ai.connection", AiResponse::Connection(sample_connection())),
         ("ai.models", AiResponse::Models(sample_models())),
+        ("ai.journal", AiResponse::Journal(vec![sample_journal()])),
         ("ai.done", AiResponse::Done),
     ];
     let wrap = |(name, inner): (&str, AiResponse)| (name.to_string(), Response::Ai(inner));
@@ -92,5 +116,9 @@ pub fn op_name(request: &AiRequest) -> &'static str {
         AiRequest::TestAiConnection { .. } => "test_ai_connection",
         AiRequest::ListAiModels { .. } => "list_ai_models",
         AiRequest::AcknowledgeAiConsent { .. } => "acknowledge_ai_consent",
+        AiRequest::SetAiAllowedContent { .. } => "set_ai_allowed_content",
+        AiRequest::SetAiMasking { .. } => "set_ai_masking",
+        AiRequest::ListAiJournal { .. } => "list_ai_journal",
+        AiRequest::ClearAiJournal => "clear_ai_journal",
     }
 }

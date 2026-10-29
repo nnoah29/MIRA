@@ -5,7 +5,7 @@ use mira_vocabulary::{AiConnection, AiConnectionId, AiProviderId, MaskingSetting
 use super::connection_view::{read_connection, single};
 use super::validate_label::validate_label;
 use super::validate_url::resolve_base_url;
-use crate::ai::access::find_provider_by_id;
+use crate::ai::access::{find_provider_by_id, is_loopback_url};
 use crate::api::contract::Response;
 use crate::api::engine::Engine;
 
@@ -21,19 +21,21 @@ pub(crate) fn handle_add_ai_connection(
     let base_url = resolve_base_url(&descriptor, base_url)?;
     let id = AiConnectionId::from_raw(engine.config.ids.next_id());
     let now = engine.config.clock.now().as_millis();
-    let connection = blank_connection(id.clone(), provider, label, base_url);
+    let masking = default_masking(&descriptor.base_url, base_url.as_deref());
+    let connection = blank_connection(id.clone(), provider, label, base_url, masking);
     engine
         .database
         .write(|tx| tx.insert_ai_connection(&connection, now))?;
     Ok(single(read_connection(engine, &id)?))
 }
 
-/// Connexion neuve : ni défaut, ni modèle, ni consentement, ni type autorisé, masquage des distantes
+/// Connexion neuve : ni défaut, ni modèle, ni consentement, ni type autorisé, masquage donné
 fn blank_connection(
     id: AiConnectionId,
     provider: &AiProviderId,
     label: String,
     base_url: Option<String>,
+    masking: MaskingSettings,
 ) -> AiConnection {
     AiConnection {
         id,
@@ -46,6 +48,14 @@ fn blank_connection(
         consent_at: None,
         models: None,
         allowed_kinds: Vec::new(),
-        masking: MaskingSettings::remote_default(),
+        masking,
+    }
+}
+
+/// Masquage de départ : coupé vers la boucle locale, actif ailleurs (et si l'adresse est illisible)
+fn default_masking(provider_url: &str, chosen: Option<&str>) -> MaskingSettings {
+    match is_loopback_url(chosen.unwrap_or(provider_url)) {
+        Ok(true) => MaskingSettings::local_default(),
+        _ => MaskingSettings::remote_default(),
     }
 }

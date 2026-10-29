@@ -1,7 +1,7 @@
 //! Raccourcis d'opérations du domaine « Ai » sur une connexion déjà créée.
 
 use mira_core::api::{AiRequest, AiResponse, Engine, SecretInput};
-use mira_vocabulary::{AiConnection, AiConnectionId, AiModelList};
+use mira_vocabulary::{AiConnection, AiConnectionId, AiModelList, ContentKind};
 
 use super::calls::{call, call_connection};
 
@@ -63,6 +63,7 @@ pub async fn models(
 pub async fn consent(engine: &Engine, connection: &AiConnectionId) -> AiConnection {
     let request = AiRequest::AcknowledgeAiConsent {
         connection: connection.clone(),
+        kinds: vec![ContentKind::MailMessage],
     };
     call_connection(engine, request).await.unwrap()
 }
@@ -85,6 +86,7 @@ pub fn requests_on(connection: &AiConnectionId) -> Vec<AiRequest> {
         },
         AiRequest::AcknowledgeAiConsent {
             connection: connection.clone(),
+            kinds: vec![ContentKind::MailMessage],
         },
         AiRequest::ListAiModels {
             connection,

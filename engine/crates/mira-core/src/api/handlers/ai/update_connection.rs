@@ -1,4 +1,4 @@
-//! Mise à jour d'une connexion d'IA : libellé, adresse, modèle ; une autre adresse oublie consentement, clé et modèles.
+//! Mise à jour d'une connexion d'IA : libellé, adresse, modèle ; une autre adresse oublie consentement, types, clé et modèles.
 
 use mira_vocabulary::{AiConnectionId, MiraError};
 
@@ -10,7 +10,7 @@ use crate::api::contract::Response;
 use crate::api::engine::Engine;
 use crate::storage::Tx;
 
-/// Remplace libellé, adresse et modèle par défaut ; consentement, clé et modèles gardés ne valent que pour l'adresse d'origine
+/// Remplace libellé, adresse et modèle par défaut ; consentement, types, clé et modèles gardés ne valent que pour l'adresse d'origine
 pub(crate) fn handle_update_ai_connection(
     engine: &Engine,
     id: &AiConnectionId,
@@ -41,8 +41,9 @@ pub(crate) fn handle_update_ai_connection(
     Ok(single(read_connection(engine, id)?))
 }
 
-/// Oublie ce qui appartenait à l'ancienne destination : consentement et liste de modèles gardée
+/// Oublie ce qui appartenait à l'ancienne destination : consentement, types autorisés et liste de modèles gardée
 fn forget_destination(tx: &Tx<'_>, id: &AiConnectionId) -> Result<(), MiraError> {
     tx.clear_ai_consent(id)?;
+    tx.set_ai_allowed_kinds(id, &[])?;
     tx.clear_ai_models(id)
 }

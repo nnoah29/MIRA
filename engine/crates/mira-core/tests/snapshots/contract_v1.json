@@ -1,5 +1,5 @@
 {
-  "contract": "1.1",
+  "contract": "1.2",
   "requests": {
     "account.add_account": {
       "domain": "account",
@@ -178,6 +178,10 @@
       "domain": "ai",
       "request": {
         "connection": "ai-1",
+        "kinds": [
+          "mail_message",
+          "mail_list"
+        ],
         "op": "acknowledge_ai_consent"
       }
     },
@@ -197,10 +201,24 @@
         "op": "clear_ai_api_key"
       }
     },
+    "ai.clear_ai_journal": {
+      "domain": "ai",
+      "request": {
+        "op": "clear_ai_journal"
+      }
+    },
     "ai.list_ai_connections": {
       "domain": "ai",
       "request": {
         "op": "list_ai_connections"
+      }
+    },
+    "ai.list_ai_journal": {
+      "domain": "ai",
+      "request": {
+        "before": "journal-1",
+        "limit": 50,
+        "op": "list_ai_journal"
       }
     },
     "ai.list_ai_models": {
@@ -224,12 +242,38 @@
         "op": "remove_ai_connection"
       }
     },
+    "ai.set_ai_allowed_content": {
+      "domain": "ai",
+      "request": {
+        "connection": "ai-1",
+        "kinds": [
+          "mail_message"
+        ],
+        "op": "set_ai_allowed_content"
+      }
+    },
     "ai.set_ai_api_key": {
       "domain": "ai",
       "request": {
         "connection": "ai-1",
         "key": "sk-exemple",
         "op": "set_ai_api_key"
+      }
+    },
+    "ai.set_ai_masking": {
+      "domain": "ai",
+      "request": {
+        "connection": "ai-1",
+        "masking": {
+          "categories": [
+            "iban",
+            "card",
+            "secret",
+            "otp"
+          ],
+          "mode": "mask"
+        },
+        "op": "set_ai_masking"
       }
     },
     "ai.set_default_ai_connection": {
@@ -1457,6 +1501,32 @@
       },
       "type": "ai"
     },
+    "ai.journal": {
+      "data": {
+        "data": [
+          {
+            "at": 1700000000000,
+            "chars": 1234,
+            "connection": "ai-1",
+            "id": "journal-1",
+            "input_tokens": 321,
+            "kinds": [
+              "mail_message"
+            ],
+            "local": false,
+            "masked": 2,
+            "model": "model-a",
+            "operation": "op-1",
+            "outcome": "end_turn",
+            "output_tokens": 45,
+            "parts": 1,
+            "provider": "generic"
+          }
+        ],
+        "type": "journal"
+      },
+      "type": "ai"
+    },
     "ai.models": {
       "data": {
         "data": {
@@ -1518,7 +1588,7 @@
         ],
         "version": {
           "major": 1,
-          "minor": 1
+          "minor": 2
         }
       },
       "type": "contract_info"

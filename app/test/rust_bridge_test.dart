@@ -21,7 +21,7 @@ void main() {
     final client = await RustEngineClient.open();
     final info = await client.call(req('engine', 'get_contract_info'));
     expect(info['type'], 'contract_info');
-    expect((info['data'] as Map)['version'], {'major': 1, 'minor': 1});
+    expect((info['data'] as Map)['version'], {'major': 1, 'minor': 2});
     final source = await EngineMailSource.load(client);
     expect(source.accounts, isEmpty);
     final st = await source.maintenance.stats();

@@ -8,7 +8,7 @@ use ai_support::{
     events_text, slow_stream, start, wait_closed,
 };
 use mira_assembly::api::AiRequest;
-use mira_assembly::mira_vocabulary::{ChatDelta, ProfileId, StopReason};
+use mira_assembly::mira_vocabulary::{ChatDelta, ContentKind, ProfileId, StopReason};
 use mira_assembly::{build_ai_registry, production_config_with_oauth};
 use mira_testkit::ai::{Behavior, anthropic_stream, openai_stream};
 
@@ -121,6 +121,7 @@ async fn no_secret_or_prompt_in_event_journal_after_full_flow() {
         &f,
         AiRequest::AcknowledgeAiConsent {
             connection: connection.id.clone(),
+            kinds: vec![ContentKind::MailMessage],
         },
     )
     .await;

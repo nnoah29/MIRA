@@ -11,5 +11,6 @@ pub mod calls;
 pub mod destination;
 pub mod flaky_store;
 pub mod operations;
+pub mod privacy;
 pub mod providers;
 pub mod session;

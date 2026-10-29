@@ -1,8 +1,9 @@
 //! Valeurs d'exemple du domaine « assistant d'IA » : connexion, liste de modèles, fiche de fournisseur.
 
 use mira_vocabulary::{
-    AiConnection, AiConnectionId, AiModel, AiModelList, AiProviderDescriptor, AiProviderId,
-    AiQuirks, AuthScheme, ContentKind, MaskingSettings, Timestamp, WireFormat,
+    AiConnection, AiConnectionId, AiJournalEntry, AiModel, AiModelList, AiProviderDescriptor,
+    AiProviderId, AiQuirks, AuthScheme, ContentKind, MaskingSettings, OperationId, Timestamp,
+    WireFormat,
 };
 
 /// Connexion d'exemple, avec liste de modèles gardée
@@ -46,5 +47,25 @@ pub fn sample_provider() -> AiProviderDescriptor {
         static_headers: Vec::new(),
         quirks: AiQuirks::default(),
         base_url_editable: true,
+    }
+}
+
+/// Ligne de journal d'exemple : une génération terminée, sans aucun texte
+pub fn sample_journal() -> AiJournalEntry {
+    AiJournalEntry {
+        id: "journal-1".to_string(),
+        at: Timestamp::from_millis(1_700_000_000_000),
+        operation: OperationId::from_raw("op-1"),
+        connection: AiConnectionId::from_raw("ai-1"),
+        provider: AiProviderId("generic".to_string()),
+        model: "model-a".to_string(),
+        local: false,
+        kinds: vec![ContentKind::MailMessage],
+        parts: 1,
+        chars: 1234,
+        masked: 2,
+        input_tokens: Some(321),
+        output_tokens: Some(45),
+        outcome: "end_turn".to_string(),
     }
 }

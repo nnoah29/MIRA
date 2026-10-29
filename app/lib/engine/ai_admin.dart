@@ -102,7 +102,7 @@ class AiAdmin {
     if (c is! ChatStreamingClient) return Stream.error(UnimplementedError());
     return c
         .chatStream({'connection': connection, 'request': request})
-        .map(_event);
+        .expand(_event);
   }
 
   /// Annule une génération en cours.
@@ -112,16 +112,20 @@ class AiAdmin {
     );
   }
 
-  AiChatEvent _event(Map<String, dynamic> line) => switch (line['type']) {
-    'started' => AiStarted('${line['operation']}'),
-    'text' => AiText('${line['text']}'),
-    'usage' => AiUsage(
-      (line['input_tokens'] as num?)?.toInt() ?? 0,
-      (line['output_tokens'] as num?)?.toInt() ?? 0,
-    ),
-    'done' => _done(line['reason']),
-    _ => _failed(line['error']),
-  };
+  Iterable<AiChatEvent> _event(Map<String, dynamic> line) =>
+      switch (line['type']) {
+        'started' => [AiStarted('${line['operation']}')],
+        'text' => [AiText('${line['text']}')],
+        'usage' => [
+          AiUsage(
+            (line['input_tokens'] as num?)?.toInt() ?? 0,
+            (line['output_tokens'] as num?)?.toInt() ?? 0,
+          ),
+        ],
+        'done' => [_done(line['reason'])],
+        'error' => [_failed(line['error'])],
+        _ => const [],
+      };
 
   AiDone _done(Object? reason) {
     if (reason is Map && reason['failed'] is Map) {

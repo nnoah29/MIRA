@@ -30,6 +30,7 @@ class _AssistantPanelState extends State<AssistantPanel> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       focus.requestFocus();
       context.read<MailStore>().chatCtl.refresh();
     });
@@ -55,7 +56,11 @@ class _AssistantPanelState extends State<AssistantPanel> {
     final chat = s.chatCtl;
     final name = chat.consentProviderName;
     if (chat.consentConnectionId == null || name == null) return;
-    final agreed = await showAiConsentDialog(context, name);
+    final agreed = await showAiConsentDialog(
+      context,
+      name,
+      host: chat.consentHost,
+    );
     if (agreed) {
       await chat.grantConsent();
     } else {
@@ -391,8 +396,16 @@ class _Bubble extends StatelessWidget {
                         : chatSpans(shown, base, p),
                   ),
                 )
-              else
+              else if (!msg.done)
                 const _Typing(),
+              if (!me && msg.note != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    msg.note!,
+                    style: Fonts.sans(size: 13, color: p.dim),
+                  ),
+                ),
               if (!me && msg.done && msg.draft != null) ...[
                 Container(
                   width: double.infinity,

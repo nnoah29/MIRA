@@ -240,4 +240,106 @@ void main() {
     expect(radio('ai-2', Icons.radio_button_checked), findsOneWidget);
     expect(radio('ai-1', Icons.radio_button_off), findsOneWidget);
   });
+
+  testWidgets('add_key_test_preselects_and_persists_the_first_model', (
+    tester,
+  ) async {
+    final engine = await pumpSettings(tester);
+    engine.models.addAll([
+      {'id': 'recent', 'created_at': 9},
+      {'id': 'old', 'created_at': 1},
+    ]);
+    await tester.tap(find.byKey(const ValueKey('ai-add-openai')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('ai-key-field-ai-0')),
+      'sk-1',
+    );
+    await tester.tap(find.byKey(const ValueKey('ai-key-save-ai-0')));
+    await tester.pumpAndSettle();
+    expect(engine.connections.single['default_model'], 'recent');
+    expect(fieldText(tester, 'ai-model-field-ai-0'), 'recent');
+    await tester.tap(find.byKey(const ValueKey('ai-test-ai-0')));
+    await tester.pumpAndSettle();
+    expect(engine.requestsOf('update_ai_connection'), hasLength(1));
+    expect(engine.connections.single['default_model'], 'recent');
+  });
+
+  testWidgets('a_chosen_model_is_not_replaced_by_the_first_one', (
+    tester,
+  ) async {
+    final engine = await pumpSettings(
+      tester,
+      connections: [connection('ai-1', hasKey: true, model: 'mine')],
+    );
+    engine.models.add({'id': 'recent', 'created_at': 9});
+    await tester.tap(find.byKey(const ValueKey('ai-test-ai-1')));
+    await tester.pumpAndSettle();
+    expect(engine.requestsOf('update_ai_connection'), isEmpty);
+    expect(fieldText(tester, 'ai-model-field-ai-1'), 'mine');
+  });
+
+  testWidgets('typed_model_is_committed_on_focus_loss', (tester) async {
+    final engine = await pumpSettings(
+      tester,
+      connections: [connection('ai-1', hasKey: true, model: 'm1')],
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('ai-model-field-ai-1')),
+      'libre',
+    );
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    expect(
+      engine.requestsOf('update_ai_connection').last['default_model'],
+      'libre',
+    );
+  });
+
+  testWidgets('test_saves_the_typed_key_first_and_clears_the_field', (
+    tester,
+  ) async {
+    final engine = await pumpSettings(
+      tester,
+      connections: [connection('ai-1')],
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('ai-key-field-ai-1')),
+      'sk-typed',
+    );
+    await tester.tap(find.byKey(const ValueKey('ai-test-ai-1')));
+    await tester.pumpAndSettle();
+    final ops = [for (final c in engine.calls) (c['request'] as Map)['op']];
+    expect(
+      ops.indexOf('set_ai_api_key'),
+      lessThan(ops.indexOf('test_ai_connection')),
+    );
+    expect(engine.requestsOf('set_ai_api_key').single['key'], 'sk-typed');
+    expect(fieldText(tester, 'ai-key-field-ai-1'), '');
+    expect(find.text('Connexion réussie.'), findsOneWidget);
+  });
+
+  testWidgets('failed_key_save_keeps_the_typed_text_and_skips_the_test', (
+    tester,
+  ) async {
+    final engine = await pumpSettings(
+      tester,
+      connections: [connection('ai-1')],
+    );
+    engine
+      ..failOpName = 'set_ai_api_key'
+      ..failOp = const EngineException('invalid_input.ai_key_invalid', 'x');
+    await tester.enterText(
+      find.byKey(const ValueKey('ai-key-field-ai-1')),
+      'sk-bad',
+    );
+    await tester.tap(find.byKey(const ValueKey('ai-test-ai-1')));
+    await tester.pumpAndSettle();
+    expect(fieldText(tester, 'ai-key-field-ai-1'), 'sk-bad');
+    expect(engine.requestsOf('test_ai_connection'), isEmpty);
+    expect(
+      find.text(engineErrorTexts['invalid_input.ai_key_invalid']!),
+      findsOneWidget,
+    );
+  });
 }

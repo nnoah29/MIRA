@@ -1175,4 +1175,5 @@ const Map<String, String> enStrings = {
       'Its API key is erased from this device.',
   'Supprimer la connexion « {0} » ?': 'Delete the connection “{0}”?',
   'Tester': 'Test',
+  'Adresse du service : {0}': 'Service address: {0}',
 };

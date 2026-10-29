@@ -46,8 +46,13 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
   Future<void> _saveKey() async {
     final typed = keyCtl.text;
     if (typed.trim().isEmpty) return;
-    keyCtl.clear();
-    await widget.state.saveKey(id, typed);
+    if (await widget.state.saveKey(id, typed)) keyCtl.clear();
+  }
+
+  Future<void> _testNow() async {
+    await _saveKey();
+    if (keyCtl.text.trim().isNotEmpty) return;
+    await widget.state.testConnection(id);
   }
 
   Future<void> _confirmDelete() async {
@@ -235,7 +240,7 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
         Btn(
           key: ValueKey('ai-test-$id'),
           label: t('Tester'),
-          onTap: busy ? null : () => widget.state.testConnection(id),
+          onTap: busy ? null : _testNow,
         ),
         const SizedBox(width: 12),
         if (outcome != null)

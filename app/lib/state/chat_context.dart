@@ -24,6 +24,12 @@ class ChatContextInput {
   bool get hasMail => subject != null || body != null;
 }
 
+final _mailTag = RegExp(r'<(\s*/?\s*mail)', caseSensitive: false);
+
+/// Neutralise toute balise `<mail>` ou `</mail>` (quelle que soit la casse) dans un texte de mail.
+String _safe(String? text) =>
+    (text ?? '').replaceAllMapped(_mailTag, (m) => '&lt;${m.group(1)}');
+
 String _clip(String text, int budget) =>
     text.length <= budget ? text : '${text.substring(0, budget)}…';
 
@@ -34,16 +40,13 @@ String chatSystemPrompt() => t(
 
 /// Bloc du mail ouvert, entre balises ; une balise fermante dans le texte est neutralisée.
 String chatMailBlock(ChatContextInput input) {
-  final body = _clip(
-    (input.body ?? '').replaceAll('</mail', '< /mail'),
-    chatBodyBudget,
-  );
+  final body = _clip(_safe(input.body), chatBodyBudget);
   return [
     '<mail>',
-    '${t('Objet')} : ${input.subject ?? ''}',
-    '${t('De')} : ${input.from ?? ''}',
-    '${t('À')} : ${input.to ?? ''}',
-    '${t('Date')} : ${input.date ?? ''}',
+    '${t('Objet')} : ${_safe(input.subject)}',
+    '${t('De')} : ${_safe(input.from)}',
+    '${t('À')} : ${_safe(input.to)}',
+    '${t('Date')} : ${_safe(input.date)}',
     '',
     body,
     '</mail>',

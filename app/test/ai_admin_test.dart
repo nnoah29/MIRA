@@ -135,6 +135,17 @@ void main() {
     expect(failed.message, 'consentement requis');
   });
 
+  test('unknown_line_types_are_ignored', () async {
+    engine.scripts.add([
+      {'type': 'ping'},
+      {'type': 'text', 'text': 'A'},
+      {'type': 'future_thing', 'x': 1},
+      {'type': 'done', 'reason': 'end_turn'},
+    ]);
+    final events = await admin.chat(const {}).toList();
+    expect(events.map((e) => e.runtimeType), [AiText, AiDone]);
+  });
+
   test('cancel_sends_operation_cancel', () async {
     await admin.cancel('op-7');
     final sent = engine.calls.single;

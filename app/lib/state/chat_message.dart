@@ -13,6 +13,9 @@ class ChatMsg {
 
   /// Réponse en échec ou vide : jamais renvoyée au modèle comme un tour de parole.
   bool failed;
+
+  /// Remarque affichée sous la réponse (arrêt, troncature) ; ne fait pas partie du texte renvoyé au modèle.
+  String? note;
   ChatMsg({
     required this.role,
     this.done = true,
@@ -22,5 +25,6 @@ class ChatMsg {
     this.refs,
     this.fromEngine = false,
     this.failed = false,
+    this.note,
   });
 }

@@ -79,4 +79,49 @@ void main() {
     expect(store.chat.last.text, 'Voici.');
     await close(tester, store);
   });
+
+  testWidgets('dialog_shows_the_destination_host_for_a_free_address', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildTheme(false),
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showAiConsentDialog(
+              context,
+              'Compatible OpenAI',
+              host: 'ia.example.org',
+            ),
+            child: const Text('go'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('go'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('ia.example.org'), findsOneWidget);
+  });
+
+  testWidgets('panel_passes_the_host_of_a_generic_connection', (tester) async {
+    final engine = needingConsent()..scripts.add([consentError]);
+    engine.connections.single
+      ..['provider'] = 'generic'
+      ..['base_url'] = 'https://ia.example.org/v1';
+    engine.providers.add({
+      'id': 'generic',
+      'display_name': 'Compatible OpenAI',
+      'base_url': 'https://x/v1',
+      'base_url_editable': true,
+    });
+    final store = await pumpPanel(tester, engine);
+    await tester.tap(find.text('RÉSUME CE MAIL'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byKey(const ValueKey('ai-consent-host')), findsOneWidget);
+    expect(find.textContaining('ia.example.org'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('ai-consent-refuse')));
+    await tester.pump(const Duration(milliseconds: 300));
+    await close(tester, store);
+  });
 }

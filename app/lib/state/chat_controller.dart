@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
@@ -26,7 +27,18 @@ class _Pending {
 /// Adresse de la machine locale : un service sans clé y reste utilisable.
 bool isLoopbackUrl(String? url) {
   final host = Uri.tryParse(url ?? '')?.host ?? '';
-  return host == 'localhost' || host == '::1' || host.startsWith('127.');
+  return host == 'localhost' ||
+      InternetAddress.tryParse(host)?.isLoopback == true;
+}
+
+/// Une génération en cours : sa réponse, son abonnement, son opération et une annulation demandée trop tôt.
+class _Run {
+  final ChatMsg reply;
+  final Completer<void> finished = Completer<void>();
+  StreamSubscription<AiChatEvent>? sub;
+  String? operation;
+  bool cancelPending = false;
+  _Run(this.reply);
 }
 
 /// Fil de l'assistant : réponses du moteur d'IA, ou repli de démonstration sans connexion utilisable.
@@ -49,10 +61,8 @@ class ChatController extends ChangeNotifier {
   bool busy = false;
   AiConnectionInfo? _connection;
   _Pending? _consent;
-  StreamSubscription<AiChatEvent>? _sub;
-  Completer<void>? _finished;
-  ChatMsg? _current;
-  String? _operation;
+  _Run? _run;
+  final Set<_Run> _orphans = {};
   Timer? _demoTimer;
   Map<String, String> _providerNames = const {};
 
@@ -71,6 +81,12 @@ class ChatController extends ChangeNotifier {
 
   /// Nom du service qui attend l'accord (`null` : aucun).
   String? get consentProviderName => _consent?.providerName;
+
+  /// Machine qui recevra le texte quand l'adresse est libre (`null` : adresse fixe du service).
+  String? get consentHost {
+    final host = Uri.tryParse(_consent?.connection.baseUrl ?? '')?.host ?? '';
+    return host.isEmpty ? null : host;
+  }
 
   /// Relit les connexions pour savoir si une IA est utilisable.
   Future<void> refresh() async {
@@ -153,25 +169,26 @@ class ChatController extends ChangeNotifier {
       ..add(user)
       ..add(reply);
     busy = true;
-    _current = reply;
-    _operation = null;
-    final finished = _finished = Completer<void>();
+    final run = _run = _Run(reply);
     notifyListeners();
-    _sub = ai
+    run.sub = ai
         .chat(request, connection: connection.id)
         .listen(
-          (e) => _onEvent(e, reply, origin),
-          onError: (Object e) => _fail(reply, engineErrorText(e)),
-          onDone: () => _finish(reply),
+          (e) => _onEvent(e, run, origin),
+          onError: (Object e) => _ended(run, engineErrorText(e)),
+          onDone: () => _ended(run),
           cancelOnError: true,
         );
-    await finished.future;
+    await run.finished.future;
   }
 
-  void _onEvent(AiChatEvent event, ChatMsg reply, _Pending origin) {
+  void _onEvent(AiChatEvent event, _Run run, _Pending origin) {
+    if (event is AiStarted) return _started(run, event.operation);
+    if (_run != run) return;
+    final reply = run.reply;
     switch (event) {
       case AiStarted():
-        _operation = event.operation;
+        break;
       case AiText():
         reply.text += event.text;
         reply.shown = reply.text;
@@ -179,65 +196,99 @@ class ChatController extends ChangeNotifier {
       case AiUsage():
         break;
       case AiDone():
-        _onDone(reply, event);
+        _onDone(run, event);
       case AiFailed() when event.code == consentRequiredCode:
-        _askConsent(reply, origin);
+        _askConsent(run, origin);
       case AiFailed():
-        _fail(
-          reply,
-          engineErrorText(EngineException(event.code, event.message)),
-        );
+        final error = EngineException(event.code, event.message);
+        _fail(run, engineErrorText(error));
     }
   }
 
-  void _onDone(ChatMsg reply, AiDone done) {
+  void _ended(_Run run, [String? error]) {
+    _orphans.remove(run);
+    if (error == null) return _finish(run);
+    _fail(run, error);
+  }
+
+  void _started(_Run run, String operation) {
+    run.operation = operation;
+    if (run.cancelPending) unawaited(_cancelOperation(run));
+  }
+
+  void _onDone(_Run run, AiDone done) {
+    final reply = run.reply;
     if (done.failed) {
       final error = EngineException(done.code ?? 'internal.bug', '');
-      return _fail(reply, engineErrorText(error), retry: done.retryAfterSecs);
+      return _fail(run, engineErrorText(error), retry: done.retryAfterSecs);
     }
-    if (done.reason == 'cancelled' && reply.text.isEmpty) {
-      reply.text = t('Génération arrêtée.');
-    }
+    if (done.reason == 'cancelled' && reply.text.isEmpty) _stoppedNote(reply);
     if (done.reason == 'max_tokens') {
-      reply.text +=
-          '\n\n${t('Réponse tronquée : la limite de longueur est atteinte.')}';
+      reply.note = t('Réponse tronquée : la limite de longueur est atteinte.');
     }
-    _finish(reply);
+    _finish(run);
   }
 
-  void _fail(ChatMsg reply, String error, {int? retry}) {
+  void _stoppedNote(ChatMsg reply) {
+    reply.note = t('Génération arrêtée.');
+    reply.failed = true;
+  }
+
+  void _fail(_Run run, String error, {int? retry}) {
+    if (_run != run) return;
+    final reply = run.reply;
     final wait = retry == null ? '' : ' ${t('Réessaie dans {0} s.', [retry])}';
     final head = reply.text.isEmpty ? '' : '${reply.text}\n\n';
     reply.text = '$head$error$wait';
     reply.failed = true;
-    _finish(reply);
+    _finish(run);
   }
 
-  void _finish(ChatMsg reply) {
-    if (_current != reply) return;
-    if (reply.text.isEmpty) {
+  void _finish(_Run run) {
+    if (_run != run) return;
+    final reply = run.reply;
+    if (reply.text.isEmpty && reply.note == null) {
       reply.text = t('Le modèle n’a rien répondu.');
       reply.failed = true;
     }
     reply.shown = reply.text;
     reply.done = true;
     busy = false;
-    _current = null;
-    _operation = null;
-    _sub?.cancel();
-    _sub = null;
-    final finished = _finished;
-    if (finished != null && !finished.isCompleted) finished.complete();
+    _run = null;
+    if (!run.cancelPending) unawaited(run.sub?.cancel());
+    if (!run.finished.isCompleted) run.finished.complete();
     notifyListeners();
   }
 
-  void _askConsent(ChatMsg reply, _Pending origin) {
+  Future<void> _cancelOperation(_Run run) async {
+    final ai = admin();
+    final operation = run.operation;
+    if (ai != null && operation != null) {
+      try {
+        await ai.cancel(operation);
+      } on Object {
+        /* l'annulation par fermeture du flux suffit */
+      }
+    }
+    await run.sub?.cancel();
+    run.sub = null;
+    _orphans.remove(run);
+  }
+
+  Future<void> _abort(_Run run) {
+    if (run.operation != null) return _cancelOperation(run);
+    run.cancelPending = true;
+    _orphans.add(run);
+    return Future.value();
+  }
+
+  void _askConsent(_Run run, _Pending origin) {
     final c = origin.connection;
-    chat.remove(reply);
+    chat.remove(run.reply);
     chat.removeLast();
     final name = _providerNames[c.provider] ?? c.label;
     _consent = _Pending(c, origin.question, origin.input, name);
-    _finish(reply);
+    _finish(run);
   }
 
   /// L'utilisateur accepte : le moteur enregistre l'accord, puis la question part.
@@ -271,21 +322,14 @@ class ChatController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Arrête la génération en cours en gardant le texte déjà reçu.
+  /// Arrête la génération en cours en gardant le texte déjà reçu ; l'annulation part dès que l'opération est connue.
   Future<void> stop() async {
-    final reply = _current;
-    if (reply == null) return _stopDemo();
-    final ai = admin();
-    final operation = _operation;
-    if (ai != null && operation != null) {
-      try {
-        await ai.cancel(operation);
-      } on Object {
-        /* l'annulation par fermeture du flux suffit */
-      }
-    }
-    if (reply.text.isEmpty) reply.text = t('Génération arrêtée.');
-    _finish(reply);
+    final run = _run;
+    if (run == null) return _stopDemo();
+    if (run.reply.text.isEmpty) _stoppedNote(run.reply);
+    final cancelling = _abort(run);
+    _finish(run);
+    await cancelling;
   }
 
   void _stopDemo() {
@@ -299,15 +343,15 @@ class ChatController extends ChangeNotifier {
   }
 
   void _halt() {
-    _sub?.cancel();
-    _sub = null;
+    final run = _run;
+    _run = null;
     _demoTimer?.cancel();
     _demoTimer = null;
-    final finished = _finished;
-    if (finished != null && !finished.isCompleted) finished.complete();
-    _current = null;
     _consent = null;
     busy = false;
+    if (run == null) return;
+    if (!run.finished.isCompleted) run.finished.complete();
+    unawaited(_abort(run));
   }
 
   /// Repart d'un fil neuf : arrête ce qui tourne et remet l'accueil.
@@ -327,7 +371,12 @@ class ChatController extends ChangeNotifier {
 
   @override
   void dispose() {
-    _sub?.cancel();
+    final run = _run;
+    _run = null;
+    unawaited(run?.sub?.cancel());
+    for (final orphan in _orphans) {
+      unawaited(orphan.sub?.cancel());
+    }
     _demoTimer?.cancel();
     super.dispose();
   }

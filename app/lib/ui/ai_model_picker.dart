@@ -33,18 +33,37 @@ class _AiModelPickerState extends State<AiModelPicker> {
   late final TextEditingController ctl = TextEditingController(
     text: widget.value ?? '',
   );
+  final FocusNode focus = FocusNode();
+  late String committed = widget.value ?? '';
   bool open = false;
+
+  @override
+  void initState() {
+    super.initState();
+    focus.addListener(() {
+      if (!focus.hasFocus) _commit(ctl.text);
+    });
+  }
+
+  void _commit(String text) {
+    final value = text.trim();
+    if (value == committed) return;
+    committed = value;
+    widget.onChanged(value);
+  }
 
   @override
   void didUpdateWidget(AiModelPicker old) {
     super.didUpdateWidget(old);
-    if (old.value != widget.value && (widget.value ?? '') != ctl.text) {
-      ctl.text = widget.value ?? '';
+    if (old.value != widget.value) {
+      committed = widget.value ?? '';
+      if (committed != ctl.text) ctl.text = committed;
     }
   }
 
   @override
   void dispose() {
+    focus.dispose();
     ctl.dispose();
     super.dispose();
   }
@@ -52,15 +71,16 @@ class _AiModelPickerState extends State<AiModelPicker> {
   void _pick(String id) {
     ctl.text = id;
     setState(() => open = false);
-    widget.onChanged(id);
+    _commit(id);
   }
 
   Widget _field(Pal p) => TextField(
     key: ValueKey('ai-model-field-${widget.connectionId}'),
     controller: ctl,
+    focusNode: focus,
     cursorColor: p.accent,
     style: Fonts.sans(size: 14, color: p.text),
-    onSubmitted: widget.onChanged,
+    onSubmitted: _commit,
     decoration: InputDecoration(
       isDense: true,
       hintText: t('Nom du modèle'),

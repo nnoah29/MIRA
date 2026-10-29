@@ -6,11 +6,12 @@ import '../i18n/i18n.dart';
 import '../theme/app_theme.dart';
 import 'widgets.dart';
 
-/// Demande l'accord de l'utilisateur pour envoyer ses textes à [providerName] ; faux s'il refuse ou ferme.
+/// Demande l'accord de l'utilisateur pour envoyer ses textes à [providerName] (et à la machine [host] si l'adresse est libre) ; faux s'il refuse ou ferme.
 Future<bool> showAiConsentDialog(
   BuildContext context,
-  String providerName,
-) async {
+  String providerName, {
+  String? host,
+}) async {
   final p = context.pal;
   final ok = await showDialog<bool>(
     context: context,
@@ -37,6 +38,19 @@ Future<bool> showAiConsentDialog(
                 ),
                 style: Fonts.sans(size: 13.5, color: p.muted, height: 1.5),
               ),
+              if (host != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(
+                    t('Adresse du service : {0}', [host]),
+                    key: const ValueKey('ai-consent-host'),
+                    style: Fonts.sans(
+                      size: 13.5,
+                      w: FontWeight.w500,
+                      color: p.text,
+                    ),
+                  ),
+                ),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,

@@ -54,18 +54,40 @@ class AiSettingsState extends ChangeNotifier {
     connections = await admin.connections();
   }
 
-  Future<void> _act(String key, Future<void> Function() body) async {
+  Future<bool> _act(String key, Future<void> Function() body) async {
     busy.add(key);
     error = null;
     _changed();
+    var ok = true;
     try {
       await body();
       await _reload();
     } on Object catch (e) {
       error = engineErrorText(e);
+      ok = false;
     }
     busy.remove(key);
     _changed();
+    return ok;
+  }
+
+  /// Relève les modèles sans bruit (le service peut être injoignable) puis retient le premier si aucun n'est choisi.
+  Future<void> _preselectModel(String id) async {
+    try {
+      fetched[id] = await admin.models(id);
+      await _reload();
+      final c = connections.firstWhere((x) => x.id == id);
+      final list = fetched[id] ?? const <AiModelInfo>[];
+      if ((c.defaultModel ?? '').isNotEmpty || list.isEmpty) return;
+      await admin.update(
+        id,
+        label: c.label,
+        baseUrl: c.baseUrl,
+        defaultModel: list.first.id,
+      );
+    } on Object {
+      return;
+    }
   }
 
   /// Ajoute une connexion ; la première devient la connexion par défaut.
@@ -83,9 +105,11 @@ class AiSettingsState extends ChangeNotifier {
     if (!connections.any((c) => c.isDefault)) await admin.setDefault(made.id);
   });
 
-  /// Range la clé saisie ; elle n'est gardée nulle part ici.
-  Future<void> saveKey(String id, String key) =>
-      _act(id, () async => admin.setKey(id, key.trim()));
+  /// Range la clé saisie (elle n'est gardée nulle part ici) et propose un modèle si aucun n'est choisi ; vrai si rangée.
+  Future<bool> saveKey(String id, String key) => _act(id, () async {
+    await admin.setKey(id, key.trim());
+    await _preselectModel(id);
+  });
 
   /// Efface la clé d'une connexion.
   Future<void> clearKey(String id) => _act(id, () async => admin.clearKey(id));
@@ -97,6 +121,7 @@ class AiSettingsState extends ChangeNotifier {
       try {
         await admin.test(id);
         tests[id] = const AiTestOutcome.success();
+        await _preselectModel(id);
       } on Object catch (e) {
         tests[id] = AiTestOutcome.failure(engineErrorText(e));
       }

@@ -1216,6 +1216,12 @@ const Map<String, String> enStrings = {
   'Interrompu': 'Interrupted',
   'Journal': 'Log',
   'Masquées avant l’envoi': 'Masked before sending',
+  'Aucune catégorie : rien n’est masqué.':
+      'No category selected: nothing is masked.',
+  'Les données sensibles sont envoyées telles quelles.':
+      'Sensitive data is sent as is.',
+  'Connexion locale : rien ne quitte cet appareil.':
+      'Local connection: nothing leaves this device.',
   'Mot de passe ou clé': 'Password or key',
   'Non masquées': 'Not masked',
   'Terminé': 'Done',

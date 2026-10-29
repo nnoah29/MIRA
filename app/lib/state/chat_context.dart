@@ -7,6 +7,9 @@ import 'chat_message.dart';
 /// Nombre de caractères du texte du mail transmis au service.
 const chatBodyBudget = 12000;
 
+/// Longueur maximale, points de suspension compris, de l'étiquette de la partie de contexte (l'objet est aussi dans le texte).
+const chatLabelBudget = 200;
+
 /// Nombre de caractères gardés au plus pour un message de l'historique.
 const chatTurnBudget = 6000;
 
@@ -36,7 +39,7 @@ String chatSystemPrompt() => t(
 /// Partie de contexte typée du mail ouvert : objet en étiquette, métadonnées et texte clippé ; le moteur la met en forme.
 Map<String, String> chatMailPart(ChatContextInput input) => {
   'kind': aiKindMail,
-  'label': input.subject ?? '',
+  'label': _clip(input.subject ?? '', chatLabelBudget - 1),
   'text': [
     '${t('Objet')} : ${input.subject ?? ''}',
     '${t('De')} : ${input.from ?? ''}',

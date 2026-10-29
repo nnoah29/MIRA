@@ -17,6 +17,8 @@ class AiSettingsState extends ChangeNotifier {
   List<AiProviderInfo> providers = const [];
   List<AiConnectionInfo> connections = const [];
   final Set<String> busy = {};
+  final Set<String> saving = {};
+  final Map<String, String> saveErrors = {};
   final Map<String, AiTestOutcome> tests = {};
   final Map<String, List<AiModelInfo>> fetched = {};
   String? error;
@@ -70,9 +72,17 @@ class AiSettingsState extends ChangeNotifier {
     connections = await admin.connections();
   }
 
-  Future<bool> _act(String key, Future<void> Function() body) async {
+  Future<bool> _act(
+    String key,
+    Future<void> Function() body, {
+    bool privacy = false,
+  }) async {
     busy.add(key);
     error = null;
+    if (privacy) {
+      saving.add(key);
+      saveErrors.remove(key);
+    }
     _changed();
     var ok = true;
     try {
@@ -83,8 +93,15 @@ class AiSettingsState extends ChangeNotifier {
       ok = false;
     }
     busy.remove(key);
+    if (privacy) _endSave(key, ok);
     _changed();
     return ok;
+  }
+
+  void _endSave(String key, bool ok) {
+    saving.remove(key);
+    final failure = error;
+    if (!ok && failure != null) saveErrors[key] = failure;
   }
 
   /// Relève les modèles sans bruit (le service peut être injoignable) puis retient le premier si aucun n'est choisi.
@@ -176,11 +193,15 @@ class AiSettingsState extends ChangeNotifier {
 
   /// Remplace la liste des types de contenu que la connexion peut recevoir.
   Future<void> setAllowedContent(AiConnectionInfo c, List<String> kinds) =>
-      _act(c.id, () async => admin.setAllowedContent(c.id, kinds));
+      _act(
+        c.id,
+        () async => admin.setAllowedContent(c.id, kinds),
+        privacy: true,
+      );
 
   /// Règle le masquage des données sensibles de la connexion.
   Future<void> setMasking(AiConnectionInfo c, AiMasking masking) =>
-      _act(c.id, () async => admin.setMasking(c.id, masking));
+      _act(c.id, () async => admin.setMasking(c.id, masking), privacy: true);
 
   /// Désigne la connexion par défaut.
   Future<void> setDefault(String id) =>

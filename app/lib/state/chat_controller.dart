@@ -24,6 +24,9 @@ bool isLoopbackUrl(String? url) {
       InternetAddress.tryParse(host)?.isLoopback == true;
 }
 
+/// Contexte vide : la question part sans le mail ouvert.
+const noContext = ChatContextInput();
+
 /// Une génération en cours : sa réponse, son abonnement, son opération et une annulation demandée trop tôt.
 class _Run {
   final ChatMsg reply;
@@ -82,14 +85,6 @@ class ChatController extends ChangeNotifier {
     return host.isEmpty ? null : host;
   }
 
-  /// Vrai quand l'envoi attend l'autorisation de ces types de contenu pour cette connexion.
-  bool needsContent(String connectionId, List<String> kinds) {
-    final pending = _content;
-    return pending != null &&
-        pending.connection.id == connectionId &&
-        kinds.every(pending.kinds.contains);
-  }
-
   /// Connexion qui attend l'autorisation d'un type de contenu (`null` : aucune).
   String? get contentConnectionId => _content?.connection.id;
 
@@ -124,6 +119,7 @@ class ChatController extends ChangeNotifier {
     final q = text.trim();
     final ai = admin();
     if (q.isEmpty || busy) return;
+    _consent = _content = null;
     if (ai == null) return _demoSend(q);
     busy = true;
     notifyListeners();
@@ -325,12 +321,21 @@ class ChatController extends ChangeNotifier {
     final ai = admin();
     if (pending == null || ai == null || busy) return;
     _consent = null;
+    busy = true;
+    notifyListeners();
     try {
       await ai.acknowledgeConsent(pending.connection.id, kinds: kinds);
     } on Object catch (e) {
-      return _note(pending.question, engineErrorText(e));
+      return _grantFailed(pending, e);
     }
-    await _generate(ai, pending.connection, pending.question, pending.input, 1);
+    if (!busy) return;
+    final input = kinds.contains(aiKindMail) ? pending.input : noContext;
+    await _generate(ai, pending.connection, pending.question, input, 1);
+  }
+
+  void _grantFailed(ChatPending pending, Object error) {
+    busy = false;
+    _note(pending.question, engineErrorText(error));
   }
 
   /// L'utilisateur autorise le type de contenu : il s'ajoute aux types de la connexion, puis la question repart une fois.
@@ -339,12 +344,15 @@ class ChatController extends ChangeNotifier {
     final ai = admin();
     if (pending == null || ai == null || busy) return;
     _content = null;
+    busy = true;
+    notifyListeners();
     final kinds = {...pending.connection.allowedKinds, ...pending.kinds};
     try {
       await ai.setAllowedContent(pending.connection.id, kinds.toList());
     } on Object catch (e) {
-      return _note(pending.question, engineErrorText(e));
+      return _grantFailed(pending, e);
     }
+    if (!busy) return;
     await _generate(ai, pending.connection, pending.question, pending.input, 2);
   }
 

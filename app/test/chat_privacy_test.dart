@@ -216,7 +216,6 @@ void main() {
     engine.connections.single['consent_at'] = null;
     engine.scripts.addAll([
       [consentError],
-      [contentError],
       okReply,
     ]);
     final store = await pumpPanel(tester, engine);
@@ -225,11 +224,29 @@ void main() {
     await tapKey(tester, 'ai-consent-accept');
     final sent = engine.requestsOf('acknowledge_ai_consent');
     expect(sent.single['kinds'], isEmpty);
-    expect(find.byKey(const ValueKey('ai-content-title')), findsOneWidget);
-    await tapKey(tester, 'ai-content-accept');
-    expect(engine.requestsOf('set_ai_allowed_content'), hasLength(1));
-    expect(engine.chatStarts, hasLength(3));
+    expect(find.byKey(const ValueKey('ai-content-title')), findsNothing);
+    expect(engine.requestsOf('set_ai_allowed_content'), isEmpty);
     expect(store.chat.last.text, 'Voici.');
+    await close(tester, store);
+  });
+
+  testWidgets('unticked_consent_resends_without_the_mail_context', (
+    tester,
+  ) async {
+    final engine = withDefaultConnection();
+    engine.connections.single['consent_at'] = null;
+    engine.scripts.addAll([
+      [consentError],
+      okReply,
+    ]);
+    final store = await pumpPanel(tester, engine);
+    await ask(tester);
+    expect(requestOf(engine, 0)['context'], isNotEmpty);
+    await tapKey(tester, 'ai-consent-kind-mail_message');
+    await tapKey(tester, 'ai-consent-accept');
+    expect(engine.chatStarts, hasLength(2));
+    expect(requestOf(engine, 1)['context'], isEmpty);
+    expect(find.byKey(const ValueKey('ai-content-title')), findsNothing);
     await close(tester, store);
   });
 }

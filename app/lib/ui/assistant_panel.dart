@@ -52,7 +52,8 @@ class _AssistantPanelState extends State<AssistantPanel> {
     await s.sendChat(t);
     if (!mounted) return;
     await _askConsent(s);
-    if (mounted) await _askContent(s);
+    if (!mounted) return s.chatCtl.declineContent();
+    await _askContent(s);
   }
 
   Future<void> _askConsent(MailStore s) async {

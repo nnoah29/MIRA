@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../engine/ai_models.dart';
 import '../i18n/i18n.dart';
 import '../state/ai_settings_state.dart';
+import '../state/chat_controller.dart';
 import '../theme/app_theme.dart';
 import 'ai_kind_names.dart';
 import 'rule_widgets.dart';
@@ -79,25 +80,55 @@ class AiPrivacySection extends StatelessWidget {
     ],
   );
 
-  Widget _switchRow(Pal p) {
-    final on = connection.masking.on;
-    return Row(
-      children: [
-        RuleToggle(
-          key: ValueKey('ai-privacy-mask-$id'),
-          value: on,
-          onChanged: _toggleMasking,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            on ? t('Masquées avant l’envoi') : t('Non masquées'),
-            style: Fonts.sans(size: 15, color: p.text),
-          ),
-        ),
-      ],
-    );
+  String get _switchText {
+    final masking = connection.masking;
+    if (!masking.on) return t('Non masquées');
+    return masking.categories.isEmpty
+        ? t('Aucune catégorie : rien n’est masqué.')
+        : t('Masquées avant l’envoi');
   }
+
+  Widget _switchRow(Pal p) => Row(
+    children: [
+      RuleToggle(
+        key: ValueKey('ai-privacy-mask-$id'),
+        value: connection.masking.on,
+        onChanged: _toggleMasking,
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Text(_switchText, style: Fonts.sans(size: 15, color: p.text)),
+      ),
+    ],
+  );
+
+  bool get _local {
+    final own = connection.baseUrl;
+    final url = own == null || own.isEmpty
+        ? state.providerOf(connection)?.baseUrl
+        : own;
+    return isLoopbackUrl(url);
+  }
+
+  Widget _note(Pal p, String key, String text, Color color) => Text(
+    text,
+    key: ValueKey('$key-$id'),
+    style: Fonts.sans(size: 13, color: color),
+  );
+
+  Widget _offNote(Pal p) => _local
+      ? _note(
+          p,
+          'ai-privacy-off',
+          t('Connexion locale : rien ne quitte cet appareil.'),
+          p.dim,
+        )
+      : _note(
+          p,
+          'ai-privacy-off',
+          t('Les données sensibles sont envoyées telles quelles.'),
+          p.accent,
+        );
 
   Widget _categories() => Wrap(
     spacing: 8,
@@ -113,26 +144,51 @@ class AiPrivacySection extends StatelessWidget {
     ],
   );
 
+  List<Widget> _maskingDetails(Pal p) {
+    final masking = connection.masking;
+    if (!masking.on) return [const SizedBox(height: 8), _offNote(p)];
+    return [
+      const SizedBox(height: 16),
+      _categories(),
+      if (masking.categories.isNotEmpty) ...[
+        const SizedBox(height: 16),
+        _note(
+          p,
+          'ai-privacy-notice',
+          t('Détection au mieux : elle peut se tromper.'),
+          p.dim,
+        ),
+      ],
+    ];
+  }
+
   Widget _masking(Pal p) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       _label(p, t('Données sensibles')),
       const SizedBox(height: 6),
       _switchRow(p),
-      if (connection.masking.on) ...[const SizedBox(height: 10), _categories()],
-      const SizedBox(height: 10),
-      Text(
-        t('Détection au mieux : elle peut se tromper.'),
-        key: ValueKey('ai-privacy-notice-$id'),
-        style: Fonts.sans(size: 13, color: p.dim),
-      ),
+      ..._maskingDetails(p),
     ],
   );
+
+  Widget _saveError(Pal p) {
+    final error = state.saveErrors[id];
+    if (error == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Text(
+        error,
+        key: ValueKey('ai-privacy-error-$id'),
+        style: Fonts.sans(size: 13.5, color: p.accent),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final p = context.pal;
-    final busy = state.busy.contains(id);
+    final busy = state.saving.contains(id);
     return AbsorbPointer(
       key: ValueKey('ai-privacy-$id'),
       absorbing: busy,
@@ -140,7 +196,12 @@ class AiPrivacySection extends StatelessWidget {
         opacity: busy ? .5 : 1,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [_kinds(p), const SizedBox(height: 16), _masking(p)],
+          children: [
+            _kinds(p),
+            const SizedBox(height: 16),
+            _masking(p),
+            _saveError(p),
+          ],
         ),
       ),
     );

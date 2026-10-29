@@ -22,6 +22,8 @@ String aiOutcomeText(String outcome) => switch (outcome) {
   _ => engineErrorText(EngineException(outcome, '')),
 };
 
+const _calm = {'end_turn', 'max_tokens', 'cancelled', 'running', 'interrupted'};
+
 /// Liste des envois, plus récents d'abord, avec « Afficher plus » et « Vider le journal ».
 class AiJournalView extends StatelessWidget {
   final AiJournalState state;
@@ -55,7 +57,7 @@ class AiJournalView extends StatelessWidget {
 
   Widget _row(Pal p, int i, AiJournalRow r) {
     final name = providerNames[r.provider] ?? r.provider;
-    final failed = !const {'end_turn', 'running'}.contains(r.outcome);
+    final failed = !_calm.contains(r.outcome);
     return Container(
       key: ValueKey('ai-journal-row-$i'),
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -81,9 +83,15 @@ class AiJournalView extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Text(
-            aiOutcomeText(r.outcome),
-            style: Fonts.sans(size: 13.5, color: failed ? p.accent : p.muted),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 220),
+            child: Text(
+              aiOutcomeText(r.outcome),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: Fonts.sans(size: 13.5, color: failed ? p.accent : p.muted),
+            ),
           ),
         ],
       ),
@@ -110,21 +118,48 @@ class AiJournalView extends StatelessWidget {
     ),
   );
 
+  Widget _failure(Pal p) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        state.error!,
+        key: const ValueKey('ai-journal-error'),
+        style: Fonts.sans(size: 13.5, color: p.accent),
+      ),
+      if (state.rows.isEmpty) ...[
+        const SizedBox(height: 16),
+        Btn(
+          key: const ValueKey('ai-journal-retry'),
+          label: t('Réessayer'),
+          onTap: state.loading ? null : state.load,
+        ),
+      ],
+    ],
+  );
+
+  Widget _empty(Pal p) => Text(
+    t('Aucun envoi pour l’instant.'),
+    key: const ValueKey('ai-journal-empty'),
+    style: Fonts.sans(size: 13.5, color: p.dim),
+  );
+
+  Widget _loading(Pal p) => Text(
+    t('Chargement…'),
+    key: const ValueKey('ai-journal-loading'),
+    style: Fonts.sans(size: 13.5, color: p.dim),
+  );
+
   @override
   Widget build(BuildContext context) {
     final p = context.pal;
+    final empty = state.loaded && state.rows.isEmpty && state.error == null;
     return Column(
       key: const ValueKey('ai-journal-view'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (state.error != null)
-          Text(state.error!, style: Fonts.sans(size: 13.5, color: p.accent)),
-        if (state.loaded && state.rows.isEmpty)
-          Text(
-            t('Aucun envoi pour l’instant.'),
-            key: const ValueKey('ai-journal-empty'),
-            style: Fonts.sans(size: 13.5, color: p.dim),
-          ),
+        if (!state.loaded) _loading(p),
+        if (state.error != null) _failure(p),
+        if (empty) _empty(p),
         for (var i = 0; i < state.rows.length; i++) _row(p, i, state.rows[i]),
         if (state.rows.isNotEmpty) _footer(context),
       ],

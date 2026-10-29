@@ -16,40 +16,57 @@ class AiJournalState extends ChangeNotifier {
   bool loading = false;
   bool hasMore = false;
   String? error;
+  int _generation = 0;
   bool _disposed = false;
 
   AiJournalState(this.admin);
 
-  /// Charge la première page (les plus récentes).
+  /// Charge la première page (les plus récentes) ; une lecture déjà en vol devient caduque.
   Future<void> load() => _fetch(replace: true);
 
   /// Ajoute la page suivante, après la dernière ligne connue.
   Future<void> more() => _fetch(replace: false);
 
-  /// Efface tout le journal puis le relit.
+  /// Efface tout le journal puis le relit ; l'erreur d'un effacement raté reste affichée.
   Future<void> clear() async {
+    _generation++;
+    loading = false;
+    String? failure;
     try {
       await admin.clearJournal();
-      error = null;
     } on Object catch (e) {
-      error = engineErrorText(e);
+      failure = engineErrorText(e);
     }
     await load();
+    if (failure == null) return;
+    error = failure;
+    _changed();
   }
 
   Future<void> _fetch({required bool replace}) async {
-    if (loading) return;
+    if (!replace && (loading || rows.isEmpty)) return;
+    final generation = replace ? ++_generation : _generation;
     loading = true;
     _changed();
+    final before = replace ? null : rows.last.id;
+    List<AiJournalRow>? page;
+    String? failure;
     try {
-      final before = replace || rows.isEmpty ? null : rows.last.id;
-      final page = await admin.journal(limit: aiJournalPage, before: before);
-      rows = replace ? page : [...rows, ...page];
-      hasMore = page.length == aiJournalPage;
-      error = null;
+      page = await admin.journal(limit: aiJournalPage + 1, before: before);
     } on Object catch (e) {
-      error = engineErrorText(e);
+      failure = engineErrorText(e);
     }
+    if (generation != _generation) return;
+    _apply(page, failure, replace);
+  }
+
+  void _apply(List<AiJournalRow>? page, String? failure, bool replace) {
+    if (page != null) {
+      final kept = page.take(aiJournalPage).toList();
+      rows = replace ? kept : [...rows, ...kept];
+      hasMore = page.length > aiJournalPage;
+    }
+    error = failure;
     loading = false;
     loaded = true;
     _changed();

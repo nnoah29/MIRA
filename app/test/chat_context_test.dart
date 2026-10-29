@@ -77,4 +77,14 @@ void main() {
     final texts = (req['messages'] as List).map((m) => m['text']).toList();
     expect(texts, ['q2']);
   });
+
+  test('long_subject_is_capped_in_the_label_but_whole_in_the_text', () {
+    final subject = 'S' * 500;
+    final input = ChatContextInput(subject: subject, body: 'corps');
+    final req = buildChatStart(history: [me('Résume')], input: input);
+    final part = (req['context'] as List).single as Map;
+    expect((part['label'] as String).length, lessThanOrEqualTo(200));
+    expect(part['label'], startsWith('SSS'));
+    expect(part['text'], contains(subject));
+  });
 }

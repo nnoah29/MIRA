@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:mira/engine/engine_client.dart';
+import 'package:mira/theme/app_theme.dart';
 
 import 'ai_settings_harness.dart';
 import 'fake_ai_engine.dart';
@@ -42,6 +46,17 @@ Future<void> tapVisible(WidgetTester tester, String key) async {
   await tester.pumpAndSettle();
 }
 
+class HeldEngine extends FakeAiEngine {
+  final gate = Completer<void>();
+
+  @override
+  Future<Map<String, dynamic>> call(Map<String, dynamic> request) async {
+    final op = (request['request'] as Map)['op'];
+    if (op == 'list_ai_journal') await gate.future;
+    return super.call(request);
+  }
+}
+
 String rowText(WidgetTester tester, int i) => tester
     .widgetList<Text>(
       find.descendant(
@@ -79,7 +94,7 @@ void main() {
     final engine = await openJournal(tester, [
       for (var i = 0; i < 60; i++) entry(i),
     ]);
-    expect(engine.requestsOf('list_ai_journal').single['limit'], 50);
+    expect(engine.requestsOf('list_ai_journal').single['limit'], 51);
     expect(byKey('ai-journal-row-49'), findsOneWidget);
     expect(byKey('ai-journal-row-50'), findsNothing);
     await tapVisible(tester, 'ai-journal-more');
@@ -140,5 +155,109 @@ void main() {
     await tester.pumpAndSettle();
     expect(byKey('ai-journal-view'), findsNothing);
     expect(byKey('ai-tab-openai'), findsOneWidget);
+  });
+
+  testWidgets('failed_first_load_shows_the_error_and_a_retry_button', (
+    tester,
+  ) async {
+    final engine = FakeAiEngine()
+      ..journal.add(entry(0))
+      ..failOpName = 'list_ai_journal'
+      ..failOp = const EngineException('server.ai_unavailable', '');
+    await pumpSettings(tester, using: engine);
+    await tester.tap(find.text('JOURNAL'));
+    await tester.pumpAndSettle();
+    expect(find.text('Service d’IA indisponible'), findsOneWidget);
+    expect(byKey('ai-journal-empty'), findsNothing);
+    expect(find.text('Aucun envoi pour l’instant.'), findsNothing);
+    engine.failOp = null;
+    await tapKey(tester, 'ai-journal-retry');
+    expect(byKey('ai-journal-row-0'), findsOneWidget);
+    expect(byKey('ai-journal-retry'), findsNothing);
+    expect(find.text('Service d’IA indisponible'), findsNothing);
+  });
+
+  testWidgets('loading_text_is_shown_before_the_first_page', (tester) async {
+    final engine = HeldEngine()..journal.add(entry(0));
+    await pumpSettings(tester, using: engine);
+    await tester.tap(find.text('JOURNAL'));
+    await tester.pump();
+    expect(byKey('ai-journal-loading'), findsOneWidget);
+    expect(byKey('ai-journal-empty'), findsNothing);
+    engine.gate.complete();
+    await tester.pumpAndSettle();
+    expect(byKey('ai-journal-loading'), findsNothing);
+    expect(byKey('ai-journal-row-0'), findsOneWidget);
+  });
+
+  testWidgets('exactly_one_page_offers_no_show_more_button', (tester) async {
+    await openJournal(tester, [for (var i = 0; i < 50; i++) entry(i)]);
+    expect(byKey('ai-journal-row-49'), findsOneWidget);
+    expect(byKey('ai-journal-more'), findsNothing);
+  });
+
+  testWidgets('one_row_past_a_page_offers_show_more_for_that_row', (
+    tester,
+  ) async {
+    await openJournal(tester, [for (var i = 0; i < 51; i++) entry(i)]);
+    expect(byKey('ai-journal-row-50'), findsNothing);
+    await tapVisible(tester, 'ai-journal-more');
+    expect(byKey('ai-journal-row-50'), findsOneWidget);
+    expect(byKey('ai-journal-more'), findsNothing);
+  });
+
+  testWidgets('long_outcome_is_ellipsized_and_keeps_the_left_column', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(420, 2400));
+    await openJournal(tester, [
+      entry(0, outcome: 'incompatible_state.ai_content_not_allowed'),
+    ]);
+    expect(tester.takeException(), isNull);
+    final outcome = tester.widget<Text>(
+      find.descendant(
+        of: byKey('ai-journal-row-0'),
+        matching: find.text(
+          'Ce service d’IA n’est pas autorisé à recevoir ce type de contenu',
+        ),
+      ),
+    );
+    expect(outcome.overflow, TextOverflow.ellipsis);
+    final details = tester.getSize(
+      find.descendant(
+        of: byKey('ai-journal-row-0'),
+        matching: find.textContaining('caractères'),
+      ),
+    );
+    expect(details.height, lessThan(20));
+  });
+
+  testWidgets('accent_color_marks_failures_only', (tester) async {
+    await openJournal(tester, [
+      entry(0, outcome: 'end_turn'),
+      entry(1, outcome: 'max_tokens'),
+      entry(2, outcome: 'cancelled'),
+      entry(3, outcome: 'interrupted'),
+      entry(4, outcome: 'server.ai_unavailable'),
+    ]);
+    final pal = tester.element(byKey('ai-journal-view')).pal;
+    Color? colorAt(String text) => tester
+        .widget<Text>(
+          find.descendant(
+            of: find.byType(Container),
+            matching: find.text(text),
+          ),
+        )
+        .style
+        ?.color;
+    for (final calm in [
+      'Terminé',
+      'Coupé : limite de longueur',
+      'Annulé',
+      'Interrompu',
+    ]) {
+      expect(colorAt(calm), pal.muted, reason: calm);
+    }
+    expect(colorAt('Service d’IA indisponible'), pal.accent);
   });
 }

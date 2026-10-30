@@ -10,7 +10,7 @@ pub struct ContractVersion {
 }
 
 /// Version du contrat implémentée par ce moteur.
-pub const CONTRACT_VERSION: ContractVersion = ContractVersion { major: 1, minor: 0 };
+pub const CONTRACT_VERSION: ContractVersion = ContractVersion { major: 1, minor: 3 };
 
 impl ContractVersion {
     /// Dit si un client écrit pour `client` peut parler à ce moteur.

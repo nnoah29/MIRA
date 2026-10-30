@@ -23,6 +23,7 @@ import 'label_admin.dart';
 import 'engine_settings_admin.dart';
 import 'event_routes.dart';
 import 'label_settings_admin.dart';
+import 'ai_admin.dart';
 import 'template_admin.dart';
 import 'local_label_admin.dart';
 import 'rule_admin.dart';
@@ -141,6 +142,9 @@ class EngineMailSource implements MailSource {
 
   @override
   TemplateAdmin get templateAdmin => TemplateAdmin(client);
+
+  @override
+  AiAdmin get aiAdmin => AiAdmin(client);
 
   final StreamController<void> _engineSettings = StreamController.broadcast();
   final StreamController<void> _templateChanges = StreamController.broadcast();

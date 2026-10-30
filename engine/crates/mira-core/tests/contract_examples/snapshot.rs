@@ -7,8 +7,8 @@ use mira_core::api::{Request, Response};
 use serde_json::Value;
 
 use super::{
-    Named, all_responses, label_settings_domain, local_label_domain, request_name, request_texts,
-    rule_domain, settings_domain, sync_domain, system_label_domain, template_domain,
+    Named, ai_domain, all_responses, label_settings_domain, local_label_domain, request_name,
+    request_texts, rule_domain, settings_domain, sync_domain, system_label_domain, template_domain,
     write_requests, write_responses,
 };
 
@@ -37,6 +37,7 @@ fn named_requests() -> Vec<Named<Request>> {
         .chain(label_settings_domain::requests())
         .chain(settings_domain::requests())
         .chain(template_domain::requests())
+        .chain(ai_domain::requests())
         .collect()
 }
 
@@ -51,6 +52,7 @@ fn named_responses() -> Vec<Named<Response>> {
         .chain(label_settings_domain::responses())
         .chain(settings_domain::responses())
         .chain(template_domain::responses())
+        .chain(ai_domain::responses())
         .collect()
 }
 
@@ -72,5 +74,5 @@ pub fn current_snapshot() -> Value {
     for (name, response) in named_responses() {
         responses.insert(name, serde_json::to_value(&response).unwrap());
     }
-    serde_json::json!({ "contract": "1.0", "requests": requests, "responses": responses })
+    serde_json::json!({ "contract": "1.3", "requests": requests, "responses": responses })
 }

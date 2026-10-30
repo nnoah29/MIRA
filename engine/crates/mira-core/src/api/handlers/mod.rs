@@ -2,6 +2,7 @@
 
 pub(crate) mod account;
 pub(crate) mod action;
+pub(crate) mod ai;
 pub(crate) mod auth;
 pub(crate) mod compose;
 pub(crate) mod engine;

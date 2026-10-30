@@ -1763,6 +1763,146 @@ void main() {
       store.dispose();
     });
 
+    Future<(MailStore, FakeEngine)> startWithDraft(WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final fake = FakeEngine();
+      fake.drafts['dr1'] = {
+        'id': 'dr1',
+        'account': 'acc1',
+        'identity': 'id1',
+        'to': [],
+        'cc': [],
+        'bcc': [],
+        'subject': 'Brouillon à jeter',
+        'body_text': 'texte',
+        'body_html': null,
+        'attachments': [],
+        'in_reply_to': null,
+        'state': {'type': 'editing'},
+        'updated_at': 5000,
+      };
+      final src = await tester.runAsync(() => EngineMailSource.load(fake));
+      final store = MailStore(prefs, source: src);
+      expect(store.mails.where((m) => m.id == 'draft:dr1'), isNotEmpty);
+      return (store, fake);
+    }
+
+    testWidgets('supprimer un brouillon de la liste le supprime du moteur', (
+      tester,
+    ) async {
+      final (store, fake) = await startWithDraft(tester);
+      store.selectFolder('drafts');
+      store.sel.add('draft:dr1');
+      store.trash();
+      expect(store.mails.where((m) => m.id == 'draft:dr1'), isEmpty);
+      await tester.pump(const Duration(seconds: 7));
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      expect(fake.composed.last['op'], 'delete_draft');
+      expect(fake.composed.last['draft'], 'dr1');
+      expect(fake.drafts, isEmpty);
+      store.dispose();
+    });
+
+    testWidgets('archiver ou signaler un brouillon le laisse en place', (
+      tester,
+    ) async {
+      final (store, fake) = await startWithDraft(tester);
+      store.selectFolder('drafts');
+      store.sel.add('draft:dr1');
+      store.archive();
+      store.sel.add('draft:dr1');
+      store.spam();
+      expect(store.toasts.last.err, isTrue);
+      await tester.pump(const Duration(seconds: 7));
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      final draft = store.mails.singleWhere((m) => m.id == 'draft:dr1');
+      expect(draft.folder, 'drafts');
+      expect(fake.actions, isEmpty);
+      store.dispose();
+    });
+
+    testWidgets('favori et lu/non lu ne s\'appliquent pas à un brouillon', (
+      tester,
+    ) async {
+      final (store, fake) = await startWithDraft(tester);
+      store.selectFolder('drafts');
+      final draft = store.mails.singleWhere((m) => m.id == 'draft:dr1');
+      final unread = draft.unread;
+      store.toggleStar(draft.id);
+      expect(draft.starred, isFalse);
+      expect(store.toasts.last.err, isTrue);
+      store.sel.add(draft.id);
+      store.toggleRead();
+      expect(draft.unread, unread);
+      expect(store.toasts.last.err, isTrue);
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      expect(fake.actions, isEmpty);
+      store.dispose();
+    });
+
+    test(
+      'retirer le favori depuis la vue Favoris passe par le moteur',
+      () async {
+        final (store, fake, conv) = await start();
+        store.toggleStar(conv.id);
+        await settle();
+        store.selectFolder('starred');
+        expect(store.visible(), contains(conv));
+        store.toggleStar(conv.id);
+        await settle();
+        expect(fake.actions.last['kind'], {
+          'type': 'mark_flagged',
+          'flagged': false,
+        });
+        store.dispose();
+      },
+    );
+
+    testWidgets('poser un libellé sur un brouillon ne change rien', (
+      tester,
+    ) async {
+      final (store, fake) = await startWithDraft(tester);
+      store.selectFolder('drafts');
+      store.sel.add('draft:dr1');
+      store.toggleLabel('mb-other');
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      final draft = store.mails.singleWhere((m) => m.id == 'draft:dr1');
+      expect(draft.labels, isEmpty);
+      expect(fake.actions, isEmpty);
+      expect(store.toasts.last.err, isTrue);
+      store.dispose();
+    });
+
+    testWidgets('annuler la suppression garde le brouillon dans le moteur', (
+      tester,
+    ) async {
+      final (store, fake) = await startWithDraft(tester);
+      store.selectFolder('drafts');
+      store.sel.add('draft:dr1');
+      store.trash();
+      store.toasts.last.cb!();
+      await tester.pump(const Duration(seconds: 7));
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      expect(fake.composed.where((c) => c['op'] == 'delete_draft'), isEmpty);
+      expect(store.mails.where((m) => m.id == 'draft:dr1'), isNotEmpty);
+      store.dispose();
+    });
+
+    testWidgets('vider les brouillons supprime aussi ceux du moteur', (
+      tester,
+    ) async {
+      final (store, fake) = await startWithDraft(tester);
+      store.selectFolder('drafts');
+      store.emptyFolder();
+      await tester.pump(const Duration(seconds: 7));
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      expect(fake.actions.last['op'], 'empty_mailbox');
+      expect(fake.composed.last['op'], 'delete_draft');
+      expect(fake.drafts, isEmpty);
+      store.dispose();
+    });
+
     test('favori et lu/non lu passent par le moteur', () async {
       final (store, fake, conv) = await start();
       store.toggleStar(conv.id);

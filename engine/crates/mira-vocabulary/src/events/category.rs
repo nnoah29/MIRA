@@ -21,4 +21,5 @@ pub enum EventCategory {
     Label,
     Settings,
     Template,
+    Ai,
 }

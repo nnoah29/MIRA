@@ -1,7 +1,9 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 //! Trousseau chiffré (Android) : aller-retour, fichier opaque, mauvaise clé refusée.
 
-use mira_assembly::mira_vocabulary::{AccountId, ProfileId, SecretKind, SecretRef};
+use mira_assembly::mira_vocabulary::{
+    AccountId, AiConnectionId, AiSecretRef, ProfileId, SecretKind, SecretRef,
+};
 use mira_assembly::ports::{SecretStore, SecretValue};
 use mira_bridge::file_secrets::FileSecretStore;
 
@@ -64,4 +66,39 @@ fn the_file_never_contains_the_secret_and_another_key_cannot_read_it() {
     let intruder = FileSecretStore::new(path, &[2u8; 32]).unwrap();
     assert!(intruder.get(&secret_ref(SecretKind::Password)).is_err());
     assert!(FileSecretStore::new(dir.path().join("x"), &[0u8; 16]).is_err());
+}
+
+#[test]
+fn file_store_roundtrips_an_ai_secret() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("secrets.bin");
+    let key = [9u8; 32];
+    let ai = AiSecretRef {
+        profile: ProfileId::from_raw("default"),
+        connection: AiConnectionId::from_raw("conn1"),
+    };
+    let store = FileSecretStore::new(path.clone(), &key).unwrap();
+    store
+        .put(&secret_ref(SecretKind::Password), &SecretValue::new("pw"))
+        .unwrap();
+    store.put(&ai, &SecretValue::new("sk-ai-key")).unwrap();
+    let reopened = FileSecretStore::new(path.clone(), &key).unwrap();
+    assert_eq!(reopened.get(&ai).unwrap().unwrap().expose(), "sk-ai-key");
+    assert_eq!(
+        reopened
+            .get(&secret_ref(SecretKind::Password))
+            .unwrap()
+            .unwrap()
+            .expose(),
+        "pw"
+    );
+    assert!(
+        !std::fs::read(&path)
+            .unwrap()
+            .windows(9)
+            .any(|w| w == b"sk-ai-key")
+    );
+    reopened.delete(&ai).unwrap();
+    reopened.delete(&ai).unwrap();
+    assert!(reopened.get(&ai).unwrap().is_none());
 }

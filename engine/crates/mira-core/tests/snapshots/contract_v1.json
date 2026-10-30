@@ -1,5 +1,5 @@
 {
-  "contract": "1.0",
+  "contract": "1.3",
   "requests": {
     "account.add_account": {
       "domain": "account",
@@ -172,6 +172,132 @@
       "request": {
         "action": "action-1",
         "op": "undo_action"
+      }
+    },
+    "ai.acknowledge_ai_consent": {
+      "domain": "ai",
+      "request": {
+        "connection": "ai-1",
+        "kinds": [
+          "mail_message",
+          "mail_list"
+        ],
+        "op": "acknowledge_ai_consent"
+      }
+    },
+    "ai.add_ai_connection": {
+      "domain": "ai",
+      "request": {
+        "base_url": "https://ia.example.org/v1",
+        "label": "Mon service",
+        "op": "add_ai_connection",
+        "provider": "generic"
+      }
+    },
+    "ai.clear_ai_api_key": {
+      "domain": "ai",
+      "request": {
+        "connection": "ai-1",
+        "op": "clear_ai_api_key"
+      }
+    },
+    "ai.clear_ai_journal": {
+      "domain": "ai",
+      "request": {
+        "op": "clear_ai_journal"
+      }
+    },
+    "ai.list_ai_connections": {
+      "domain": "ai",
+      "request": {
+        "op": "list_ai_connections"
+      }
+    },
+    "ai.list_ai_journal": {
+      "domain": "ai",
+      "request": {
+        "before": "journal-1",
+        "limit": 50,
+        "op": "list_ai_journal"
+      }
+    },
+    "ai.list_ai_models": {
+      "domain": "ai",
+      "request": {
+        "connection": "ai-1",
+        "op": "list_ai_models",
+        "refresh": true
+      }
+    },
+    "ai.list_ai_providers": {
+      "domain": "ai",
+      "request": {
+        "op": "list_ai_providers"
+      }
+    },
+    "ai.remove_ai_connection": {
+      "domain": "ai",
+      "request": {
+        "connection": "ai-1",
+        "op": "remove_ai_connection"
+      }
+    },
+    "ai.set_ai_allowed_content": {
+      "domain": "ai",
+      "request": {
+        "connection": "ai-1",
+        "kinds": [
+          "mail_message"
+        ],
+        "op": "set_ai_allowed_content"
+      }
+    },
+    "ai.set_ai_api_key": {
+      "domain": "ai",
+      "request": {
+        "connection": "ai-1",
+        "key": "sk-exemple",
+        "op": "set_ai_api_key"
+      }
+    },
+    "ai.set_ai_masking": {
+      "domain": "ai",
+      "request": {
+        "connection": "ai-1",
+        "masking": {
+          "categories": [
+            "iban",
+            "card",
+            "secret",
+            "otp"
+          ],
+          "mode": "mask"
+        },
+        "op": "set_ai_masking"
+      }
+    },
+    "ai.set_default_ai_connection": {
+      "domain": "ai",
+      "request": {
+        "connection": "ai-1",
+        "op": "set_default_ai_connection"
+      }
+    },
+    "ai.test_ai_connection": {
+      "domain": "ai",
+      "request": {
+        "connection": "ai-1",
+        "op": "test_ai_connection"
+      }
+    },
+    "ai.update_ai_connection": {
+      "domain": "ai",
+      "request": {
+        "base_url": null,
+        "connection": "ai-1",
+        "default_model": "model-a",
+        "label": "Mon service",
+        "op": "update_ai_connection"
       }
     },
     "auth.cancel_oauth": {
@@ -1293,6 +1419,160 @@
       ],
       "type": "accounts"
     },
+    "ai.connection": {
+      "data": {
+        "data": {
+          "allowed_kinds": [
+            "mail_message"
+          ],
+          "base_url": "https://ia.example.org/v1",
+          "consent_at": 1700000000000,
+          "default_model": "model-a",
+          "has_key": true,
+          "id": "ai-1",
+          "is_default": true,
+          "label": "Mon service",
+          "masking": {
+            "categories": [
+              "iban",
+              "card",
+              "secret",
+              "otp"
+            ],
+            "mode": "mask"
+          },
+          "models": {
+            "fetched_at": 1700000000000,
+            "models": [
+              {
+                "created_at": 1690000000000,
+                "id": "model-a"
+              }
+            ]
+          },
+          "provider": "generic"
+        },
+        "type": "connection"
+      },
+      "type": "ai"
+    },
+    "ai.connections": {
+      "data": {
+        "data": [
+          {
+            "allowed_kinds": [
+              "mail_message"
+            ],
+            "base_url": "https://ia.example.org/v1",
+            "consent_at": 1700000000000,
+            "default_model": "model-a",
+            "has_key": true,
+            "id": "ai-1",
+            "is_default": true,
+            "label": "Mon service",
+            "masking": {
+              "categories": [
+                "iban",
+                "card",
+                "secret",
+                "otp"
+              ],
+              "mode": "mask"
+            },
+            "models": {
+              "fetched_at": 1700000000000,
+              "models": [
+                {
+                  "created_at": 1690000000000,
+                  "id": "model-a"
+                }
+              ]
+            },
+            "provider": "generic"
+          }
+        ],
+        "type": "connections"
+      },
+      "type": "ai"
+    },
+    "ai.done": {
+      "data": {
+        "type": "done"
+      },
+      "type": "ai"
+    },
+    "ai.journal": {
+      "data": {
+        "data": [
+          {
+            "at": 1700000000000,
+            "chars": 1234,
+            "connection": "ai-1",
+            "id": "journal-1",
+            "input_tokens": 321,
+            "kinds": [
+              "mail_message"
+            ],
+            "local": false,
+            "masked": 2,
+            "model": "model-a",
+            "operation": "op-1",
+            "outcome": "end_turn",
+            "output_tokens": 45,
+            "parts": 1,
+            "provider": "generic",
+            "tools": [
+              {
+                "count": 2,
+                "name": "search_messages"
+              }
+            ]
+          }
+        ],
+        "type": "journal"
+      },
+      "type": "ai"
+    },
+    "ai.models": {
+      "data": {
+        "data": {
+          "fetched_at": 1700000000000,
+          "models": [
+            {
+              "created_at": 1690000000000,
+              "id": "model-a"
+            }
+          ]
+        },
+        "type": "models"
+      },
+      "type": "ai"
+    },
+    "ai.providers": {
+      "data": {
+        "data": [
+          {
+            "auth": "bearer",
+            "base_url": "https://ia.example.org/v1",
+            "base_url_editable": true,
+            "display_name": "Service compatible",
+            "format": "open_ai_chat",
+            "id": "generic",
+            "model_exclusions": [
+              "embed"
+            ],
+            "models_path": "/models",
+            "quirks": {
+              "max_tokens_field": "max_tokens"
+            },
+            "static_headers": [],
+            "supports_tools": true
+          }
+        ],
+        "type": "providers"
+      },
+      "type": "ai"
+    },
     "attachments": {
       "data": [
         {
@@ -1315,7 +1595,7 @@
         ],
         "version": {
           "major": 1,
-          "minor": 0
+          "minor": 3
         }
       },
       "type": "contract_info"

@@ -8,11 +8,11 @@ use super::fixture::{FOLDERS_USER, Fixture};
 use super::sync_calls::{finished_passes, wait_for_events};
 use super::syncing::{days_ago, deliver_many, mail, start_syncing};
 
-/// Attend la première passe terminée et les deux connexions du compte (travail et IDLE), au plus 15 s
+/// Attend la première passe terminée, les deux connexions du compte (travail et IDLE) et l'IDLE établi côté serveur, au plus 15 s
 async fn wait_for_listening(f: &Fixture) {
     wait_for_events(&f.engine, |k| finished_passes(k) >= 1).await;
     let wait = async {
-        while f.imap.active_connections() != 2 {
+        while f.imap.active_connections() != 2 || f.imap.idle_sessions() == 0 {
             tokio::time::sleep(std::time::Duration::from_millis(10)).await;
         }
     };

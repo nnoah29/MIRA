@@ -10,6 +10,7 @@ use serde_json::{Value, to_value};
 use crate::envelope::{failure, internal_failure, success};
 use crate::session::{current, install, take};
 
+pub use crate::chat_feed::pump_chat;
 pub use crate::events_feed::pump_events;
 
 const SHUTDOWN_DEADLINE: Duration = Duration::from_secs(5);

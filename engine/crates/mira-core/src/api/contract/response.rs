@@ -6,6 +6,7 @@ use mira_vocabulary::{
 };
 use serde::{Deserialize, Serialize};
 
+use super::ai_responses::AiResponse;
 use super::label_settings_responses::LabelSettingsResponse;
 use super::local_label_responses::LocalLabelResponse;
 use super::read_responses::{ExportReport, IntegrityReport, RawSourceView, ThreadView};
@@ -96,4 +97,5 @@ pub enum Response {
     LabelSettings(LabelSettingsResponse),
     Settings(SettingsResponse),
     Template(TemplateResponse),
+    Ai(AiResponse),
 }

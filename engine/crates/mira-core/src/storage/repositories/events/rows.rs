@@ -51,5 +51,6 @@ pub(super) fn category_name(category: EventCategory) -> &'static str {
         EventCategory::Label => "label",
         EventCategory::Settings => "settings",
         EventCategory::Template => "template",
+        EventCategory::Ai => "ai",
     }
 }

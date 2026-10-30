@@ -10,6 +10,7 @@ import '../data/format.dart';
 import '../data/html_lite.dart';
 import '../data/models.dart';
 import '../data/seed.dart';
+import '../engine/ai_admin.dart';
 import '../engine/blocks_html.dart';
 import '../engine/compose_admin.dart';
 import '../engine/engine_client.dart';
@@ -30,6 +31,10 @@ import '../theme/wall_theme.dart';
 import '../theme/app_theme.dart';
 import 'arrival_gate.dart';
 import 'assistant.dart';
+import 'chat_context.dart';
+import 'chat_controller.dart';
+import 'chat_message.dart';
+import '../ui/chat_markdown.dart' show plainFromMarkdown;
 import 'contacts.dart';
 import 'folder_map.dart';
 import 'image_policy.dart';
@@ -38,6 +43,8 @@ import 'mail_notifier.dart';
 import 'unsubscribe.dart';
 import '../i18n/engine_errors.dart';
 import '../i18n/i18n.dart';
+
+export 'chat_message.dart';
 
 enum PaneView { empty, read, compose, assistant, settings, addAccount }
 
@@ -49,23 +56,6 @@ class ToastItem {
   final bool err;
   bool out = false;
   ToastItem(this.id, this.msg, this.label, this.cb, this.err);
-}
-
-class ChatMsg {
-  final String role; // 'me' | 'ai'
-  bool done;
-  String shown;
-  String text;
-  List<String>? draft;
-  List<String>? refs;
-  ChatMsg({
-    required this.role,
-    this.done = true,
-    this.shown = '',
-    required this.text,
-    this.draft,
-    this.refs,
-  });
 }
 
 class ComposeState {
@@ -160,7 +150,27 @@ class MailStore extends ChangeNotifier {
 
   /// Historique des destinataires et noms choisis.
   late final ContactBook contactBook;
-  MailStore(this.prefs, {bool watchWallpaper = false, this.source}) {
+
+  /// Administration de l'IA fournie directement (sinon celle de la source) ; sert aux essais.
+  final AiAdmin? aiAdminOverride;
+
+  /// Administration de l'IA du moteur (`null` : démonstration).
+  AiAdmin? get aiAdmin => aiAdminOverride ?? source?.aiAdmin;
+
+  /// Fil de l'assistant (moteur d'IA ou repli de démonstration).
+  late final ChatController chatCtl = ChatController(
+    admin: () => aiAdmin,
+    welcome: _welcome,
+    demoAnswer: (q) => answerTo(this, q),
+    after: _after,
+  )..addListener(notifyListeners);
+
+  MailStore(
+    this.prefs, {
+    bool watchWallpaper = false,
+    this.source,
+    this.aiAdminOverride,
+  }) {
     contactBook = ContactBook.decode(
       prefs.getString('contactNames'),
       prefs.getString('contactHistory'),
@@ -232,7 +242,7 @@ class MailStore extends ChangeNotifier {
     } else {
       mails = source != null ? (_boxes[active.id] ?? []) : seedAccount(active);
     }
-    chat = [_welcome()];
+    chatCtl.reset();
     if (source != null) {
       wakeSnoozed();
       _armWake();
@@ -313,6 +323,7 @@ class MailStore extends ChangeNotifier {
   String sort = 'new';
   final Set<String> sel = <String>{};
   String? open;
+  String? ctxOff;
   PaneView view = PaneView.empty;
   late String theme;
 
@@ -354,8 +365,8 @@ class MailStore extends ChangeNotifier {
 
   /// Signature : celle de l'utilisateur, sinon la formule par défaut dans la langue active.
   String get sig => prefs.getString('sig') ?? t('Cordialement,\nNoah');
-  late List<ChatMsg> chat;
-  bool busy = false;
+  List<ChatMsg> get chat => chatCtl.chat;
+  bool get busy => chatCtl.busy;
   ComposeState? c;
   String? freshId;
   bool navOpen = false;
@@ -406,6 +417,7 @@ class MailStore extends ChangeNotifier {
       t.cancel();
     }
     c?.timer?.cancel();
+    chatCtl.dispose();
     super.dispose();
   }
 
@@ -821,7 +833,7 @@ class MailStore extends ChangeNotifier {
   void _reseedDemo() {
     _boxes.clear();
     mails = unified ? _mergedBoxes() : seedAccount(active);
-    chat = [_welcome()];
+    chatCtl.reset();
     sel.clear();
     open = null;
     if (view == PaneView.read) view = PaneView.empty;
@@ -853,8 +865,7 @@ class MailStore extends ChangeNotifier {
     open = null;
     view = PaneView.empty;
     c = null;
-    chat = [_welcome()];
-    busy = false;
+    chatCtl.reset();
     incIdx = 0;
     freshId = null;
     start();
@@ -921,8 +932,7 @@ class MailStore extends ChangeNotifier {
     open = null;
     view = PaneView.empty;
     navOpen = false;
-    chat = [_welcome()];
-    busy = false;
+    chatCtl.reset();
   }
 
   void switchAccount(String id) {
@@ -1531,7 +1541,9 @@ class MailStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  void moveTo(List<String> ids, String to, String verb, [String? verbPl]) {
+  void moveTo(List<String> wanted, String to, String verb, [String? verbPl]) {
+    final ids = _withoutEngineDrafts(wanted);
+    if (ids.isEmpty) return;
     final idx = visible().indexWhere((m) => m.id == open);
     final prev = ids.map((id) {
       final m = byId(id)!;
@@ -1567,6 +1579,7 @@ class MailStore extends ChangeNotifier {
     sel.clear();
     _afterChange(idx);
     final pending = _after(6500, () {
+      _deleteEngineDrafts(gone);
       _syncAction(gone, (a) => a.deleteForever);
     });
     toast(
@@ -1785,7 +1798,40 @@ class MailStore extends ChangeNotifier {
     if (ids.every((id) => byId(id)!.folder == 'trash')) {
       return removeForever(ids);
     }
-    moveTo(ids, 'trash', tkey('mis à la corbeille'));
+    final drafts = ids.where(_isEngineDraft).toList();
+    if (drafts.isNotEmpty) removeForever(drafts);
+    final rest = ids.where((id) => !_isEngineDraft(id)).toList();
+    if (rest.isEmpty) return;
+    moveTo(rest, 'trash', tkey('mis à la corbeille'));
+  }
+
+  /// Vrai pour un brouillon tenu par le moteur : aucun message serveur à déplacer, étiqueter ou marquer, seulement à supprimer.
+  bool _isEngineDraft(String id) => id.startsWith('draft:');
+
+  /// Écarte les brouillons du moteur d'une opération qui ne leur va pas, et prévient.
+  List<String> _withoutEngineDrafts(List<String> ids) {
+    final rest = ids.where((id) => !_isEngineDraft(id)).toList();
+    if (rest.length < ids.length) {
+      toast(
+        t('Action impossible sur un brouillon : ouvre-le ou supprime-le'),
+        err: true,
+      );
+    }
+    return rest;
+  }
+
+  /// Supprime du moteur les brouillons parmi ces messages (leur copie serveur part avec) ; relit le compte si le moteur refuse.
+  Future<void> _deleteEngineDrafts(List<Mail> ms) async {
+    final admin = source?.composer;
+    if (admin == null) return;
+    for (final m in ms.where((m) => _isEngineDraft(m.id))) {
+      try {
+        await admin.delete(m.id.substring('draft:'.length));
+      } catch (_) {
+        toast(t('Action non appliquée sur le serveur'), err: true);
+        await _reloadOnce(m.account);
+      }
+    }
   }
 
   /// Change l'état lu d'un message dans toutes ses copies (liste, recherche, libellés masqués) et dans les compteurs.
@@ -1822,9 +1868,10 @@ class MailStore extends ChangeNotifier {
   }
 
   void toggleRead() {
-    final ids = targets();
-    if (ids.isEmpty) return hint();
-    final ms = ids.map((i) => byId(i)!).toList();
+    final wanted = targets();
+    if (wanted.isEmpty) return hint();
+    final ms = _withoutEngineDrafts(wanted).map((i) => byId(i)!).toList();
+    if (ms.isEmpty) return;
     final allRead = ms.every((m) => !m.unread);
     for (final m in ms) {
       _setUnread(m, allRead);
@@ -1884,7 +1931,8 @@ class MailStore extends ChangeNotifier {
   void toggleLabel(String k) {
     final ids = targets();
     if (ids.isEmpty) return hint();
-    final all0 = ids.map((i) => byId(i)!).toList();
+    final all0 = _withoutEngineDrafts(ids).map((i) => byId(i)!).toList();
+    if (all0.isEmpty) return;
     final def = labelDef(k);
     if (def == null) return;
     if (def.local) return _toggleLocalLabel(k, all0);
@@ -2344,7 +2392,7 @@ class MailStore extends ChangeNotifier {
 
   void toggleStar([String? id]) {
     final m = byId(id ?? open);
-    if (m == null) return;
+    if (m == null || _withoutEngineDrafts([m.id]).isEmpty) return;
     m.starred = !m.starred;
     notifyListeners();
     _syncAction([m], (a) => a.flag(m.starred));
@@ -2728,7 +2776,10 @@ class MailStore extends ChangeNotifier {
     mails = mails.where((m) => !ids.contains(m.id)).toList();
     sel.clear();
     _afterChange(idx);
-    final pending = _after(6500, () => _emptyBoxes(actions, boxes));
+    final pending = _after(6500, () {
+      _deleteEngineDrafts(gone);
+      _emptyBoxes(actions, boxes);
+    });
     toast(
       t('Dossier vidé'),
       label: t('Annuler'),
@@ -3617,39 +3668,38 @@ class MailStore extends ChangeNotifier {
   }
 
   // ---- assistant ----
-  void clearChat() {
-    chat = chat.take(1).toList();
+  void clearChat() => chatCtl.clear();
+
+  Future<void> sendChat(String text) => chatCtl.send(text, chatInput());
+
+  Future<void> stopChat() => chatCtl.stop();
+
+  /// Dit si le mail ouvert a été retiré du contexte de l'assistant (valable pour ce mail seulement).
+  bool get ctxDropped => open != null && ctxOff == open;
+
+  /// Retire le mail ouvert du contexte de l'assistant.
+  void dropCtx() {
+    ctxOff = open;
     notifyListeners();
   }
 
-  void sendChat(String text) {
-    final t = text.trim();
-    if (t.isEmpty || busy) return;
-    chat.add(ChatMsg(role: 'me', text: t));
-    final ans = answerTo(this, t);
-    final msg = ChatMsg(
-      role: 'ai',
-      done: false,
-      text: ans.text,
-      draft: ans.draft,
-      refs: ans.refs,
-    );
-    chat.add(msg);
-    busy = true;
+  /// Remet le mail ouvert dans le contexte de l'assistant.
+  void restoreCtx() {
+    ctxOff = null;
     notifyListeners();
-    var i = 0;
-    void tick() {
-      i = (i + rand(2, 5).round()).clamp(0, msg.text.length);
-      msg.shown = clipText(msg.text, i);
-      if (i >= msg.text.length) {
-        msg.done = true;
-        busy = false;
-      }
-      notifyListeners();
-      if (!msg.done) _after(22, tick);
-    }
+  }
 
-    _after(rand(500, 900).round(), tick);
+  /// Mail ouvert tel que l'assistant le reçoit : métadonnées et texte brut.
+  ChatContextInput chatInput() {
+    final m = byId(open);
+    if (m == null || ctxDropped) return const ChatContextInput();
+    return ChatContextInput(
+      subject: m.subject,
+      from: '${m.from.name} <${m.from.email}>',
+      to: m.to.map((p) => '${p.name} <${p.email}>').join(', '),
+      date: DateTime.fromMillisecondsSinceEpoch(m.date).toIso8601String(),
+      body: plainOf(m.msgs.last.body),
+    );
   }
 
   void scheduleCleanup(List<String> ids) => _after(
@@ -3660,10 +3710,13 @@ class MailStore extends ChangeNotifier {
   void useDraft(int i) {
     final msg = chat[i];
     final m = byId(open);
-    if (msg.draft == null || m == null) return hint();
+    final text =
+        msg.draft?.join('\n\n') ??
+        (msg.fromEngine ? plainFromMarkdown(msg.text) : null);
+    if (text == null || m == null) return hint();
     view = PaneView.read;
     notifyListeners();
-    replyTo('reply', intro: msg.draft!.join('\n\n'));
+    replyTo('reply', intro: text);
   }
 
   void openRef(String id) {

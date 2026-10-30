@@ -2,32 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../data/format.dart';
+import '../data/models.dart';
 import '../state/assistant.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
+import 'ai_consent_dialog.dart';
+import 'ai_content_dialog.dart';
+import 'chat_markdown.dart';
+import 'chat_sources.dart';
+import 'chat_tool_chips.dart';
+import 'mail_ref.dart';
+import 'demo_banner.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
-
-/// `**gras**` + sauts de ligne.
-List<InlineSpan> _fmtTx(String t, TextStyle base, Pal p) {
-  final out = <InlineSpan>[];
-  final re = RegExp(r'\*\*(.+?)\*\*');
-  var i = 0;
-  for (final m in re.allMatches(t)) {
-    if (m.start > i) out.add(TextSpan(text: t.substring(i, m.start)));
-    out.add(
-      TextSpan(
-        text: m.group(1),
-        style: Fonts.sansWeight(base, FontWeight.w500).copyWith(color: p.text),
-      ),
-    );
-    i = m.end;
-  }
-  if (i < t.length) out.add(TextSpan(text: t.substring(i)));
-  return out;
-}
 
 class AssistantPanel extends StatefulWidget {
   const AssistantPanel({super.key});
@@ -45,7 +33,11 @@ class _AssistantPanelState extends State<AssistantPanel> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => focus.requestFocus());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      focus.requestFocus();
+      context.read<MailStore>().chatCtl.refresh();
+    });
   }
 
   @override
@@ -56,11 +48,91 @@ class _AssistantPanelState extends State<AssistantPanel> {
     super.dispose();
   }
 
-  void _send(MailStore s, [String? q]) {
+  Future<void> _send(MailStore s, [String? q]) async {
     final t = q ?? input.text;
     if (t.trim().isEmpty || s.busy) return;
     input.clear();
-    s.sendChat(t);
+    await s.sendChat(t);
+    if (!mounted) return;
+    await _askConsent(s);
+    if (!mounted) return s.chatCtl.declineContent();
+    await _askContent(s);
+  }
+
+  Future<void> _askConsent(MailStore s) async {
+    final chat = s.chatCtl;
+    final name = chat.consentProviderName;
+    if (chat.consentConnectionId == null || name == null) return;
+    final kinds = await showAiConsentDialog(
+      context,
+      name,
+      host: chat.consentHost,
+    );
+    if (kinds == null) return chat.declineConsent();
+    await chat.grantConsent(kinds);
+  }
+
+  /// Ouvre la boîte d'autorisation du type refusé à un outil ; si l'utilisateur accepte, la question repart.
+  Future<void> _authorize(MailStore s, ChatMsg msg, ToolActivity tool) async {
+    s.chatCtl.askToolAuthorization(msg, tool);
+    await _askContent(s);
+  }
+
+  Future<void> _askContent(MailStore s) async {
+    final chat = s.chatCtl;
+    final name = chat.contentProviderName;
+    if (chat.contentConnectionId == null || name == null) return;
+    final agreed = await showAiContentDialog(context, name, chat.contentKinds);
+    if (agreed) {
+      await chat.grantContent();
+    } else {
+      chat.declineContent();
+    }
+  }
+
+  /// Texte du bandeau de contexte : sujet du mail ouvert, mail retiré ou aucun message.
+  String _ctxLabel(MailStore s, String? subject) {
+    if (subject == null) {
+      return t(
+        ' · aucun message sélectionné. Clique sur un mail dans la liste.',
+      );
+    }
+    return s.ctxDropped
+        ? t(' · retiré : l’assistant ne voit pas ce mail.')
+        : ' · $subject';
+  }
+
+  /// Boutons du bandeau : ouvrir ou retirer le contexte, ou le rétablir une fois retiré.
+  List<Widget> _ctxActions(MailStore s, bool hasMail) {
+    if (!hasMail) return const [];
+    const pad = EdgeInsets.symmetric(horizontal: 10, vertical: 6);
+    if (s.ctxDropped) {
+      return [
+        Btn(
+          key: const ValueKey('ctx-restore'),
+          label: t('Rétablir'),
+          padding: pad,
+          fontSize: 9.5,
+          onTap: s.restoreCtx,
+        ),
+      ];
+    }
+    return [
+      Btn(
+        key: const ValueKey('ctx-open'),
+        label: t('Ouvrir'),
+        padding: pad,
+        fontSize: 9.5,
+        onTap: s.openCtx,
+      ),
+      const SizedBox(width: 6),
+      IBtn(
+        'x',
+        key: const ValueKey('ctx-drop'),
+        tip: t('Retirer le contexte'),
+        onTap: s.dropCtx,
+      ),
+    ];
   }
 
   @override
@@ -71,6 +143,7 @@ class _AssistantPanelState extends State<AssistantPanel> {
     final narrow = w <= 1100;
     final hp = narrow ? 16.0 : 32.0;
     final m = s.byId(s.open);
+    final demo = s.chatCtl.demo;
 
     // Défilement automatique en bas à chaque mise à jour du fil.
     final sig =
@@ -121,7 +194,12 @@ class _AssistantPanelState extends State<AssistantPanel> {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Mono(t('En ligne'), height: null),
+                      Mono(
+                        demo
+                            ? t('Démonstration')
+                            : (s.chatCtl.connectionLabel ?? t('En ligne')),
+                        height: null,
+                      ),
                     ],
                   ),
                 ],
@@ -137,6 +215,15 @@ class _AssistantPanelState extends State<AssistantPanel> {
             ],
           ),
         ),
+        if (demo)
+          Padding(
+            padding: EdgeInsets.fromLTRB(hp, 0, hp, 8),
+            child: DemoBanner(
+              onSettings: s.source == null
+                  ? null
+                  : () => s.showView(PaneView.settings),
+            ),
+          ),
         Container(
           margin: EdgeInsets.fromLTRB(hp, 4, hp, 0),
           child: DashedBox(
@@ -144,43 +231,22 @@ class _AssistantPanelState extends State<AssistantPanel> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             child: Row(
               children: [
-                Ico('inbox', color: p.muted),
+                KeyedSubtree(
+                  key: const ValueKey('ctx-icon'),
+                  child: Ico('inbox', color: p.muted),
+                ),
                 const SizedBox(width: 12),
+                Mono(t('Contexte'), color: p.accent, height: null),
                 Expanded(
-                  child: Text.rich(
-                    TextSpan(
-                      style: Fonts.sans(size: 14, color: p.muted),
-                      children: [
-                        WidgetSpan(
-                          alignment: PlaceholderAlignment.baseline,
-                          baseline: TextBaseline.alphabetic,
-                          child: Mono(
-                            t('Contexte'),
-                            color: p.accent,
-                            height: null,
-                          ),
-                        ),
-                        TextSpan(
-                          text: m != null
-                              ? ' · ${m.subject}'
-                              : t(
-                                  ' · aucun message sélectionné. Clique sur un mail dans la liste.',
-                                ),
-                        ),
-                      ],
-                    ),
+                  child: Text(
+                    _ctxLabel(s, m?.subject),
+                    key: const ValueKey('ctx-text'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Fonts.sans(size: 14, color: p.muted),
                   ),
                 ),
-                if (m != null)
-                  Btn(
-                    label: t('Ouvrir'),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    fontSize: 9.5,
-                    onTap: s.openCtx,
-                  ),
+                ..._ctxActions(s, m != null),
               ],
             ),
           ),
@@ -209,6 +275,7 @@ class _AssistantPanelState extends State<AssistantPanel> {
                           s.chat[i],
                           i,
                           maxW: (box.maxWidth * .88).clamp(0, 720).toDouble(),
+                          onAuthorize: (msg, tool) => _authorize(s, msg, tool),
                         ),
                       ),
                     ),
@@ -291,13 +358,23 @@ class _AssistantPanelState extends State<AssistantPanel> {
                   children: [
                     Ico('spark', size: 13, color: p.dim),
                     const SizedBox(width: 8),
-                    Mono(t('Réponses simulées'), height: null),
+                    Mono(
+                      demo ? t('Réponses simulées') : t('Réponses de l’IA'),
+                      height: null,
+                    ),
                     const Spacer(),
-                    Hov(
-                      onTap: s.busy ? null : () => _send(s),
-                      builder: (_, _) => Opacity(
-                        opacity: s.busy ? .4 : 1,
-                        child: Container(
+                    if (s.busy)
+                      Btn(
+                        key: const ValueKey('chat-stop'),
+                        icon: 'x',
+                        label: t('Arrêter'),
+                        onTap: s.stopChat,
+                      )
+                    else
+                      Hov(
+                        onTap: () => _send(s),
+                        builder: (_, _) => Container(
+                          key: const ValueKey('chat-send'),
                           width: 34,
                           height: 34,
                           color: p.accent,
@@ -305,7 +382,6 @@ class _AssistantPanelState extends State<AssistantPanel> {
                           child: Ico('send', color: p.onAccent),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -321,7 +397,19 @@ class _Bubble extends StatelessWidget {
   final ChatMsg msg;
   final int idx;
   final double maxW;
-  const _Bubble(this.msg, this.idx, {required this.maxW});
+  final void Function(ChatMsg msg, ToolActivity tool) onAuthorize;
+  const _Bubble(
+    this.msg,
+    this.idx, {
+    required this.maxW,
+    required this.onAuthorize,
+  });
+
+  /// Messages consultés par les outils que le magasin connaît ; les autres identifiants sont ignorés.
+  List<Mail> _known(MailStore s, ChatMsg msg) => [
+    for (final id in msg.sources)
+      if (s.byId(id) != null) s.byId(id)!,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -333,8 +421,9 @@ class _Bubble extends StatelessWidget {
       color: me ? p.text : p.muted,
       height: 1.65,
     );
-    final shown = me ? msg.text : (msg.done ? t(msg.text) : msg.shown);
-    final width = MediaQuery.sizeOf(context).width;
+    final shown = me
+        ? msg.text
+        : (msg.done ? (msg.fromEngine ? msg.text : t(msg.text)) : msg.shown);
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxW),
       child: IntrinsicWidth(
@@ -358,10 +447,44 @@ class _Bubble extends StatelessWidget {
               ),
               if (shown.isNotEmpty)
                 Text.rich(
-                  TextSpan(style: base, children: _fmtTx(shown, base, p)),
+                  TextSpan(
+                    style: base,
+                    children: me
+                        ? [TextSpan(text: shown)]
+                        : chatSpans(shown, base, p),
+                  ),
                 )
-              else
+              else if (!msg.done)
                 const _Typing(),
+              if (!me && msg.maskedCount > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    tn(
+                      msg.maskedCount,
+                      'donnée sensible masquée avant l’envoi',
+                      'données sensibles masquées avant l’envoi',
+                    ),
+                    key: const ValueKey('chat-masked-note'),
+                    style: Fonts.sans(size: 13, color: p.dim),
+                  ),
+                ),
+              if (!me && msg.note != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    msg.note!,
+                    style: Fonts.sans(size: 13, color: p.dim),
+                  ),
+                ),
+              if (!me && msg.tools.isNotEmpty)
+                ChatToolChips(
+                  tools: msg.tools,
+                  canAuthorize: s.chatCtl.canAuthorize(msg),
+                  onAuthorize: (tool) => onAuthorize(msg, tool),
+                ),
+              if (!me && msg.done && _known(s, msg).isNotEmpty)
+                ChatSources(_known(s, msg)),
               if (!me && msg.done && msg.draft != null) ...[
                 Container(
                   width: double.infinity,
@@ -408,6 +531,26 @@ class _Bubble extends StatelessWidget {
                   ),
                 ),
               ],
+              if (!me &&
+                  msg.done &&
+                  msg.fromEngine &&
+                  !msg.failed &&
+                  msg.text.isNotEmpty &&
+                  s.byId(s.open) != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Wrap(
+                    children: [
+                      Btn(
+                        key: const ValueKey('insert-in-reply'),
+                        icon: 'reply',
+                        label: t('Insérer dans une réponse'),
+                        go: true,
+                        onTap: () => s.useDraft(idx),
+                      ),
+                    ],
+                  ),
+                ),
               if (!me && msg.done && msg.refs != null && msg.refs!.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
@@ -415,66 +558,10 @@ class _Bubble extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       for (final id in msg.refs!)
-                        if (s.byId(id) != null) _Ref(s.byId(id)!, width),
+                        if (s.byId(id) != null) MailRef(s.byId(id)!),
                     ],
                   ),
                 ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Ref extends StatelessWidget {
-  final dynamic m;
-  final double w;
-  const _Ref(this.m, this.w);
-  @override
-  Widget build(BuildContext context) {
-    final p = context.pal;
-    final s = context.read<MailStore>();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Hov(
-        onTap: () => s.openRef(m.id),
-        builder: (_, h) => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: p.bg,
-            border: Border.all(color: h ? p.accent : p.line),
-          ),
-          child: Row(
-            children: [
-              Avatar(m.from.name, size: 30, font: 10),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      m.subject,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Fonts.sans(
-                        size: 14,
-                        w: FontWeight.w500,
-                        color: p.text,
-                        height: 1.3,
-                      ),
-                    ),
-                    Text(
-                      '${m.from.name} · ${rowTime(m.date)}',
-                      style: Fonts.sans(size: 12, color: p.dim),
-                    ),
-                  ],
-                ),
-              ),
-              Transform.rotate(
-                angle: 3.14159,
-                child: Ico('arrowl', size: 14, color: p.dim),
-              ),
             ],
           ),
         ),

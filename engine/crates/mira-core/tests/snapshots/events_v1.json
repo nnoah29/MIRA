@@ -254,6 +254,20 @@
     },
     "templates_changed": {
       "type": "templates_changed"
+    },
+    "ai_chat_started": {
+      "type": "ai_chat_started",
+      "operation": "op-1",
+      "provider": "anthropic",
+      "model": "claude-sonnet-5-5"
+    },
+    "ai_chat_finished": {
+      "type": "ai_chat_finished",
+      "operation": "op-1",
+      "input_tokens": 120,
+      "output_tokens": 48,
+      "duration_ms": 2300,
+      "outcome": "end_turn"
     }
   }
 }

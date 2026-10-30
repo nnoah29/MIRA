@@ -88,3 +88,10 @@ pub struct TemplateMarker;
 
 /// Identifiant de modèle de message.
 pub type TemplateId = Id<TemplateMarker>;
+
+/// Marqueur des identifiants de connexion à un service d'IA.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct AiConnectionMarker;
+
+/// Identifiant de connexion à un service d'IA.
+pub type AiConnectionId = Id<AiConnectionMarker>;

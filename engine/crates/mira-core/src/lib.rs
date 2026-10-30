@@ -3,6 +3,7 @@
 
 pub mod accounts;
 pub mod actions;
+pub mod ai;
 pub mod api;
 pub mod auth;
 mod body_storage;

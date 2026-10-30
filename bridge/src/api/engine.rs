@@ -42,6 +42,11 @@ pub async fn watch_events(after: Option<u64>, sink: StreamSink<String>) {
     runtime::pump_events(after, move |line| sink.add(line).is_ok()).await
 }
 
+/// Diffuse une génération d'IA (JSON `ChatStart`) en lignes JSON `started`, deltas ou `error` ; fermer le flux Dart l'annule.
+pub async fn chat_stream(request_json: String, sink: StreamSink<String>) {
+    runtime::pump_chat(&request_json, move |line| sink.add(line).is_ok()).await
+}
+
 /// HTML d'origine d'un message, tel que reçu (sans assainissement) : `{html}` ou `{html: null}`.
 pub async fn get_original_html(message: String) -> String {
     crate::original_html::fetch(&message).await

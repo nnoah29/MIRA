@@ -3,6 +3,8 @@
 
 pub mod account_domain;
 pub mod actions;
+pub mod ai_domain;
+pub mod ai_samples;
 pub mod compose;
 pub mod compose_drafts;
 pub mod compose_sending;
@@ -58,6 +60,7 @@ pub fn request_name(request: &Request) -> &'static str {
         Request::LabelSettings(_) => "label_settings",
         Request::Settings(_) => "settings",
         Request::Template(_) => "template",
+        Request::Ai(_) => "ai",
     }
 }
 

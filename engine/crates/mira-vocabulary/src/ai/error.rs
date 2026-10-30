@@ -26,6 +26,8 @@ pub enum AiError {
     BadResponse,
     #[error("consentement requis avant d'envoyer du texte au service d'IA")]
     ConsentRequired,
+    #[error("ce type de contenu n'est pas autorisé pour ce service d'IA")]
+    ContentNotAllowed,
     #[error("discussion annulée")]
     Cancelled,
 }
@@ -42,6 +44,7 @@ impl AiError {
             Self::Unavailable => server::AI_UNAVAILABLE,
             Self::BadResponse => server::AI_BAD_RESPONSE,
             Self::ConsentRequired => incompatible_state::AI_CONSENT_REQUIRED,
+            Self::ContentNotAllowed => incompatible_state::AI_CONTENT_NOT_ALLOWED,
             Self::Cancelled => cancelled::BY_USER,
         }
     }
@@ -55,7 +58,7 @@ impl AiError {
                 ErrorCategory::Server
             }
             Self::InputTooLarge | Self::UrlInvalid => ErrorCategory::InvalidInput,
-            Self::ConsentRequired => ErrorCategory::IncompatibleState,
+            Self::ConsentRequired | Self::ContentNotAllowed => ErrorCategory::IncompatibleState,
             Self::Cancelled => ErrorCategory::Cancelled,
         }
     }

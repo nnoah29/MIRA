@@ -16,7 +16,7 @@ use contract_examples::snapshot::snapshot_path;
 use mira_core::api::{Request, Response};
 use serde_json::Value;
 
-/// Les onze opérations du domaine ont un exemple nommé d'après leur `op`, qui survit à un aller-retour JSON
+/// Les quinze opérations du domaine ont un exemple nommé d'après leur `op`, qui survit à un aller-retour JSON
 #[test]
 fn every_ai_operation_has_an_example_that_round_trips() {
     let mut distinct = BTreeSet::new();
@@ -29,7 +29,7 @@ fn every_ai_operation_has_an_example_that_round_trips() {
         assert_eq!(back, request, "requête {name}");
         distinct.insert(tag);
     }
-    assert_eq!(distinct.len(), 11);
+    assert_eq!(distinct.len(), 15);
 }
 
 /// Chaque exemple de réponse appartient au domaine assistant d'IA et survit à un aller-retour JSON
@@ -43,12 +43,12 @@ fn ai_responses_round_trip_through_json() {
     }
 }
 
-/// L'instantané versionné contient chaque exemple du domaine assistant d'IA, à l'identique, en version 1.1
+/// L'instantané versionné contient chaque exemple du domaine assistant d'IA, à l'identique, en version 1.2
 #[test]
 fn snapshot_file_holds_every_ai_example() {
     let text = std::fs::read_to_string(snapshot_path()).unwrap();
     let stored: Value = serde_json::from_str(&text).unwrap();
-    assert_eq!(stored["contract"], "1.1");
+    assert_eq!(stored["contract"], "1.2");
     for (name, request) in ai_domain::requests() {
         let expected = serde_json::to_value(&request).unwrap();
         assert_eq!(stored["requests"][&name], expected, "requête {name}");

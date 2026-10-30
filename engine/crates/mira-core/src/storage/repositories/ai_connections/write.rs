@@ -4,7 +4,7 @@ use mira_vocabulary::{AiConnection, AiConnectionId, AiModelList, MiraError};
 use rusqlite::params;
 
 use super::errors::ensure_changed;
-use super::rows::models_to_columns;
+use super::rows::{models_to_columns, privacy_to_columns};
 use crate::storage::Tx;
 use crate::storage::errors::storage_error;
 use crate::storage::json_columns::to_json;
@@ -17,11 +17,12 @@ impl Tx<'_> {
         now: i64,
     ) -> Result<(), MiraError> {
         let (models_json, fetched_at) = models_to_columns(connection.models.as_ref())?;
+        let (kinds, masking) = privacy_to_columns(connection)?;
         self.sql()
             .execute(
                 "INSERT INTO ai_connections (id, provider_id, label, base_url, default_model, is_default, \
-                 consent_at, models_json, models_fetched_at, created_at, updated_at) \
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10)",
+                 consent_at, models_json, models_fetched_at, allowed_kinds, masking_json, created_at, \
+                 updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?12)",
                 params![
                     connection.id.as_str(),
                     connection.provider.0,
@@ -32,6 +33,8 @@ impl Tx<'_> {
                     connection.consent_at.map(|at| at.as_millis()),
                     models_json,
                     fetched_at,
+                    kinds,
+                    masking,
                     now
                 ],
             )

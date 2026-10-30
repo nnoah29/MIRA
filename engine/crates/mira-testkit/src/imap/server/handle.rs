@@ -41,4 +41,9 @@ impl FakeImapServer {
     pub fn active_connections(&self) -> usize {
         self.tracker.active()
     }
+
+    /// Nombre de sessions IDLE établies : abonnées au magasin, donc sûres d'annoncer toute livraison suivante
+    pub fn idle_sessions(&self) -> usize {
+        self.store.shared.version.receiver_count()
+    }
 }

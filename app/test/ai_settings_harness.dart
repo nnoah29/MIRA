@@ -23,6 +23,8 @@ Map<String, dynamic> connection(
   String? model,
   String? baseUrl,
   List<String>? models,
+  List<String> allowedKinds = const [],
+  Map<String, dynamic>? masking,
 }) => {
   'id': id,
   'provider': provider,
@@ -40,13 +42,21 @@ Map<String, dynamic> connection(
           ],
           'fetched_at': 1,
         },
+  'allowed_kinds': allowedKinds,
+  'masking':
+      masking ??
+      {
+        'mode': 'mask',
+        'categories': ['iban', 'card', 'secret', 'otp'],
+      },
 };
 
 Future<FakeAiEngine> pumpSettings(
   WidgetTester tester, {
   List<Map<String, dynamic>> connections = const [],
+  FakeAiEngine? using,
 }) async {
-  final engine = FakeAiEngine()
+  final engine = (using ?? FakeAiEngine())
     ..providers.addAll([
       provider('openai', 'OpenAI'),
       provider('anthropic', 'Anthropic'),

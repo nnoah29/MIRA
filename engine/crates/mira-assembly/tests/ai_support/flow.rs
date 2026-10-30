@@ -4,7 +4,8 @@ use mira_assembly::api::{
     AiRequest, AiResponse, ChatStart, ChatStream, Request, Response, SecretInput,
 };
 use mira_assembly::mira_vocabulary::{
-    AiConnection, AiConnectionId, AiProviderId, ChatMessage, ChatRequest, ChatRole,
+    AiConnection, AiConnectionId, AiJournalEntry, AiProviderId, ChatMessage, ChatRequest, ChatRole,
+    ContentKind, ContextPart, MiraError,
 };
 
 use super::fixture::{Fixture, KEY};
@@ -47,6 +48,16 @@ pub async fn connection_ready(fixture: &Fixture) -> AiConnection {
 
 /// Démarre une discussion d'un seul message sur cette connexion
 pub async fn chat(fixture: &Fixture, id: &AiConnectionId, text: &str) -> ChatStream {
+    chat_with(fixture, id, text, Vec::new()).await.unwrap()
+}
+
+/// Démarre une discussion d'un seul message portant ces parties de contexte, ou rend l'erreur
+pub async fn chat_with(
+    fixture: &Fixture,
+    id: &AiConnectionId,
+    text: &str,
+    context: Vec<ContextPart>,
+) -> Result<ChatStream, MiraError> {
     let message = ChatMessage {
         role: ChatRole::User,
         text: text.to_string(),
@@ -58,18 +69,20 @@ pub async fn chat(fixture: &Fixture, id: &AiConnectionId, text: &str) -> ChatStr
         max_output_tokens: None,
         temperature: None,
         tools: Vec::new(),
+        context,
     };
     let start = ChatStart {
         connection: Some(id.clone()),
         request,
     };
-    fixture.engine.chat_stream(start).await.unwrap()
+    fixture.engine.chat_stream(start).await
 }
 
 /// Donne le consentement, teste la connexion (un relevé) puis lit les modèles depuis le cache
 pub async fn consent_test_and_list_models(fixture: &Fixture, id: &AiConnectionId) {
     let consent = AiRequest::AcknowledgeAiConsent {
         connection: id.clone(),
+        kinds: vec![ContentKind::MailMessage],
     };
     ask_ai(fixture, consent).await;
     let test = AiRequest::TestAiConnection {
@@ -84,4 +97,16 @@ pub async fn consent_test_and_list_models(fixture: &Fixture, id: &AiConnectionId
         panic!("liste attendue");
     };
     assert_eq!(models.models[0].id, "model-a");
+}
+
+/// Lignes du journal des envois lues par le contrat, les plus récentes d'abord
+pub async fn journal_rows(fixture: &Fixture) -> Vec<AiJournalEntry> {
+    let request = AiRequest::ListAiJournal {
+        limit: 50,
+        before: None,
+    };
+    match ask_ai(fixture, request).await {
+        AiResponse::Journal(rows) => rows,
+        other => panic!("journal attendu : {other:?}"),
+    }
 }

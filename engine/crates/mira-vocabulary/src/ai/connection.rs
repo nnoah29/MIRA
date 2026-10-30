@@ -2,6 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::content::ContentKind;
+use super::masking::MaskingSettings;
 use super::model::AiModelList;
 use super::provider::AiProviderId;
 use crate::ids::kinds::AiConnectionId;
@@ -27,4 +29,6 @@ pub struct AiConnection {
     pub has_key: bool,
     pub consent_at: Option<Timestamp>,
     pub models: Option<AiModelList>,
+    pub allowed_kinds: Vec<ContentKind>,
+    pub masking: MaskingSettings,
 }

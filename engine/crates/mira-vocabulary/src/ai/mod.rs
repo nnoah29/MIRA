@@ -2,8 +2,11 @@
 
 pub mod chat;
 pub mod connection;
+pub mod content;
 pub mod delta;
 pub mod descriptor;
 pub mod error;
+pub mod journal;
+pub mod masking;
 pub mod model;
 pub mod provider;

@@ -8,7 +8,9 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc, oneshot};
 
 use super::Engine;
-use crate::ai::chat::{CHANNEL_CAPACITY, CHAT_OPERATION_KIND, ChatTask, prepare, run};
+use crate::ai::chat::ChatPlan;
+use crate::ai::chat::{CHANNEL_CAPACITY, CHAT_OPERATION_KIND, ChatTask, open_row, prepare, run};
+use crate::operations::OperationHandle;
 
 /// Demande de génération ; sans connexion désignée, la connexion par défaut sert.
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
@@ -35,10 +37,19 @@ impl ChatStream {
 }
 
 impl Engine {
-    /// Vérifie localement la demande puis lance la génération en tâche de fond.
+    /// Vérifie localement la demande, ouvre la ligne de journal, puis lance la génération en tâche de fond.
     pub async fn chat_stream(&self, start: ChatStart) -> Result<ChatStream, MiraError> {
         let plan = prepare(self, start)?;
         let handle = self.operations.start(CHAT_OPERATION_KIND);
+        if let Err(error) = open_row(self, &plan, handle.id()) {
+            handle.complete(Err(&error));
+            return Err(error);
+        }
+        Ok(self.spawn_chat(plan, handle))
+    }
+
+    /// Lance la tâche de génération et rend le flux de ses deltas.
+    fn spawn_chat(&self, plan: ChatPlan, handle: OperationHandle) -> ChatStream {
         let operation = handle.id().clone();
         let (deltas_sender, deltas) = mpsc::channel(CHANNEL_CAPACITY);
         let (done_sender, done) = oneshot::channel();
@@ -47,15 +58,16 @@ impl Engine {
             handle,
             operations: self.operations.clone(),
             events: self.events.clone(),
+            database: Arc::clone(&self.database),
             clock: Arc::clone(&self.config.clock),
             deltas: deltas_sender,
             done: done_sender,
         }));
-        Ok(ChatStream {
+        ChatStream {
             operation,
             deltas,
             done: Some(done),
-        })
+        }
     }
 }
 

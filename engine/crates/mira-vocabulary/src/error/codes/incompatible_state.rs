@@ -33,3 +33,6 @@ pub const AI_CONSENT_REQUIRED: ErrorCode = ErrorCode("incompatible_state.ai_cons
 pub const AI_KEY_MISSING: ErrorCode = ErrorCode("incompatible_state.ai_key_missing");
 /// Aucun modèle d'IA n'est choisi pour cette connexion.
 pub const AI_MODEL_MISSING: ErrorCode = ErrorCode("incompatible_state.ai_model_missing");
+/// Le type de contenu à envoyer n'est pas autorisé pour cette connexion d'IA.
+pub const AI_CONTENT_NOT_ALLOWED: ErrorCode =
+    ErrorCode("incompatible_state.ai_content_not_allowed");

@@ -10,6 +10,7 @@ class FakeAiEngine implements EngineClient, ChatStreamingClient {
   final connections = <Map<String, dynamic>>[];
   final models = <Map<String, dynamic>>[];
   final scripts = <List<Map<String, dynamic>>>[];
+  final journal = <Map<String, dynamic>>[];
   StreamController<Map<String, dynamic>>? live;
   bool manual = false;
   int cancelledStreams = 0;
@@ -44,6 +45,11 @@ class FakeAiEngine implements EngineClient, ChatStreamingClient {
       'has_key': false,
       'consent_at': null,
       'models': null,
+      'allowed_kinds': <String>[],
+      'masking': {
+        'mode': 'mask',
+        'categories': ['iban', 'card', 'secret', 'otp'],
+      },
     };
     connections.add(made);
     return _wrap('connection', made);
@@ -78,7 +84,15 @@ class FakeAiEngine implements EngineClient, ChatStreamingClient {
     'set_default_ai_connection' => _setDefault(r['connection']),
     'set_ai_api_key' => _mark(r['connection'], 'has_key', true),
     'clear_ai_api_key' => _mark(r['connection'], 'has_key', false),
-    'acknowledge_ai_consent' => _mark(r['connection'], 'consent_at', 1),
+    'acknowledge_ai_consent' => _consent(r),
+    'set_ai_allowed_content' => _mark(
+      r['connection'],
+      'allowed_kinds',
+      r['kinds'],
+    ),
+    'set_ai_masking' => _mark(r['connection'], 'masking', r['masking']),
+    'list_ai_journal' => _wrap('journal', _page(r)),
+    'clear_ai_journal' => _cleared(),
     'list_ai_models' => _wrap('models', {
       'models': [...models],
       'fetched_at': 1,
@@ -86,6 +100,25 @@ class FakeAiEngine implements EngineClient, ChatStreamingClient {
     'remove_ai_connection' => _removed(r['connection']),
     _ => _wrap('done', null),
   };
+
+  Map<String, dynamic> _consent(Map<String, dynamic> r) {
+    final found = _find(r['connection'])
+      ..['consent_at'] = 1
+      ..['allowed_kinds'] = [...?(r['kinds'] as List?)];
+    return _wrap('connection', found);
+  }
+
+  List<Map<String, dynamic>> _page(Map<String, dynamic> r) {
+    final from = r['before'] == null
+        ? 0
+        : journal.indexWhere((e) => e['id'] == r['before']) + 1;
+    return journal.skip(from).take(r['limit'] as int).toList();
+  }
+
+  Map<String, dynamic> _cleared() {
+    journal.clear();
+    return _wrap('done', null);
+  }
 
   Map<String, dynamic> _removed(Object? id) {
     connections.removeWhere((c) => c['id'] == id);

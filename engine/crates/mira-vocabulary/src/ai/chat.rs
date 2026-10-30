@@ -2,6 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::content::ContextPart;
+
 /// Auteur d'un message de la discussion.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -25,7 +27,7 @@ pub struct ToolSpec {
     pub parameters_schema: String,
 }
 
-/// Demande de discussion ; le modèle absent se remplace par celui de la connexion.
+/// Demande de discussion ; le modèle absent se remplace par celui de la connexion, le contexte est rendu par le moteur.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChatRequest {
     pub model: Option<String>,
@@ -35,4 +37,6 @@ pub struct ChatRequest {
     pub temperature: Option<f32>,
     #[serde(default)]
     pub tools: Vec<ToolSpec>,
+    #[serde(default)]
+    pub context: Vec<ContextPart>,
 }

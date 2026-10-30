@@ -4,39 +4,76 @@ use std::fmt;
 
 use mira_vocabulary::error::codes::{incompatible_state, not_found};
 use mira_vocabulary::{
-    AiConnection, AiConnectionId, AiError, AiProviderDescriptor, ChatRequest, ErrorCategory,
-    MiraError,
+    AiConnection, AiConnectionId, AiError, AiProviderDescriptor, AiProviderId, ChatRequest,
+    ContentKind, ErrorCategory, MaskingSettings, MiraError,
 };
 
-use super::truncate::{MAX_INPUT_CHARS, truncate_request};
+use super::context::render_context;
+use super::kinds::{check_kinds, distinct_kinds};
+use super::truncate::{MAX_INPUT_CHARS, request_chars, truncate_request};
 use crate::ai::access::{base_url_of, find_provider, is_loopback_url, key_for};
+use crate::ai::masking::Masker;
 use crate::api::{ChatStart, Engine};
 use crate::ports::SecretValue;
 
-/// Tout ce que la tâche de génération doit savoir ; la requête est déjà tronquée.
+/// Tout ce que la tâche de génération doit savoir ; la requête est déjà rendue et tronquée.
 pub(crate) struct ChatPlan {
     pub(crate) descriptor: AiProviderDescriptor,
     pub(crate) base_url: String,
     pub(crate) key: SecretValue,
     pub(crate) model: String,
     pub(crate) request: ChatRequest,
+    pub(crate) masker: Masker,
+    pub(crate) connection: AiConnectionId,
+    pub(crate) provider: AiProviderId,
+    pub(crate) local: bool,
+    pub(crate) kinds: Vec<ContentKind>,
+    pub(crate) parts: u32,
+    pub(crate) chars: u32,
 }
 
-/// Vérifie connexion, fournisseur, consentement, clé puis modèle, dans cet ordre, et rend le plan.
+/// Vérifie connexion, fournisseur, consentement, types de contenu, clé puis modèle, dans cet ordre, et rend le plan.
 pub(crate) fn prepare(engine: &Engine, start: ChatStart) -> Result<ChatPlan, MiraError> {
     let connection = load_connection(engine, start.connection.as_ref())?;
     let descriptor = find_provider(engine, &connection)?.descriptor();
     let base_url = base_url_of(&connection, &descriptor);
     check_consent(&connection, &base_url)?;
+    let local = is_loopback_url(&base_url).unwrap_or(false);
+    check_kinds(&connection, &start.request.context, local)?;
     let key = key_for(engine, &connection, &base_url)?;
     let model = resolve_model(&start.request, &connection)?;
+    let kinds = distinct_kinds(&start.request.context);
+    let parts = u32::try_from(start.request.context.len()).unwrap_or(u32::MAX);
+    let (request, masker) = shape_request(start.request, &connection.masking);
     Ok(ChatPlan {
         descriptor,
         base_url,
         key,
         model,
-        request: truncate_request(start.request, MAX_INPUT_CHARS),
+        connection: connection.id,
+        provider: connection.provider,
+        local,
+        kinds,
+        parts,
+        chars: request_chars(&request),
+        request,
+        masker,
     })
+}
+
+/// Rend le contexte, masque les textes envoyés (pas la consigne), puis tronque ; rend aussi la table du masquage.
+fn shape_request(request: ChatRequest, masking: &MaskingSettings) -> (ChatRequest, Masker) {
+    let mut masker = Masker::new(masking);
+    let mut request = render_context(request);
+    masker.reserve(request.system.as_deref().unwrap_or_default());
+    request
+        .messages
+        .iter()
+        .for_each(|m| masker.reserve(&m.text));
+    for message in &mut request.messages {
+        message.text = masker.mask(&message.text);
+    }
+    (truncate_request(request, MAX_INPUT_CHARS), masker)
 }
 
 /// Relit la connexion désignée, ou la connexion par défaut ; absente, `not_found.ai_connection`.

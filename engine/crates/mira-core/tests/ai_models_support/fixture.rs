@@ -10,7 +10,8 @@ use mira_core::profile::ProfilePaths;
 use mira_core::storage::Database;
 use mira_testkit::ai::FakeAiServer;
 use mira_vocabulary::{
-    AiConnection, AiConnectionId, AiProviderId, AiSecretRef, CONTRACT_VERSION, ProfileId,
+    AiConnection, AiConnectionId, AiProviderId, AiSecretRef, CONTRACT_VERSION, MaskingSettings,
+    ProfileId,
 };
 use tempfile::TempDir;
 
@@ -88,6 +89,8 @@ impl ModelsFixture {
             has_key: false,
             consent_at: None,
             models: None,
+            allowed_kinds: Vec::new(),
+            masking: MaskingSettings::remote_default(),
         };
         self.db
             .write(|tx| tx.insert_ai_connection(&connection, 1))

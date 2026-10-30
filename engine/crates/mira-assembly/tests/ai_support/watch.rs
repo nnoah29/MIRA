@@ -65,3 +65,12 @@ pub fn slow_stream() -> Behavior {
         other => other,
     }
 }
+
+/// Texte de la réponse reçue, les deltas de texte mis bout à bout
+pub fn answer_text(deltas: &[ChatDelta]) -> String {
+    let texts = deltas.iter().filter_map(|delta| match delta {
+        ChatDelta::Text { text } => Some(text.as_str()),
+        _ => None,
+    });
+    texts.collect()
+}

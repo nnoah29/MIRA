@@ -26,6 +26,9 @@ pub enum ChatDelta {
         input_tokens: u32,
         output_tokens: u32,
     },
+    Masked {
+        count: u32,
+    },
     Done {
         reason: StopReason,
     },

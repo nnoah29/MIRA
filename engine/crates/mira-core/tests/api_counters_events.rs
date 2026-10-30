@@ -48,8 +48,9 @@ async fn inbox_with_two_unread(
     wait_for_subjects(&f.engine, account, "INBOX", 2).await;
     let inbox = mailbox_named(&f.engine, account, "INBOX").await;
     wait_for_events(&f.engine, |kinds| {
-        let last = kinds.iter().rev().find_map(announced_counters);
-        last.is_some_and(|(id, _, unread)| id == inbox.id.to_string() && unread == 2)
+        let mut announced = kinds.iter().rev().filter_map(announced_counters);
+        let last = announced.find(|(id, _, _)| *id == inbox.id.to_string());
+        last.is_some_and(|(_, total, unread)| total == 2 && unread == 2)
     })
     .await;
     let first = summaries_in(&f.engine, account, "INBOX").await.remove(0);
@@ -110,7 +111,8 @@ async fn last_announced_counters_match_the_mirror() {
     wait_for_subjects(&f.engine, &account, "INBOX", 3).await;
     let inbox = mailbox_named(&f.engine, &account, "INBOX").await;
     let kinds = wait_for_events(&f.engine, |k| {
-        let last = k.iter().rev().find_map(announced_counters);
+        let mut announced = k.iter().rev().filter_map(announced_counters);
+        let last = announced.find(|(id, _, _)| *id == inbox.id.to_string());
         last == Some((inbox.id.to_string(), inbox.total, inbox.unread))
     })
     .await;

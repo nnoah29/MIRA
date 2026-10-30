@@ -196,6 +196,60 @@ void main() {
     final stream = AiAdmin(_Plain()).chat(const {});
     expect(stream, emitsError(isA<UnimplementedError>()));
   });
+
+  test('connection_parses_allowed_kinds_and_masking', () async {
+    final made = await admin.add(provider: 'generic', label: 'x');
+    final saved = await admin.setAllowedContent(made.id, ['mail_message']);
+    expect(saved.allowedKinds, ['mail_message']);
+    final masked = await admin.setMasking(
+      made.id,
+      const AiMasking('off', ['iban', 'email']),
+    );
+    expect(masked.masking.mode, 'off');
+    expect(masked.masking.categories, ['iban', 'email']);
+    final sent = engine.requestsOf('set_ai_masking').single['masking'] as Map;
+    expect(sent, {
+      'mode': 'off',
+      'categories': ['iban', 'email'],
+    });
+  });
+
+  test('acknowledge_consent_sends_the_ticked_kinds', () async {
+    final made = await admin.add(provider: 'generic', label: 'x');
+    await admin.acknowledgeConsent(made.id, kinds: const []);
+    expect(
+      engine.requestsOf('acknowledge_ai_consent').single['kinds'],
+      isEmpty,
+    );
+  });
+
+  test('journal_pages_and_clear', () async {
+    engine.journal.addAll([
+      for (var i = 0; i < 3; i++)
+        {
+          'id': 'j$i',
+          'at': 1000 - i,
+          'provider': 'openai',
+          'model': 'm',
+          'local': i == 1,
+          'kinds': ['mail_message'],
+          'chars': 10,
+          'masked': 0,
+          'input_tokens': null,
+          'output_tokens': null,
+          'outcome': 'end_turn',
+        },
+    ]);
+    final first = await admin.journal(limit: 2);
+    expect(first.map((r) => r.id), ['j0', 'j1']);
+    expect(first[1].local, isTrue);
+    final next = await admin.journal(limit: 2, before: 'j1');
+    expect(next.map((r) => r.id), ['j2']);
+    expect(engine.requestsOf('list_ai_journal').last['before'], 'j1');
+    await admin.clearJournal();
+    expect(engine.requestsOf('clear_ai_journal'), hasLength(1));
+    expect(await admin.journal(), isEmpty);
+  });
 }
 
 class _Plain implements EngineClient {

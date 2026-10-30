@@ -61,7 +61,7 @@ async fn forward(
 ) -> Result<(), Ending> {
     for event in events {
         for delta in decode_event(format, &event).map_err(Ending::Failed)? {
-            if let Some(delta) = progress.absorb(delta) {
+            for delta in progress.absorb(delta) {
                 guard.send(delta).await?;
             }
         }

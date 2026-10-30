@@ -22,7 +22,7 @@ void main() {
   setUpAll(() => StepAnimator.frameCap = null);
 
   testWidgets('dialog_names_the_provider', (tester) async {
-    bool? answer;
+    List<String>? answer;
     await tester.pumpWidget(
       MaterialApp(
         theme: buildTheme(false),
@@ -40,7 +40,7 @@ void main() {
     expect(find.textContaining('Mistral AI'), findsWidgets);
     await tester.tap(find.byKey(const ValueKey('ai-consent-accept')));
     await tester.pumpAndSettle();
-    expect(answer, isTrue);
+    expect(answer, ['mail_message']);
   });
 
   testWidgets('refusal_returns_false_and_sends_nothing', (tester) async {

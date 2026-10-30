@@ -35,5 +35,6 @@ pub fn request() -> ChatRequest {
         max_output_tokens: None,
         temperature: None,
         tools: Vec::new(),
+        context: Vec::new(),
     }
 }

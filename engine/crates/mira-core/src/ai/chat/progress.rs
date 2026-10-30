@@ -2,23 +2,35 @@
 
 use mira_vocabulary::{AiError, ChatDelta, StopReason};
 
+use super::answer::Answer;
 use super::ending::Ending;
 
 /// État accumulé au fil des deltas décodés.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(super) struct Progress {
     stop: Option<StopReason>,
     usage: Option<(u32, u32)>,
     text_seen: bool,
+    pub(super) answer: Answer,
 }
 
 impl Progress {
-    /// Retient un delta décodé et rend celui à transmettre tout de suite (le texte seulement).
-    pub(super) fn absorb(&mut self, delta: ChatDelta) -> Option<ChatDelta> {
+    /// Démarre sans rien avoir reçu, avec la restitution de la réponse de cette requête.
+    pub(super) fn new(answer: Answer) -> Self {
+        Self {
+            stop: None,
+            usage: None,
+            text_seen: false,
+            answer,
+        }
+    }
+
+    /// Retient un delta décodé et rend ceux à transmettre tout de suite (le texte restitué seulement).
+    pub(super) fn absorb(&mut self, delta: ChatDelta) -> Vec<ChatDelta> {
         match delta {
-            ChatDelta::Text { .. } => {
+            ChatDelta::Text { text } => {
                 self.text_seen = true;
-                Some(delta)
+                self.answer.push(&text)
             }
             ChatDelta::Usage {
                 input_tokens,
@@ -26,11 +38,12 @@ impl Progress {
             } => {
                 let (input, output) = self.usage.unwrap_or((0, 0));
                 self.usage = Some((input.max(input_tokens), output.max(output_tokens)));
-                None
+                Vec::new()
             }
+            ChatDelta::Masked { .. } => Vec::new(),
             ChatDelta::Done { reason } => {
                 self.stop.get_or_insert(reason);
-                None
+                Vec::new()
             }
         }
     }

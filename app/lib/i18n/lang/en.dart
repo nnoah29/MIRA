@@ -522,6 +522,10 @@ const Map<String, String> enStrings = {
       'Key rejected by the AI service: check it',
   'Autorise d’abord l’envoi de texte à ce service d’IA':
       'First allow sending text to this AI service',
+  'Ce service d’IA n’est pas autorisé à recevoir ce type de contenu':
+      'This AI service is not allowed to receive this type of content',
+  'Nombre de lignes du journal des envois hors limites':
+      'Send journal line count out of range',
   'Aucune clé enregistrée pour ce service d’IA':
       'No key saved for this AI service',
   'Choisis d’abord un modèle d’IA': 'First choose an AI model',
@@ -1169,7 +1173,6 @@ const Map<String, String> enStrings = {
   'IA': 'AI',
   'Modèles du service': 'Service models',
   'Nom de la connexion': 'Connection name',
-  'Pour répondre, l’assistant envoie à {0} ta conversation et le texte du mail ouvert. Ce service applique sa propre politique de confidentialité. Rien n’est envoyé sans ton accord ; supprime la connexion dans les réglages pour le retirer.': 'To answer, the assistant sends your conversation and the text of the open mail to {0}. This service applies its own privacy policy. Nothing is sent without your consent; delete the connection in the settings to withdraw it.',
   'Refuser': 'Decline',
   'Remplacer la clé d’API': 'Replace the API key',
   'Sa clé d’API est effacée de cet appareil.':
@@ -1189,4 +1192,50 @@ const Map<String, String> enStrings = {
       ' · removed: the assistant cannot see this mail.',
   'Retirer le contexte': 'Remove context',
   'Rétablir': 'Restore',
+  'Pour répondre, l’assistant envoie à {0} ta conversation et les contenus que tu autorises ci-dessous. Ce service applique sa propre politique de confidentialité. Rien n’est envoyé sans ton accord ; supprime la connexion dans les réglages pour le retirer.': 'To answer, the assistant sends your conversation and the content you allow below to {0}. This service applies its own privacy policy. Nothing is sent without your consent; delete the connection in the settings to withdraw it.',
+  'Contenu autorisé': 'Allowed content',
+  'Mail ouvert': 'Open mail',
+  'le mail ouvert': 'the open mail',
+  'Autoriser {0} à recevoir : {1} ?': 'Allow {0} to receive: {1}?',
+  'Ce contenu n’est pas encore autorisé pour ce service. Tu peux revenir sur ce choix dans les réglages de l’IA.': 'This content is not yet allowed for this service. You can change this choice in the AI settings.',
+  'Non envoyé : contenu non autorisé.': 'Not sent: content not allowed.',
+  'donnée sensible masquée avant l’envoi':
+      'sensitive item masked before sending',
+  'données sensibles masquées avant l’envoi':
+      'sensitive items masked before sending',
+  'Afficher plus': 'Show more',
+  'Annulé': 'Cancelled',
+  'Aucun envoi pour l’instant.': 'Nothing sent yet.',
+  'Carte bancaire': 'Bank card',
+  'Code à usage unique': 'One-time code',
+  'Connexions': 'Connections',
+  'Coupé : limite de longueur': 'Cut off: length limit',
+  'Données sensibles': 'Sensitive data',
+  'Détection au mieux : elle peut se tromper.':
+      'Best-effort detection: it can be wrong.',
+  'En cours': 'In progress',
+  'IBAN': 'IBAN',
+  'Interrompu': 'Interrupted',
+  'Journal': 'Log',
+  'Masquées avant l’envoi': 'Masked before sending',
+  'Aucune catégorie : rien n’est masqué.':
+      'No category selected: nothing is masked.',
+  'Les données sensibles sont envoyées telles quelles.':
+      'Sensitive data is sent as is.',
+  'Connexion locale : rien ne quitte cet appareil.':
+      'Local connection: nothing leaves this device.',
+  'Mot de passe ou clé': 'Password or key',
+  'Non masquées': 'Not masked',
+  'Terminé': 'Done',
+  'Toutes les lignes du journal des envois sont effacées de cet appareil.':
+      'Every line of the send log is erased from this device.',
+  'Téléphone': 'Phone',
+  'Vider': 'Clear',
+  'Vider le journal': 'Clear the log',
+  'Vider le journal ?': 'Clear the log?',
+  'caractère': 'character',
+  'caractères': 'characters',
+  'masqué': 'masked',
+  'masqués': 'masked',
+  '{0} → {1} jetons': '{0} → {1} tokens',
 };

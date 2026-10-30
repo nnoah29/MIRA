@@ -3,9 +3,9 @@
 
 use mira_vocabulary::{
     AiConnection, AiConnectionId, AiModel, AiModelList, AiProviderId, ChatDelta, ChatRequest,
-    StopReason, Timestamp,
+    ContentKind, MaskingSettings, SensitiveCategory, StopReason, Timestamp,
 };
-use serde_json::json;
+use serde_json::{Value, json};
 
 /// Un delta porte son type en `snake_case`
 #[test]
@@ -80,31 +80,65 @@ fn sample_connection() -> AiConnection {
             }],
             fetched_at: Timestamp::from_millis(2),
         }),
+        allowed_kinds: vec![ContentKind::MailMessage],
+        masking: MaskingSettings::remote_default(),
     }
 }
 
-/// Une connexion n'expose jamais la clé : seul l'indicateur `has_key` existe
+/// Noms de toutes les clés d'objet du JSON, à tous les niveaux
+fn key_names(value: &Value, names: &mut Vec<String>) {
+    match value {
+        Value::Object(map) => {
+            for (name, inner) in map {
+                names.push(name.clone());
+                key_names(inner, names);
+            }
+        }
+        Value::Array(items) => items.iter().for_each(|inner| key_names(inner, names)),
+        _ => {}
+    }
+}
+
+const CONNECTION_KEYS: [&str; 11] = [
+    "allowed_kinds",
+    "base_url",
+    "consent_at",
+    "default_model",
+    "has_key",
+    "id",
+    "is_default",
+    "label",
+    "masking",
+    "models",
+    "provider",
+];
+const SENSITIVE_WORDS: [&str; 6] = [
+    "key",
+    "secret",
+    "token",
+    "password",
+    "bearer",
+    "authorization",
+];
+
+/// Une connexion n'expose jamais la clé : seul l'indicateur `has_key` existe, et aucun nom de champ n'évoque un secret
 #[test]
 fn connection_never_serializes_a_key_field() {
-    let value = serde_json::to_value(sample_connection()).unwrap();
-    let mut names: Vec<&str> = value
-        .as_object()
-        .unwrap()
-        .keys()
-        .map(String::as_str)
-        .collect();
-    names.sort_unstable();
-    let expected = [
-        "base_url",
-        "consent_at",
-        "default_model",
-        "has_key",
-        "id",
-        "is_default",
-        "label",
-        "models",
-        "provider",
-    ];
-    assert_eq!(names, expected);
-    assert!(!value.to_string().to_lowercase().contains("secret"));
+    let connection = sample_connection();
+    let categories = &connection.masking.categories;
+    assert!(categories.contains(&SensitiveCategory::Secret));
+    let value = serde_json::to_value(&connection).unwrap();
+    let top = value.as_object().unwrap();
+    let mut top: Vec<&str> = top.keys().map(String::as_str).collect();
+    top.sort_unstable();
+    assert_eq!(top, CONNECTION_KEYS);
+    let mut names = Vec::new();
+    key_names(&value, &mut names);
+    for name in names.iter().filter(|name| *name != "has_key") {
+        let lower = name.to_lowercase();
+        assert!(
+            !SENSITIVE_WORDS.iter().any(|word| lower.contains(word)),
+            "{name}"
+        );
+    }
 }

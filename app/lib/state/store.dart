@@ -1531,7 +1531,9 @@ class MailStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  void moveTo(List<String> ids, String to, String verb, [String? verbPl]) {
+  void moveTo(List<String> wanted, String to, String verb, [String? verbPl]) {
+    final ids = _withoutEngineDrafts(wanted);
+    if (ids.isEmpty) return;
     final idx = visible().indexWhere((m) => m.id == open);
     final prev = ids.map((id) {
       final m = byId(id)!;
@@ -1567,6 +1569,7 @@ class MailStore extends ChangeNotifier {
     sel.clear();
     _afterChange(idx);
     final pending = _after(6500, () {
+      _deleteEngineDrafts(gone);
       _syncAction(gone, (a) => a.deleteForever);
     });
     toast(
@@ -1785,7 +1788,40 @@ class MailStore extends ChangeNotifier {
     if (ids.every((id) => byId(id)!.folder == 'trash')) {
       return removeForever(ids);
     }
-    moveTo(ids, 'trash', tkey('mis à la corbeille'));
+    final drafts = ids.where(_isEngineDraft).toList();
+    if (drafts.isNotEmpty) removeForever(drafts);
+    final rest = ids.where((id) => !_isEngineDraft(id)).toList();
+    if (rest.isEmpty) return;
+    moveTo(rest, 'trash', tkey('mis à la corbeille'));
+  }
+
+  /// Vrai pour un brouillon tenu par le moteur : aucun message serveur à déplacer, étiqueter ou marquer, seulement à supprimer.
+  bool _isEngineDraft(String id) => id.startsWith('draft:');
+
+  /// Écarte les brouillons du moteur d'une opération qui ne leur va pas, et prévient.
+  List<String> _withoutEngineDrafts(List<String> ids) {
+    final rest = ids.where((id) => !_isEngineDraft(id)).toList();
+    if (rest.length < ids.length) {
+      toast(
+        t('Action impossible sur un brouillon : ouvre-le ou supprime-le'),
+        err: true,
+      );
+    }
+    return rest;
+  }
+
+  /// Supprime du moteur les brouillons parmi ces messages (leur copie serveur part avec) ; relit le compte si le moteur refuse.
+  Future<void> _deleteEngineDrafts(List<Mail> ms) async {
+    final admin = source?.composer;
+    if (admin == null) return;
+    for (final m in ms.where((m) => _isEngineDraft(m.id))) {
+      try {
+        await admin.delete(m.id.substring('draft:'.length));
+      } catch (_) {
+        toast(t('Action non appliquée sur le serveur'), err: true);
+        await _reloadOnce(m.account);
+      }
+    }
   }
 
   /// Change l'état lu d'un message dans toutes ses copies (liste, recherche, libellés masqués) et dans les compteurs.
@@ -1822,9 +1858,10 @@ class MailStore extends ChangeNotifier {
   }
 
   void toggleRead() {
-    final ids = targets();
-    if (ids.isEmpty) return hint();
-    final ms = ids.map((i) => byId(i)!).toList();
+    final wanted = targets();
+    if (wanted.isEmpty) return hint();
+    final ms = _withoutEngineDrafts(wanted).map((i) => byId(i)!).toList();
+    if (ms.isEmpty) return;
     final allRead = ms.every((m) => !m.unread);
     for (final m in ms) {
       _setUnread(m, allRead);
@@ -1884,7 +1921,8 @@ class MailStore extends ChangeNotifier {
   void toggleLabel(String k) {
     final ids = targets();
     if (ids.isEmpty) return hint();
-    final all0 = ids.map((i) => byId(i)!).toList();
+    final all0 = _withoutEngineDrafts(ids).map((i) => byId(i)!).toList();
+    if (all0.isEmpty) return;
     final def = labelDef(k);
     if (def == null) return;
     if (def.local) return _toggleLocalLabel(k, all0);
@@ -2344,7 +2382,7 @@ class MailStore extends ChangeNotifier {
 
   void toggleStar([String? id]) {
     final m = byId(id ?? open);
-    if (m == null) return;
+    if (m == null || _withoutEngineDrafts([m.id]).isEmpty) return;
     m.starred = !m.starred;
     notifyListeners();
     _syncAction([m], (a) => a.flag(m.starred));
@@ -2728,7 +2766,10 @@ class MailStore extends ChangeNotifier {
     mails = mails.where((m) => !ids.contains(m.id)).toList();
     sel.clear();
     _afterChange(idx);
-    final pending = _after(6500, () => _emptyBoxes(actions, boxes));
+    final pending = _after(6500, () {
+      _deleteEngineDrafts(gone);
+      _emptyBoxes(actions, boxes);
+    });
     toast(
       t('Dossier vidé'),
       label: t('Annuler'),

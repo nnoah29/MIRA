@@ -1,4 +1,4 @@
-//! IBAN : forme, longueur du pays et contrôle modulo 97, sur le texte sans espaces ni tirets.
+//! IBAN : forme, longueur du pays et contrôle modulo 97, sur le texte sans séparateurs.
 
 use std::sync::LazyLock;
 
@@ -6,8 +6,9 @@ use regex::Regex;
 
 use super::scan::scan;
 
-static PATTERN: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::new(r"\b[A-Za-z]{2}[0-9]{2}(?:[ \-]?[A-Za-z0-9]){11,30}").ok());
+static PATTERN: LazyLock<Option<Regex>> = LazyLock::new(|| {
+    Regex::new(r"\b[A-Za-z]{2}[0-9]{2}(?:(?:\r\n|[\s\u{a0}\u{202f}.\-])?[A-Za-z0-9]){11,30}").ok()
+});
 
 /// Emplacements (début, fin) des IBAN valides du texte.
 pub(super) fn find(text: &str) -> Vec<(usize, usize)> {

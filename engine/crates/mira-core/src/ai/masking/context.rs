@@ -8,7 +8,8 @@ use super::entropy::shannon;
 
 const KEYWORDS: &str =
     r"api[_-]?key|apikey|secret|token|authorization|access[_-]?key|private[_-]?key|clé|jeton";
-const VALUE: &str = r#"["']?([A-Za-z0-9+/=_-]{20,})"#;
+const VALUE: &str = r#"["']?([A-Za-z0-9+/=_.-]{20,})"#;
+const MIN_LENGTH: usize = 20;
 const BASE64_LIMIT: f64 = 4.5;
 const HEX_LIMIT: f64 = 3.0;
 const HEX_MIN_LENGTH: usize = 32;
@@ -28,8 +29,9 @@ pub(super) fn find(text: &str) -> Vec<(usize, usize)> {
         .filter_map(|pattern| pattern.as_ref())
         .flat_map(|pattern| pattern.captures_iter(text))
         .filter_map(|captures| captures.get(1))
-        .filter(|value| is_random(value.as_str()))
-        .map(|value| (value.start(), value.end()))
+        .map(|value| (value.start(), value.as_str().trim_end_matches('.')))
+        .filter(|(_, value)| value.len() >= MIN_LENGTH && is_random(value))
+        .map(|(start, value)| (start, start + value.len()))
         .collect()
 }
 

@@ -16,4 +16,6 @@ pub use masking::{answer_of, connection_with, run_chat};
 #[allow(unused_imports)]
 pub use privacy::{allow_kinds, chat_start_with, journal_dump, journal_rows, set_masking};
 #[allow(unused_imports)]
-pub use start::{journal_kinds, loopback_stream, wait_cancelled, wait_first_request};
+pub use start::{
+    journal_kinds, loopback_stream, wait_cancelled, wait_first_request, wait_journal_outcome,
+};

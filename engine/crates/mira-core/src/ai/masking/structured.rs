@@ -1,11 +1,13 @@
 //! Secrets à structure fixe : jeton JWT (trois segments base64url) et bloc de clé privée PEM.
+//! Un bloc PEM sans ligne de fin est masqué jusqu'à la fin du texte.
 
 use std::sync::LazyLock;
 
 use regex::Regex;
 
 const JWT: &str = r"\beyJ[A-Za-z0-9_-]{7,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+";
-const PEM: &str = r"(?s)-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----";
+const PEM: &str =
+    r"(?s)-----BEGIN [A-Z ]*PRIVATE KEY-----.*?(?:-----END [A-Z ]*PRIVATE KEY-----|\z)";
 
 static JWT_PATTERN: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(JWT).ok());
 static PEM_PATTERN: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(PEM).ok());

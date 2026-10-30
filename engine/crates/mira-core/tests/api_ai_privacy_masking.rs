@@ -76,4 +76,9 @@ async fn changing_the_url_clears_allowed_kinds() {
     let moved = moved.unwrap();
     assert!(moved.allowed_kinds.is_empty() && moved.consent_at.is_none());
     assert!(f.stored(&created).allowed_kinds.is_empty());
+    assert_eq!(moved.masking, MaskingSettings::remote_default());
+    assert_eq!(
+        f.stored(&created).masking,
+        MaskingSettings::remote_default()
+    );
 }

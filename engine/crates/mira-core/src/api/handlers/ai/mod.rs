@@ -6,6 +6,7 @@ mod clear_journal;
 mod clear_key;
 mod connection_view;
 mod consent;
+mod default_masking;
 mod list_connections;
 mod list_journal;
 mod list_models;

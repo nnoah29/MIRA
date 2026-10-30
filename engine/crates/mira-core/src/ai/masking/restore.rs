@@ -1,23 +1,32 @@
 //! Restitution en flux : les repères créés pour la requête redeviennent les valeurs d'origine.
 
+use std::collections::BTreeMap;
+use std::ops::Bound;
+
 /// Résultat de la lecture d'un texte qui commence par `[`.
 enum Bracket {
-    Known(usize),
+    Known(String, usize),
     Pending,
     Plain,
 }
 
 /// Remet les valeurs à la place des repères connus, même coupés entre deux morceaux de réponse.
 pub struct Restorer {
-    pub(super) table: Vec<(String, String)>,
+    pub(super) table: BTreeMap<String, String>,
+    pub(super) longest: usize,
     pub(super) pending: String,
 }
 
 impl Restorer {
     /// Crée le restituteur d'une table de repères ; une table vide laisse tout passer.
     pub(super) fn new(table: Vec<(String, String)>) -> Self {
+        let longest = table.iter().map(|(p, _)| p.len()).max().unwrap_or(0);
+        let keyed = table
+            .into_iter()
+            .map(|(placeholder, value)| (placeholder.to_ascii_uppercase(), value));
         Self {
-            table,
+            table: keyed.collect(),
+            longest,
             pending: String::new(),
         }
     }
@@ -31,10 +40,9 @@ impl Restorer {
             restored.push_str(rest.get(..at).unwrap_or_default());
             rest = rest.get(at..).unwrap_or_default();
             match self.read_bracket(rest) {
-                Bracket::Known(index) => {
-                    let (placeholder, value) = self.table.get(index).cloned().unwrap_or_default();
+                Bracket::Known(value, length) => {
                     restored.push_str(&value);
-                    rest = rest.get(placeholder.len()..).unwrap_or_default();
+                    rest = rest.get(length..).unwrap_or_default();
                 }
                 Bracket::Pending => {
                     self.pending = rest.to_string();
@@ -62,24 +70,27 @@ impl Restorer {
 
     /// Dit si le texte est un repère connu, le début d'un repère connu, ou un simple crochet ; la casse ne compte pas.
     fn read_bracket(&self, rest: &str) -> Bracket {
-        let bytes = rest.as_bytes();
-        let known = self.table.iter().position(|(placeholder, _)| {
-            bytes
-                .get(..placeholder.len())
-                .is_some_and(|head| head.eq_ignore_ascii_case(placeholder.as_bytes()))
-        });
-        match known {
-            Some(index) => Bracket::Known(index),
-            None if self.table.iter().any(|(p, _)| begins(p, bytes)) => Bracket::Pending,
+        let window = rest.as_bytes().get(..self.longest.min(rest.len()));
+        let closing = window.and_then(|bytes| bytes.iter().position(|byte| *byte == b']'));
+        match closing {
+            Some(at) => {
+                let candidate = rest.get(..=at).unwrap_or_default();
+                match self.table.get(&candidate.to_ascii_uppercase()) {
+                    Some(value) => Bracket::Known(value.clone(), candidate.len()),
+                    None => Bracket::Plain,
+                }
+            }
+            None if rest.len() < self.longest && self.is_known_prefix(rest) => Bracket::Pending,
             None => Bracket::Plain,
         }
     }
-}
 
-/// Dit si ces octets sont le début, à la casse près, de ce repère.
-fn begins(placeholder: &str, bytes: &[u8]) -> bool {
-    placeholder
-        .as_bytes()
-        .get(..bytes.len())
-        .is_some_and(|head| head.eq_ignore_ascii_case(bytes))
+    /// Dit si ce texte est le début, à la casse près, d'un repère connu.
+    fn is_known_prefix(&self, text: &str) -> bool {
+        let upper = text.to_ascii_uppercase();
+        self.table
+            .range::<str, _>((Bound::Included(upper.as_str()), Bound::Unbounded))
+            .next()
+            .is_some_and(|(placeholder, _)| placeholder.starts_with(&upper))
+    }
 }

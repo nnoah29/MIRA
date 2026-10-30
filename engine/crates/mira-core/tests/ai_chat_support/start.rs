@@ -10,6 +10,7 @@ use tokio::time::sleep;
 
 use super::connection::{add_chat_connection, chat_start};
 use super::flow::wait_status;
+use super::privacy::journal_rows;
 use crate::ai_models_support::ModelsFixture;
 
 /// Joue ce comportement et démarre une génération sur la connexion locale `conn-1` (modèle `model-a`)
@@ -41,6 +42,21 @@ pub async fn wait_first_request(server: &FakeAiServer) {
         }
         sleep(Duration::from_millis(10)).await;
     }
+}
+
+/// Attend que la ligne de journal de cette opération ne soit plus `running` (5 s au plus) et rend son issue
+pub async fn wait_journal_outcome(fixture: &ModelsFixture, operation: &OperationId) -> String {
+    for _ in 0..500 {
+        let rows = journal_rows(fixture);
+        let done = rows
+            .iter()
+            .find(|row| row.operation == *operation && row.outcome != "running");
+        if let Some(row) = done {
+            return row.outcome.clone();
+        }
+        sleep(Duration::from_millis(10)).await;
+    }
+    "running".to_string()
 }
 
 /// Genres de tous les événements du journal du moteur

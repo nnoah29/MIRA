@@ -3,9 +3,10 @@
 use mira_vocabulary::{AiConnection, AiConnectionId, AiProviderId, MaskingSettings, MiraError};
 
 use super::connection_view::{read_connection, single};
+use super::default_masking::default_masking;
 use super::validate_label::validate_label;
 use super::validate_url::resolve_base_url;
-use crate::ai::access::{find_provider_by_id, is_loopback_url};
+use crate::ai::access::find_provider_by_id;
 use crate::api::contract::Response;
 use crate::api::engine::Engine;
 
@@ -49,13 +50,5 @@ fn blank_connection(
         models: None,
         allowed_kinds: Vec::new(),
         masking,
-    }
-}
-
-/// Masquage de départ : coupé vers la boucle locale, actif ailleurs (et si l'adresse est illisible)
-fn default_masking(provider_url: &str, chosen: Option<&str>) -> MaskingSettings {
-    match is_loopback_url(chosen.unwrap_or(provider_url)) {
-        Ok(true) => MaskingSettings::local_default(),
-        _ => MaskingSettings::remote_default(),
     }
 }

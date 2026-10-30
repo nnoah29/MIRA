@@ -1,4 +1,4 @@
-//! Carte bancaire : 13 à 19 chiffres séparés au plus d'un espace ou d'un tiret, avec contrôle de Luhn.
+//! Carte bancaire : 13 à 19 chiffres, groupes séparés d'un seul séparateur, avec contrôle de Luhn.
 
 use std::sync::LazyLock;
 
@@ -7,7 +7,7 @@ use regex::Regex;
 use super::scan::scan;
 
 static PATTERN: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::new(r"\b[0-9](?:[ \-]?[0-9]){12,18}\b").ok());
+    LazyLock::new(|| Regex::new(r"\b[0-9](?:(?:\r\n|[\s\u{a0}\u{202f}.\-])?[0-9]){12,18}\b").ok());
 
 /// Emplacements (début, fin) des numéros de carte valides du texte.
 pub(super) fn find(text: &str) -> Vec<(usize, usize)> {
@@ -17,14 +17,32 @@ pub(super) fn find(text: &str) -> Vec<(usize, usize)> {
     }
 }
 
-/// Longueur du candidat entier s'il passe le contrôle de Luhn.
+/// Longueur du plus long début du candidat, terminé en fin de groupe, qui passe le contrôle de Luhn.
 fn accepted_length(candidate: &str) -> Option<usize> {
     let digits: Vec<u32> = candidate.chars().filter_map(|c| c.to_digit(10)).collect();
-    (13..=19)
-        .contains(&digits.len())
-        .then(|| luhn_sum(&digits))
-        .filter(|sum| sum % 10 == 0)
-        .map(|_| candidate.len())
+    group_ends(candidate)
+        .into_iter()
+        .rev()
+        .filter(|(count, _)| (13..=19).contains(count))
+        .find(|(count, _)| luhn_sum(digits.get(..*count).unwrap_or_default()).is_multiple_of(10))
+        .map(|(_, end)| end)
+}
+
+/// Pour chaque fin de groupe de chiffres : le nombre de chiffres lus et la position d'octet de la fin.
+fn group_ends(candidate: &str) -> Vec<(usize, usize)> {
+    let mut count = 0;
+    let mut ends = Vec::new();
+    let mut chars = candidate.char_indices().peekable();
+    while let Some((index, character)) = chars.next() {
+        if !character.is_ascii_digit() {
+            continue;
+        }
+        count += 1;
+        if chars.peek().is_none_or(|(_, next)| !next.is_ascii_digit()) {
+            ends.push((count, index + 1));
+        }
+    }
+    ends
 }
 
 /// Somme de Luhn : un chiffre sur deux, en partant de la droite, est doublé.

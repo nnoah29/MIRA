@@ -77,8 +77,18 @@ async fn ready_connection(base_url: &str) -> String {
     id
 }
 
-/// Demande JSON d'une discussion d'un message sur cette connexion (`None` : connexion par défaut).
+/// Demande JSON d'une discussion d'un message sur cette connexion (`None` : connexion par défaut), sans outils.
 pub fn chat_json(connection: Option<&str>, text: &str) -> String {
+    chat_json_with(connection, text, false)
+}
+
+/// Comme `chat_json`, en permettant les outils en lecture seule.
+pub fn chat_json_tools(connection: Option<&str>, text: &str) -> String {
+    chat_json_with(connection, text, true)
+}
+
+/// Demande JSON d'une discussion d'un message, avec ou sans outils.
+fn chat_json_with(connection: Option<&str>, text: &str, allow_tools: bool) -> String {
     let message = ChatMessage::plain(ChatRole::User, text.to_string());
     let request = ChatRequest {
         model: None,
@@ -93,7 +103,7 @@ pub fn chat_json(connection: Option<&str>, text: &str) -> String {
     serde_json::to_string(&ChatStart {
         connection,
         request,
-        allow_tools: false,
+        allow_tools,
     })
     .unwrap()
 }

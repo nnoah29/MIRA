@@ -19,12 +19,12 @@ fn bridge_error(message: &str) -> MiraError {
     MiraError::new(ErrorCategory::Internal, internal::BUG, message)
 }
 
-/// Lit la demande puis lance la génération sur le moteur ouvert.
+/// Lit la demande puis lance la génération sur le moteur ouvert, avec les outils en lecture seule si la demande les permet.
 async fn open_stream(request_json: &str) -> Result<ChatStream, MiraError> {
     let start: ChatStart =
         serde_json::from_str(request_json).map_err(|_| bridge_error("requête JSON illisible"))?;
     let engine = current().ok_or_else(|| bridge_error("moteur non ouvert"))?;
-    engine.chat_stream(start).await
+    engine.chat_stream_with_tools(start).await
 }
 
 /// Annule l'opération par le contrat, comme le ferait l'application ; l'échec éventuel est sans objet.

@@ -21,6 +21,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("v013_rule_reply_drafts.sql"),
     include_str!("v014_rule_idempotency_result.sql"),
     include_str!("v015_system_labels.sql"),
+    include_str!("v016_ai_connections.sql"),
 ];
 
 /// Applique, dans une transaction, les migrations pas encore appliquées

@@ -4,6 +4,8 @@ import 'i18n.dart';
 /// Texte français de chaque code d'erreur du moteur (clé de traduction) ; un test vérifie qu'aucun code n'y manque.
 const engineErrorTexts = <String, String>{
   // i18n:keys-begin
+  'authentication.ai_key_rejected':
+      'Clé refusée par le service d’IA : vérifie-la',
   'authentication.app_password_required':
       'Ce service exige un mot de passe d’application',
   'authentication.oauth_cancelled': 'Connexion annulée',
@@ -21,6 +23,11 @@ const engineErrorTexts = <String, String>{
       'Cette action ne peut plus être annulée',
   'incompatible_state.action_not_retryable':
       'Seule une action échouée peut être relancée',
+  'incompatible_state.ai_consent_required':
+      'Autorise d’abord l’envoi de texte à ce service d’IA',
+  'incompatible_state.ai_key_missing':
+      'Aucune clé enregistrée pour ce service d’IA',
+  'incompatible_state.ai_model_missing': 'Choisis d’abord un modèle d’IA',
   'incompatible_state.body_unavailable_offline':
       'Corps du message indisponible hors ligne',
   'incompatible_state.draft_not_editable': 'Ce brouillon n’est plus modifiable',
@@ -36,6 +43,10 @@ const engineErrorTexts = <String, String>{
       'Opération interdite sur une boîte système',
   'internal.bug': 'Erreur interne de MIRA',
   'invalid_input.address': 'Adresse e-mail invalide',
+  'invalid_input.ai_input_too_large':
+      'Le texte est trop long pour le service d’IA',
+  'invalid_input.ai_key_invalid': 'Clé du service d’IA invalide',
+  'invalid_input.ai_url_invalid': 'Adresse du service d’IA invalide',
   'invalid_input.contract_version':
       'Version incompatible entre l’app et le moteur',
   'invalid_input.cursor': 'Page demandée invalide',
@@ -67,6 +78,9 @@ const engineErrorTexts = <String, String>{
   'network.unreachable': 'Serveur injoignable',
   'not_found.account': 'Compte introuvable',
   'not_found.action': 'Action introuvable',
+  'not_found.ai_connection': 'Connexion d’IA introuvable',
+  'not_found.ai_model': 'Modèle d’IA introuvable',
+  'not_found.ai_provider': 'Service d’IA inconnu',
   'not_found.attachment': 'Pièce jointe introuvable',
   'not_found.draft': 'Brouillon introuvable',
   'not_found.identity': 'Identité d’envoi introuvable',
@@ -84,6 +98,10 @@ const engineErrorTexts = <String, String>{
   'secrets.keyring_unavailable': 'Trousseau de mots de passe indisponible',
   'secrets.secret_missing':
       'Mot de passe introuvable dans le trousseau : saisis-le à nouveau',
+  'server.ai_bad_response': 'Réponse inattendue du service d’IA',
+  'server.ai_rate_limited':
+      'Le service d’IA limite le nombre de requêtes : réessaie plus tard',
+  'server.ai_unavailable': 'Service d’IA indisponible',
   'server.extension_missing':
       'Le serveur ne prend pas en charge cette fonction',
   'server.mailbox_missing': 'Boîte absente du serveur',

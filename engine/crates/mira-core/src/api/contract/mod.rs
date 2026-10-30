@@ -1,6 +1,8 @@
 //! Forme sérialisable du contrat : requêtes par domaine et réponses.
 
 mod account_requests;
+mod ai_requests;
+mod ai_responses;
 mod auth_requests;
 mod credential_input;
 mod identity_requests;
@@ -30,6 +32,8 @@ mod thread_requests;
 mod write;
 
 pub use account_requests::{AccountChanges, AccountDraft, AccountRequest};
+pub use ai_requests::AiRequest;
+pub use ai_responses::AiResponse;
 pub use auth_requests::AuthRequest;
 pub use credential_input::CredentialInput;
 pub use identity_requests::{IdentityRequest, NewIdentity};

@@ -16,3 +16,9 @@ pub const EXTENSION_MISSING: ErrorCode = ErrorCode("server.extension_missing");
 pub const REJECTED: ErrorCode = ErrorCode("server.rejected");
 /// Réponse du serveur non conforme au protocole.
 pub const PROTOCOL: ErrorCode = ErrorCode("server.protocol");
+/// Le service d'IA limite le débit des requêtes.
+pub const AI_RATE_LIMITED: ErrorCode = ErrorCode("server.ai_rate_limited");
+/// Service d'IA indisponible.
+pub const AI_UNAVAILABLE: ErrorCode = ErrorCode("server.ai_unavailable");
+/// Réponse du service d'IA non conforme au format attendu.
+pub const AI_BAD_RESPONSE: ErrorCode = ErrorCode("server.ai_bad_response");

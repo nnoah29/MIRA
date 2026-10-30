@@ -14,3 +14,5 @@ pub const APP_PASSWORD_REQUIRED: ErrorCode = ErrorCode("authentication.app_passw
 pub const OAUTH_CANCELLED: ErrorCode = ErrorCode("authentication.oauth_cancelled");
 /// Paramètre `state` OAuth inattendu.
 pub const OAUTH_STATE_MISMATCH: ErrorCode = ErrorCode("authentication.oauth_state_mismatch");
+/// Clé refusée par le service d'IA.
+pub const AI_KEY_REJECTED: ErrorCode = ErrorCode("authentication.ai_key_rejected");

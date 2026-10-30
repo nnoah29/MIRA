@@ -13,12 +13,12 @@ fn invariant_33_contract_version_compatibility() {
     assert!(!engine.is_compatible_with(ContractVersion { major: 0, minor: 0 }));
 }
 
-/// La version courante du contrat est 1.0 et se sérialise en objet.
+/// La version courante du contrat est 1.1 et se sérialise en objet.
 #[test]
 fn current_contract_version_is_one_dot_zero() {
-    assert_eq!(CONTRACT_VERSION, ContractVersion { major: 1, minor: 0 });
+    assert_eq!(CONTRACT_VERSION, ContractVersion { major: 1, minor: 1 });
     let json = serde_json::to_string(&CONTRACT_VERSION).unwrap();
-    assert_eq!(json, r#"{"major":1,"minor":0}"#);
+    assert_eq!(json, r#"{"major":1,"minor":1}"#);
 }
 
 /// La taille de page demandée est ramenée entre 1 et 500 (invariant 29).

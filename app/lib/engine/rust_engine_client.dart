@@ -25,7 +25,7 @@ ExternalLibrary openBridgeLibrary() {
 }
 
 /// Client du moteur Rust par flutter_rust_bridge ; un seul par processus.
-class RustEngineClient implements EngineClient {
+class RustEngineClient implements EngineClient, ChatStreamingClient {
   RustEngineClient._();
 
   /// Charge la bibliothèque, vérifie le contrat et ouvre le profil.
@@ -53,6 +53,11 @@ class RustEngineClient implements EngineClient {
   @override
   Stream<Map<String, dynamic>> events({int? after}) => ffi
       .watchEvents(after: after == null ? null : BigInt.from(after))
+      .map((line) => jsonDecode(line) as Map<String, dynamic>);
+
+  @override
+  Stream<Map<String, dynamic>> chatStream(Map<String, dynamic> start) => ffi
+      .chatStream(requestJson: jsonEncode(start))
       .map((line) => jsonDecode(line) as Map<String, dynamic>);
 
   @override

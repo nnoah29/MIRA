@@ -16,6 +16,12 @@ mira-provider-gmail = { path = "crates/mira-provider-gmail" }
 mira-provider-outlook = { path = "crates/mira-provider-outlook" }
 mira-provider-yahoo = { path = "crates/mira-provider-yahoo" }
 mira-provider-generic = { path = "crates/mira-provider-generic" }
+mira-ai-anthropic = { path = "crates/mira-ai-anthropic" }
+mira-ai-openai = { path = "crates/mira-ai-openai" }
+mira-ai-google = { path = "crates/mira-ai-google" }
+mira-ai-mistral = { path = "crates/mira-ai-mistral" }
+mira-ai-groq = { path = "crates/mira-ai-groq" }
+mira-ai-generic = { path = "crates/mira-ai-generic" }
 mira-assembly = { path = "crates/mira-assembly" }
 mira-testkit = { path = "crates/mira-testkit" }
 serde = { version = "1", features = ["derive"] }

@@ -21,6 +21,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use mira_core::accounts::NetworkPolicy;
+use mira_core::ai::AiProviderRegistry;
 use mira_core::api::{Engine, EngineConfig};
 use mira_core::auth::OAuthClientConfig;
 use mira_core::ports::{ManualClock, MemorySecretStore, SequentialIds};
@@ -46,6 +47,7 @@ pub fn config_with_secrets(home: &Path, secrets: Arc<MemorySecretStore>) -> Engi
             home: None,
         },
         registry: registry(),
+        ai_registry: AiProviderRegistry::new(),
         secrets,
         clock: Arc::new(ManualClock::new(Timestamp::from_millis(1_700_000_000_000))),
         ids: Arc::new(SequentialIds::new()),

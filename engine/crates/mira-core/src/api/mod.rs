@@ -1,6 +1,7 @@
 //! Contrat d'API du moteur (ch. 12, D-26, AG-04) : `Engine::execute(Request) -> Response`.
 //! Chaque opération a son propre handler, atteint par un routage `match` exhaustif par domaine.
 
+mod chat_stream;
 mod config;
 pub mod contract;
 mod engine;
@@ -10,17 +11,19 @@ mod router;
 mod services;
 mod startup;
 
+pub use chat_stream::{ChatStart, ChatStream};
 pub use config::EngineConfig;
 pub use contract::{
     AccountChanges, AccountDraft, AccountRequest, AccountStatus, AccountSyncStatus, ActionRequest,
-    AttachmentTarget, AuthRequest, CatalogEntry, ComposeRequest, ContractInfo, CredentialInput,
-    DraftChanges, DraftMode, EngineRequest, EngineStatus, EventRequest, IdentityRequest,
-    ImportReport, ImportedLabel, LabelOverview, LabelSettingsRequest, LabelSettingsResponse,
-    LocalLabelRequest, LocalLabelResponse, MailboxRequest, MaintenanceRequest, MessageRequest,
-    NewIdentity, OperationRequest, OutboxEntry, ProviderRequest, QueueRequest, RemoteContentTarget,
-    Request, Response, RuleCatalog, RulePreview, RuleRequest, RuleResponse, RuleView,
-    SearchRequest, SecretInput, SettingsRequest, SettingsResponse, SyncRequest, SyncResponse,
-    SyncScope, SystemLabelRequest, SystemLabelResponse, TargetSelection, TemplateRequest,
-    TemplateResponse, ThreadRequest, WriteResponse,
+    AiRequest, AiResponse, AttachmentTarget, AuthRequest, CatalogEntry, ComposeRequest,
+    ContractInfo, CredentialInput, DraftChanges, DraftMode, EngineRequest, EngineStatus,
+    EventRequest, IdentityRequest, ImportReport, ImportedLabel, LabelOverview,
+    LabelSettingsRequest, LabelSettingsResponse, LocalLabelRequest, LocalLabelResponse,
+    MailboxRequest, MaintenanceRequest, MessageRequest, NewIdentity, OperationRequest, OutboxEntry,
+    ProviderRequest, QueueRequest, RemoteContentTarget, Request, Response, RuleCatalog,
+    RulePreview, RuleRequest, RuleResponse, RuleView, SearchRequest, SecretInput, SettingsRequest,
+    SettingsResponse, SyncRequest, SyncResponse, SyncScope, SystemLabelRequest,
+    SystemLabelResponse, TargetSelection, TemplateRequest, TemplateResponse, ThreadRequest,
+    WriteResponse,
 };
 pub use engine::Engine;

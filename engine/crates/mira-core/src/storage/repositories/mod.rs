@@ -3,6 +3,7 @@
 pub mod account_idempotency;
 pub mod accounts;
 pub mod actions;
+pub mod ai_connections;
 pub mod allowances;
 pub mod appearances;
 pub mod attachments;

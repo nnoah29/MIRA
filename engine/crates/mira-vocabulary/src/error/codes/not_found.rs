@@ -30,3 +30,9 @@ pub const LOCAL_LABEL: ErrorCode = ErrorCode("not_found.local_label");
 pub const LABEL: ErrorCode = ErrorCode("not_found.label");
 /// Modèle de message inconnu.
 pub const TEMPLATE: ErrorCode = ErrorCode("not_found.template");
+/// Modèle d'IA inconnu du service.
+pub const AI_MODEL: ErrorCode = ErrorCode("not_found.ai_model");
+/// Connexion à un service d'IA inconnue.
+pub const AI_CONNECTION: ErrorCode = ErrorCode("not_found.ai_connection");
+/// Fournisseur d'IA inconnu du catalogue.
+pub const AI_PROVIDER: ErrorCode = ErrorCode("not_found.ai_provider");

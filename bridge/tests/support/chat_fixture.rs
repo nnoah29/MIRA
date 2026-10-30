@@ -79,10 +79,7 @@ async fn ready_connection(base_url: &str) -> String {
 
 /// Demande JSON d'une discussion d'un message sur cette connexion (`None` : connexion par défaut).
 pub fn chat_json(connection: Option<&str>, text: &str) -> String {
-    let message = ChatMessage {
-        role: ChatRole::User,
-        text: text.to_string(),
-    };
+    let message = ChatMessage::plain(ChatRole::User, text.to_string());
     let request = ChatRequest {
         model: None,
         system: None,

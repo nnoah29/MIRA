@@ -36,6 +36,7 @@ pub(crate) fn open_row(
         input_tokens: None,
         output_tokens: None,
         outcome: "running".to_string(),
+        tools: Vec::new(),
     };
     engine.database.write(|tx| {
         tx.insert_ai_journal(&entry)?;
@@ -70,6 +71,9 @@ pub(super) fn finish_of(progress: &Progress, ending: &Ending) -> AiJournalFinish
         input_tokens,
         output_tokens,
         outcome: ending.outcome(),
+        tools: Vec::new(),
+        extra_kinds: Vec::new(),
+        extra_chars: 0,
     }
 }
 

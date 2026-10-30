@@ -1,9 +1,8 @@
 //! Écritures sur le journal des envois d'IA : ouverture, complétion, vidage, rétention, reprise.
 
-use mira_vocabulary::{AiJournalEntry, AiJournalFinish, MiraError, OperationId, Timestamp};
+use mira_vocabulary::{AiJournalEntry, MiraError, Timestamp};
 use rusqlite::params;
 
-use super::errors::ensure_changed;
 use crate::storage::Tx;
 use crate::storage::errors::storage_error;
 use crate::storage::json_columns::to_json;
@@ -14,8 +13,8 @@ impl Tx<'_> {
         self.sql()
             .execute(
                 "INSERT INTO ai_journal (id, at, operation, connection, provider, model, local, kinds, \
-                 parts, chars, masked, input_tokens, output_tokens, outcome) \
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
+                 parts, chars, masked, input_tokens, output_tokens, outcome, tools_json) \
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
                 params![
                     entry.id,
                     entry.at.as_millis(),
@@ -30,34 +29,12 @@ impl Tx<'_> {
                     entry.masked,
                     entry.input_tokens,
                     entry.output_tokens,
-                    entry.outcome
+                    entry.outcome,
+                    to_json(&entry.tools)?
                 ],
             )
             .map_err(storage_error)?;
         Ok(())
-    }
-
-    /// Complète la ligne de l'opération ; inconnue : `not_found.operation`
-    pub fn finish_ai_journal(
-        &self,
-        operation: &OperationId,
-        finish: &AiJournalFinish,
-    ) -> Result<(), MiraError> {
-        let changed = self
-            .sql()
-            .execute(
-                "UPDATE ai_journal SET masked = ?2, input_tokens = ?3, output_tokens = ?4, outcome = ?5 \
-                 WHERE operation = ?1",
-                params![
-                    operation.as_str(),
-                    finish.masked,
-                    finish.input_tokens,
-                    finish.output_tokens,
-                    finish.outcome
-                ],
-            )
-            .map_err(storage_error)?;
-        ensure_changed(changed)
     }
 
     /// Vide le journal

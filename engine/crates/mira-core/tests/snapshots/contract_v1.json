@@ -1520,7 +1520,13 @@
             "outcome": "end_turn",
             "output_tokens": 45,
             "parts": 1,
-            "provider": "generic"
+            "provider": "generic",
+            "tools": [
+              {
+                "count": 2,
+                "name": "search_messages"
+              }
+            ]
           }
         ],
         "type": "journal"

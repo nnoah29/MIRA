@@ -24,6 +24,7 @@ pub fn entry(id: &str, operation: &str, at: i64) -> AiJournalEntry {
         input_tokens: None,
         output_tokens: None,
         outcome: "running".to_string(),
+        tools: Vec::new(),
     }
 }
 
@@ -34,6 +35,9 @@ pub fn finish(outcome: &str, masked: u32) -> AiJournalFinish {
         input_tokens: Some(12),
         output_tokens: Some(5),
         outcome: outcome.to_string(),
+        tools: Vec::new(),
+        extra_kinds: Vec::new(),
+        extra_chars: 0,
     }
 }
 
@@ -66,3 +70,5 @@ pub fn seed_history(db: &Database) {
     })
     .unwrap();
 }
+
+pub mod tools;

@@ -6,13 +6,15 @@ use mira_vocabulary::{ChatMessage, ChatRequest, ChatRole};
 
 /// Requête de ces messages alternés, avec une consigne facultative
 fn request(system: Option<&str>, texts: &[&str]) -> ChatRequest {
-    let messages = texts.iter().enumerate().map(|(index, text)| ChatMessage {
-        role: if index % 2 == 0 {
-            ChatRole::User
-        } else {
-            ChatRole::Assistant
-        },
-        text: (*text).to_string(),
+    let messages = texts.iter().enumerate().map(|(index, text)| {
+        ChatMessage::plain(
+            if index % 2 == 0 {
+                ChatRole::User
+            } else {
+                ChatRole::Assistant
+            },
+            (*text).to_string(),
+        )
     });
     ChatRequest {
         model: Some("m".to_string()),

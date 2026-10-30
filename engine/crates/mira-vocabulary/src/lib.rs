@@ -22,6 +22,7 @@ pub use ai::journal::{AiJournalEntry, AiJournalFinish};
 pub use ai::masking::{MaskingMode, MaskingSettings, SensitiveCategory};
 pub use ai::model::{AiModel, AiModelList};
 pub use ai::provider::{AiProvider, AiProviderId};
+pub use ai::tool::{ToolCall, ToolOutcome, ToolRisk, ToolState};
 pub use contract::version::{CONTRACT_VERSION, ContractVersion};
 pub use domain::account::{Account, AccountState, SyncSettings};
 pub use domain::action::{ActionKind, ActionState, PendingAction};

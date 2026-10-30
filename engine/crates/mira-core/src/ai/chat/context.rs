@@ -15,10 +15,10 @@ pub fn render_context(mut request: ChatRequest) -> ChatRequest {
         .find(|message| message.role == ChatRole::User)
     {
         Some(message) => message.text.insert_str(0, &block),
-        None => request.messages.push(ChatMessage {
-            role: ChatRole::User,
-            text: block.trim_end().to_string(),
-        }),
+        None => request.messages.push(ChatMessage::plain(
+            ChatRole::User,
+            block.trim_end().to_string(),
+        )),
     }
     request
 }

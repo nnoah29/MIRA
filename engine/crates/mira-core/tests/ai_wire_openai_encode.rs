@@ -12,10 +12,8 @@ use serde_json::Value;
 #[test]
 fn encode_puts_system_as_first_message() {
     let mut req = request();
-    req.messages.push(ChatMessage {
-        role: ChatRole::Assistant,
-        text: "Salut".to_string(),
-    });
+    req.messages
+        .push(ChatMessage::plain(ChatRole::Assistant, "Salut".to_string()));
     let call = encode_chat(&req, "m1", &descriptor(MaxTokensField::MaxTokens));
     let body: Value = serde_json::from_str(&call.body).unwrap();
     let expected = serde_json::json!([

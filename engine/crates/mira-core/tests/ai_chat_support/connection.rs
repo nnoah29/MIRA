@@ -55,10 +55,7 @@ pub fn user_request(text: &str) -> ChatRequest {
     ChatRequest {
         model: None,
         system: None,
-        messages: vec![ChatMessage {
-            role: ChatRole::User,
-            text: text.to_string(),
-        }],
+        messages: vec![ChatMessage::plain(ChatRole::User, text.to_string())],
         max_output_tokens: None,
         temperature: None,
         tools: Vec::new(),

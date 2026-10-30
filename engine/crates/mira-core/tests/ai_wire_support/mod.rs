@@ -20,6 +20,7 @@ pub fn descriptor(field: MaxTokensField) -> AiProviderDescriptor {
             max_tokens_field: field,
         },
         base_url_editable: false,
+        supports_tools: true,
     }
 }
 
@@ -28,10 +29,7 @@ pub fn request() -> ChatRequest {
     ChatRequest {
         model: None,
         system: Some("Sois bref.".to_string()),
-        messages: vec![ChatMessage {
-            role: ChatRole::User,
-            text: "Bonjour".to_string(),
-        }],
+        messages: vec![ChatMessage::plain(ChatRole::User, "Bonjour".to_string())],
         max_output_tokens: None,
         temperature: None,
         tools: Vec::new(),

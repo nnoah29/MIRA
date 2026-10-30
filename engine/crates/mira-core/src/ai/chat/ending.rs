@@ -35,6 +35,8 @@ impl Ending {
             Some(ChatDelta::Done { reason }) => match reason {
                 StopReason::EndTurn => "end_turn".to_string(),
                 StopReason::MaxTokens => "max_tokens".to_string(),
+                StopReason::ToolUse => "tool_use".to_string(),
+                StopReason::MaxToolRounds => "max_tool_rounds".to_string(),
                 StopReason::Cancelled => "cancelled".to_string(),
                 StopReason::Failed { code, .. } => code,
             },

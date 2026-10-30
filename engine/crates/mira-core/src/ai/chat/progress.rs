@@ -40,7 +40,10 @@ impl Progress {
                 self.usage = Some((input.max(input_tokens), output.max(output_tokens)));
                 Vec::new()
             }
-            ChatDelta::Masked { .. } => Vec::new(),
+            ChatDelta::Masked { .. }
+            | ChatDelta::ToolFragment { .. }
+            | ChatDelta::ToolCalled { .. }
+            | ChatDelta::ToolFinished { .. } => Vec::new(),
             ChatDelta::Done { reason } => {
                 self.stop.get_or_insert(reason);
                 Vec::new()

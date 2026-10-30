@@ -48,4 +48,11 @@ pub struct AiProviderDescriptor {
     pub static_headers: Vec<(String, String)>,
     pub quirks: AiQuirks,
     pub base_url_editable: bool,
+    #[serde(default = "default_true")]
+    pub supports_tools: bool,
+}
+
+/// Valeur par défaut d'une fiche écrite avant les outils : ils sont annoncés.
+fn default_true() -> bool {
+    true
 }

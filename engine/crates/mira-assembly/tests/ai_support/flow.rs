@@ -58,10 +58,7 @@ pub async fn chat_with(
     text: &str,
     context: Vec<ContextPart>,
 ) -> Result<ChatStream, MiraError> {
-    let message = ChatMessage {
-        role: ChatRole::User,
-        text: text.to_string(),
-    };
+    let message = ChatMessage::plain(ChatRole::User, text.to_string());
     let request = ChatRequest {
         model: None,
         system: None,

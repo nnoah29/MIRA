@@ -47,6 +47,7 @@ pub fn sample_provider() -> AiProviderDescriptor {
         static_headers: Vec::new(),
         quirks: AiQuirks::default(),
         base_url_editable: true,
+        supports_tools: true,
     }
 }
 

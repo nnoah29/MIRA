@@ -18,10 +18,7 @@ pub fn request(messages: &[(ChatRole, &str)], context: Vec<ContextPart>) -> Chat
         system: None,
         messages: messages
             .iter()
-            .map(|(role, text)| ChatMessage {
-                role: *role,
-                text: (*text).to_string(),
-            })
+            .map(|(role, text)| ChatMessage::plain(*role, (*text).to_string()))
             .collect(),
         max_output_tokens: None,
         temperature: None,

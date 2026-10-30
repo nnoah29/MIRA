@@ -43,6 +43,7 @@ impl AiProvider for TestProvider {
             static_headers: Vec::new(),
             quirks: AiQuirks::default(),
             base_url_editable: self.editable,
+            supports_tools: true,
         }
     }
 }

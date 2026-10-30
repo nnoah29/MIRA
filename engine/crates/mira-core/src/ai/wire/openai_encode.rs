@@ -48,6 +48,7 @@ fn wire_message(message: &ChatMessage) -> Value {
     let role = match message.role {
         ChatRole::User => "user",
         ChatRole::Assistant => "assistant",
+        ChatRole::Tool => "tool",
     };
     json!({"role": role, "content": message.text})
 }

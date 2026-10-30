@@ -5,7 +5,7 @@ use mira_vocabulary::ChatRequest;
 /// Plafond de l'entrée envoyée au service, en caractères.
 pub const MAX_INPUT_CHARS: usize = 120_000;
 
-const TRUNCATION_MARK: &str = "…[tronqué]";
+pub(crate) const TRUNCATION_MARK: &str = "…[tronqué]";
 
 /// Retire les plus anciens messages jusqu'à tenir ; un dernier message trop long est coupé et marqué.
 pub fn truncate_request(mut request: ChatRequest, max_chars: usize) -> ChatRequest {

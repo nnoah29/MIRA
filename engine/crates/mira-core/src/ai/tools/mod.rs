@@ -2,10 +2,15 @@
 //! Chaque outil traduit des arguments JSON en requête de niveau `Read`, jamais en écriture.
 
 mod args;
+pub mod body;
 mod catalog;
 mod execute;
+mod get_message;
+mod get_thread;
 mod instant;
+mod list_mailboxes;
 mod list_messages;
+mod message_view;
 mod messages;
 pub mod render;
 mod run;

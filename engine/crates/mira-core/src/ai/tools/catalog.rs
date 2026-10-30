@@ -4,19 +4,27 @@ use mira_vocabulary::{ContentKind, ToolCall, ToolSpec};
 use serde_json::Value;
 
 use super::render::{cut, one_line};
-use super::{list_messages, search_messages};
+use super::{get_message, get_thread, list_mailboxes, list_messages, search_messages};
 
 const SUMMARY_CHARS: usize = 80;
 
 /// Fiches de tous les outils.
 pub fn specs() -> Vec<ToolSpec> {
-    vec![search_messages::spec(), list_messages::spec()]
+    vec![
+        search_messages::spec(),
+        list_messages::spec(),
+        get_message::spec(),
+        get_thread::spec(),
+        list_mailboxes::spec(),
+    ]
 }
 
 /// Type de contenu que renvoie l'outil, ou rien s'il est inconnu.
 pub fn kind_of(name: &str) -> Option<ContentKind> {
     match name {
         search_messages::NAME | list_messages::NAME => Some(ContentKind::MailList),
+        get_message::NAME | get_thread::NAME => Some(ContentKind::MailMessage),
+        list_mailboxes::NAME => Some(ContentKind::ToolResult),
         _ => None,
     }
 }

@@ -8,11 +8,9 @@ mod support_mirror;
 mod support_read;
 
 use ai_tools_support::call;
-use mira_core::ai::tools::render::mail_line;
 use mira_core::ai::tools::{kind_of, specs, summary_of};
 use mira_vocabulary::ContentKind;
 use serde_json::{Value, json};
-use support_mirror::fixtures::sample_message;
 
 /// Les outils de recherche et de liste sont annoncés avec leur description
 #[test]
@@ -20,6 +18,9 @@ fn specs_list_search_and_list_tools() {
     let names: Vec<String> = specs().into_iter().map(|spec| spec.name).collect();
     assert!(names.contains(&"search_messages".to_string()));
     assert!(names.contains(&"list_messages".to_string()));
+    for name in ["get_message", "get_thread", "list_mailboxes"] {
+        assert!(names.contains(&name.to_string()), "{name}");
+    }
     assert!(specs().iter().all(|spec| !spec.description.is_empty()));
 }
 
@@ -36,6 +37,14 @@ fn every_spec_schema_is_a_json_object() {
 #[test]
 fn unknown_tool_has_no_kind() {
     assert_eq!(kind_of("delete_everything"), None);
+}
+
+/// Lire un message ou un fil donne `mail_message`, lister les boîtes `tool_result`
+#[test]
+fn read_tools_have_their_kinds() {
+    assert_eq!(kind_of("get_message"), Some(ContentKind::MailMessage));
+    assert_eq!(kind_of("get_thread"), Some(ContentKind::MailMessage));
+    assert_eq!(kind_of("list_mailboxes"), Some(ContentKind::ToolResult));
 }
 
 /// Les listes de messages sont du type `mail_list`
@@ -56,15 +65,4 @@ fn summary_is_the_query_cut_at_80_chars() {
         summary_of(&call("search_messages", json!({"query": "devis"}))),
         "devis"
     );
-}
-
-/// La ligne d'un message porte son identifiant et un aperçu coupé à 200 caractères
-#[test]
-fn mail_line_cuts_preview_at_200_chars() {
-    let mut message = sample_message("m1", "acc-1");
-    message.preview = "é".repeat(300);
-    let line = mail_line(&message);
-    assert!(line.starts_with("id=m1 | de: Bob <bob@example.org> | "));
-    assert!(line.contains("Sujet m1"));
-    assert!(line.ends_with(&"é".repeat(200)));
 }

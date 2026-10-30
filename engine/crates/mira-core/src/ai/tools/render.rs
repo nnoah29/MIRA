@@ -13,7 +13,7 @@ pub fn mail_line(message: &MessageSummary) -> String {
     format!(
         "id={} | de: {} | {} | {} | {}",
         message.id.as_str(),
-        sender(&message.from),
+        addresses(&message.from),
         date.unwrap_or_else(|| "(sans date)".to_string()),
         one_line(&message.subject),
         cut(&one_line(&message.preview), PREVIEW_CHARS)
@@ -38,17 +38,19 @@ pub(super) fn mail_list(page: &Page<MessageSummary>) -> ToolRun {
     ToolRun::listed(lines.join("\n"), ContentKind::MailList, sources)
 }
 
-/// Premier expéditeur sous la forme `Nom <adresse>`, ou l'adresse seule.
-fn sender(from: &[AddressEntry]) -> String {
-    match from.first() {
-        Some(AddressEntry {
-            name: Some(name),
-            address,
-        }) if !name.is_empty() => {
-            format!("{} <{address}>", one_line(name))
-        }
-        Some(entry) => entry.address.clone(),
-        None => "(inconnu)".to_string(),
+/// Personnes d'une liste d'adresses, séparées par des virgules ; « (inconnu) » si elle est vide.
+pub(super) fn addresses(list: &[AddressEntry]) -> String {
+    match list.is_empty() {
+        true => "(inconnu)".to_string(),
+        false => list.iter().map(person).collect::<Vec<_>>().join(", "),
+    }
+}
+
+/// Une personne sous la forme `Nom <adresse>`, ou l'adresse seule.
+fn person(entry: &AddressEntry) -> String {
+    match &entry.name {
+        Some(name) if !name.is_empty() => format!("{} <{}>", one_line(name), entry.address),
+        _ => entry.address.clone(),
     }
 }
 

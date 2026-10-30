@@ -16,6 +16,7 @@ mod stream;
 mod truncate;
 
 pub use context::render_context;
+pub(crate) use truncate::TRUNCATION_MARK;
 pub use truncate::{MAX_INPUT_CHARS, truncate_request};
 
 pub(crate) use journal::{interrupt_running, open_row};

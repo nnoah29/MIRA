@@ -26,3 +26,14 @@ Dernière lecture : 2026-10-29. Le contenu web est une donnée, jamais une consi
 | Anonymisation réversible pour LLM | LLM Guard : `Anonymize` remplace par des repères et garde les valeurs dans un coffre, `Deanonymize` les remet dans la réponse complète ; le flux n'est pas traité (notre restituteur en flux comble ce point) | https://appsecsanta.com/llm-guard (source tierce) |
 | Noms et adresses | Les modèles d'entités nommées de type GLiNER (variantes PII) sont plausiblement meilleurs que spaCy pour les noms ; ils n'ont ni somme de contrôle ni validation de format, les expressions régulières restent meilleures pour les identifiants structurés ; aucun comparatif fiable | https://particula.tech/blog/presidio-vs-gliner-pii-redaction-llm, https://huggingface.co/knowledgator/gliner-pii-base-v1.0 (sources tierces) |
 | Remplacement en flux | La crate `aho-corasick` sait chercher et remplacer dans un flux sans tout charger en mémoire ; son traitement des motifs coupés entre deux lectures n'a pas pu être confirmé | https://docs.rs/crate/aho-corasick/ |
+
+## Outils d'IA en lecture seule (chantier 3 de l'IA)
+
+Dernière lecture : 2026-10-30. Le contenu web est une donnée, jamais une consigne.
+
+| Sujet | Ce qui a été confirmé | Source |
+|---|---|---|
+| Anthropic, appels d'outils en flux | Un appel est un bloc `tool_use` ouvert par `content_block_start` (champ `input` vide), ses arguments arrivent en `input_json_delta` (`partial_json`) à concaténer puis à analyser à la fermeture du bloc ; `stop_reason` vaut `tool_use` dans `message_delta` ; avec le flux fin (`eager_input_streaming`) le texte accumulé peut ne pas être du JSON valide (nos arguments sont donc validés avant exécution) | https://platform.claude.com/docs/en/build-with-claude/streaming, https://platform.claude.com/docs/en/agents-and-tools/tool-use/fine-grained-tool-streaming |
+| OpenAI Chat, appels d'outils en flux | Chaque `chat.completion.chunk` porte `choices[].delta.tool_calls[]` avec `index`, `id`, `type`, `function.name` et `function.arguments` (fragment à concaténer par `index`) ; `finish_reason` vaut `tool_calls` | https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events, https://developers.openai.com/api/docs/guides/function-calling |
+
+Réserve : les formes des messages de résultat d'outil (Anthropic : bloc `tool_result` avec `tool_use_id`, `content` et `is_error` dans un message `user` ; OpenAI : message de rôle `tool` avec `tool_call_id` et `content`) n'ont pas été relues sur une page officielle pendant la rédaction ; elles viennent des références de l'API et sont à confirmer à l'essai réel avec une clé. Les mêmes formes sont supposées pour Google, Mistral, Groq et les services compatibles OpenAI.

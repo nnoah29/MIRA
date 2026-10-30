@@ -5,7 +5,7 @@ pour que `unsafe_code = "forbid"` reste vrai côté moteur (voir `docs/DECISIONS
 
 | Fonction Dart | Rôle |
 | --- | --- |
-| `contractVersion()` | version du contrat compilée (`1.2`) |
+| `contractVersion()` | version du contrat compilée (`1.3`) |
 | `openEngine(profile)` | ouvre le profil (trousseau et dossier de données du système, `MIRA_HOME`) |
 | `execute(requestJson)` | une requête du contrat → enveloppe `{contract_version, ok, data \| error}` |
 | `chatStream(requestJson)` | génération d'IA en flux : lignes JSON `started`, `text`, `usage`, `masked`, `tool_called` et `tool_finished` (si la demande porte `allow_tools: true` : nom de l'outil, extrait de requête, état `ok`/`denied`/`error`, nombre de résultats, identifiants des messages consultés, type refusé), `done` ou `error` (hors journal d'événements) ; fermer le flux annule l'opération |

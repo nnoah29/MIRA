@@ -1,7 +1,6 @@
 //! Génération en flux exposée par la façade (comme `subscribe`) : un identifiant d'opération et des deltas.
 
-use std::fmt;
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 
 use mira_vocabulary::{AiConnectionId, ChatDelta, ChatRequest, MiraError, OperationId};
 use serde::{Deserialize, Serialize};
@@ -17,6 +16,8 @@ use crate::operations::OperationHandle;
 pub struct ChatStart {
     pub connection: Option<AiConnectionId>,
     pub request: ChatRequest,
+    #[serde(default)]
+    pub allow_tools: bool,
 }
 
 /// Génération en cours : son opération (annulable) et les deltas, terminés par un seul `Done`.
@@ -37,9 +38,26 @@ impl ChatStream {
 }
 
 impl Engine {
-    /// Vérifie localement la demande, ouvre la ligne de journal, puis lance la génération en tâche de fond.
+    /// Vérifie localement la demande, ouvre la ligne de journal, puis lance la génération en tâche de fond, sans outils.
     pub async fn chat_stream(&self, start: ChatStart) -> Result<ChatStream, MiraError> {
-        let plan = prepare(self, start)?;
+        self.begin_chat(start, None)
+    }
+
+    /// Comme `chat_stream`, avec les outils en lecture seule quand `allow_tools` est vrai et que le service les supporte.
+    pub async fn chat_stream_with_tools(
+        self: &Arc<Self>,
+        start: ChatStart,
+    ) -> Result<ChatStream, MiraError> {
+        self.begin_chat(start, Some(Arc::downgrade(self)))
+    }
+
+    /// Prépare le plan, ouvre la ligne de journal et lance la tâche ; `host` donne à la tâche l'accès aux lectures.
+    fn begin_chat(
+        &self,
+        start: ChatStart,
+        host: Option<Weak<Engine>>,
+    ) -> Result<ChatStream, MiraError> {
+        let plan = prepare(self, start, host)?;
         let handle = self.operations.start(CHAT_OPERATION_KIND);
         if let Err(error) = open_row(self, &plan, handle.id()) {
             handle.complete(Err(&error));
@@ -68,28 +86,5 @@ impl Engine {
             deltas,
             done: Some(done),
         }
-    }
-}
-
-impl fmt::Debug for ChatStart {
-    /// Montre la connexion, le modèle et le nombre de messages, jamais leur texte ni la consigne.
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter
-            .debug_struct("ChatStart")
-            .field("connection", &self.connection)
-            .field("model", &self.request.model)
-            .field("has_system", &self.request.system.is_some())
-            .field("messages", &self.request.messages.len())
-            .finish_non_exhaustive()
-    }
-}
-
-impl fmt::Debug for ChatStream {
-    /// Montre seulement l'identifiant de l'opération.
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter
-            .debug_struct("ChatStream")
-            .field("operation", &self.operation)
-            .finish_non_exhaustive()
     }
 }

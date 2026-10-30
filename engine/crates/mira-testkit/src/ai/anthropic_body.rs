@@ -20,12 +20,12 @@ pub fn anthropic_stream(texts: &[&str], usage: Option<(u32, u32)>) -> Behavior {
 }
 
 /// Événement SSE : ligne `event:` puis ligne `data:`
-fn event(name: &str, value: &Value) -> Vec<u8> {
+pub(super) fn event(name: &str, value: &Value) -> Vec<u8> {
     format!("event: {name}\ndata: {value}\n\n").into_bytes()
 }
 
 /// Début de message, avec les jetons d'entrée s'ils sont connus
-fn start(input: Option<u32>) -> Value {
+pub(super) fn start(input: Option<u32>) -> Value {
     let mut message = json!({"id": "msg_test", "type": "message", "role": "assistant"});
     if let Some(tokens) = input {
         message["usage"] = json!({"input_tokens": tokens});
@@ -34,7 +34,7 @@ fn start(input: Option<u32>) -> Value {
 }
 
 /// Fragment de texte d'un bloc de contenu
-fn text_delta(text: &str) -> Value {
+pub(super) fn text_delta(text: &str) -> Value {
     json!({"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": text}})
 }
 

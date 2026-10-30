@@ -16,6 +16,7 @@ mod message_requests;
 mod read_responses;
 mod request;
 mod response;
+mod risk;
 mod rule_requests;
 mod rule_responses;
 mod search_requests;
@@ -49,6 +50,7 @@ pub use request::{EngineRequest, EventRequest, OperationRequest, ProviderRequest
 pub use response::{
     AccountPreparation, AccountStatus, ContractInfo, EngineStatus, OAuthStart, Response,
 };
+pub use risk::risk_of;
 pub use rule_requests::RuleRequest;
 pub use rule_responses::{CatalogEntry, RuleCatalog, RulePreview, RuleResponse, RuleView};
 pub use search_requests::SearchRequest;

@@ -23,6 +23,7 @@ fn sample_entry() -> AiJournalEntry {
         input_tokens: Some(3),
         output_tokens: None,
         outcome: "running".into(),
+        tools: Vec::new(),
     }
 }
 
@@ -52,11 +53,22 @@ fn journal_entry_has_no_content_field() {
         "output_tokens",
         "parts",
         "provider",
+        "tools",
     ];
     assert_eq!(names, expected);
     let back = serde_json::from_value::<AiJournalEntry>(value).unwrap();
     assert_eq!(back, sample_entry());
 }
+
+const FINISH_FIELDS: [&str; 7] = [
+    "extra_chars",
+    "extra_kinds",
+    "input_tokens",
+    "masked",
+    "outcome",
+    "output_tokens",
+    "tools",
+];
 
 /// La complétion d'une ligne ne porte que des comptes et l'issue
 #[test]
@@ -66,6 +78,9 @@ fn journal_finish_has_only_counts_and_outcome() {
         input_tokens: Some(2),
         output_tokens: Some(3),
         outcome: "end_turn".into(),
+        tools: Vec::new(),
+        extra_kinds: Vec::new(),
+        extra_chars: 0,
     };
     let value = serde_json::to_value(&finish).unwrap();
     let mut names: Vec<&str> = value
@@ -75,8 +90,5 @@ fn journal_finish_has_only_counts_and_outcome() {
         .map(String::as_str)
         .collect();
     names.sort_unstable();
-    assert_eq!(
-        names,
-        ["input_tokens", "masked", "outcome", "output_tokens"]
-    );
+    assert_eq!(names, FINISH_FIELDS);
 }

@@ -24,6 +24,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("v016_ai_connections.sql"),
     include_str!("v017_ai_privacy.sql"),
     include_str!("v018_ai_journal.sql"),
+    include_str!("v019_ai_journal_tools.sql"),
 ];
 
 /// Applique, dans une transaction, les migrations pas encore appliquées

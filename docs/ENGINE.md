@@ -48,7 +48,7 @@ docs/       architecture de référence et documentation
 engine/     workspace Cargo (toolchain 1.99.0, édition 2024)
   crates/mira-vocabulary   types du domaine, erreurs et événements du contrat, interface Provider (serde + thiserror seulement)
   crates/mira-core         le moteur : stockage SQLite/FTS5, profil et verrou, client IMAP, analyse MIME, SMTP,
-                           OAuth2 PKCE, HTML sûr, synchro, file d'actions et rejeu, événements, IA (formats, flux, génération), façade api::Engine
+                           OAuth2 PKCE, HTML sûr, synchro, file d'actions et rejeu, événements, IA (formats, flux, génération, outils en lecture seule), façade api::Engine
   crates/mira-provider-*   gmail, outlook, yahoo, generic : descriptions pures (aucune entrée-sortie)
   crates/mira-ai-*         anthropic, openai, google, mistral, groq, generic : descripteurs d'IA purs (aucune entrée-sortie)
   crates/mira-assembly     composition root : enregistre les providers (mail et IA), fabrique la configuration de production

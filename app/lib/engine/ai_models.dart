@@ -112,6 +112,30 @@ class AiUsage extends AiChatEvent {
   const AiUsage(this.input, this.output);
 }
 
+/// Appel d'outil annoncé : l'IA consulte la boîte ; [summary] est l'extrait de sa requête saisie par le modèle.
+class AiToolCalled extends AiChatEvent {
+  final String id;
+  final String name;
+  final String summary;
+  const AiToolCalled(this.id, this.name, this.summary);
+}
+
+/// Fin d'un appel d'outil : [state] vaut `ok`, `denied` ou `error` ; [sources] sont les messages consultés, [deniedKind] le type de contenu refusé.
+class AiToolFinished extends AiChatEvent {
+  final String id;
+  final String state;
+  final int results;
+  final List<String> sources;
+  final String? deniedKind;
+  const AiToolFinished(
+    this.id,
+    this.state,
+    this.results,
+    this.sources,
+    this.deniedKind,
+  );
+}
+
 /// Fin de la génération : raison (`end_turn`, `max_tokens`, `cancelled`, `failed`), code d'échec et délai conseillé.
 class AiDone extends AiChatEvent {
   final String reason;

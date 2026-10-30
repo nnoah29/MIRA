@@ -3,6 +3,7 @@
 use mira_vocabulary::{AiError, ChatDelta, StopReason};
 use serde_json::Value;
 
+use super::anthropic_tool_decode::fragment;
 use super::anthropic_usage::usage_delta;
 use crate::ai::sse::SseEvent;
 
@@ -14,7 +15,8 @@ pub fn decode_chat_event(event: &SseEvent) -> Result<Vec<ChatDelta>, AiError> {
     }
     let payload: Value = serde_json::from_str(data).map_err(|_| AiError::BadResponse)?;
     match payload.get("type").and_then(Value::as_str) {
-        Some("content_block_delta") => Ok(text_delta(&payload).into_iter().collect()),
+        Some("content_block_delta") => Ok(text_or_fragment(&payload).into_iter().collect()),
+        Some("content_block_start") => Ok(fragment(&payload).into_iter().collect()),
         Some("message_start") => Ok(usage_delta(payload.pointer("/message/usage"))
             .into_iter()
             .collect()),
@@ -23,6 +25,11 @@ pub fn decode_chat_event(event: &SseEvent) -> Result<Vec<ChatDelta>, AiError> {
         Some("error") => Err(AiError::Unavailable),
         _ => Ok(Vec::new()),
     }
+}
+
+/// Texte non vide du delta, sinon fragment d'appel d'outil qu'il porte.
+fn text_or_fragment(payload: &Value) -> Option<ChatDelta> {
+    text_delta(payload).or_else(|| fragment(payload))
 }
 
 /// Extrait le texte non vide d'un delta de type texte.
@@ -47,10 +54,11 @@ fn message_end(payload: &Value) -> Vec<ChatDelta> {
     deltas
 }
 
-/// Traduit une raison d'arrêt du service ; toute autre que la limite de longueur termine le tour.
+/// Traduit une raison d'arrêt du service ; toute autre que la limite de longueur ou l'appel d'outil termine le tour.
 fn stop_reason(reason: &str) -> StopReason {
     match reason {
         "max_tokens" => StopReason::MaxTokens,
+        "tool_use" => StopReason::ToolUse,
         _ => StopReason::EndTurn,
     }
 }

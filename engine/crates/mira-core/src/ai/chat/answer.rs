@@ -7,18 +7,20 @@ use crate::ai::masking::{Masker, Restorer};
 /// Restitue les valeurs masquées dans la réponse et annonce le masquage avant le premier texte.
 #[derive(Debug)]
 pub(super) struct Answer {
-    restorer: Restorer,
-    masked: u32,
-    announced: bool,
+    pub(super) masker: Masker,
+    pub(super) restorer: Restorer,
+    announced: u32,
 }
 
 impl Answer {
     /// Prend la table du masqueur de la requête, qui ne vit que le temps de la génération.
-    pub(super) fn new(masker: Masker) -> Self {
+    pub(super) fn new(mut masker: Masker) -> Self {
+        let mut restorer = Restorer::new_empty();
+        restorer.extend(masker.take_new());
         Self {
-            masked: masker.count(),
-            restorer: masker.into_restorer(),
-            announced: false,
+            masker,
+            restorer,
+            announced: 0,
         }
     }
 
@@ -34,9 +36,9 @@ impl Answer {
         self.emit(rest)
     }
 
-    /// Nombre de valeurs masquées dans la requête, pour le journal.
+    /// Nombre de valeurs masquées depuis le début de la génération, pour le journal.
     pub(super) fn masked(&self) -> u32 {
-        self.masked
+        self.masker.count()
     }
 
     /// Texte restitué en delta, précédé de l'annonce du masquage la première fois ; rien si le texte est vide.
@@ -45,9 +47,11 @@ impl Answer {
             return Vec::new();
         }
         let mut deltas = Vec::with_capacity(2);
-        if self.masked > 0 && !self.announced {
-            self.announced = true;
-            deltas.push(ChatDelta::Masked { count: self.masked });
+        if self.masked() > self.announced {
+            self.announced = self.masked();
+            deltas.push(ChatDelta::Masked {
+                count: self.masked(),
+            });
         }
         deltas.push(ChatDelta::Text { text: restored });
         deltas

@@ -43,12 +43,12 @@ fn ai_responses_round_trip_through_json() {
     }
 }
 
-/// L'instantané versionné contient chaque exemple du domaine assistant d'IA, à l'identique, en version 1.2
+/// L'instantané versionné contient chaque exemple du domaine assistant d'IA, à l'identique, en version 1.3
 #[test]
 fn snapshot_file_holds_every_ai_example() {
     let text = std::fs::read_to_string(snapshot_path()).unwrap();
     let stored: Value = serde_json::from_str(&text).unwrap();
-    assert_eq!(stored["contract"], "1.2");
+    assert_eq!(stored["contract"], "1.3");
     for (name, request) in ai_domain::requests() {
         let expected = serde_json::to_value(&request).unwrap();
         assert_eq!(stored["requests"][&name], expected, "requête {name}");

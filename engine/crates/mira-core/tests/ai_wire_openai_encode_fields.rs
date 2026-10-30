@@ -1,5 +1,5 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
-//! Format OpenAI Chat, encodage : borne de sortie, en-têtes, outils ignorés.
+//! Format OpenAI Chat, encodage : borne de sortie, en-têtes, outils annoncés.
 
 mod ai_wire_support;
 
@@ -35,9 +35,9 @@ fn encode_never_contains_a_key_header() {
     assert!(!call.body.contains("api_key"));
 }
 
-/// Les outils de la requête ne sont pas lus dans ce sous-projet
+/// Les outils de la requête sont annoncés comme des fonctions
 #[test]
-fn encode_ignores_tools() {
+fn encode_announces_tools() {
     let mut req = request();
     req.tools.push(ToolSpec {
         name: "search".to_string(),
@@ -46,6 +46,6 @@ fn encode_ignores_tools() {
     });
     let call = encode_chat(&req, "m1", &descriptor(MaxTokensField::MaxTokens));
     let body: Value = serde_json::from_str(&call.body).unwrap();
-    assert!(body.get("tools").is_none());
-    assert!(!call.body.contains("search"));
+    assert_eq!(body["tools"][0]["type"], "function");
+    assert_eq!(body["tools"][0]["function"]["name"], "search");
 }

@@ -26,6 +26,7 @@ pub fn descriptor(auth: AuthScheme) -> AiProviderDescriptor {
         static_headers: vec![("x-test".to_string(), "1".to_string())],
         quirks: AiQuirks::default(),
         base_url_editable: false,
+        supports_tools: true,
     }
 }
 

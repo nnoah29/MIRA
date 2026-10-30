@@ -13,6 +13,7 @@ pub struct TestProvider {
     pub format: WireFormat,
     pub exclusions: Vec<String>,
     pub editable: bool,
+    pub supports_tools: bool,
 }
 
 impl TestProvider {
@@ -25,6 +26,7 @@ impl TestProvider {
             format: WireFormat::OpenAiChat,
             exclusions: Vec::new(),
             editable: true,
+            supports_tools: true,
         }
     }
 }
@@ -43,6 +45,7 @@ impl AiProvider for TestProvider {
             static_headers: Vec::new(),
             quirks: AiQuirks::default(),
             base_url_editable: self.editable,
+            supports_tools: self.supports_tools,
         }
     }
 }

@@ -2,8 +2,8 @@
 
 use mira_vocabulary::{
     AiConnection, AiConnectionId, AiJournalEntry, AiModel, AiModelList, AiProviderDescriptor,
-    AiProviderId, AiQuirks, AuthScheme, ContentKind, MaskingSettings, OperationId, Timestamp,
-    WireFormat,
+    AiProviderId, AiQuirks, AiToolCount, AuthScheme, ContentKind, MaskingSettings, OperationId,
+    Timestamp, WireFormat,
 };
 
 /// Connexion d'exemple, avec liste de modèles gardée
@@ -47,6 +47,7 @@ pub fn sample_provider() -> AiProviderDescriptor {
         static_headers: Vec::new(),
         quirks: AiQuirks::default(),
         base_url_editable: true,
+        supports_tools: true,
     }
 }
 
@@ -67,5 +68,9 @@ pub fn sample_journal() -> AiJournalEntry {
         input_tokens: Some(321),
         output_tokens: Some(45),
         outcome: "end_turn".to_string(),
+        tools: vec![AiToolCount {
+            name: "search_messages".to_string(),
+            count: 2,
+        }],
     }
 }

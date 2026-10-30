@@ -50,9 +50,9 @@ fn migration_16_applies_on_existing_profile() {
     .unwrap();
     drop(raw);
     let db = Database::open(&path).unwrap();
-    assert_eq!(schema_version(), 18);
+    assert_eq!(schema_version(), 19);
     let version = db.read(|tx| Ok(tx.schema_version_on_disk())).unwrap();
-    assert_eq!(version, 18);
+    assert_eq!(version, 19);
     insert(&db, &connection("c-1", "A")).unwrap();
     assert!(
         db.read(|tx| tx.table_names())

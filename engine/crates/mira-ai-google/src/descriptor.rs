@@ -27,5 +27,6 @@ pub fn descriptor() -> AiProviderDescriptor {
             max_tokens_field: MaxTokensField::MaxTokens,
         },
         base_url_editable: false,
+        supports_tools: true,
     }
 }

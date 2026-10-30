@@ -1,8 +1,9 @@
 //! Encodage d'une requête de discussion au format Messages, sans en-tête d'authentification.
 
-use mira_vocabulary::{AiProviderDescriptor, ChatMessage, ChatRequest, ChatRole};
+use mira_vocabulary::{AiProviderDescriptor, ChatRequest};
 use serde_json::{Map, Value, json};
 
+use super::anthropic_tools::{message_values, tools_value};
 use super::call::HttpCall;
 
 pub(super) const CHAT_PATH: &str = "/messages";
@@ -21,10 +22,7 @@ pub fn encode_chat(
         .max_output_tokens
         .unwrap_or(DEFAULT_MAX_OUTPUT_TOKENS);
     body.insert("max_tokens".to_string(), json!(limit));
-    body.insert("messages".to_string(), wire_messages(request));
-    if let Some(system) = &request.system {
-        body.insert("system".to_string(), json!(system));
-    }
+    insert_dialogue(&mut body, request);
     if let Some(temperature) = request.temperature {
         body.insert("temperature".to_string(), temperature_value(temperature));
     }
@@ -35,18 +33,16 @@ pub fn encode_chat(
     }
 }
 
-/// Liste les messages du fil, sans la consigne qui a son propre champ.
-fn wire_messages(request: &ChatRequest) -> Value {
-    Value::Array(request.messages.iter().map(wire_message).collect())
-}
-
-/// Traduit un message du fil en objet du format.
-fn wire_message(message: &ChatMessage) -> Value {
-    let role = match message.role {
-        ChatRole::User => "user",
-        ChatRole::Assistant => "assistant",
-    };
-    json!({"role": role, "content": message.text})
+/// Ajoute le fil de messages, les outils annoncés et la consigne de niveau supérieur.
+fn insert_dialogue(body: &mut Map<String, Value>, request: &ChatRequest) {
+    let messages = Value::Array(message_values(&request.messages));
+    body.insert("messages".to_string(), messages);
+    if let Some(tools) = tools_value(&request.tools) {
+        body.insert("tools".to_string(), tools);
+    }
+    if let Some(system) = &request.system {
+        body.insert("system".to_string(), json!(system));
+    }
 }
 
 /// Convertit la température sans bruit de précision (0.7 reste 0.7).

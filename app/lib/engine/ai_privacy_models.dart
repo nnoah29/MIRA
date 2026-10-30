@@ -3,8 +3,14 @@
 /// Type de contenu « mail ouvert » tel que le moteur le nomme.
 const aiKindMail = 'mail_message';
 
+/// Type de contenu « listes de messages » (résultats de recherche) tel que le moteur le nomme.
+const aiKindMailList = 'mail_list';
+
+/// Type de contenu « boîtes et comptes consultés » tel que le moteur le nomme.
+const aiKindToolResult = 'tool_result';
+
 /// Types de contenu que l'app sait produire aujourd'hui.
-const aiKnownKinds = [aiKindMail];
+const aiKnownKinds = [aiKindMail, aiKindMailList, aiKindToolResult];
 
 /// Catégories de données sensibles que le masquage reconnaît, dans l'ordre d'affichage.
 const aiMaskCategories = ['iban', 'card', 'secret', 'otp', 'email', 'phone'];
@@ -39,6 +45,13 @@ class AiMasking {
   Map<String, dynamic> toJson() => {'mode': mode, 'categories': categories};
 }
 
+/// Nombre d'appels d'un outil pendant une génération : un nom et un nombre, jamais d'argument.
+class AiToolUse {
+  final String name;
+  final int count;
+  const AiToolUse(this.name, this.count);
+}
+
 /// Une génération telle que le journal la garde : des comptes et des codes, jamais de texte.
 class AiJournalRow {
   final String id;
@@ -52,6 +65,7 @@ class AiJournalRow {
   final int? inputTokens;
   final int? outputTokens;
   final String outcome;
+  final List<AiToolUse> tools;
   const AiJournalRow({
     required this.id,
     required this.at,
@@ -62,6 +76,7 @@ class AiJournalRow {
     required this.chars,
     required this.masked,
     required this.outcome,
+    this.tools = const [],
     this.inputTokens,
     this.outputTokens,
   });
@@ -78,5 +93,9 @@ class AiJournalRow {
     inputTokens: (json['input_tokens'] as num?)?.toInt(),
     outputTokens: (json['output_tokens'] as num?)?.toInt(),
     outcome: '${json['outcome']}',
+    tools: [
+      for (final u in (json['tools'] as List? ?? const []))
+        AiToolUse('${(u as Map)['name']}', (u['count'] as num?)?.toInt() ?? 0),
+    ],
   );
 }

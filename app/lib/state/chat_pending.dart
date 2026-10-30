@@ -1,6 +1,7 @@
 //! Question en attente d'un accord de l'utilisateur (consentement ou type de contenu) et codes d'erreur qui l'annoncent.
 
 import '../engine/ai_models.dart';
+import 'chat_message.dart';
 import 'chat_context.dart';
 
 /// Code d'erreur du moteur : le service n'est pas autorisé à recevoir ce type de contenu.
@@ -13,13 +14,22 @@ class ChatPending {
   final ChatContextInput input;
   final String providerName;
   final int stage;
+
+  /// Types à autoriser quand la demande vient d'un outil refusé (sinon ceux du contexte envoyé).
+  final List<String>? kindsOverride;
+
+  /// Réponse refusée que la nouvelle génération remplace une fois l'accord donné.
+  final ChatMsg? replacing;
   const ChatPending(
     this.connection,
     this.question,
     this.input,
     this.providerName, [
     this.stage = 0,
+    this.kindsOverride,
+    this.replacing,
   ]);
 
-  List<String> get kinds => input.hasMail ? const [aiKindMail] : const [];
+  List<String> get kinds =>
+      kindsOverride ?? (input.hasMail ? const [aiKindMail] : const []);
 }

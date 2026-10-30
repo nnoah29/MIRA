@@ -1,8 +1,9 @@
-//! Requête de discussion : messages, consigne, bornes et outils (réservés).
+//! Requête de discussion : messages, consigne, bornes et outils proposés au modèle.
 
 use serde::{Deserialize, Serialize};
 
 use super::content::ContextPart;
+use super::tool::{ToolCall, ToolOutcome};
 
 /// Auteur d'un message de la discussion.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -10,6 +11,7 @@ use super::content::ContextPart;
 pub enum ChatRole {
     User,
     Assistant,
+    Tool,
 }
 
 /// Un message de la discussion.
@@ -17,9 +19,25 @@ pub enum ChatRole {
 pub struct ChatMessage {
     pub role: ChatRole,
     pub text: String,
+    #[serde(default)]
+    pub tool_calls: Vec<ToolCall>,
+    #[serde(default)]
+    pub tool_result: Option<ToolOutcome>,
 }
 
-/// Outil proposé au modèle ; réservé, jamais lu pour l'instant.
+impl ChatMessage {
+    /// Message de texte seul, sans appel ni résultat d'outil.
+    pub fn plain(role: ChatRole, text: String) -> Self {
+        Self {
+            role,
+            text,
+            tool_calls: Vec::new(),
+            tool_result: None,
+        }
+    }
+}
+
+/// Outil proposé au modèle : nom, description et schéma JSON des arguments.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ToolSpec {
     pub name: String,

@@ -18,7 +18,9 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="Client mail MIRA — portage Flutter fidèle de la maquette HTML/CSS (données fictives).">
+  <meta name="description" content="Démonstration en ligne de MIRA, un client mail moderne et soigné pour Linux et Android (données fictives).">
+  <meta name="theme-color" content="#1b1b1b">
+  <style>html,body{margin:0;background:#1b1b1b}</style>
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -42,5 +44,10 @@
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+    }
+  </script>
 </body>
 </html>

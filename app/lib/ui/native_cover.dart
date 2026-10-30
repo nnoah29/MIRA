@@ -1,13 +1,13 @@
-import 'dart:io';
-
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
+
+import '../platform_info.dart';
 
 /// Les vues natives (vue web GTK sous Linux) sont posées par-dessus Flutter : ce que Flutter superpose passerait dessous.
 /// Les popovers ouverts publient ici leur rectangle à l'écran, les modales hors navigateur leur nombre.
 class NativeCover {
   /// Sous Android, les vues natives se composent avec Flutter : rien à replier ni à masquer.
-  static final bool active = Platform.isLinux;
+  static final bool active = runsOnLinux;
 
   static final covers = ValueNotifier<Map<Object, Rect>>(const {});
   static final modals = ValueNotifier<int>(0);

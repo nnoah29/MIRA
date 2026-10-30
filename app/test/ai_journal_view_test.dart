@@ -15,6 +15,7 @@ Map<String, dynamic> entry(
   String outcome = 'end_turn',
   int masked = 0,
   List<Map<String, Object>> tools = const [],
+  String? connection,
 }) => {
   'id': 'j$i',
   'at': 1700000000000 - i * 1000,
@@ -28,13 +29,16 @@ Map<String, dynamic> entry(
   'output_tokens': 45,
   'outcome': outcome,
   'tools': tools,
+  'connection': ?connection,
 };
 
 Future<FakeAiEngine> openJournal(
   WidgetTester tester,
-  List<Map<String, dynamic>> rows,
-) async {
+  List<Map<String, dynamic>> rows, {
+  List<Map<String, dynamic>> connections = const [],
+}) async {
   final engine = FakeAiEngine()..journal.addAll(rows);
+  engine.connections.addAll(connections);
   await pumpSettings(tester, using: engine);
   await tester.tap(find.text('JOURNAL'));
   await tester.pumpAndSettle();
@@ -107,6 +111,17 @@ void main() {
   testWidgets('max_tool_rounds_reads_as_a_limit_not_an_error', (tester) async {
     await openJournal(tester, [entry(0, outcome: 'max_tool_rounds')]);
     expect(rowText(tester, 0), contains('Limite de tours atteinte'));
+  });
+
+  testWidgets('row_uses_the_name_given_to_the_connection', (tester) async {
+    await openJournal(
+      tester,
+      [entry(0, connection: 'c-1'), entry(1, connection: 'supprimee')],
+      connections: [connection('c-1', label: 'Mon Qwen local')],
+    );
+    expect(rowText(tester, 0), contains('Mon Qwen local · model-0'));
+    expect(rowText(tester, 0), isNot(contains('OpenAI')));
+    expect(rowText(tester, 1), contains('OpenAI · model-1'));
   });
 
   testWidgets('local_rows_are_marked', (tester) async {

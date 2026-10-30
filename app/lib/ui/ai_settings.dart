@@ -73,6 +73,7 @@ class _AiSettingsState extends State<AiSettings> {
     child: AiJournalView(
       state: journal,
       providerNames: {for (final v in state.providers) v.id: v.name},
+      connectionLabels: {for (final c in state.connections) c.id: c.label},
     ),
   );
 

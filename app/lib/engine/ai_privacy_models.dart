@@ -56,6 +56,9 @@ class AiToolUse {
 class AiJournalRow {
   final String id;
   final int at;
+
+  /// Identifiant de la connexion qui a servi ; vide si le moteur ne le dit pas.
+  final String connection;
   final String provider;
   final String model;
   final bool local;
@@ -69,6 +72,7 @@ class AiJournalRow {
   const AiJournalRow({
     required this.id,
     required this.at,
+    this.connection = '',
     required this.provider,
     required this.model,
     required this.local,
@@ -84,6 +88,7 @@ class AiJournalRow {
   factory AiJournalRow.fromJson(Map<String, dynamic> json) => AiJournalRow(
     id: '${json['id']}',
     at: (json['at'] as num?)?.toInt() ?? 0,
+    connection: '${json['connection'] ?? ''}',
     provider: '${json['provider']}',
     model: '${json['model']}',
     local: json['local'] == true,

@@ -1,9 +1,10 @@
 //! Encodage d'une requête de discussion au format OpenAI Chat, sans en-tête d'authentification.
 
-use mira_vocabulary::{AiProviderDescriptor, ChatMessage, ChatRequest, ChatRole, MaxTokensField};
+use mira_vocabulary::{AiProviderDescriptor, ChatRequest, MaxTokensField};
 use serde_json::{Map, Value, json};
 
 use super::call::HttpCall;
+use super::openai_tools::{message_value, tools_value};
 
 pub(super) const CHAT_PATH: &str = "/chat/completions";
 const DEFAULT_MAX_OUTPUT_TOKENS: u32 = 4096;
@@ -17,6 +18,9 @@ pub fn encode_chat(
     let mut body = Map::new();
     body.insert("model".to_string(), json!(model));
     body.insert("messages".to_string(), Value::Array(wire_messages(request)));
+    if let Some(tools) = tools_value(&request.tools) {
+        body.insert("tools".to_string(), tools);
+    }
     body.insert("stream".to_string(), json!(true));
     body.insert("stream_options".to_string(), json!({"include_usage": true}));
     let limit = request
@@ -39,18 +43,8 @@ fn wire_messages(request: &ChatRequest) -> Vec<Value> {
         .system
         .iter()
         .map(|text| json!({"role": "system", "content": text}));
-    let others = request.messages.iter().map(wire_message);
+    let others = request.messages.iter().map(message_value);
     system.chain(others).collect()
-}
-
-/// Traduit un message du fil en objet du format.
-fn wire_message(message: &ChatMessage) -> Value {
-    let role = match message.role {
-        ChatRole::User => "user",
-        ChatRole::Assistant => "assistant",
-        ChatRole::Tool => "tool",
-    };
-    json!({"role": role, "content": message.text})
 }
 
 /// Donne le nom du champ qui borne la réponse selon les particularités du service.

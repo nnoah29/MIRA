@@ -59,6 +59,7 @@ class ChatController extends ChangeNotifier {
   AiConnectionInfo? _connection;
   ChatPending? _consent;
   ChatPending? _content;
+  ChatContextInput _lastInput = noContext;
   _Run? _run;
   final Set<_Run> _orphans = {};
   Timer? _demoTimer;
@@ -170,6 +171,7 @@ class ChatController extends ChangeNotifier {
     ChatContextInput input,
     int stage,
   ) async {
+    _lastInput = input;
     final user = ChatMsg(role: 'me', text: q);
     final reply = ChatMsg(role: 'ai', done: false, text: '', fromEngine: true);
     final request = buildChatStart(history: [...chat, user], input: input);
@@ -351,13 +353,40 @@ class ChatController extends ChangeNotifier {
     busy = true;
     notifyListeners();
     final kinds = {...pending.connection.allowedKinds, ...pending.kinds};
+    final replaced = pending.replacing;
     try {
       await ai.setAllowedContent(pending.connection.id, kinds.toList());
     } on Object catch (e) {
       return _grantFailed(pending, e);
     }
     if (!busy) return;
+    if (replaced != null) _dropExchange(replaced);
     await _generate(ai, pending.connection, pending.question, pending.input, 2);
+  }
+
+  /// Vrai quand la réponse est la dernière du fil et que rien ne tourne : un type refusé peut être autorisé.
+  bool canAuthorize(ChatMsg reply) =>
+      !busy && _connection != null && chat.isNotEmpty && chat.last == reply;
+
+  /// L'utilisateur veut autoriser le type refusé à un outil : la boîte d'autorisation s'ouvre, et sa question repart si l'accord est donné.
+  void askToolAuthorization(ChatMsg reply, ToolActivity tool) {
+    final connection = _connection;
+    final kind = tool.deniedKind;
+    if (kind == null || connection == null || !canAuthorize(reply)) return;
+    final at = chat.indexOf(reply);
+    if (at < 1) return;
+    final name = _providerNames[connection.provider] ?? connection.label;
+    final question = chat[at - 1].text;
+    _content = ChatPending(connection, question, _lastInput, name, 2, [
+      kind,
+    ], reply);
+    notifyListeners();
+  }
+
+  void _dropExchange(ChatMsg reply) {
+    final at = chat.indexOf(reply);
+    if (at < 1) return;
+    chat.removeRange(at - 1, at + 1);
   }
 
   /// L'utilisateur refuse le type de contenu : sa question reste dans le fil, rien n'a été envoyé.
@@ -365,6 +394,7 @@ class ChatController extends ChangeNotifier {
     final pending = _content;
     if (pending == null) return;
     _content = null;
+    if (pending.replacing != null) return notifyListeners();
     _note(pending.question, t('Non envoyé : contenu non autorisé.'));
   }
 

@@ -3,8 +3,14 @@
 /// Type de contenu « mail ouvert » tel que le moteur le nomme.
 const aiKindMail = 'mail_message';
 
+/// Type de contenu « listes de messages » (résultats de recherche) tel que le moteur le nomme.
+const aiKindMailList = 'mail_list';
+
+/// Type de contenu « boîtes et comptes consultés » tel que le moteur le nomme.
+const aiKindToolResult = 'tool_result';
+
 /// Types de contenu que l'app sait produire aujourd'hui.
-const aiKnownKinds = [aiKindMail];
+const aiKnownKinds = [aiKindMail, aiKindMailList, aiKindToolResult];
 
 /// Catégories de données sensibles que le masquage reconnaît, dans l'ordre d'affichage.
 const aiMaskCategories = ['iban', 'card', 'secret', 'otp', 'email', 'phone'];

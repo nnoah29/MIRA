@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../data/format.dart';
+import '../data/models.dart';
 import '../state/assistant.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
@@ -10,6 +10,9 @@ import '../theme/icons.dart';
 import 'ai_consent_dialog.dart';
 import 'ai_content_dialog.dart';
 import 'chat_markdown.dart';
+import 'chat_sources.dart';
+import 'chat_tool_chips.dart';
+import 'mail_ref.dart';
 import 'demo_banner.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
@@ -67,6 +70,12 @@ class _AssistantPanelState extends State<AssistantPanel> {
     );
     if (kinds == null) return chat.declineConsent();
     await chat.grantConsent(kinds);
+  }
+
+  /// Ouvre la boîte d'autorisation du type refusé à un outil ; si l'utilisateur accepte, la question repart.
+  Future<void> _authorize(MailStore s, ChatMsg msg, ToolActivity tool) async {
+    s.chatCtl.askToolAuthorization(msg, tool);
+    await _askContent(s);
   }
 
   Future<void> _askContent(MailStore s) async {
@@ -266,6 +275,7 @@ class _AssistantPanelState extends State<AssistantPanel> {
                           s.chat[i],
                           i,
                           maxW: (box.maxWidth * .88).clamp(0, 720).toDouble(),
+                          onAuthorize: (msg, tool) => _authorize(s, msg, tool),
                         ),
                       ),
                     ),
@@ -387,7 +397,19 @@ class _Bubble extends StatelessWidget {
   final ChatMsg msg;
   final int idx;
   final double maxW;
-  const _Bubble(this.msg, this.idx, {required this.maxW});
+  final void Function(ChatMsg msg, ToolActivity tool) onAuthorize;
+  const _Bubble(
+    this.msg,
+    this.idx, {
+    required this.maxW,
+    required this.onAuthorize,
+  });
+
+  /// Messages consultés par les outils que le magasin connaît ; les autres identifiants sont ignorés.
+  List<Mail> _known(MailStore s, ChatMsg msg) => [
+    for (final id in msg.sources)
+      if (s.byId(id) != null) s.byId(id)!,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -402,7 +424,6 @@ class _Bubble extends StatelessWidget {
     final shown = me
         ? msg.text
         : (msg.done ? (msg.fromEngine ? msg.text : t(msg.text)) : msg.shown);
-    final width = MediaQuery.sizeOf(context).width;
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxW),
       child: IntrinsicWidth(
@@ -456,6 +477,14 @@ class _Bubble extends StatelessWidget {
                     style: Fonts.sans(size: 13, color: p.dim),
                   ),
                 ),
+              if (!me && msg.tools.isNotEmpty)
+                ChatToolChips(
+                  tools: msg.tools,
+                  canAuthorize: s.chatCtl.canAuthorize(msg),
+                  onAuthorize: (tool) => onAuthorize(msg, tool),
+                ),
+              if (!me && msg.done && _known(s, msg).isNotEmpty)
+                ChatSources(_known(s, msg)),
               if (!me && msg.done && msg.draft != null) ...[
                 Container(
                   width: double.infinity,
@@ -529,66 +558,10 @@ class _Bubble extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       for (final id in msg.refs!)
-                        if (s.byId(id) != null) _Ref(s.byId(id)!, width),
+                        if (s.byId(id) != null) MailRef(s.byId(id)!),
                     ],
                   ),
                 ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Ref extends StatelessWidget {
-  final dynamic m;
-  final double w;
-  const _Ref(this.m, this.w);
-  @override
-  Widget build(BuildContext context) {
-    final p = context.pal;
-    final s = context.read<MailStore>();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Hov(
-        onTap: () => s.openRef(m.id),
-        builder: (_, h) => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: p.bg,
-            border: Border.all(color: h ? p.accent : p.line),
-          ),
-          child: Row(
-            children: [
-              Avatar(m.from.name, size: 30, font: 10),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      m.subject,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Fonts.sans(
-                        size: 14,
-                        w: FontWeight.w500,
-                        color: p.text,
-                        height: 1.3,
-                      ),
-                    ),
-                    Text(
-                      '${m.from.name} · ${rowTime(m.date)}',
-                      style: Fonts.sans(size: 12, color: p.dim),
-                    ),
-                  ],
-                ),
-              ),
-              Transform.rotate(
-                angle: 3.14159,
-                child: Ico('arrowl', size: 14, color: p.dim),
-              ),
             ],
           ),
         ),

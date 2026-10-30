@@ -3,11 +3,12 @@
 use mira_vocabulary::{AiError, ChatDelta, StopReason};
 use serde_json::Value;
 
+use super::openai_tool_decode::fragments;
 use crate::ai::sse::SseEvent;
 
 const DONE_MARKER: &str = "[DONE]";
 
-/// Décode un événement ; texte, consommation puis arrêt, dans cet ordre.
+/// Décode un événement ; texte, appels d'outils, consommation puis arrêt, dans cet ordre.
 pub fn decode_chat_event(event: &SseEvent) -> Result<Vec<ChatDelta>, AiError> {
     let data = event.data.trim();
     if data.is_empty() || data == DONE_MARKER {
@@ -16,6 +17,7 @@ pub fn decode_chat_event(event: &SseEvent) -> Result<Vec<ChatDelta>, AiError> {
     let chunk: Value = serde_json::from_str(data).map_err(|_| AiError::BadResponse)?;
     let mut deltas = Vec::new();
     deltas.extend(text_delta(&chunk));
+    deltas.extend(fragments(&chunk));
     deltas.extend(usage_delta(&chunk));
     deltas.extend(finish_delta(&chunk));
     Ok(deltas)
@@ -50,6 +52,7 @@ fn finish_delta(chunk: &Value) -> Option<ChatDelta> {
     let reason = chunk.pointer("/choices/0/finish_reason")?.as_str()?;
     let reason = match reason {
         "length" => StopReason::MaxTokens,
+        "tool_calls" => StopReason::ToolUse,
         _ => StopReason::EndTurn,
     };
     Some(ChatDelta::Done { reason })

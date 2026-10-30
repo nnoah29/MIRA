@@ -20,7 +20,25 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Démonstration en ligne de MIRA, un client mail moderne et soigné pour Linux et Android (données fictives).">
   <meta name="theme-color" content="#1b1b1b">
-  <style>html,body{margin:0;background:#1b1b1b}</style>
+  <style>html,body{margin:0;background:#1b1b1b}
+    #splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:#1b1b1b;color:#8a8a8a;font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;transition:opacity .3s}
+    #splash svg{animation:pulse 1.6s ease-in-out infinite}
+    @keyframes pulse{50%{opacity:.45}}
+    @media (prefers-reduced-motion:reduce){#splash svg{animation:none}}
+  </style>
+  <link rel="preload" href="main.dart.js" as="script">
+  <script>
+    if (window.chrome) {
+      [['canvaskit/chromium/canvaskit.js', 'script'], ['canvaskit/chromium/canvaskit.wasm', 'fetch']].forEach(([href, as]) => {
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.href = href;
+        link.as = as;
+        if (as === 'fetch') { link.type = 'application/wasm'; link.crossOrigin = 'anonymous'; }
+        document.head.appendChild(link);
+      });
+    }
+  </script>
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -35,6 +53,10 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <div id="splash" role="status" aria-live="polite">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="96" height="96" aria-hidden="true"><defs><linearGradient id="g" x1="26" y1="30" x2="174" y2="170" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ff8a63"/><stop offset=".55" stop-color="#e8542b"/><stop offset="1" stop-color="#bb3510"/></linearGradient></defs><rect width="96" height="96" rx="44" fill="#1b1b1b"/><path d="M30 118V30H170V170H82" fill="none" stroke="url(#g)" stroke-width="7" stroke-linejoin="miter" stroke-miterlimit="10"/><path d="M75.21 124V60.41H94.58L99.93 99.18L105.24 60.41H124.79V124H113.15V78.18L105.85 124H94.44L86.7 78.18V124Z" fill="#e8542b"/></svg>
+    <span>Chargement de la démo…</span>
+  </div>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
@@ -45,6 +67,19 @@
   -->
   <script src="flutter_bootstrap.js" async></script>
   <script>
+    window.addEventListener('flutter-first-frame', () => {
+      const splash = document.getElementById('splash');
+      if (!splash) return;
+      splash.style.opacity = '0';
+      setTimeout(() => splash.remove(), 300);
+    });
+    window.addEventListener('flutter-first-frame', () => {
+      if (!('serviceWorker' in navigator)) return;
+      navigator.serviceWorker.ready.then((registration) => {
+        const urls = performance.getEntriesByType('resource').map((entry) => entry.name).filter((url) => url.startsWith(location.origin));
+        registration.active?.postMessage({ type: 'cache-loaded', urls });
+      });
+    });
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
     }

@@ -8,6 +8,7 @@ mod context;
 mod debug;
 mod detect;
 mod entropy;
+mod extend;
 mod iban;
 mod otp;
 mod placeholder;

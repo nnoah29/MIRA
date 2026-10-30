@@ -16,6 +16,7 @@ pub struct Masker {
     pub(super) counters: HashMap<SensitiveCategory, u32>,
     pub(super) reserved: HashSet<String>,
     pub(super) table: Vec<(String, String)>,
+    pub(super) taken: usize,
 }
 
 impl Masker {

@@ -385,7 +385,7 @@ class MailStore extends ChangeNotifier {
     role: 'ai',
     done: true,
     text: t(
-      'Salut Noah ! Je peux **résumer** un mail, **rédiger** une réponse, **trier** ce qui est urgent ou **retrouver** un message. Sélectionne un mail dans la liste pour que je m’en serve comme contexte.',
+      'Salut ! Je peux **résumer** un mail, **rédiger** une réponse, **trier** ce qui est urgent ou **retrouver** un message. Sélectionne un mail dans la liste pour que je m’en serve comme contexte.',
     ),
   );
 

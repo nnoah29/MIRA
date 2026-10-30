@@ -362,7 +362,6 @@ const Map<String, String> enStrings = {
   'Montre-moi mes mails non lus': 'Show me my unread mails',
   'Traduis en anglais': 'Translate to English',
   'Traduis ce mail en anglais': 'Translate this mail to English',
-  'Nettoie ma boîte': 'Clean up my inbox',
   'Salut Noah ! Je peux **résumer** un mail, **rédiger** une réponse, **trier** ce qui est urgent ou **retrouver** un message. Sélectionne un mail dans la liste pour que je m’en serve comme contexte.': 'Hi Noah! I can **summarize** a mail, **draft** a reply, **sort** what is urgent or **find** a message. Select a mail in the list and I will use it as context.',
   'Sélectionne d’abord un mail dans la liste, et je m’en occupe.':
       'Select a mail in the list first, and I will take care of it.',
@@ -392,7 +391,8 @@ const Map<String, String> enStrings = {
       'Your inbox is already clean: nothing to archive.',
   'J’archive **{0}**, déjà lus et sans action en attente depuis plus de 2 jours. Tu pourras annuler.': 'I am archiving **{0}**, already read with no pending action for over 2 days. You can undo.',
   'J’ai trouvé **{0}** autour de « {1} » :': 'I found **{0}** about “{1}”:',
-  'Je peux **résumer** un mail, **rédiger** une réponse, **lister l’urgent**, afficher tes **non lus**, **traduire** ou **nettoyer** ta boîte. Essaie une des suggestions ci-dessous.': 'I can **summarize** a mail, **draft** a reply, **list what is urgent**, show your **unread**, **translate** or **clean up** your inbox. Try one of the suggestions below.',
+  'Je peux **résumer** un mail, **rédiger** une réponse, **lister l’urgent**, afficher tes **non lus** ou **traduire**. Essaie une des suggestions ci-dessous.': 'I can **summarize** a mail, **draft** a reply, **list what is urgent**, show your **unread** or **translate**. Try one of the suggestions below.',
+  'Outils : {0}': 'Tools: {0}',
   'Apparence': 'Appearance',
   'Messagerie': 'Mail',
   'Compte': 'Account',

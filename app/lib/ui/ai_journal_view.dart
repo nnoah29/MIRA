@@ -47,8 +47,10 @@ class AiJournalView extends StatelessWidget {
     final tokens = r.inputTokens == null && r.outputTokens == null
         ? null
         : t('{0} → {1} jetons', [r.inputTokens ?? 0, r.outputTokens ?? 0]);
+    final tools = r.tools.map((u) => '${u.name} ×${u.count}').join(', ');
     return [
       if (kinds.isNotEmpty) kinds,
+      if (tools.isNotEmpty) t('Outils : {0}', [tools]),
       tn(r.chars, 'caractère', 'caractères'),
       if (r.masked > 0) tn(r.masked, 'masqué', 'masqués'),
       ?tokens,

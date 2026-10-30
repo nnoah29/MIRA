@@ -70,7 +70,11 @@ class AiPrivacySection extends StatelessWidget {
         children: [
           for (final kind in aiKnownKinds)
             RuleChip(
-              key: kind == aiKindMail ? ValueKey('ai-privacy-kinds-$id') : null,
+              key: ValueKey(
+                kind == aiKindMail
+                    ? 'ai-privacy-kinds-$id'
+                    : 'ai-privacy-kinds-$kind-$id',
+              ),
               label: aiKindName(kind),
               selected: connection.allowedKinds.contains(kind),
               onTap: () => _toggleKind(kind),

@@ -17,7 +17,6 @@ List<List<String>> get suggestions => [
   [t('Qu’est-ce qui est urgent ?'), t('Qu’est-ce qui est urgent ?')],
   [t('Mes non lus'), t('Montre-moi mes mails non lus')],
   [t('Traduis en anglais'), t('Traduis ce mail en anglais')],
-  [t('Nettoie ma boîte'), t('Nettoie ma boîte')],
 ];
 
 List<String> _sentences(String body) {
@@ -209,7 +208,7 @@ Answer answerTo(MailStore s, String q) {
   }
   return Answer(
     t(
-      'Je peux **résumer** un mail, **rédiger** une réponse, **lister l’urgent**, afficher tes **non lus**, **traduire** ou **nettoyer** ta boîte. Essaie une des suggestions ci-dessous.',
+      'Je peux **résumer** un mail, **rédiger** une réponse, **lister l’urgent**, afficher tes **non lus** ou **traduire**. Essaie une des suggestions ci-dessous.',
     ),
   );
 }

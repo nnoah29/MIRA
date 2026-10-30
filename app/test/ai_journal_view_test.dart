@@ -14,6 +14,7 @@ Map<String, dynamic> entry(
   bool local = false,
   String outcome = 'end_turn',
   int masked = 0,
+  List<Map<String, Object>> tools = const [],
 }) => {
   'id': 'j$i',
   'at': 1700000000000 - i * 1000,
@@ -26,6 +27,7 @@ Map<String, dynamic> entry(
   'input_tokens': 321,
   'output_tokens': 45,
   'outcome': outcome,
+  'tools': tools,
 };
 
 Future<FakeAiEngine> openJournal(
@@ -82,6 +84,24 @@ void main() {
     expect(text, contains('2 masqués'));
     expect(text, contains('321 → 45 jetons'));
     expect(text, contains('Terminé'));
+  });
+
+  testWidgets('tools_line_lists_names_and_counts', (tester) async {
+    await openJournal(tester, [
+      entry(
+        0,
+        tools: [
+          {'name': 'search_messages', 'count': 2},
+          {'name': 'get_thread', 'count': 1},
+        ],
+      ),
+      entry(1),
+    ]);
+    expect(
+      rowText(tester, 0),
+      contains('Outils : search_messages ×2, get_thread ×1'),
+    );
+    expect(rowText(tester, 1), isNot(contains('Outils')));
   });
 
   testWidgets('local_rows_are_marked', (tester) async {

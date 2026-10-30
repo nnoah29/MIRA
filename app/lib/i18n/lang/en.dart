@@ -251,6 +251,8 @@ const Map<String, String> enStrings = {
   'Action impossible sur cet envoi': 'Could not act on this send',
   'Téléchargement impossible': 'Download failed',
   'Action non appliquée sur le serveur': 'Action not applied on the server',
+  'Action impossible sur un brouillon : ouvre-le ou supprime-le':
+      'Not possible on a draft: open it or delete it',
   'Enregistrement impossible': 'Could not save',
   'Envoi impossible, le message reste en brouillon':
       'Could not send, the message stays a draft',

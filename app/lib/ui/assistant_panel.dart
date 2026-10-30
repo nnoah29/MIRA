@@ -483,8 +483,11 @@ class _Bubble extends StatelessWidget {
                   canAuthorize: s.chatCtl.canAuthorize(msg),
                   onAuthorize: (tool) => onAuthorize(msg, tool),
                 ),
-              if (!me && msg.done && _known(s, msg).isNotEmpty)
-                ChatSources(_known(s, msg)),
+              if (!me &&
+                  msg.done &&
+                  (msg.refs ?? const []).isEmpty &&
+                  _known(s, msg).isNotEmpty)
+                ChatSources(_known(s, msg).take(5).toList()),
               if (!me && msg.done && msg.draft != null) ...[
                 Container(
                   width: double.infinity,

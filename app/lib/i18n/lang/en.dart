@@ -253,6 +253,8 @@ const Map<String, String> enStrings = {
   'Action non appliquée sur le serveur': 'Action not applied on the server',
   'Action impossible sur un brouillon : ouvre-le ou supprime-le':
       'Not possible on a draft: open it or delete it',
+  'Moteur indisponible, données de démonstration : {0}':
+      'Engine unavailable, showing demo data: {0}',
   'Enregistrement impossible': 'Could not save',
   'Envoi impossible, le message reste en brouillon':
       'Could not send, the message stays a draft',

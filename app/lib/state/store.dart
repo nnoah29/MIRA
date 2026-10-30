@@ -140,6 +140,9 @@ class MailStore extends ChangeNotifier {
 
   /// Données réelles du moteur (`null` : données fictives de démonstration).
   final MailSource? source;
+
+  /// Raison pour laquelle le moteur n'a pas pu s'ouvrir (l'app montre alors la démonstration) ; `null` si tout va bien.
+  final String? engineError;
   StreamSubscription<String>? _changeSub;
   StreamSubscription<void>? _syncSub;
   StreamSubscription<void>? _counterSub;
@@ -169,6 +172,7 @@ class MailStore extends ChangeNotifier {
     this.prefs, {
     bool watchWallpaper = false,
     this.source,
+    this.engineError,
     this.aiAdminOverride,
   }) {
     contactBook = ContactBook.decode(
@@ -246,6 +250,14 @@ class MailStore extends ChangeNotifier {
     if (source != null) {
       wakeSnoozed();
       _armWake();
+    }
+    final failure = engineError;
+    if (failure != null) {
+      toast(
+        t('Moteur indisponible, données de démonstration : {0}', [failure]),
+        err: true,
+        ms: 20000,
+      );
     }
   }
 

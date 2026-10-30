@@ -7,6 +7,7 @@ use super::args::parse;
 use super::body::{RESULT_CHARS, body_text};
 use super::execute::execute_read;
 use super::message_view::header_block;
+use super::render::{cut, one_line};
 use super::run_result::ToolRun;
 use crate::api::contract::ThreadView;
 use crate::api::{Engine, Request, Response, ThreadRequest};
@@ -53,7 +54,7 @@ pub(super) async fn run(engine: &Engine, arguments: &str) -> ToolRun {
 
 /// Rend les messages du fil tant qu'il reste de la place, puis annonce combien sont omis.
 async fn thread_run(engine: &Engine, view: &ThreadView) -> ToolRun {
-    let mut text = format!("fil: {}\n", view.thread.subject.replace('\n', " "));
+    let mut text = format!("fil: {}\n", cut(&one_line(&view.thread.subject), 200));
     let mut sources = Vec::new();
     for message in &view.messages {
         let head = header_block(message);

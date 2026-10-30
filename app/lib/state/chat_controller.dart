@@ -244,6 +244,11 @@ class ChatController extends ChangeNotifier {
       return _fail(run, engineErrorText(error), retry: done.retryAfterSecs);
     }
     if (done.reason == 'cancelled' && reply.text.isEmpty) _stoppedNote(reply);
+    if (done.reason == 'max_tool_rounds') {
+      reply.note = t(
+        'Limite de tours d’outils atteinte : la réponse s’arrête là.',
+      );
+    }
     if (done.reason == 'max_tokens') {
       reply.note = t('Réponse tronquée : la limite de longueur est atteinte.');
     }

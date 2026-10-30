@@ -16,6 +16,7 @@ impl Progress {
         }
         self.stop = None;
         self.text_seen = false;
+        self.separate = self.emitted;
     }
 
     /// Appels complets du tour qui vient de finir.

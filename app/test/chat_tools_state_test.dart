@@ -117,6 +117,22 @@ void main() {
     expect(chat.chat.last.sources, isEmpty);
   });
 
+  test('max_tool_rounds_ends_with_a_note_not_an_error', () async {
+    engine.manual = true;
+    final sending = chat.send('Cherche', noMail);
+    await pumpEventQueue();
+    engine.live!
+      ..add(called('c1', 'search_messages'))
+      ..add(finished('c1', 'ok', results: 1))
+      ..add({'type': 'done', 'reason': 'max_tool_rounds'})
+      ..close();
+    await sending;
+    final reply = chat.chat.last;
+    expect(reply.failed, isFalse);
+    expect(reply.text, isNot('Le modèle n’a rien répondu.'));
+    expect(reply.note, contains('Limite de tours d’outils'));
+  });
+
   test('finish_without_call_creates_the_activity', () async {
     await play([finished('c9', 'error')]);
     final tool = chat.chat.last.tools.single;

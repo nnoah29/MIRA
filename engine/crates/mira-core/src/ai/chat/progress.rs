@@ -15,6 +15,8 @@ pub(super) struct Progress {
     pub(super) spent: Option<(u32, u32)>,
     pub(super) text_seen: bool,
     pub(super) turn_text: String,
+    pub(super) emitted: bool,
+    pub(super) separate: bool,
     pub(super) tools: ToolAssembler,
     pub(super) used: ToolUsage,
     pub(super) answer: Answer,
@@ -29,6 +31,8 @@ impl Progress {
             spent: None,
             text_seen: false,
             turn_text: String::new(),
+            emitted: false,
+            separate: false,
             tools: ToolAssembler::default(),
             used: ToolUsage::default(),
             answer,
@@ -66,7 +70,13 @@ impl Progress {
     fn absorb_text(&mut self, text: &str) -> Vec<ChatDelta> {
         self.text_seen = true;
         self.turn_text.push_str(text);
-        self.answer.push(text)
+        self.emitted |= !text.is_empty();
+        let apart = self.separate && !text.trim().is_empty();
+        self.separate &= !apart;
+        match apart {
+            true => self.answer.push(&format!("\n\n{text}")),
+            false => self.answer.push(text),
+        }
     }
 
     /// Retient la plus grande consommation annoncée pendant ce tour.

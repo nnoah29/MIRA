@@ -9,7 +9,7 @@ use super::prepare::ChatPlan;
 use super::progress::Progress;
 use super::tool_consent::{ToolDecision, decide_tool};
 use super::truncate::{MAX_INPUT_CHARS, request_chars};
-use crate::ai::tools::body::bounded;
+use crate::ai::tools::body::{RESULT_CHARS, bounded};
 use crate::ai::tools::{kind_of, run};
 
 const MIN_ROOM_CHARS: usize = 300;
@@ -92,7 +92,7 @@ pub(super) fn fit(plan: &ChatPlan, name: &str, text: &str) -> String {
     let room = MAX_INPUT_CHARS.saturating_sub(used);
     let kept = match room < MIN_ROOM_CHARS {
         true => "(résultat omis : conversation trop longue)".to_string(),
-        false => bounded(text, room),
+        false => bounded(text, room.min(RESULT_CHARS)),
     };
     frame_result(name, &kept)
 }

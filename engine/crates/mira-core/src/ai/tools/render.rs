@@ -6,6 +6,9 @@ use super::instant::rfc3339_of;
 use super::run_result::ToolRun;
 
 const PREVIEW_CHARS: usize = 200;
+const SUBJECT_CHARS: usize = 200;
+const PERSON_CHARS: usize = 120;
+const MAX_PEOPLE: usize = 10;
 
 /// Ligne d'un message : identifiant, expéditeur, date, sujet et aperçu coupé à 200 caractères.
 pub fn mail_line(message: &MessageSummary) -> String {
@@ -15,7 +18,7 @@ pub fn mail_line(message: &MessageSummary) -> String {
         message.id.as_str(),
         addresses(&message.from),
         date.unwrap_or_else(|| "(sans date)".to_string()),
-        one_line(&message.subject),
+        cut(&one_line(&message.subject), SUBJECT_CHARS),
         cut(&one_line(&message.preview), PREVIEW_CHARS)
     )
 }
@@ -38,19 +41,26 @@ pub(super) fn mail_list(page: &Page<MessageSummary>) -> ToolRun {
     ToolRun::listed(lines.join("\n"), ContentKind::MailList, sources)
 }
 
-/// Personnes d'une liste d'adresses, séparées par des virgules ; « (inconnu) » si elle est vide.
+/// Personnes d'une liste d'adresses (dix au plus, chacune coupée), séparées par des virgules ; « (inconnu) » si elle est vide.
 pub(super) fn addresses(list: &[AddressEntry]) -> String {
-    match list.is_empty() {
-        true => "(inconnu)".to_string(),
-        false => list.iter().map(person).collect::<Vec<_>>().join(", "),
+    if list.is_empty() {
+        return "(inconnu)".to_string();
     }
+    let mut shown: Vec<String> = list.iter().take(MAX_PEOPLE).map(person).collect();
+    if list.len() > MAX_PEOPLE {
+        shown.push(format!("… (+{})", list.len() - MAX_PEOPLE));
+    }
+    shown.join(", ")
 }
 
-/// Une personne sous la forme `Nom <adresse>`, ou l'adresse seule.
+/// Une personne sous la forme `Nom <adresse>`, ou l'adresse seule ; nom et adresse sont coupés.
 fn person(entry: &AddressEntry) -> String {
+    let address = cut(&entry.address, PERSON_CHARS);
     match &entry.name {
-        Some(name) if !name.is_empty() => format!("{} <{}>", one_line(name), entry.address),
-        _ => entry.address.clone(),
+        Some(name) if !name.is_empty() => {
+            format!("{} <{address}>", cut(&one_line(name), PERSON_CHARS))
+        }
+        _ => address,
     }
 }
 

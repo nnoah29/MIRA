@@ -16,13 +16,21 @@ import 'widgets.dart';
 String aiOutcomeText(String outcome) => switch (outcome) {
   'end_turn' => t('Terminé'),
   'max_tokens' => t('Coupé : limite de longueur'),
+  'max_tool_rounds' => t('Limite de tours atteinte'),
   'cancelled' => t('Annulé'),
   'running' => t('En cours'),
   'interrupted' => t('Interrompu'),
   _ => engineErrorText(EngineException(outcome, '')),
 };
 
-const _calm = {'end_turn', 'max_tokens', 'cancelled', 'running', 'interrupted'};
+const _calm = {
+  'end_turn',
+  'max_tokens',
+  'max_tool_rounds',
+  'cancelled',
+  'running',
+  'interrupted',
+};
 
 /// Liste des envois, plus récents d'abord, avec « Afficher plus » et « Vider le journal ».
 class AiJournalView extends StatelessWidget {

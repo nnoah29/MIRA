@@ -393,6 +393,9 @@ const Map<String, String> enStrings = {
   'J’ai trouvé **{0}** autour de « {1} » :': 'I found **{0}** about “{1}”:',
   'Je peux **résumer** un mail, **rédiger** une réponse, **lister l’urgent**, afficher tes **non lus** ou **traduire**. Essaie une des suggestions ci-dessous.': 'I can **summarize** a mail, **draft** a reply, **list what is urgent**, show your **unread** or **translate**. Try one of the suggestions below.',
   'Outils : {0}': 'Tools: {0}',
+  'Limite de tours d’outils atteinte : la réponse s’arrête là.':
+      'Tool round limit reached: the answer stops here.',
+  'Limite de tours atteinte': 'Round limit reached',
   'Apparence': 'Appearance',
   'Messagerie': 'Mail',
   'Compte': 'Account',

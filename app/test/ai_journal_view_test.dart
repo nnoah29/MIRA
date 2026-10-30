@@ -104,6 +104,11 @@ void main() {
     expect(rowText(tester, 1), isNot(contains('Outils')));
   });
 
+  testWidgets('max_tool_rounds_reads_as_a_limit_not_an_error', (tester) async {
+    await openJournal(tester, [entry(0, outcome: 'max_tool_rounds')]);
+    expect(rowText(tester, 0), contains('Limite de tours atteinte'));
+  });
+
   testWidgets('local_rows_are_marked', (tester) async {
     await openJournal(tester, [entry(0, local: true), entry(1)]);
     expect(rowText(tester, 0), contains('Local'));

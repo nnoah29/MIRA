@@ -3,7 +3,7 @@
 use mira_vocabulary::MessageSummary;
 
 use super::instant::rfc3339_of;
-use super::render::{addresses, one_line};
+use super::render::{addresses, cut, one_line};
 
 /// Bloc d'en-têtes : identifiant, personnes, date, sujet, pièces jointes.
 pub(super) fn header_block(message: &MessageSummary) -> String {
@@ -20,7 +20,7 @@ pub(super) fn header_block(message: &MessageSummary) -> String {
         "date: {}",
         date.unwrap_or_else(|| "(sans date)".to_string())
     ));
-    lines.push(format!("sujet: {}", one_line(&message.subject)));
+    lines.push(format!("sujet: {}", cut(&one_line(&message.subject), 200)));
     let attached = if message.has_attachments {
         "oui"
     } else {

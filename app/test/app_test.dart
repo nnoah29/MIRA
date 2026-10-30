@@ -153,7 +153,8 @@ void main() {
     final s = await pumpApp(tester);
     await tester.tap(find.text('ASSISTANT IA').first);
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.textContaining('Salut Noah !'), findsOneWidget);
+    expect(find.textContaining('Salut ! Je peux'), findsOneWidget);
+    expect(find.textContaining('Salut Noah !'), findsNothing);
     await tester.tap(find.text('QU’EST-CE QUI EST URGENT ?'));
     await tester.pump(const Duration(seconds: 2));
     await tester.pump(const Duration(seconds: 3));

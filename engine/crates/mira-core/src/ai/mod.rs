@@ -7,6 +7,7 @@ pub mod masking;
 pub mod models;
 pub mod registry;
 pub mod sse;
+pub mod tools;
 pub mod transport;
 pub mod wire;
 

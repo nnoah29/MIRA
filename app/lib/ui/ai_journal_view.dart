@@ -36,10 +36,14 @@ const _calm = {
 class AiJournalView extends StatelessWidget {
   final AiJournalState state;
   final Map<String, String> providerNames;
+
+  /// Nom donné à chaque connexion par l'utilisateur, qui passe avant celui du service.
+  final Map<String, String> connectionLabels;
   const AiJournalView({
     super.key,
     required this.state,
     required this.providerNames,
+    this.connectionLabels = const {},
   });
 
   Future<void> _confirmClear(BuildContext context) async {
@@ -66,7 +70,10 @@ class AiJournalView extends StatelessWidget {
   }
 
   Widget _row(Pal p, int i, AiJournalRow r) {
-    final name = providerNames[r.provider] ?? r.provider;
+    final name =
+        connectionLabels[r.connection] ??
+        providerNames[r.provider] ??
+        r.provider;
     final failed = !_calm.contains(r.outcome);
     return Container(
       key: ValueKey('ai-journal-row-$i'),

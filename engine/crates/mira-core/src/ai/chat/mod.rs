@@ -3,6 +3,8 @@
 
 mod answer;
 mod answer_tools;
+mod assembler;
+mod checks;
 mod context;
 mod ending;
 mod events;
@@ -14,12 +16,21 @@ mod kinds;
 mod neutralize;
 mod prepare;
 mod progress;
+mod progress_rounds;
+mod progress_usage;
+mod rounds;
 mod run;
 mod stream;
+mod tool_consent;
+mod tool_exec;
+mod tool_step;
+mod tool_usage;
+mod tools_plan;
 mod truncate;
 
 pub use context::render_context;
 pub use framing::{TOOLS_NOTICE, frame_result};
+pub use tool_consent::{ToolDecision, decide_tool};
 pub(crate) use truncate::TRUNCATION_MARK;
 pub use truncate::{MAX_INPUT_CHARS, truncate_request};
 

@@ -93,6 +93,7 @@ pub fn chat_json(connection: Option<&str>, text: &str) -> String {
     serde_json::to_string(&ChatStart {
         connection,
         request,
+        allow_tools: false,
     })
     .unwrap()
 }

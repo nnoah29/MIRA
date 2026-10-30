@@ -9,7 +9,7 @@ use crate::ai::masking::{Masker, Restorer};
 pub(super) struct Answer {
     pub(super) masker: Masker,
     pub(super) restorer: Restorer,
-    announced: bool,
+    announced: u32,
 }
 
 impl Answer {
@@ -20,7 +20,7 @@ impl Answer {
         Self {
             masker,
             restorer,
-            announced: false,
+            announced: 0,
         }
     }
 
@@ -47,8 +47,8 @@ impl Answer {
             return Vec::new();
         }
         let mut deltas = Vec::with_capacity(2);
-        if self.masked() > 0 && !self.announced {
-            self.announced = true;
+        if self.masked() > self.announced {
+            self.announced = self.masked();
             deltas.push(ChatDelta::Masked {
                 count: self.masked(),
             });

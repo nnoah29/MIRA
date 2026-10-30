@@ -1,6 +1,7 @@
 //! Contrat d'API du moteur (ch. 12, D-26, AG-04) : `Engine::execute(Request) -> Response`.
 //! Chaque opération a son propre handler, atteint par un routage `match` exhaustif par domaine.
 
+mod chat_debug;
 mod chat_stream;
 mod config;
 pub mod contract;

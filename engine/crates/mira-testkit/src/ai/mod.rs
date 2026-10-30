@@ -14,9 +14,13 @@ mod request;
 mod respond;
 mod server;
 mod state;
+mod tool_turns_anthropic;
+mod tool_turns_openai;
 
 pub use anthropic_body::anthropic_stream;
 pub use behavior::Behavior;
 pub use openai_body::openai_stream;
 pub use recorded::RecordedRequest;
 pub use server::FakeAiServer;
+pub use tool_turns_anthropic::{ToolCallSpec, anthropic_tool_turn};
+pub use tool_turns_openai::openai_tool_turn;

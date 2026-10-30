@@ -17,6 +17,7 @@ fn default_start() -> ChatStart {
     ChatStart {
         connection: None,
         request: user_request("Salut"),
+        allow_tools: false,
     }
 }
 
@@ -27,6 +28,7 @@ async fn unknown_connection_is_not_found() {
     let start = ChatStart {
         connection: Some(AiConnectionId::from_raw("absente")),
         request: user_request("Salut"),
+        allow_tools: false,
     };
     let error = fixture.engine.chat_stream(start).await.unwrap_err();
     assert_eq!(error.code, not_found::AI_CONNECTION.0);
@@ -91,6 +93,7 @@ async fn unknown_provider_is_not_found() {
     let start = ChatStart {
         connection: Some(connection.id),
         request: user_request("Salut"),
+        allow_tools: false,
     };
     let error = fixture.engine.chat_stream(start).await.unwrap_err();
     assert_eq!(error.code, not_found::AI_PROVIDER.0);

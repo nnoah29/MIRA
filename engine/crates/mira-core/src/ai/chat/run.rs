@@ -13,7 +13,7 @@ use super::guard::Guard;
 use super::journal::{close_row, finish_of};
 use super::prepare::ChatPlan;
 use super::progress::Progress;
-use super::stream::converse;
+use super::rounds::run_rounds;
 use crate::events::EventBus;
 use crate::operations::{OperationHandle, OperationRegistry};
 use crate::ports::Clock;
@@ -47,7 +47,7 @@ pub(crate) async fn run(task: ChatTask) {
     emit_started(&events, &handle, &plan);
     let mut progress = Progress::new(Answer::new(std::mem::take(&mut plan.masker)));
     let guard = Guard::new(&handle, &deltas);
-    let ending = converse(&plan, &guard, &mut progress).await;
+    let ending = run_rounds(&mut plan, &guard, &mut progress).await;
     let ending = settle(deliver_rest(ending, &guard, &mut progress).await, &handle);
     close_row(
         &database,

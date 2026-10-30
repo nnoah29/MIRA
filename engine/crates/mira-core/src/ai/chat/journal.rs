@@ -71,9 +71,9 @@ pub(super) fn finish_of(progress: &Progress, ending: &Ending) -> AiJournalFinish
         input_tokens,
         output_tokens,
         outcome: ending.outcome(),
-        tools: Vec::new(),
-        extra_kinds: Vec::new(),
-        extra_chars: 0,
+        tools: progress.used.counts.clone(),
+        extra_kinds: progress.used.kinds.clone(),
+        extra_chars: progress.used.chars,
     }
 }
 

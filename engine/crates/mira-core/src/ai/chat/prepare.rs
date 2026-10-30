@@ -1,17 +1,18 @@
 //! Vérifications locales d'une génération et plan d'exécution, avant tout accès au réseau.
 
 use std::fmt;
+use std::sync::Weak;
 
-use mira_vocabulary::error::codes::{incompatible_state, not_found};
+use mira_vocabulary::error::codes::not_found;
 use mira_vocabulary::{
-    AiConnection, AiConnectionId, AiError, AiProviderDescriptor, AiProviderId, ChatRequest,
-    ContentKind, ErrorCategory, MaskingSettings, MiraError,
+    AiConnection, AiConnectionId, AiProviderDescriptor, AiProviderId, ChatRequest, ContentKind,
+    ErrorCategory, MaskingSettings, MiraError,
 };
 
+use super::checks::{check, context_summary};
 use super::context::render_context;
-use super::kinds::{check_kinds, distinct_kinds};
+use super::tools_plan::with_tools;
 use super::truncate::{MAX_INPUT_CHARS, request_chars, truncate_request};
-use crate::ai::access::{base_url_of, find_provider, is_loopback_url, key_for};
 use crate::ai::masking::Masker;
 use crate::api::{ChatStart, Engine};
 use crate::ports::SecretValue;
@@ -28,32 +29,35 @@ pub(crate) struct ChatPlan {
     pub(crate) provider: AiProviderId,
     pub(crate) local: bool,
     pub(crate) kinds: Vec<ContentKind>,
+    pub(crate) allowed_kinds: Vec<ContentKind>,
+    pub(crate) host: Option<Weak<Engine>>,
     pub(crate) parts: u32,
     pub(crate) chars: u32,
 }
 
-/// Vérifie connexion, fournisseur, consentement, types de contenu, clé puis modèle, dans cet ordre, et rend le plan.
-pub(crate) fn prepare(engine: &Engine, start: ChatStart) -> Result<ChatPlan, MiraError> {
+/// Vérifie connexion, fournisseur, consentement, types de contenu, clé puis modèle, dans cet ordre, et rend le plan ; les outils ne sont annoncés que si le client les permet et que le service les supporte.
+pub(crate) fn prepare(
+    engine: &Engine,
+    start: ChatStart,
+    host: Option<Weak<Engine>>,
+) -> Result<ChatPlan, MiraError> {
     let connection = load_connection(engine, start.connection.as_ref())?;
-    let descriptor = find_provider(engine, &connection)?.descriptor();
-    let base_url = base_url_of(&connection, &descriptor);
-    check_consent(&connection, &base_url)?;
-    let local = is_loopback_url(&base_url).unwrap_or(false);
-    check_kinds(&connection, &start.request.context, local)?;
-    let key = key_for(engine, &connection, &base_url)?;
-    let model = resolve_model(&start.request, &connection)?;
-    let kinds = distinct_kinds(&start.request.context);
-    let parts = u32::try_from(start.request.context.len()).unwrap_or(u32::MAX);
-    let (request, masker) = shape_request(start.request, &connection.masking);
+    let checked = check(engine, &connection, &start)?;
+    let enabled = start.allow_tools && checked.descriptor.supports_tools && host.is_some();
+    let (kinds, parts) = context_summary(&start.request);
+    let request = with_tools(start.request, enabled);
+    let (request, masker) = shape_request(request, &connection.masking);
     Ok(ChatPlan {
-        descriptor,
-        base_url,
-        key,
-        model,
+        descriptor: checked.descriptor,
+        base_url: checked.base_url,
+        key: checked.key,
+        model: checked.model,
+        local: checked.local,
         connection: connection.id,
         provider: connection.provider,
-        local,
         kinds,
+        allowed_kinds: connection.allowed_kinds,
+        host: host.filter(|_| enabled),
         parts,
         chars: request_chars(&request),
         request,
@@ -92,28 +96,6 @@ fn load_connection(
             "connexion d'IA inconnue",
         )
     })
-}
-
-/// Refuse une destination distante tant que l'utilisateur n'a pas consenti ; la boucle locale est exemptée.
-fn check_consent(connection: &AiConnection, base_url: &str) -> Result<(), MiraError> {
-    if connection.consent_at.is_none() && !is_loopback_url(base_url)? {
-        return Err(AiError::ConsentRequired.into());
-    }
-    Ok(())
-}
-
-/// Prend le modèle de la requête, sinon celui de la connexion ; aucun, `incompatible_state.ai_model_missing`.
-fn resolve_model(request: &ChatRequest, connection: &AiConnection) -> Result<String, MiraError> {
-    let named = |model: &Option<String>| model.clone().filter(|name| !name.trim().is_empty());
-    named(&request.model)
-        .or_else(|| named(&connection.default_model))
-        .ok_or_else(|| {
-            MiraError::new(
-                ErrorCategory::IncompatibleState,
-                incompatible_state::AI_MODEL_MISSING,
-                "aucun modèle d'IA choisi pour cette connexion",
-            )
-        })
 }
 
 impl fmt::Debug for ChatPlan {

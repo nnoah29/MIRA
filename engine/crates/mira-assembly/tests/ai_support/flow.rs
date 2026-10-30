@@ -71,6 +71,7 @@ pub async fn chat_with(
     let start = ChatStart {
         connection: Some(id.clone()),
         request,
+        allow_tools: false,
     };
     fixture.engine.chat_stream(start).await
 }

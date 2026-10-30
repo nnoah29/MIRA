@@ -1,6 +1,6 @@
 //! Troncature de l'entrée avant envoi : plafond compté en caractères, consigne et messages compris.
 
-use mira_vocabulary::ChatRequest;
+use mira_vocabulary::{ChatMessage, ChatRequest};
 
 /// Plafond de l'entrée envoyée au service, en caractères.
 pub const MAX_INPUT_CHARS: usize = 120_000;
@@ -42,8 +42,22 @@ fn cut(text: &str, budget: usize) -> String {
 /// Nombre de caractères envoyés (consigne et messages), pour le journal.
 pub(super) fn request_chars(request: &ChatRequest) -> u32 {
     let system = request.system.as_deref().map_or(0, char_count);
-    let messages: usize = request.messages.iter().map(|m| char_count(&m.text)).sum();
+    let messages: usize = request.messages.iter().map(message_chars).sum();
     u32::try_from(system + messages).unwrap_or(u32::MAX)
+}
+
+/// Caractères d'un message : son texte, le résultat d'outil qu'il porte et les arguments de ses appels.
+fn message_chars(message: &ChatMessage) -> usize {
+    let result = message
+        .tool_result
+        .as_ref()
+        .map_or(0, |r| char_count(&r.text));
+    let calls: usize = message
+        .tool_calls
+        .iter()
+        .map(|c| char_count(&c.arguments))
+        .sum();
+    char_count(&message.text) + result + calls
 }
 
 /// Compte les caractères (et non les octets) d'un texte.

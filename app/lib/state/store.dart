@@ -143,6 +143,9 @@ class MailStore extends ChangeNotifier {
 
   /// Raison pour laquelle le moteur n'a pas pu s'ouvrir (l'app montre alors la démonstration) ; `null` si tout va bien.
   final String? engineError;
+
+  /// Vrai pour la démonstration en ligne (navigateur) : l'app prévient que les données sont fictives.
+  final bool webDemo;
   StreamSubscription<String>? _changeSub;
   StreamSubscription<void>? _syncSub;
   StreamSubscription<void>? _counterSub;
@@ -173,6 +176,7 @@ class MailStore extends ChangeNotifier {
     bool watchWallpaper = false,
     this.source,
     this.engineError,
+    this.webDemo = false,
     this.aiAdminOverride,
   }) {
     contactBook = ContactBook.decode(
@@ -250,6 +254,14 @@ class MailStore extends ChangeNotifier {
     if (source != null) {
       wakeSnoozed();
       _armWake();
+    }
+    if (webDemo) {
+      toast(
+        t(
+          'Démonstration en ligne : les données sont fictives. Installe MIRA pour lire tes vrais mails.',
+        ),
+        ms: 12000,
+      );
     }
     final failure = engineError;
     if (failure != null) {

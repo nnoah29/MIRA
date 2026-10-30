@@ -34,6 +34,14 @@ Installation pour l'utilisateur courant, sans `sudo`, quelle que soit la distrib
 
 `build-bundle.sh` et `android/build.sh` intègrent au moteur la section `[oauth]` de `~/.config/mira/config.toml` (ou du fichier désigné par `MIRA_OAUTH_CONFIG` ; `MIRA_OAUTH_CONFIG=` vide pour s'en passer). Le reste du fichier n'est pas repris. Le `build.rs` de `mira-assembly` la chiffre en AES-256-GCM avec une clé tirée à chaque compilation : ni l'identifiant ni le secret n'apparaissent en clair dans le binaire. La clé voyageant avec le binaire, c'est un masquage contre la lecture directe, pas une protection : Google ne tient pas le secret d'une app de bureau pour confidentiel, la sécurité du flux repose sur PKCE et la redirection vers `127.0.0.1`. Un `config.toml` présent chez l'utilisateur l'emporte, provider par provider.
 
+## Démo en ligne (PWA)
+
+```
+packaging/web/build-demo.sh    # app compilée pour le web, prête dans packaging/out/web-demo/
+```
+
+À copier à la racine de la branche `web` (GitHub Pages, <https://nnoah29.github.io/MIRA/>) en gardant `404.html` et `.nojekyll`. L'app y tourne en démonstration (données fictives) : le moteur Rust n'existe pas dans un navigateur. Le script élague les fichiers `skwasm` de CanvasKit, inutiles pour un build JavaScript, et tamponne le cache du service worker avec le commit et l'heure : chaque déploiement repart d'un cache neuf.
+
 ## Android
 
 ```bash

@@ -13,6 +13,7 @@ import 'assistant.dart';
 import 'chat_context.dart';
 import 'chat_message.dart';
 import 'chat_pending.dart';
+import 'chat_tools.dart';
 
 /// Code d'erreur du moteur : l'utilisateur n'a pas encore autorisé l'envoi vers ce service.
 const consentRequiredCode = 'incompatible_state.ai_consent_required';
@@ -206,6 +207,9 @@ class ChatController extends ChangeNotifier {
         notifyListeners();
       case AiUsage():
         break;
+      case AiToolCalled() || AiToolFinished():
+        applyToolEvent(reply, event);
+        notifyListeners();
       case AiDone():
         _onDone(run, event);
       case AiFailed()

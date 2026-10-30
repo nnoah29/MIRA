@@ -137,7 +137,11 @@ class AiAdmin {
     final Object c = client;
     if (c is! ChatStreamingClient) return Stream.error(UnimplementedError());
     return c
-        .chatStream({'connection': connection, 'request': request})
+        .chatStream({
+          'connection': connection,
+          'request': request,
+          'allow_tools': true,
+        })
         .expand(_event);
   }
 
@@ -159,10 +163,26 @@ class AiAdmin {
             (line['output_tokens'] as num?)?.toInt() ?? 0,
           ),
         ],
+        'tool_called' => [
+          AiToolCalled(
+            '${line['id']}',
+            '${line['name']}',
+            '${line['summary'] ?? ''}',
+          ),
+        ],
+        'tool_finished' => [_toolFinished(line)],
         'done' => [_done(line['reason'])],
         'error' => [_failed(line['error'])],
         _ => const [],
       };
+
+  AiToolFinished _toolFinished(Map<String, dynamic> line) => AiToolFinished(
+    '${line['id']}',
+    '${line['state']}',
+    (line['results'] as num?)?.toInt() ?? 0,
+    [for (final s in (line['sources'] as List?) ?? const []) '$s'],
+    line['denied_kind'] as String?,
+  );
 
   AiDone _done(Object? reason) {
     if (reason is Map && reason['failed'] is Map) {

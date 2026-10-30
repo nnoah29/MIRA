@@ -11,6 +11,7 @@ import '../i18n/engine_errors.dart';
 import '../i18n/i18n.dart';
 import 'assistant.dart';
 import 'chat_context.dart';
+import 'chat_mentions.dart';
 import 'chat_message.dart';
 import 'chat_pending.dart';
 import 'chat_tools.dart';
@@ -35,6 +36,7 @@ class _Run {
   StreamSubscription<AiChatEvent>? sub;
   String? operation;
   bool cancelPending = false;
+  String raw = '';
   _Run(this.reply);
 }
 
@@ -201,8 +203,8 @@ class ChatController extends ChangeNotifier {
       case AiStarted():
         break;
       case AiText():
-        reply.text += event.text;
-        reply.shown = reply.text;
+        run.raw += event.text;
+        _readMentions(reply, run.raw);
         notifyListeners();
       case AiMasked():
         reply.maskedCount = event.count;
@@ -224,6 +226,18 @@ class ChatController extends ChangeNotifier {
         final error = EngineException(event.code, event.message);
         _fail(run, engineErrorText(error));
     }
+  }
+
+  /// Affiche le texte sans les repères `[mail:ID]` ; seuls les messages que les outils ont renvoyés deviennent des cartes.
+  void _readMentions(ChatMsg reply, String raw) {
+    final read = readMentions(raw);
+    reply.text = read.text;
+    reply.shown = read.text;
+    final cited = [
+      for (final id in read.ids)
+        if (reply.sources.contains(id)) id,
+    ];
+    reply.refs = cited.isEmpty ? null : cited;
   }
 
   void _ended(_Run run, [String? error]) {

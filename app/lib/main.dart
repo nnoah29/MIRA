@@ -35,8 +35,13 @@ Future<void> main() async {
     await initializeDateFormatting(l.dateLocale);
   }
   final prefs = await SharedPreferences.getInstance();
-  final source = await openEngineSource(prefs);
-  final store = MailStore(prefs, watchWallpaper: true, source: source);
+  final opening = await openEngineSource(prefs);
+  final store = MailStore(
+    prefs,
+    watchWallpaper: true,
+    source: opening.source,
+    engineError: opening.error,
+  );
   unawaited(store.useNotifications(PluginNotifications()));
   AppLifecycleListener(
     onStateChange: (state) =>
@@ -45,25 +50,39 @@ Future<void> main() async {
   runApp(ChangeNotifierProvider.value(value: store, child: const MiraApp()));
 }
 
-/// Ouvre le moteur Rust ; `MIRA_DEMO=1` ou une erreur d'ouverture donne les données de démonstration.
-Future<MailSource?> openEngineSource(SharedPreferences prefs) async {
-  if (Platform.environment['MIRA_DEMO'] == '1') return null;
+/// Ouvre le moteur Rust ; `MIRA_DEMO=1` donne la démonstration, une erreur d'ouverture aussi, avec sa raison.
+Future<({MailSource? source, String? error})> openEngineSource(
+  SharedPreferences prefs,
+) async {
+  if (Platform.environment['MIRA_DEMO'] == '1') {
+    return (source: null, error: null);
+  }
   try {
     final android = Platform.isAndroid;
     final client = await RustEngineClient.open(
       home: android ? (await getApplicationSupportDirectory()).path : null,
       secretsKey: android ? await androidSecretsKey() : null,
     );
-    return await EngineMailSource.load(
+    final source = await EngineMailSource.load(
       client,
       folderMap: decodeFolderMap(prefs.getString('folderMap')),
     );
+    return (source: source, error: null);
   } catch (e) {
+    final reason = engineFailureText(e);
     stderr.writeln(
-      'MIRA : moteur indisponible, données de démonstration ($e)',
+      'MIRA : moteur indisponible, données de démonstration ($reason)',
     ); // i18n:ignore
-    return null;
+    return (source: null, error: reason);
   }
+}
+
+/// Raison lisible d'un échec d'ouverture du moteur : message de l'erreur et, pour Android, sa cause.
+String engineFailureText(Object error) {
+  if (error is! PlatformException) return '$error';
+  final detail = error.details;
+  final message = error.message ?? error.code;
+  return detail == null ? message : '$message ($detail)';
 }
 
 /// Clé du trousseau chiffré du moteur, gardée par le Keystore Android (voir MainActivity.kt).

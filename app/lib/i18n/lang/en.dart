@@ -253,6 +253,8 @@ const Map<String, String> enStrings = {
   'Action non appliquée sur le serveur': 'Action not applied on the server',
   'Action impossible sur un brouillon : ouvre-le ou supprime-le':
       'Not possible on a draft: open it or delete it',
+  'Moteur indisponible, données de démonstration : {0}':
+      'Engine unavailable, showing demo data: {0}',
   'Enregistrement impossible': 'Could not save',
   'Envoi impossible, le message reste en brouillon':
       'Could not send, the message stays a draft',
@@ -364,7 +366,7 @@ const Map<String, String> enStrings = {
   'Montre-moi mes mails non lus': 'Show me my unread mails',
   'Traduis en anglais': 'Translate to English',
   'Traduis ce mail en anglais': 'Translate this mail to English',
-  'Salut Noah ! Je peux **résumer** un mail, **rédiger** une réponse, **trier** ce qui est urgent ou **retrouver** un message. Sélectionne un mail dans la liste pour que je m’en serve comme contexte.': 'Hi Noah! I can **summarize** a mail, **draft** a reply, **sort** what is urgent or **find** a message. Select a mail in the list and I will use it as context.',
+  'Salut ! Je peux **résumer** un mail, **rédiger** une réponse, **trier** ce qui est urgent ou **retrouver** un message. Sélectionne un mail dans la liste pour que je m’en serve comme contexte.': 'Hi! I can **summarize** a mail, **draft** a reply, **sort** what is urgent or **find** a message. Select a mail in the list and I will use it as context.',
   'Sélectionne d’abord un mail dans la liste, et je m’en occupe.':
       'Select a mail in the list first, and I will take care of it.',
   '**Résumé de « {0} »**\n{1} écrit : {2}':

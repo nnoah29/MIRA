@@ -118,6 +118,8 @@ const Map<String, String> enStrings = {
       'The result of the send is uncertain: the message may have left.',
   'Départ prévu à {0}.': 'Scheduled to leave at {0}.',
   'Annuler l’envoi': 'Cancel sending',
+  'Envoyer maintenant': 'Send now',
+  'Envoi lancé': 'Sending started',
   'Réessayer': 'Retry',
   'Notifications': 'Notifications',
   'Contenu': 'Content',

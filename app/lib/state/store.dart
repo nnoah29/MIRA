@@ -1019,11 +1019,12 @@ class MailStore extends ChangeNotifier {
   }
 
   /// Relit les identités du moteur (après ajout, modification ou changement par défaut).
-  Future<void> identitiesChanged() async {
+  Future<void> identitiesChanged(String accountId) async {
     final src = source;
     if (src == null) return;
     await src.refreshIdentities();
     _applyIdentities();
+    await _reloadAccount(accountId);
     notifyListeners();
   }
 
@@ -1397,6 +1398,8 @@ class MailStore extends ChangeNotifier {
     for (final m in l)
       Object.hash(
         m.id,
+        m.from.name,
+        m.from.email,
         m.date,
         m.unread,
         m.starred,
@@ -3163,6 +3166,19 @@ class MailStore extends ChangeNotifier {
     final admin = source?.composer;
     if (o == null || admin == null) return Future.value();
     return _outboxOp(m, () => admin.cancelSend(o.action), t('Envoi annulé'));
+  }
+
+  /// Remplace un envoi en attente par un envoi immédiat (avec le délai d'annulation habituel).
+  Future<void> sendOutboxNow(Mail m) {
+    final o = m.outbox;
+    final admin = source?.composer;
+    if (o == null || o.state != 'pending' || admin == null) {
+      return Future.value();
+    }
+    return _outboxOp(m, () async {
+      await admin.cancelSend(o.action);
+      await admin.send(o.draft);
+    }, t('Envoi lancé'));
   }
 
   /// Relance un envoi échoué.

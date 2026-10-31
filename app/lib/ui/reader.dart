@@ -246,6 +246,7 @@ class _OutboxBar extends StatelessWidget {
     final s = context.read<MailStore>();
     final p = context.pal;
     final o = mail.outbox!;
+    final mobile = MediaQuery.sizeOf(context).width <= 760;
     final text = switch (o.state) {
       'failed' => t('L’envoi a échoué : {0}', [
         o.error ?? t('erreur inconnue'),
@@ -260,20 +261,31 @@ class _OutboxBar extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: p.lineSoft)),
       ),
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 8,
-        crossAxisAlignment: WrapCrossAlignment.center,
+      child: Row(
         children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
+          Expanded(
             child: Text(text, style: Fonts.sans(size: 14, color: p.text)),
           ),
+          const SizedBox(width: 12),
+          if (o.state == 'pending') ...[
+            Btn(
+              key: const ValueKey('outbox-send-now'),
+              icon: 'send',
+              label: t('Envoyer maintenant'),
+              go: true,
+              iconOnly: mobile,
+              tip: t('Envoyer maintenant'),
+              onTap: () => s.sendOutboxNow(mail),
+            ),
+            const SizedBox(width: 8),
+          ],
           if (o.waiting)
             Btn(
               key: const ValueKey('outbox-cancel'),
               icon: 'x',
               label: t('Annuler l’envoi'),
+              iconOnly: mobile,
+              tip: t('Annuler l’envoi'),
               onTap: () => s.cancelOutbox(mail),
             ),
           if (o.state == 'failed')
@@ -282,6 +294,8 @@ class _OutboxBar extends StatelessWidget {
               icon: 'refresh',
               label: t('Réessayer'),
               go: true,
+              iconOnly: mobile,
+              tip: t('Réessayer'),
               onTap: () => s.retryOutbox(mail),
             ),
           if (o.state == 'uncertain') ...[
@@ -290,12 +304,17 @@ class _OutboxBar extends StatelessWidget {
               icon: 'send',
               label: t('Renvoyer'),
               go: true,
+              iconOnly: mobile,
+              tip: t('Renvoyer'),
               onTap: () => s.resolveOutbox(mail, resend: true),
             ),
+            const SizedBox(width: 8),
             Btn(
               key: const ValueKey('outbox-sent'),
               icon: 'check',
               label: t('Ne pas renvoyer'),
+              iconOnly: mobile,
+              tip: t('Ne pas renvoyer'),
               onTap: () => s.resolveOutbox(mail, resend: false),
             ),
           ],

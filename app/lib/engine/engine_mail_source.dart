@@ -80,10 +80,10 @@ class EngineMailSource implements MailSource {
     final source = EngineMailSource._(client, pageSize, debounce, list, {}, {
       ...folderMap,
     });
+    await source.refreshIdentities();
     for (final a in list) {
       source.boxes[a.id] = await source.reload(a);
     }
-    await source.refreshIdentities();
     source._listen();
     return source;
   }
@@ -259,10 +259,10 @@ class EngineMailSource implements MailSource {
     accounts = fresh;
     final ids = {for (final a in fresh) a.id};
     boxes.removeWhere((id, _) => !ids.contains(id));
+    await refreshIdentities();
     for (final a in added) {
       boxes[a.id] = await reload(a);
     }
-    await refreshIdentities();
     return added;
   }
 

@@ -227,6 +227,12 @@
         "op": "get_ai_conversation"
       }
     },
+    "ai.get_ai_history_enabled": {
+      "domain": "ai",
+      "request": {
+        "op": "get_ai_history_enabled"
+      }
+    },
     "ai.list_ai_connections": {
       "domain": "ai",
       "request": {
@@ -304,6 +310,13 @@
         "connection": "ai-1",
         "key": "sk-exemple",
         "op": "set_ai_api_key"
+      }
+    },
+    "ai.set_ai_history_enabled": {
+      "domain": "ai",
+      "request": {
+        "enabled": false,
+        "op": "set_ai_history_enabled"
       }
     },
     "ai.set_ai_masking": {
@@ -1586,6 +1599,13 @@
     "ai.done": {
       "data": {
         "type": "done"
+      },
+      "type": "ai"
+    },
+    "ai.history_enabled": {
+      "data": {
+        "data": true,
+        "type": "history_enabled"
       },
       "type": "ai"
     },

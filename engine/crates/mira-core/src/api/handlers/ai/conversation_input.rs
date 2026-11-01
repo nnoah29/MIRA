@@ -1,6 +1,6 @@
 //! Bornes des conversations d'IA enregistrées : titre en caractères, contenu en octets, et nombre gardé.
 
-use mira_vocabulary::error::codes::invalid_input;
+use mira_vocabulary::error::codes::{incompatible_state, invalid_input};
 use mira_vocabulary::{ErrorCategory, MiraError};
 
 pub(super) const MAX_TITLE_CHARS: usize = 80;
@@ -37,4 +37,13 @@ pub(super) fn validate_payload(payload: &str) -> Result<(), MiraError> {
             "le contenu d'une conversation doit être un objet JSON",
         )),
     }
+}
+
+/// Erreur d'un enregistrement refusé parce que l'historique est coupé
+pub(super) fn history_disabled() -> MiraError {
+    MiraError::new(
+        ErrorCategory::IncompatibleState,
+        incompatible_state::AI_HISTORY_DISABLED,
+        "l'historique des conversations est désactivé",
+    )
 }

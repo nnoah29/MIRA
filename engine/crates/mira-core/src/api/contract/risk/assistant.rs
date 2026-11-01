@@ -9,6 +9,7 @@ pub(super) fn ai_risk(request: &AiRequest) -> ToolRisk {
     match request {
         AiRequest::ListAiProviders
         | AiRequest::ListAiConnections
+        | AiRequest::GetAiHistoryEnabled
         | AiRequest::ListAiJournal { .. } => ToolRisk::Read,
         AiRequest::AddAiConnection { .. }
         | AiRequest::UpdateAiConnection { .. }
@@ -27,6 +28,7 @@ pub(super) fn ai_risk(request: &AiRequest) -> ToolRisk {
         | AiRequest::GetAiConversation { .. }
         | AiRequest::RenameAiConversation { .. }
         | AiRequest::DeleteAiConversation { .. }
-        | AiRequest::ClearAiConversations => ToolRisk::Sensitive,
+        | AiRequest::ClearAiConversations
+        | AiRequest::SetAiHistoryEnabled { .. } => ToolRisk::Sensitive,
     }
 }

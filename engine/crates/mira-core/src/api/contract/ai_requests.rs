@@ -81,6 +81,10 @@ pub enum AiRequest {
         id: String,
     },
     ClearAiConversations,
+    SetAiHistoryEnabled {
+        enabled: bool,
+    },
+    GetAiHistoryEnabled,
 }
 
 /// Types autorisés par un consentement sans liste : le mail ouvert, comme avant le contrat 1.2.

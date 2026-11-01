@@ -18,5 +18,6 @@ pub enum AiResponse {
     Conversations(Vec<AiConversationMeta>),
     Conversation(AiConversation),
     ConversationMeta(AiConversationMeta),
+    HistoryEnabled(bool),
     Done,
 }

@@ -2,7 +2,9 @@
 
 use mira_vocabulary::MiraError;
 
-use super::conversation_input::{MAX_CONVERSATIONS, validate_payload, validate_title};
+use super::conversation_input::{
+    MAX_CONVERSATIONS, history_disabled, validate_payload, validate_title,
+};
 use crate::api::contract::{AiResponse, Response};
 use crate::api::engine::Engine;
 
@@ -18,6 +20,9 @@ pub(crate) fn handle_save_ai_conversation(
     validate_payload(payload)?;
     let now = engine.config.clock.now().as_millis();
     let meta = engine.database.write(|tx| {
+        if !tx.ai_history_enabled()? {
+            return Err(history_disabled());
+        }
         let meta = tx.save_ai_conversation(id, &title, payload_version, payload, now)?;
         tx.trim_ai_conversations(MAX_CONVERSATIONS, id)?;
         Ok(meta)

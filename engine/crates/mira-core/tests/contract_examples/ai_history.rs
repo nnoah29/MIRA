@@ -48,6 +48,8 @@ pub fn requests() -> Vec<AiRequest> {
             id: "conversation-1".to_string(),
         },
         AiRequest::ClearAiConversations,
+        AiRequest::SetAiHistoryEnabled { enabled: false },
+        AiRequest::GetAiHistoryEnabled,
     ]
 }
 
@@ -66,6 +68,7 @@ pub fn responses() -> Vec<Named<Response>> {
             "ai.conversation_meta",
             AiResponse::ConversationMeta(sample_conversation_meta()),
         ),
+        ("ai.history_enabled", AiResponse::HistoryEnabled(true)),
     ];
     let wrap = |(name, inner): (&str, AiResponse)| (name.to_string(), Response::Ai(inner));
     items.into_iter().map(wrap).collect()

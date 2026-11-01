@@ -32,9 +32,9 @@ fn management_requests(id: &AiConnectionId) -> Vec<AiRequest> {
     ]
 }
 
-/// Les opérations de confidentialité : types autorisés, masquage, journal des envois
+/// Les opérations de confidentialité (types autorisés, masquage, journal des envois) et de l'historique
 fn privacy_requests(id: &AiConnectionId) -> Vec<AiRequest> {
-    vec![
+    let mut items = vec![
         AiRequest::SetAiAllowedContent {
             connection: id.clone(),
             kinds: vec![ContentKind::MailMessage],
@@ -48,7 +48,9 @@ fn privacy_requests(id: &AiConnectionId) -> Vec<AiRequest> {
             before: Some("journal-1".to_string()),
         },
         AiRequest::ClearAiJournal,
-    ]
+    ];
+    items.extend(ai_history::requests());
+    items
 }
 
 /// Une requête par opération de `AiRequest`
@@ -76,7 +78,6 @@ pub fn requests() -> Vec<Named<Request>> {
         },
     ]);
     items.extend(privacy_requests(&id));
-    items.extend(ai_history::requests());
     let ops: Vec<&str> = items.iter().map(op_name).collect();
     numbered("ai", &ops)
         .into_iter()
@@ -132,5 +133,7 @@ pub fn op_name(request: &AiRequest) -> &'static str {
         AiRequest::RenameAiConversation { .. } => "rename_ai_conversation",
         AiRequest::DeleteAiConversation { .. } => "delete_ai_conversation",
         AiRequest::ClearAiConversations => "clear_ai_conversations",
+        AiRequest::SetAiHistoryEnabled { .. } => "set_ai_history_enabled",
+        AiRequest::GetAiHistoryEnabled => "get_ai_history_enabled",
     }
 }

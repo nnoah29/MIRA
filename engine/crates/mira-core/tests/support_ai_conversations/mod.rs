@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 
 pub mod changes;
+pub mod history;
 
 use std::sync::Arc;
 

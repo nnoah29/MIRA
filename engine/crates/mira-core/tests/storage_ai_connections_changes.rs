@@ -45,14 +45,14 @@ fn migration_16_applies_on_existing_profile() {
     drop(Database::open(&path).unwrap());
     let raw = rusqlite::Connection::open(&path).unwrap();
     raw.execute_batch(
-        "DROP TABLE ai_journal; DROP TABLE ai_connections; PRAGMA user_version = 15;",
+        "DROP TABLE ai_conversations; DROP TABLE ai_journal; DROP TABLE ai_connections; PRAGMA user_version = 15;",
     )
     .unwrap();
     drop(raw);
     let db = Database::open(&path).unwrap();
-    assert_eq!(schema_version(), 19);
+    assert_eq!(schema_version(), 20);
     let version = db.read(|tx| Ok(tx.schema_version_on_disk())).unwrap();
-    assert_eq!(version, 19);
+    assert_eq!(version, 20);
     insert(&db, &connection("c-1", "A")).unwrap();
     assert!(
         db.read(|tx| tx.table_names())

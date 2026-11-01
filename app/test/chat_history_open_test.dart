@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mira/engine/ai_models.dart';
 import 'package:mira/engine/engine_client.dart';
 import 'package:mira/state/chat_controller.dart';
 import 'package:mira/state/chat_message.dart';
@@ -94,5 +95,34 @@ void main() {
     r.chat.reset();
     expect(r.chat.conversationId, isNull);
     expect(r.chat.saveFailed, isFalse);
+  });
+
+  test('pending_action_cards_of_a_restored_conversation_expire', () async {
+    final r = rig();
+    final reply = ChatMsg(
+      role: 'ai',
+      text: 'Je te propose ça.',
+      fromEngine: true,
+    );
+    final proposal = AiActionProposal(
+      id: 'c1',
+      action: 'trash',
+      messages: const ['m1'],
+    );
+    reply.actions
+      ..add(ProposedAction(proposal))
+      ..add(
+        ProposedAction(
+          AiActionProposal(id: 'c2', action: 'archive', messages: const ['m2']),
+          status: 'done',
+        ),
+      );
+    seedConversation(r.engine, 'old', [
+      ChatMsg(role: 'me', text: 'Range'),
+      reply,
+    ]);
+    expect(await r.chat.open('old'), isNull);
+    final restored = r.chat.chat.last.actions;
+    expect(restored.map((a) => a.status), ['dismissed', 'done']);
   });
 }

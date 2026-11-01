@@ -133,7 +133,9 @@ class _ComposerAiBarState extends State<ComposerAiBar> {
                     child: Btn(
                       key: const ValueKey('composer-ai-undo'),
                       icon: 'arrowl',
-                      label: t('Annuler la modification de l’IA'),
+                      label: ai.undoDropsEdits
+                          ? t('Annuler (efface aussi tes modifications depuis)')
+                          : t('Annuler la modification de l’IA'),
                       onTap: ai.undo,
                     ),
                   ),

@@ -206,4 +206,20 @@ void main() {
     expect(key('chat-action-dismiss-c1'), findsOneWidget);
     await close(tester, store);
   });
+
+  testWidgets('the_reason_is_labelled_as_given_by_the_ai', (tester) async {
+    final store = await withAction(
+      tester,
+      action: 'archive',
+      ids: (s) => [s.mails[0].id],
+    );
+    expect(
+      find.descendant(
+        of: key('chat-action-c1'),
+        matching: find.textContaining('Raison donnée par l’IA : Ils sont lus'),
+      ),
+      findsOneWidget,
+    );
+    await close(tester, store);
+  });
 }

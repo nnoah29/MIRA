@@ -540,6 +540,7 @@ class ChatController extends ChangeNotifier {
     }
     final messages = decodeChat(doc.payload, doc.meta.payloadVersion);
     if (messages == null) return t('Conversation illisible');
+    _expirePendingActions(messages);
     if (busy) return null;
     _consent = _content = null;
     chat = [welcome(), ...messages];
@@ -547,6 +548,15 @@ class ChatController extends ChangeNotifier {
     saveFailed = false;
     notifyListeners();
     return null;
+  }
+
+  /// Une action laissée en attente dans une conversation ancienne ne peut plus être confirmée : ses messages ont pu changer.
+  void _expirePendingActions(List<ChatMsg> messages) {
+    for (final m in messages) {
+      for (final a in m.actions.where((a) => a.status == 'pending')) {
+        a.status = 'dismissed';
+      }
+    }
   }
 
   /// Enregistre de nouveau le fil, par exemple après qu'une action proposée a été confirmée ou ignorée.

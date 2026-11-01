@@ -134,7 +134,7 @@ class ChatActionCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  reason,
+                  t('Raison donnée par l’IA : {0}', [reason]),
                   style: Fonts.sans(size: 14, color: p.muted),
                 ),
               ),

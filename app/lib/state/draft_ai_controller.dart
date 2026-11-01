@@ -39,6 +39,8 @@ class DraftAiController extends ChangeNotifier {
   /// Ce que la dernière application a changé (objet, destinataires avec leurs adresses, corps) ; `null` sans application ou après annulation.
   String? summary;
   DraftSnapshot? _undo;
+  String _appliedBody = '';
+  String _appliedSubject = '';
   DraftSelection? _selection;
   AiDraftProposal? _last;
   StreamSubscription<AiChatEvent>? _sub;
@@ -57,6 +59,14 @@ class DraftAiController extends ChangeNotifier {
 
   /// Vrai quand la dernière application peut être annulée.
   bool get canUndo => _undo != null;
+
+  /// Vrai quand l'utilisateur a modifié le brouillon depuis l'application : annuler effacerait aussi ses modifications.
+  bool get undoDropsEdits {
+    final draft = compose();
+    return canUndo &&
+        (draft.body.text != _appliedBody ||
+            draft.subject.text != _appliedSubject);
+  }
 
   /// Envoie l'instruction ; la dernière proposition du tour est appliquée à la fin.
   Future<void> run(String instruction, {DraftSelection? selection}) async {
@@ -148,7 +158,11 @@ class DraftAiController extends ChangeNotifier {
     final draft = compose();
     final sig = signature?.call() ?? '';
     if (draft.sigText.isNotEmpty || sig.trim().isEmpty) return;
-    if (draft.body.text.contains(sig)) draft.sigText = sig;
+    final body = draft.body.text;
+    final ending = body.trimRight().endsWith(sig);
+    if (ending || (draft.mode == 'fwd' && body.contains(sig))) {
+      draft.sigText = sig;
+    }
   }
 
   void _onEvent(AiChatEvent event) {
@@ -211,6 +225,8 @@ class DraftAiController extends ChangeNotifier {
       final problem = applyProposal(compose(), proposal, _selection);
       if (problem == null) {
         _undo = snapshot;
+        _appliedBody = compose().body.text;
+        _appliedSubject = compose().subject.text;
         summary = changesOf(proposal);
         onChanged();
       } else {

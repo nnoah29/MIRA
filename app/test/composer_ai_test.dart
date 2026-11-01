@@ -239,4 +239,24 @@ void main() {
     expect(tester.widget<Text>(changes).data, contains('evil@x.com'));
     await close(tester, store);
   });
+
+  testWidgets('the_undo_button_warns_when_the_user_typed_after_the_ai', (
+    tester,
+  ) async {
+    final (store, _) = await withComposer(
+      tester,
+      scripts: [
+        turn([
+          proposal({'body': 'Texte de l’IA'}),
+        ]),
+      ],
+    );
+    await ask(tester, 'écris');
+    expect(find.text('ANNULER LA MODIFICATION DE L’IA'), findsOneWidget);
+    final c = store.c!;
+    c.body.value = c.body.value.copyWith(text: '${c.body.text} ma phrase');
+    await settle(tester);
+    expect(find.textContaining('EFFACE AUSSI'), findsOneWidget);
+    await close(tester, store);
+  });
 }

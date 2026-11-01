@@ -547,4 +547,53 @@ void main() {
     expect(ai.error, 'Le texte est trop long pour le service d’IA');
     expect(ai.busy, isFalse);
   });
+
+  test(
+    'a_signature_quoted_in_the_middle_is_not_taken_for_the_signature',
+    () async {
+      final text = 'Réponse\n\n> $signature\n\nSuite du message';
+      c = draft(body: text, mode: 'draft', sig: '');
+      engine.scripts.add(turn(const [], text: 'Ok'));
+      await make(signature: () => signature).run('relis');
+      expect(c.sigText, '');
+    },
+  );
+
+  test('stopping_twice_is_harmless_and_the_next_run_works', () async {
+    engine.manual = true;
+    final ai = make();
+    final first = ai.run('écris');
+    await pumpEventQueue();
+    engine.live!.add({'type': 'started', 'operation': 'op-9'});
+    await pumpEventQueue();
+    await ai.stop();
+    await ai.stop();
+    await first;
+    expect(ai.busy, isFalse);
+    engine.manual = false;
+    engine.scripts.add(
+      turn([
+        proposal({'body': 'Deuxième essai'}),
+      ]),
+    );
+    await ai.run('réessaie');
+    expect(c.body.text, 'Deuxième essai\n\n$signature');
+  });
+
+  test('undo_warns_when_the_user_edited_after_the_ai', () async {
+    engine.scripts.add(
+      turn([
+        proposal({'body': 'Texte de l’IA'}),
+      ]),
+    );
+    final ai = make();
+    await ai.run('écris');
+    expect(ai.canUndo, isTrue);
+    expect(ai.undoDropsEdits, isFalse);
+    c.body.value = c.body.value.copyWith(text: '${c.body.text} et ma phrase');
+    expect(ai.undoDropsEdits, isTrue);
+    c.subject.text = 'Objet changé';
+    ai.undo();
+    expect(ai.undoDropsEdits, isFalse);
+  });
 }

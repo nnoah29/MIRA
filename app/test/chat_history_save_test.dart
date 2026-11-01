@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mira/engine/ai_history_admin.dart';
 import 'package:mira/engine/engine_client.dart';
 import 'package:mira/state/chat_controller.dart';
 
@@ -129,5 +130,18 @@ void main() {
     expect(r.saves, hasLength(1));
     expect(r.chat.saveFailed, isFalse);
     expect(r.history.enabled, isFalse);
+  });
+
+  test('later_turns_keep_a_title_renamed_by_the_user', () async {
+    final r = rig();
+    r.engine.scripts
+      ..add(reply('Un'))
+      ..add(reply('Deux'));
+    await r.chat.send('Première question', noContext);
+    final id = r.chat.conversationId!;
+    await AiHistoryAdmin(r.engine).rename(id, 'Facture Dupont');
+    await r.chat.send('Et ensuite ?', noContext);
+    expect(r.engine.history.conversations.single['title'], 'Facture Dupont');
+    expect(messagesOf(r.saves.last), hasLength(4));
   });
 }

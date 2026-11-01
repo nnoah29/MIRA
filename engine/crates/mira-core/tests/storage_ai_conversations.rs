@@ -7,9 +7,9 @@ use mira_core::storage::Database;
 use mira_vocabulary::Timestamp;
 use support_ai_conversation_rows::{listed_ids, save};
 
-/// Enregistrer deux fois le même identifiant garde une ligne, la date de création et remplace le reste
+/// Enregistrer deux fois le même identifiant garde une ligne, la date de création et le titre de création, et remplace le reste
 #[test]
-fn save_twice_keeps_one_row_and_created_at() {
+fn save_twice_keeps_one_row_created_at_and_title() {
     let db = Database::open_in_memory().unwrap();
     save(&db, "c-1", "Avant", 10);
     let second = db
@@ -19,7 +19,8 @@ fn save_twice_keeps_one_row_and_created_at() {
     assert_eq!(second.created_at, Timestamp::from_millis(10));
     assert_eq!(second.updated_at, Timestamp::from_millis(20));
     let found = db.read(|tx| tx.get_ai_conversation("c-1")).unwrap();
-    assert_eq!(found.meta.title, "Après");
+    assert_eq!(found.meta.title, "Avant");
+    assert_eq!(second.title, "Avant");
     assert_eq!(found.meta.payload_version, 2);
     assert_eq!(found.payload, "{\"a\":1}");
 }

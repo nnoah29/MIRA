@@ -67,3 +67,20 @@ async fn clear_removes_everything_and_answers_done() {
     assert!(list(&f.engine, 50, None).await.unwrap().is_empty());
     clear(&f.engine).await.unwrap();
 }
+
+/// Un titre choisi par l'utilisateur survit aux enregistrements suivants, contenu remplacé
+#[tokio::test]
+async fn rename_survives_a_later_save() {
+    let f = start();
+    save(&f.engine, "a", "Première question", "{}")
+        .await
+        .unwrap();
+    rename(&f.engine, "a", "Facture Dupont").await.unwrap();
+    let meta = save(&f.engine, "a", "Première question", "{\"k\":2}")
+        .await
+        .unwrap();
+    assert_eq!(meta.title, "Facture Dupont");
+    let found = get(&f.engine, "a").await.unwrap();
+    assert_eq!(found.meta.title, "Facture Dupont");
+    assert_eq!(found.payload, "{\"k\":2}");
+}

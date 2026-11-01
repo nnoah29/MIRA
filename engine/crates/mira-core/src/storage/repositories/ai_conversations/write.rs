@@ -8,7 +8,7 @@ use crate::storage::Tx;
 use crate::storage::errors::storage_error;
 
 impl Tx<'_> {
-    /// Crée ou remplace la conversation ; la date de création d'une conversation existante est conservée
+    /// Crée ou remplace le contenu ; date de création et titre d'une conversation existante sont conservés
     pub fn save_ai_conversation(
         &self,
         id: &str,
@@ -21,7 +21,7 @@ impl Tx<'_> {
             .execute(
                 "INSERT INTO ai_conversations (id, title, created_at, updated_at, payload_version, payload) \
                  VALUES (?1, ?2, ?5, ?5, ?3, ?4) \
-                 ON CONFLICT (id) DO UPDATE SET title = excluded.title, updated_at = excluded.updated_at, \
+                 ON CONFLICT (id) DO UPDATE SET updated_at = excluded.updated_at, \
                  payload_version = excluded.payload_version, payload = excluded.payload",
                 params![id, title, payload_version, payload, now],
             )

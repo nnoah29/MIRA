@@ -49,7 +49,7 @@ Un handler par opération dans `api/handlers/ai/conversations/`, routage par `ma
 |---|---|---|---|
 | `ListAiConversations { limit, before }` | métadonnées seules, plus récentes d'abord | `Conversations` | Sensitive |
 | `GetAiConversation { id }` | conversation complète | `Conversation` | Sensitive |
-| `SaveAiConversation { id, title, payload_version, payload }` | upsert idempotent | `ConversationMeta` | Sensitive |
+| `SaveAiConversation { id, title, payload_version, payload }` | upsert idempotent ; le titre n'est pris qu'à la création (un renommage survit aux tours suivants) | `ConversationMeta` | Sensitive |
 | `RenameAiConversation { id, title }` | renomme (l'ordre ne change pas) | `ConversationMeta` | Sensitive |
 | `DeleteAiConversation { id }` | supprime | `Done` | Sensitive |
 | `ClearAiConversations` | supprime tout | `Done` | Sensitive |

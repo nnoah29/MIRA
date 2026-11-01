@@ -31,7 +31,7 @@ class FakeAiHistory {
     final at = conversations.indexWhere((c) => c['id'] == r['id']);
     final row = {
       'id': r['id'],
-      'title': r['title'],
+      'title': at < 0 ? r['title'] : conversations[at]['title'],
       'created_at': at < 0 ? now : conversations[at]['created_at'],
       'updated_at': now,
       'payload_version': r['payload_version'],

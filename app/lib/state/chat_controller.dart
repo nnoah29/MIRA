@@ -6,18 +6,25 @@ import 'package:flutter/foundation.dart';
 import '../data/format.dart';
 import '../data/seed.dart';
 import '../engine/ai_admin.dart';
+import '../engine/ai_history_admin.dart';
 import '../engine/engine_client.dart';
 import '../i18n/engine_errors.dart';
 import '../i18n/i18n.dart';
 import 'assistant.dart';
 import 'chat_context.dart';
+import 'chat_conversation.dart';
+import 'chat_history_state.dart';
 import 'chat_mentions.dart';
 import 'chat_message.dart';
+import 'chat_message_json.dart';
 import 'chat_pending.dart';
 import 'chat_tools.dart';
 
 /// Code d'erreur du moteur : l'utilisateur n'a pas encore autorisé l'envoi vers ce service.
 const consentRequiredCode = 'incompatible_state.ai_consent_required';
+
+/// Code d'erreur du moteur : l'historique est coupé, la conversation n'est pas enregistrée.
+const historyDisabledCode = 'incompatible_state.ai_history_disabled';
 
 /// Adresse de la machine locale : un service sans clé y reste utilisable.
 bool isLoopbackUrl(String? url) {
@@ -40,6 +47,9 @@ class _Run {
   _Run(this.reply);
 }
 
+/// Sans historique branché : rien n'est enregistré.
+ChatHistoryState? _noHistory() => null;
+
 /// Fil de l'assistant : réponses du moteur d'IA, ou repli de démonstration sans connexion utilisable.
 class ChatController extends ChangeNotifier {
   ChatController({
@@ -47,6 +57,7 @@ class ChatController extends ChangeNotifier {
     required this.welcome,
     required this.demoAnswer,
     required this.after,
+    this.history = _noHistory,
   }) {
     chat = [welcome()];
   }
@@ -55,9 +66,18 @@ class ChatController extends ChangeNotifier {
   final ChatMsg Function() welcome;
   final Answer Function(String question) demoAnswer;
   final Timer Function(int ms, VoidCallback run) after;
+  final ChatHistoryState? Function() history;
 
   late List<ChatMsg> chat;
   bool busy = false;
+
+  /// Conversation enregistrée que ce fil alimente (`null` : pas encore enregistrée).
+  String? conversationId;
+
+  /// Vrai quand le dernier enregistrement a échoué ; le suivant réessaie.
+  bool saveFailed = false;
+  Future<void>? _saving;
+  bool _disposed = false;
   AiConnectionInfo? _connection;
   ChatPending? _consent;
   ChatPending? _content;
@@ -103,6 +123,7 @@ class ChatController extends ChangeNotifier {
     final ai = admin();
     final before = _connection?.id;
     _connection = ai == null ? null : await _usable(ai);
+    await history()?.load();
     if (before != _connection?.id) notifyListeners();
   }
 
@@ -193,6 +214,7 @@ class ChatController extends ChangeNotifier {
           cancelOnError: true,
         );
     await run.finished.future;
+    await _saving;
   }
 
   void _onEvent(AiChatEvent event, _Run run, ChatPending origin) {
@@ -295,6 +317,7 @@ class ChatController extends ChangeNotifier {
     reply.done = true;
     busy = false;
     _run = null;
+    _saving = _save();
     if (!run.cancelPending) unawaited(run.sub?.cancel());
     if (!run.finished.isCompleted) run.finished.complete();
     notifyListeners();
@@ -471,19 +494,79 @@ class ChatController extends ChangeNotifier {
   void reset() {
     _halt();
     chat = [welcome()];
+    conversationId = null;
+    saveFailed = false;
+    notifyListeners();
+  }
+
+  /// Repart d'une conversation neuve en gardant l'accueil ; l'ancienne reste enregistrée.
+  void startNew() {
+    final hello = chat.take(1).toList();
+    _halt();
+    chat = hello;
+    conversationId = null;
+    saveFailed = false;
     notifyListeners();
   }
 
   /// Vide le fil de la conversation, en gardant l'accueil.
-  void clear() {
-    final hello = chat.take(1).toList();
-    _halt();
-    chat = hello;
+  void clear() => startNew();
+
+  /// Reprend une conversation enregistrée ; rend le texte de l'erreur à montrer, `null` en cas de succès ou si une génération tourne.
+  Future<String?> open(String id) async {
+    final ai = history()?.admin();
+    if (ai == null || busy) return null;
+    AiConversationDoc doc;
+    try {
+      doc = await ai.get(id);
+    } on Object catch (e) {
+      return engineErrorText(e);
+    }
+    final messages = decodeChat(doc.payload, doc.meta.payloadVersion);
+    if (messages == null) return t('Conversation illisible');
+    if (busy) return null;
+    _consent = _content = null;
+    chat = [welcome(), ...messages];
+    conversationId = id;
+    saveFailed = false;
     notifyListeners();
+    return null;
+  }
+
+  /// Enregistre le fil visible (accueil exclu) quand un tour vient de finir ; un échec n'arrête jamais le chat.
+  Future<void> _save() async {
+    final state = history();
+    final ai = state?.admin();
+    if (state == null || ai == null || demo || !state.enabled) return;
+    if (chat.length < 2 || !chat.last.done) return;
+    final id = conversationId ??= newConversationId();
+    final first = chat
+        .skip(1)
+        .firstWhere((m) => m.role == 'me', orElse: () => chat[1]);
+    try {
+      await ai.save(
+        id: id,
+        title: conversationTitle(first.text),
+        payloadVersion: chatPayloadVersion,
+        payload: encodeChat(chat.skip(1).toList()),
+      );
+      saveFailed = false;
+    } on Object catch (e) {
+      _saveRefused(state, e);
+    }
+    if (!_disposed) notifyListeners();
+  }
+
+  void _saveRefused(ChatHistoryState state, Object error) {
+    final disabled =
+        error is EngineException && error.code == historyDisabledCode;
+    if (disabled) return unawaited(state.load());
+    saveFailed = true;
   }
 
   @override
   void dispose() {
+    _disposed = true;
     final run = _run;
     _run = null;
     unawaited(run?.sub?.cancel());

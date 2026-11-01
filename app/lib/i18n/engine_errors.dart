@@ -27,6 +27,8 @@ const engineErrorTexts = <String, String>{
       'Autorise d’abord l’envoi de texte à ce service d’IA',
   'incompatible_state.ai_content_not_allowed':
       'Ce service d’IA n’est pas autorisé à recevoir ce type de contenu',
+  'incompatible_state.ai_history_disabled':
+      'L’historique des conversations est désactivé',
   'incompatible_state.ai_key_missing':
       'Aucune clé enregistrée pour ce service d’IA',
   'incompatible_state.ai_model_missing': 'Choisis d’abord un modèle d’IA',
@@ -45,6 +47,10 @@ const engineErrorTexts = <String, String>{
       'Opération interdite sur une boîte système',
   'internal.bug': 'Erreur interne de MIRA',
   'invalid_input.address': 'Adresse e-mail invalide',
+  'invalid_input.ai_conversation_payload': 'Conversation illisible',
+  'invalid_input.ai_conversation_title': 'Le titre de la conversation est vide ou trop long (80 caractères au plus)',
+  'invalid_input.ai_conversation_too_large':
+      'Cette conversation est trop volumineuse pour être enregistrée',
   'invalid_input.ai_input_too_large':
       'Le texte est trop long pour le service d’IA',
   'invalid_input.ai_journal_limit':
@@ -83,6 +89,7 @@ const engineErrorTexts = <String, String>{
   'not_found.account': 'Compte introuvable',
   'not_found.action': 'Action introuvable',
   'not_found.ai_connection': 'Connexion d’IA introuvable',
+  'not_found.ai_conversation': 'Cette conversation n’existe plus',
   'not_found.ai_model': 'Modèle d’IA introuvable',
   'not_found.ai_provider': 'Service d’IA inconnu',
   'not_found.attachment': 'Pièce jointe introuvable',

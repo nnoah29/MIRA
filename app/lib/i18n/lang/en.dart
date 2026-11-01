@@ -534,6 +534,14 @@ const Map<String, String> enStrings = {
       'This AI service is not allowed to receive this type of content',
   'Nombre de lignes du journal des envois hors limites':
       'Send journal line count out of range',
+  'L’historique des conversations est désactivé':
+      'Conversation history is turned off',
+  'Le titre de la conversation est vide ou trop long (80 caractères au plus)':
+      'The conversation title is empty or too long (80 characters at most)',
+  'Cette conversation est trop volumineuse pour être enregistrée':
+      'This conversation is too large to be saved',
+  'Conversation illisible': 'Unreadable conversation',
+  'Cette conversation n’existe plus': 'This conversation no longer exists',
   'Aucune clé enregistrée pour ce service d’IA':
       'No key saved for this AI service',
   'Choisis d’abord un modèle d’IA': 'First choose an AI model',

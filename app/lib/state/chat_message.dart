@@ -1,5 +1,7 @@
 //! Message du fil de l'assistant : auteur, texte (affiché au fur et à mesure), brouillon et références.
 
+import '../engine/ai_models.dart';
+
 /// État d'un appel d'outil de l'IA dans la conversation.
 enum ToolState { running, ok, denied, error }
 
@@ -36,6 +38,9 @@ class ChatMsg {
 
   /// Identifiants des messages consultés par les outils, sans doublon.
   final List<String> sources = [];
+
+  /// Brouillons proposés par l'IA pendant cette réponse, un par appel d'outil.
+  final List<AiDraftProposal> drafts = [];
 
   /// Texte venu du moteur d'IA (non traduisible) ; faux pour la démonstration et les notices.
   final bool fromEngine;

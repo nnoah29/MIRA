@@ -236,6 +236,11 @@ class ChatController extends ChangeNotifier {
       case AiToolCalled() || AiToolFinished():
         applyToolEvent(reply, event);
         notifyListeners();
+      case AiDraftProposal():
+        reply.drafts
+          ..removeWhere((d) => d.id == event.id)
+          ..add(event);
+        notifyListeners();
       case AiDone():
         _onDone(run, event);
       case AiFailed()

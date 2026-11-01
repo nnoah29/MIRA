@@ -50,6 +50,15 @@ String rowTime(int ms) {
   return DateFormat('d MMM', appLang.dateLocale).format(d);
 }
 
+/// Jour en toutes lettres dans la langue active, par exemple « dimanche 1 novembre 2026 » ; la date ISO si les données de langue ne sont pas chargées.
+String longDay(DateTime d) {
+  try {
+    return DateFormat('EEEE d MMMM y', appLang.dateLocale).format(d);
+  } on Object {
+    return DateFormat('yyyy-MM-dd').format(d);
+  }
+}
+
 String fullDate(int ms) => DateFormat(
   'EEE d MMM y, HH:mm',
   appLang.dateLocale,

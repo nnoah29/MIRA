@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 
+import '../engine/ai_models.dart';
 import 'chat_message.dart';
 
 /// Version de la forme du contenu enregistré.
@@ -22,6 +23,7 @@ Map<String, dynamic> _msgJson(ChatMsg m) => {
   'draft': m.draft,
   'refs': m.refs,
   'sources': m.sources,
+  'drafts': [for (final d in m.drafts) d.toJson()],
   'tools': [for (final t in m.tools) _toolJson(t)],
   'failed': m.failed,
   'note': m.note,
@@ -64,6 +66,9 @@ ChatMsg _msg(Map<String, dynamic> j) {
   m.sources.addAll(_strings(j['sources']) ?? const []);
   for (final t in (j['tools'] as List?) ?? const []) {
     m.tools.add(_tool((t as Map).cast<String, dynamic>()));
+  }
+  for (final d in (j['drafts'] as List?) ?? const []) {
+    m.drafts.add(AiDraftProposal.fromJson((d as Map).cast<String, dynamic>()));
   }
   return m;
 }

@@ -132,8 +132,12 @@ class AiAdmin {
   /// Efface tout le journal des envois.
   Future<void> clearJournal() => _send('clear_ai_journal');
 
-  /// Lance une génération (`ChatRequest`) ; sans [connection], la connexion par défaut sert.
-  Stream<AiChatEvent> chat(Map<String, dynamic> request, {String? connection}) {
+  /// Lance une génération (`ChatRequest`) ; sans [connection], la connexion par défaut sert. [mode] choisit le jeu d'outils (assistant par défaut, ou composeur).
+  Stream<AiChatEvent> chat(
+    Map<String, dynamic> request, {
+    String? connection,
+    Map<String, dynamic>? mode,
+  }) {
     final Object c = client;
     if (c is! ChatStreamingClient) return Stream.error(UnimplementedError());
     return c
@@ -141,6 +145,7 @@ class AiAdmin {
           'connection': connection,
           'request': request,
           'allow_tools': true,
+          'mode': ?mode,
         })
         .expand(_event);
   }
@@ -171,6 +176,7 @@ class AiAdmin {
           ),
         ],
         'tool_finished' => [_toolFinished(line)],
+        'draft_proposed' => [AiDraftProposal.fromLine(line)],
         'done' => [_done(line['reason'])],
         'error' => [_failed(line['error'])],
         _ => const [],

@@ -35,3 +35,19 @@ pub struct DraftProposal {
     pub reply_to: Option<String>,
     pub identity: Option<String>,
 }
+
+impl DraftProposal {
+    /// Proposition de ce genre sans aucun champ renseigné.
+    pub fn empty(kind: DraftProposalKind) -> Self {
+        Self {
+            kind,
+            to: None,
+            cc: None,
+            subject: None,
+            body: None,
+            selection: None,
+            reply_to: None,
+            identity: None,
+        }
+    }
+}

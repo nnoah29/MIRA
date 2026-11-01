@@ -1,17 +1,18 @@
-//! Outils d'une génération : ceux du catalogue quand ils sont permis, jamais ceux que le client propose.
+//! Outils d'une génération : ceux du mode quand ils sont permis, jamais ceux que le client propose.
 
-use mira_vocabulary::ChatRequest;
+use mira_vocabulary::{ChatMode, ChatRequest};
 
-use super::framing::TOOLS_NOTICE;
-use crate::ai::tools::specs;
+use super::framing::{COMPOSE_NOTICE, TOOLS_NOTICE};
+use crate::ai::tools::specs_for;
 
-/// Annonce les outils du catalogue et la consigne qui les encadre, ou aucun si `enabled` est faux.
-pub(super) fn with_tools(mut request: ChatRequest, enabled: bool) -> ChatRequest {
-    request.tools = if enabled { specs() } else { Vec::new() };
+/// Annonce les outils du mode et les consignes qui les encadrent, ou aucun si `enabled` est faux.
+pub(super) fn with_tools(mut request: ChatRequest, enabled: bool, mode: ChatMode) -> ChatRequest {
+    request.tools = if enabled { specs_for(mode) } else { Vec::new() };
     if enabled {
+        let notice = format!("{TOOLS_NOTICE}\n\n{COMPOSE_NOTICE}");
         request.system = Some(match request.system.take() {
-            Some(system) => format!("{system}\n\n{TOOLS_NOTICE}"),
-            None => TOOLS_NOTICE.to_string(),
+            Some(system) => format!("{system}\n\n{notice}"),
+            None => notice,
         });
     }
     request

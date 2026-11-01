@@ -2,7 +2,7 @@
 
 use mira_vocabulary::{AiToolCount, ContentKind};
 
-use crate::ai::tools::kind_of;
+use crate::ai::tools::{is_proposal, kind_of};
 
 /// Bilan des outils d'une génération, pour la ligne de journal ; jamais d'argument ni de contenu.
 #[derive(Debug, Default)]
@@ -15,7 +15,7 @@ pub(super) struct ToolUsage {
 impl ToolUsage {
     /// Note un appel : son nom (`inconnu` si ce n'est pas un outil du catalogue), le type envoyé et la taille envoyée.
     pub(super) fn record(&mut self, name: &str, sent: Option<ContentKind>, chars: usize) {
-        let name = if kind_of(name).is_some() {
+        let name = if kind_of(name).is_some() || is_proposal(name) {
             name
         } else {
             "unknown"

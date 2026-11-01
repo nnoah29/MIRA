@@ -3,6 +3,7 @@
 use mira_core::api::{AiRequest, AiResponse, Request, Response, SecretInput};
 use mira_vocabulary::{AiConnectionId, AiProviderId, ContentKind, MaskingSettings};
 
+use super::ai_history;
 use super::ai_samples::{sample_connection, sample_journal, sample_models, sample_provider};
 use super::{Named, numbered};
 
@@ -75,6 +76,7 @@ pub fn requests() -> Vec<Named<Request>> {
         },
     ]);
     items.extend(privacy_requests(&id));
+    items.extend(ai_history::requests());
     let ops: Vec<&str> = items.iter().map(op_name).collect();
     numbered("ai", &ops)
         .into_iter()
@@ -99,7 +101,11 @@ pub fn responses() -> Vec<Named<Response>> {
         ("ai.done", AiResponse::Done),
     ];
     let wrap = |(name, inner): (&str, AiResponse)| (name.to_string(), Response::Ai(inner));
-    items.into_iter().map(wrap).collect()
+    items
+        .into_iter()
+        .map(wrap)
+        .chain(ai_history::responses())
+        .collect()
 }
 
 /// Nom de l'opération, par `match` exhaustif
@@ -120,5 +126,8 @@ pub fn op_name(request: &AiRequest) -> &'static str {
         AiRequest::SetAiMasking { .. } => "set_ai_masking",
         AiRequest::ListAiJournal { .. } => "list_ai_journal",
         AiRequest::ClearAiJournal => "clear_ai_journal",
+        AiRequest::SaveAiConversation { .. } => "save_ai_conversation",
+        AiRequest::ListAiConversations { .. } => "list_ai_conversations",
+        AiRequest::GetAiConversation { .. } => "get_ai_conversation",
     }
 }

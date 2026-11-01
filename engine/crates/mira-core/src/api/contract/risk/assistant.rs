@@ -21,6 +21,9 @@ pub(super) fn ai_risk(request: &AiRequest) -> ToolRisk {
         | AiRequest::AcknowledgeAiConsent { .. }
         | AiRequest::SetAiAllowedContent { .. }
         | AiRequest::SetAiMasking { .. }
-        | AiRequest::ClearAiJournal => ToolRisk::Sensitive,
+        | AiRequest::ClearAiJournal
+        | AiRequest::SaveAiConversation { .. }
+        | AiRequest::ListAiConversations { .. }
+        | AiRequest::GetAiConversation { .. } => ToolRisk::Sensitive,
     }
 }

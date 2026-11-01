@@ -9,6 +9,7 @@ import '../theme/app_theme.dart';
 import '../theme/icons.dart';
 import 'ai_consent_dialog.dart';
 import 'ai_content_dialog.dart';
+import 'chat_draft_card.dart';
 import 'chat_history_view.dart';
 import 'chat_markdown.dart';
 import 'chat_sources.dart';
@@ -566,6 +567,9 @@ class _Bubble extends StatelessWidget {
                   canAuthorize: s.chatCtl.canAuthorize(msg),
                   onAuthorize: (tool) => onAuthorize(msg, tool),
                 ),
+              if (!me)
+                for (final d in msg.drafts.where((d) => d.kind == 'new'))
+                  ChatDraftCard(d, onOpen: () => s.openProposal(d)),
               if (!me &&
                   msg.done &&
                   (msg.refs ?? const []).isEmpty &&
@@ -621,6 +625,7 @@ class _Bubble extends StatelessWidget {
                   msg.done &&
                   msg.fromEngine &&
                   !msg.failed &&
+                  msg.drafts.isEmpty &&
                   msg.text.isNotEmpty &&
                   s.byId(s.open) != null)
                 Padding(

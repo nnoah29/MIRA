@@ -2958,6 +2958,46 @@ class MailStore extends ChangeNotifier {
     );
   }
 
+  /// Adresse d'envoi d'une proposition de l'IA : celle qu'elle nomme si l'utilisateur l'a, sinon la règle habituelle.
+  String _fromOfProposal(AiDraftProposal p, Mail? original) {
+    final wanted = (p.identity ?? '').trim().toLowerCase();
+    final hit = senderChoices().where((x) => x.email.toLowerCase() == wanted);
+    return hit.isNotEmpty ? hit.first.email : fromFor(original);
+  }
+
+  /// Ouvre le composeur prérempli avec le brouillon proposé par l'IA : nouveau message, ou réponse avec citation si le message visé existe ; la signature est ajoutée par l'app.
+  void openProposal(AiDraftProposal p) {
+    final original = p.replyTo == null ? null : byId(p.replyTo);
+    final from = _fromOfProposal(p, original);
+    final people = [
+      for (final e in p.to ?? const <AiAddressEntry>[])
+        Person(e.name ?? e.address, e.address),
+    ];
+    final cc = [
+      for (final e in p.cc ?? const <AiAddressEntry>[])
+        Person(e.name ?? e.address, e.address),
+    ];
+    final text = '${p.body ?? ''}\n\n${signatureFor(from)}';
+    final reply = original != null;
+    final last = original?.msgs.last;
+    final other = last == null
+        ? null
+        : (isMine(last.from.email) ? original!.to[0] : last.from);
+    openCompose(
+      ComposeInit(
+        from: from,
+        mode: reply ? 'reply' : 'new',
+        replyTo: reply ? original.id : null,
+        to: people.isNotEmpty ? people : [?other],
+        cc: cc,
+        subject: p.subject ?? (reply ? 'Re: ${stripRe(original.subject)}' : ''),
+        text: text,
+        flags: RichController.gapFlags(text),
+        quote: reply ? quoteOf(original) : null,
+      ),
+    );
+  }
+
   void openCompose(ComposeInit i) {
     if (c != null) {
       saveDraft();

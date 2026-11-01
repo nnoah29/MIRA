@@ -16,7 +16,7 @@ const SCHEMA: &str = r#"{"type":"object","properties":{
 "subject":{"type":"string","description":"Objet, sur une ligne."},
 "body":{"type":"string","description":"Corps du message, sans formule finale ni signature."},
 "reply_to":{"type":"string","description":"Identifiant du message auquel on répond, s'il y en a un."},
-"identity":{"type":"string","description":"Identifiant de l'identité d'envoi (voir list_identities)."}
+"identity":{"type":"string","description":"Adresse d'envoi à utiliser, parmi les adresses de list_identities."}
 },"required":["body"]}"#;
 
 /// Arguments de la composition d'un message.

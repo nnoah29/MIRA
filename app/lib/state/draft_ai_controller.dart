@@ -45,6 +45,12 @@ class DraftAiController extends ChangeNotifier {
   Completer<void>? _finished;
   String? _operation;
   String? _stopReason;
+  AiAdmin? _ai;
+  String? _connectionId;
+  Map<String, dynamic>? _request;
+  Map<String, dynamic>? _mode;
+  bool _retried = false;
+  bool _sawOutput = false;
   bool _stopped = false;
   bool _disposed = false;
   int _generation = 0;
@@ -68,18 +74,24 @@ class DraftAiController extends ChangeNotifier {
       );
     }
     _detectSignature();
-    final request = buildDraftRequest(compose(), text, selection: selection);
-    final mode = {'kind': 'composer', 'selection': selection != null};
+    _ai = ai;
+    _connectionId = id;
+    _request = buildDraftRequest(compose(), text, selection: selection);
+    _mode = {'kind': 'composer', 'selection': selection != null};
     final finished = _finished = Completer<void>();
-    _sub = ai
-        .chat(request, connection: id, mode: mode)
+    _listen(finished);
+    await finished.future;
+  }
+
+  void _listen(Completer<void> finished) {
+    _sub = _ai!
+        .chat(_request!, connection: _connectionId, mode: _mode)
         .listen(
           _onEvent,
           onError: (Object e) => _fail(engineErrorText(e)),
           onDone: () => _complete(finished),
           cancelOnError: true,
         );
-    await finished.future;
   }
 
   /// Arrête la génération en gardant le brouillon tel qu'il est.
@@ -124,6 +136,8 @@ class DraftAiController extends ChangeNotifier {
     _last = null;
     _operation = null;
     _stopReason = null;
+    _retried = false;
+    _sawOutput = false;
     _stopped = false;
     _selection = selection;
     _notify();
@@ -142,21 +156,40 @@ class DraftAiController extends ChangeNotifier {
       case AiStarted():
         _operation = event.operation;
       case AiText():
+        _sawOutput = true;
         reply = '${reply ?? ''}${event.text}';
         _notify();
+      case AiToolCalled():
+        _sawOutput = true;
       case AiDraftProposal():
+        _sawOutput = true;
         _last = event;
       case AiFailed():
-        _fail(engineErrorText(EngineException(event.code, event.message)));
+        _failOrRetry(event.code, event.message);
       case AiDone() when event.failed:
-        _fail(
-          engineErrorText(EngineException(event.code ?? 'internal.bug', '')),
-        );
+        _failOrRetry(event.code ?? 'internal.bug', '');
       case AiDone():
         _stopReason = event.reason;
       default:
         break;
     }
+  }
+
+  /// Un refus du fournisseur avant toute réponse (limite de sortie trop haute pour son modèle) relance une fois avec la limite par défaut du moteur.
+  void _failOrRetry(String code, String message) {
+    final request = _request;
+    final finished = _finished;
+    final refused = code == 'invalid_input.ai_input_too_large';
+    final retry = refused && !_retried && !_sawOutput && finished != null;
+    if (!retry ||
+        request == null ||
+        !request.containsKey('max_output_tokens')) {
+      return _fail(engineErrorText(EngineException(code, message)));
+    }
+    _retried = true;
+    unawaited(_sub?.cancel());
+    _request = {...request}..remove('max_output_tokens');
+    _listen(finished);
   }
 
   void _fail(String text) {

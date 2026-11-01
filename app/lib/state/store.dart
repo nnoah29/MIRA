@@ -2970,7 +2970,11 @@ class MailStore extends ChangeNotifier {
     final seen = <String>{};
     return [
       for (final id in p.messages)
-        if (allowed.contains(id) && seen.add(id) && byId(id) != null) byId(id)!,
+        if (allowed.contains(id) &&
+            !_isEngineDraft(id) &&
+            seen.add(id) &&
+            byId(id) != null)
+          byId(id)!,
     ];
   }
 

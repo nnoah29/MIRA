@@ -503,4 +503,48 @@ void main() {
       expect(request['max_output_tokens'], 8192);
     },
   );
+
+  Map<String, dynamic> refused() => {
+    'type': 'error',
+    'error': {'code': 'invalid_input.ai_input_too_large', 'message': 'x'},
+  };
+
+  test(
+    'a_provider_that_refuses_8192_tokens_is_retried_with_the_default_budget',
+    () async {
+      engine.scripts
+        ..add([refused()])
+        ..add(
+          turn([
+            proposal({'body': 'Texte complet'}),
+          ]),
+        );
+      final ai = make();
+      await ai.run('écris');
+      expect(engine.chatStarts, hasLength(2));
+      expect(
+        (engine.chatStarts[0]['request'] as Map)['max_output_tokens'],
+        8192,
+      );
+      expect(
+        (engine.chatStarts[1]['request'] as Map).containsKey(
+          'max_output_tokens',
+        ),
+        isFalse,
+      );
+      expect(ai.error, isNull);
+      expect(c.body.text, 'Texte complet\n\n$signature');
+    },
+  );
+
+  test('a_second_refusal_is_reported_after_exactly_one_retry', () async {
+    engine.scripts
+      ..add([refused()])
+      ..add([refused()]);
+    final ai = make();
+    await ai.run('écris');
+    expect(engine.chatStarts, hasLength(2));
+    expect(ai.error, 'Le texte est trop long pour le service d’IA');
+    expect(ai.busy, isFalse);
+  });
 }

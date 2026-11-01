@@ -194,4 +194,16 @@ void main() {
     expect(key('chat-action-dismiss-c1'), findsOneWidget);
     await close(tester, store);
   });
+
+  testWidgets('an_unknown_action_cannot_be_confirmed', (tester) async {
+    final store = await withAction(
+      tester,
+      action: 'delete_forever',
+      ids: (s) => [s.mails[0].id],
+    );
+    expect(key('chat-action-c1'), findsOneWidget);
+    expect(key('chat-action-confirm-c1'), findsNothing);
+    expect(key('chat-action-dismiss-c1'), findsOneWidget);
+    await close(tester, store);
+  });
 }

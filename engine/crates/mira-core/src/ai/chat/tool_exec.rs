@@ -8,6 +8,7 @@ use super::guard::Guard;
 use super::prepare::ChatPlan;
 use super::progress::Progress;
 use super::tool_consent::{ToolDecision, decide_call};
+use super::tools_plan::is_announced;
 use super::truncate::{MAX_INPUT_CHARS, request_chars};
 use crate::ai::tools::body::{RESULT_CHARS, bounded};
 use crate::ai::tools::{propose, run};
@@ -60,7 +61,11 @@ pub(super) async fn execute(
     progress: &mut Progress,
     call: &ToolCall,
 ) -> Result<Finished, Ending> {
-    match decide_call(plan.local, &plan.allowed_kinds, &call.name) {
+    let decision = decide_call(plan.local, &plan.allowed_kinds, &call.name);
+    if decision != ToolDecision::Unknown && !is_announced(plan, &call.name) {
+        return Ok(Finished::error("outil indisponible à ce stade"));
+    }
+    match decision {
         ToolDecision::Unknown => Ok(Finished::error("outil inconnu")),
         ToolDecision::Denied(kind) => Ok(Finished::denied(kind)),
         ToolDecision::Proposal => Ok(proposed(plan, progress, call)),

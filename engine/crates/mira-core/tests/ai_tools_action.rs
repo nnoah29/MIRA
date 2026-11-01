@@ -12,7 +12,7 @@ use ai_tools_draft_support::{action, names};
 use ai_tools_support::call;
 use mira_core::ai::tools::{is_proposal, kind_of, propose, summary_of};
 use mira_vocabulary::{ChatMode, MailActionKind, ToolState};
-use serde_json::{Value, json};
+use serde_json::json;
 
 /// Une demande valide donne une proposition, sans doublon d'identifiant, et dit au modèle que l'utilisateur confirmera
 #[test]

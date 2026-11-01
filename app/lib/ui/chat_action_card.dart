@@ -9,6 +9,14 @@ import '../theme/app_theme.dart';
 import 'widgets.dart';
 
 const _shown = 5;
+const _known = {
+  'archive',
+  'trash',
+  'mark_read',
+  'mark_unread',
+  'star',
+  'unstar',
+};
 
 /// Action que l'IA propose sur des messages : rien ne change avant « Confirmer », et l'annulation habituelle s'applique ensuite.
 class ChatActionCard extends StatelessWidget {
@@ -77,7 +85,7 @@ class ChatActionCard extends StatelessWidget {
       spacing: 10,
       runSpacing: 8,
       children: [
-        if (targets.isNotEmpty)
+        if (targets.isNotEmpty && _known.contains(item.proposal.action))
           Btn(
             key: ValueKey('chat-action-confirm-$id'),
             icon: 'check',

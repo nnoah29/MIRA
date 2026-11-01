@@ -3,6 +3,7 @@
 use mira_vocabulary::{ChatMode, ChatRequest};
 
 use super::framing::{ACTION_NOTICE, COMPOSE_NOTICE, TOOLS_NOTICE};
+use super::prepare::ChatPlan;
 use crate::ai::tools::specs_for;
 
 /// Annonce les outils du mode et les consignes qui les encadrent, ou aucun si `enabled` est faux.
@@ -19,4 +20,9 @@ pub(super) fn with_tools(mut request: ChatRequest, enabled: bool, mode: ChatMode
         });
     }
     request
+}
+
+/// Dit si l'outil fait partie de ceux annoncés au modèle pour la suite de la génération.
+pub(super) fn is_announced(plan: &ChatPlan, name: &str) -> bool {
+    plan.request.tools.iter().any(|tool| tool.name == name)
 }

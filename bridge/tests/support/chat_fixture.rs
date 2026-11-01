@@ -4,7 +4,7 @@
 use mira_assembly::api::{AiRequest, ChatStart, Request, SecretInput};
 use mira_assembly::build_ai_registry;
 use mira_assembly::mira_vocabulary::{
-    AiConnectionId, AiProviderId, ChatMessage, ChatRequest, ChatRole,
+    AiConnectionId, AiProviderId, ChatMessage, ChatMode, ChatRequest, ChatRole,
 };
 use mira_bridge::runtime;
 use mira_testkit::ai::FakeAiServer;
@@ -79,16 +79,26 @@ async fn ready_connection(base_url: &str) -> String {
 
 /// Demande JSON d'une discussion d'un message sur cette connexion (`None` : connexion par défaut), sans outils.
 pub fn chat_json(connection: Option<&str>, text: &str) -> String {
-    chat_json_with(connection, text, false)
+    chat_json_with(connection, text, false, ChatMode::Assistant)
 }
 
 /// Comme `chat_json`, en permettant les outils en lecture seule.
 pub fn chat_json_tools(connection: Option<&str>, text: &str) -> String {
-    chat_json_with(connection, text, true)
+    chat_json_with(connection, text, true, ChatMode::Assistant)
+}
+
+/// Comme `chat_json_tools`, dans le mode de génération donné (assistant ou composeur).
+pub fn chat_json_mode(connection: Option<&str>, text: &str, mode: ChatMode) -> String {
+    chat_json_with(connection, text, true, mode)
 }
 
 /// Demande JSON d'une discussion d'un message, avec ou sans outils.
-fn chat_json_with(connection: Option<&str>, text: &str, allow_tools: bool) -> String {
+fn chat_json_with(
+    connection: Option<&str>,
+    text: &str,
+    allow_tools: bool,
+    mode: ChatMode,
+) -> String {
     let message = ChatMessage::plain(ChatRole::User, text.to_string());
     let request = ChatRequest {
         model: None,
@@ -104,6 +114,7 @@ fn chat_json_with(connection: Option<&str>, text: &str, allow_tools: bool) -> St
         connection,
         request,
         allow_tools,
+        mode,
     })
     .unwrap()
 }

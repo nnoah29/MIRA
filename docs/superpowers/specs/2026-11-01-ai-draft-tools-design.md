@@ -1,6 +1,6 @@
 # Outils de brouillon pour l'IA et « Écrire avec l'IA » — design
 
-Date : 2026-11-01 · Statut : approuvé par l'utilisateur (« considère tes recommandations comme validées », objectif `/goal`) · Chemin : architectural (contrat 1.4 → 1.5, boucle d'outils, composeur)
+Date : 2026-11-01 · Statut : implémenté, approuvé par l'utilisateur (« considère tes recommandations comme validées », objectif `/goal`) · Chemin : architectural (contrat 1.4 → 1.5, boucle d'outils, composeur)
 
 ## 1. Objectif
 

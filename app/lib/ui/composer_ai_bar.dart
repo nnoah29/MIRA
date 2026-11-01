@@ -49,7 +49,31 @@ class _ComposerAiBarState extends State<ComposerAiBar> {
     child: Text(
       text,
       key: ValueKey(key),
-      style: Fonts.sans(size: 13.5, color: error ? p.accent : p.dim),
+      maxLines: 3,
+      overflow: TextOverflow.ellipsis,
+      style: Fonts.sans(
+        size: 14,
+        height: 1.4,
+        color: error ? p.accent : p.muted,
+      ),
+    ),
+  );
+
+  /// Réponse de l'IA : lisible (texte normal, pas atténué), plafonnée à environ six lignes et défilante pour ne jamais écraser le brouillon.
+  Widget _reply(Pal p, String text) => Padding(
+    padding: const EdgeInsets.only(top: 8),
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 132),
+      child: Scrollbar(
+        child: SingleChildScrollView(
+          reverse: true,
+          child: Text(
+            text,
+            key: const ValueKey('composer-ai-reply'),
+            style: Fonts.sans(size: 14.5, height: 1.45, color: p.text),
+          ),
+        ),
+      ),
     ),
   );
 
@@ -116,7 +140,7 @@ class _ComposerAiBarState extends State<ComposerAiBar> {
             children: [
               _field(p, ai),
               if (ai.reply != null && ai.reply!.trim().isNotEmpty)
-                _note(p, 'composer-ai-reply', ai.reply!),
+                _reply(p, ai.reply!),
               if (ai.error != null)
                 _note(p, 'composer-ai-error', ai.error!, error: true),
               if (ai.summary != null)
@@ -133,6 +157,11 @@ class _ComposerAiBarState extends State<ComposerAiBar> {
                     child: Btn(
                       key: const ValueKey('composer-ai-undo'),
                       icon: 'arrowl',
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
+                      fontSize: 10,
                       label: ai.undoDropsEdits
                           ? t('Annuler (efface aussi tes modifications depuis)')
                           : t('Annuler la modification de l’IA'),

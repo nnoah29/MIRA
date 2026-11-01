@@ -596,4 +596,16 @@ void main() {
     ai.undo();
     expect(ai.undoDropsEdits, isFalse);
   });
+
+  test('the_reply_has_no_blank_lines_or_edge_spaces', () async {
+    engine.scripts.add([
+      {'type': 'started', 'operation': 'op-9'},
+      {'type': 'text', 'text': '\n\nJe vais chercher.\n\n\n\n'},
+      {'type': 'text', 'text': 'J’ai trouvé.\n\n\n  Je rédige.  \n\n'},
+      {'type': 'done', 'reason': 'end_turn'},
+    ]);
+    final ai = make();
+    await ai.run('écris');
+    expect(ai.reply, 'Je vais chercher.\nJ’ai trouvé.\nJe rédige.');
+  });
 }

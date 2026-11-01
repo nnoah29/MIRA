@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mira/state/store.dart';
+import 'package:mira/ui/composer.dart';
 import 'package:mira/ui/step_animator.dart';
 
 import 'ai_panel_harness.dart';
@@ -257,6 +258,27 @@ void main() {
     c.body.value = c.body.value.copyWith(text: '${c.body.text} ma phrase');
     await settle(tester);
     expect(find.textContaining('EFFACE AUSSI'), findsOneWidget);
+    await close(tester, store);
+  });
+
+  testWidgets('a_long_reply_keeps_the_bar_compact_and_readable', (
+    tester,
+  ) async {
+    final lines = [
+      for (var i = 0; i < 60; i++) 'Ligne $i de la réponse de l’IA',
+    ];
+    final (store, _) = await withComposer(
+      tester,
+      scripts: [turn(const [], text: lines.join('\n\n\n'))],
+    );
+    await ask(tester, 'écris');
+    final bar = key('composer-ai-bar');
+    expect(tester.getSize(bar).height, lessThanOrEqualTo(300));
+    final reply = tester.widget<Text>(key('composer-ai-reply'));
+    expect(reply.data, isNot(contains('\n\n')));
+    expect(reply.style!.fontSize, greaterThanOrEqualTo(14));
+    final composerBody = tester.getSize(find.byType(Composer));
+    expect(composerBody.height - tester.getSize(bar).height, greaterThan(400));
     await close(tester, store);
   });
 }

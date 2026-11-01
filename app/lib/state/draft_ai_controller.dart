@@ -14,6 +14,14 @@ import 'store.dart';
 
 export 'draft_ai_request.dart' show DraftSelection;
 
+/// Texte d'une réponse de l'IA sans lignes vides ni espaces en bordure de ligne : les modèles en laissent entre leurs tours, ce qui étire la barre.
+String tidyReply(String text) => text
+    .replaceAll('\r', '')
+    .split('\n')
+    .map((line) => line.trim())
+    .where((line) => line.isNotEmpty)
+    .join('\n');
+
 /// Une écriture assistée en cours ou terminée : état, réponse texte de l'IA, erreur, et de quoi annuler.
 class DraftAiController extends ChangeNotifier {
   DraftAiController({
@@ -47,6 +55,7 @@ class DraftAiController extends ChangeNotifier {
   Completer<void>? _finished;
   String? _operation;
   String? _stopReason;
+  String _rawReply = '';
   AiAdmin? _ai;
   String? _connectionId;
   Map<String, dynamic>? _request;
@@ -146,6 +155,7 @@ class DraftAiController extends ChangeNotifier {
     _last = null;
     _operation = null;
     _stopReason = null;
+    _rawReply = '';
     _retried = false;
     _sawOutput = false;
     _stopped = false;
@@ -171,7 +181,8 @@ class DraftAiController extends ChangeNotifier {
         _operation = event.operation;
       case AiText():
         _sawOutput = true;
-        reply = '${reply ?? ''}${event.text}';
+        _rawReply += event.text;
+        reply = tidyReply(_rawReply);
         _notify();
       case AiToolCalled():
         _sawOutput = true;

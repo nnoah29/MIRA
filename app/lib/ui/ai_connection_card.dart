@@ -227,7 +227,7 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
 
   Widget _testButton(bool busy) => Btn(
     key: ValueKey('ai-test-$id'),
-    label: t('Tester'),
+    label: t('Tester la connexion'),
     onTap: busy ? null : _testNow,
   );
 

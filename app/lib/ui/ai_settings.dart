@@ -3,10 +3,13 @@
 import 'package:flutter/material.dart';
 
 import '../engine/ai_admin.dart';
+import '../engine/ai_history_admin.dart';
 import '../i18n/i18n.dart';
 import '../state/ai_journal_state.dart';
 import '../state/ai_settings_state.dart';
+import '../state/chat_history_state.dart';
 import '../theme/app_theme.dart';
+import 'ai_history_section.dart';
 import 'ai_journal_view.dart';
 import 'ai_provider_panel.dart';
 import 'ai_provider_tabs.dart';
@@ -15,7 +18,18 @@ import 'rule_widgets.dart';
 /// Section des réglages qui gère les connexions aux services d'IA.
 class AiSettings extends StatefulWidget {
   final AiAdmin admin;
-  const AiSettings({super.key, required this.admin});
+
+  /// Historique partagé avec l'assistant ; sans lui, la section tient le sien.
+  final ChatHistoryState? history;
+
+  /// Appelé après l'effacement total de l'historique.
+  final VoidCallback? onHistoryCleared;
+  const AiSettings({
+    super.key,
+    required this.admin,
+    this.history,
+    this.onHistoryCleared,
+  });
 
   @override
   State<AiSettings> createState() => _AiSettingsState();
@@ -26,13 +40,18 @@ class _AiSettingsState extends State<AiSettings> {
   String? selected;
   bool showJournal = false;
   late final AiJournalState journal = AiJournalState(widget.admin);
+  late final ChatHistoryState history =
+      widget.history ??
+      ChatHistoryState(() => AiHistoryAdmin(widget.admin.client));
 
   @override
   void initState() {
     super.initState();
     state.addListener(_refresh);
     journal.addListener(_refresh);
+    history.addListener(_refresh);
     state.load();
+    history.load();
   }
 
   void _refresh() {
@@ -43,8 +62,10 @@ class _AiSettingsState extends State<AiSettings> {
   void dispose() {
     state.removeListener(_refresh);
     journal.removeListener(_refresh);
+    history.removeListener(_refresh);
     state.dispose();
     journal.dispose();
+    if (widget.history == null) history.dispose();
     super.dispose();
   }
 
@@ -128,6 +149,7 @@ class _AiSettingsState extends State<AiSettings> {
                 style: Fonts.sans(size: 13.5, color: p.accent),
               ),
             ),
+          AiHistorySection(state: history, onCleared: widget.onHistoryCleared),
           _switch(),
           if (showJournal) _journal() else ..._providers(),
         ],

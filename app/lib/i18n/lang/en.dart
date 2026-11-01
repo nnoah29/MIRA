@@ -280,6 +280,7 @@ const Map<String, String> enStrings = {
   'Centrer': 'Center',
   'Lien': 'Link',
   'Liste': 'List',
+  'Grille': 'Grid',
   'Adresse du lien': 'Link address',
   'Annuler': 'Cancel',
   'OK': 'OK',
@@ -534,6 +535,34 @@ const Map<String, String> enStrings = {
       'This AI service is not allowed to receive this type of content',
   'Nombre de lignes du journal des envois hors limites':
       'Send journal line count out of range',
+  'L’historique des conversations est désactivé':
+      'Conversation history is turned off',
+  'Le titre de la conversation est vide ou trop long (80 caractères au plus)':
+      'The conversation title is empty or too long (80 characters at most)',
+  'Cette conversation est trop volumineuse pour être enregistrée':
+      'This conversation is too large to be saved',
+  'Conversation illisible': 'Unreadable conversation',
+  'Cette conversation n’existe plus': 'This conversation no longer exists',
+  'Attends la fin de la réponse': 'Wait for the reply to finish',
+  'Conserver l’historique des conversations': 'Keep conversation history',
+  'Effacer tout l’historique': 'Delete all history',
+  'Enregistre sur cet appareil le texte affiché des conversations. Les contenus envoyés au modèle en coulisses ne sont pas conservés.': 'Saves the displayed text of conversations on this device. Content sent to the model behind the scenes is not kept.',
+  'Aucune conversation enregistrée': 'No saved conversations',
+  'Conversation non enregistrée : nouvel essai au prochain message':
+      'Conversation not saved: will retry with the next message',
+  'Effacer': 'Delete',
+  'Effacer tout l’historique ?': 'Delete the whole history?',
+  'Historique': 'History',
+  'Historique désactivé : cette conversation ne sera pas enregistrée':
+      'History is off: this conversation will not be saved',
+  'Illisible': 'Unreadable',
+  'L’historique est désactivé': 'History is turned off',
+  'Renommer la conversation': 'Rename conversation',
+  'Supprimer cette conversation ?': 'Delete this conversation?',
+  'Tout effacer': 'Delete all',
+  'Toutes les conversations enregistrées sont effacées de cet appareil.':
+      'All saved conversations are deleted from this device.',
+  '« {0} » est effacée de cet appareil.': '“{0}” is deleted from this device.',
   'Aucune clé enregistrée pour ce service d’IA':
       'No key saved for this AI service',
   'Choisis d’abord un modèle d’IA': 'First choose an AI model',

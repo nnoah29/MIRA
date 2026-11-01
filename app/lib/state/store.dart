@@ -11,6 +11,7 @@ import '../data/html_lite.dart';
 import '../data/models.dart';
 import '../data/seed.dart';
 import '../engine/ai_admin.dart';
+import '../engine/ai_history_admin.dart';
 import '../engine/blocks_html.dart';
 import '../engine/compose_admin.dart';
 import '../engine/engine_client.dart';
@@ -33,6 +34,7 @@ import 'arrival_gate.dart';
 import 'assistant.dart';
 import 'chat_context.dart';
 import 'chat_controller.dart';
+import 'chat_history_state.dart';
 import 'chat_message.dart';
 import '../ui/chat_markdown.dart' show plainFromMarkdown;
 import 'contacts.dart';
@@ -164,8 +166,19 @@ class MailStore extends ChangeNotifier {
   AiAdmin? get aiAdmin => aiAdminOverride ?? source?.aiAdmin;
 
   /// Fil de l'assistant (moteur d'IA ou repli de démonstration).
+  /// Historique des conversations de l'assistant (`null` côté moteur : démonstration).
+  AiHistoryAdmin? get historyAdmin {
+    final ai = aiAdmin;
+    return ai == null ? null : AiHistoryAdmin(ai.client);
+  }
+
+  /// Conversations enregistrées : liste, interrupteur, effacement.
+  late final ChatHistoryState history = ChatHistoryState(() => historyAdmin)
+    ..addListener(notifyListeners);
+
   late final ChatController chatCtl = ChatController(
     admin: () => aiAdmin,
+    history: () => history,
     welcome: _welcome,
     demoAnswer: (q) => answerTo(this, q),
     after: _after,
@@ -202,6 +215,7 @@ class MailStore extends ChangeNotifier {
     labelCounter = CounterMode.parse(prefs.getString('labelCounter'));
     accentHex = prefs.getString('accent');
     dense = prefs.getString('dense') == '1';
+    historyGrid = prefs.getString('historyView') == 'grid';
     htmlMode = HtmlMode.parse(prefs.getString('htmlMode'));
     live = prefs.getString('live') != '0';
     final extra = <Account>[];
@@ -385,6 +399,9 @@ class MailStore extends ChangeNotifier {
   }
 
   late bool dense, live;
+
+  /// Vrai quand l'historique des conversations s'affiche en grille de cartes (sinon en liste).
+  bool historyGrid = false;
   late HtmlMode htmlMode;
 
   /// Signature : celle de l'utilisateur, sinon la formule par défaut dans la langue active.
@@ -442,6 +459,7 @@ class MailStore extends ChangeNotifier {
     }
     c?.timer?.cancel();
     chatCtl.dispose();
+    history.dispose();
     super.dispose();
   }
 
@@ -811,6 +829,9 @@ class MailStore extends ChangeNotifier {
       case 'dense':
         dense = v == '1';
         prefs.setString('dense', v);
+      case 'historyView':
+        historyGrid = v == 'grid';
+        prefs.setString('historyView', historyGrid ? 'grid' : 'list');
       case 'htmlMode':
         htmlMode = HtmlMode.parse(v);
         prefs.setString('htmlMode', htmlMode.code);
@@ -3708,7 +3729,7 @@ class MailStore extends ChangeNotifier {
   }
 
   // ---- assistant ----
-  void clearChat() => chatCtl.clear();
+  void clearChat() => chatCtl.startNew();
 
   Future<void> sendChat(String text) => chatCtl.send(text, chatInput());
 

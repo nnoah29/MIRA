@@ -3,6 +3,7 @@
 use mira_core::api::{AiRequest, AiResponse, Request, Response, SecretInput};
 use mira_vocabulary::{AiConnectionId, AiProviderId, ContentKind, MaskingSettings};
 
+use super::ai_history;
 use super::ai_samples::{sample_connection, sample_journal, sample_models, sample_provider};
 use super::{Named, numbered};
 
@@ -31,9 +32,9 @@ fn management_requests(id: &AiConnectionId) -> Vec<AiRequest> {
     ]
 }
 
-/// Les opérations de confidentialité : types autorisés, masquage, journal des envois
+/// Les opérations de confidentialité (types autorisés, masquage, journal des envois) et de l'historique
 fn privacy_requests(id: &AiConnectionId) -> Vec<AiRequest> {
-    vec![
+    let mut items = vec![
         AiRequest::SetAiAllowedContent {
             connection: id.clone(),
             kinds: vec![ContentKind::MailMessage],
@@ -47,7 +48,9 @@ fn privacy_requests(id: &AiConnectionId) -> Vec<AiRequest> {
             before: Some("journal-1".to_string()),
         },
         AiRequest::ClearAiJournal,
-    ]
+    ];
+    items.extend(ai_history::requests());
+    items
 }
 
 /// Une requête par opération de `AiRequest`
@@ -99,7 +102,11 @@ pub fn responses() -> Vec<Named<Response>> {
         ("ai.done", AiResponse::Done),
     ];
     let wrap = |(name, inner): (&str, AiResponse)| (name.to_string(), Response::Ai(inner));
-    items.into_iter().map(wrap).collect()
+    items
+        .into_iter()
+        .map(wrap)
+        .chain(ai_history::responses())
+        .collect()
 }
 
 /// Nom de l'opération, par `match` exhaustif
@@ -120,5 +127,13 @@ pub fn op_name(request: &AiRequest) -> &'static str {
         AiRequest::SetAiMasking { .. } => "set_ai_masking",
         AiRequest::ListAiJournal { .. } => "list_ai_journal",
         AiRequest::ClearAiJournal => "clear_ai_journal",
+        AiRequest::SaveAiConversation { .. } => "save_ai_conversation",
+        AiRequest::ListAiConversations { .. } => "list_ai_conversations",
+        AiRequest::GetAiConversation { .. } => "get_ai_conversation",
+        AiRequest::RenameAiConversation { .. } => "rename_ai_conversation",
+        AiRequest::DeleteAiConversation { .. } => "delete_ai_conversation",
+        AiRequest::ClearAiConversations => "clear_ai_conversations",
+        AiRequest::SetAiHistoryEnabled { .. } => "set_ai_history_enabled",
+        AiRequest::GetAiHistoryEnabled => "get_ai_history_enabled",
     }
 }

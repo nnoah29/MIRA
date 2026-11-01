@@ -39,3 +39,10 @@ pub const AI_URL_INVALID: ErrorCode = ErrorCode("invalid_input.ai_url_invalid");
 pub const AI_KEY_INVALID: ErrorCode = ErrorCode("invalid_input.ai_key_invalid");
 /// Taille de page du journal des envois d'IA hors bornes.
 pub const AI_JOURNAL_LIMIT: ErrorCode = ErrorCode("invalid_input.ai_journal_limit");
+/// Titre de conversation d'IA vide ou trop long.
+pub const AI_CONVERSATION_TITLE: ErrorCode = ErrorCode("invalid_input.ai_conversation_title");
+/// Conversation d'IA trop volumineuse pour être enregistrée.
+pub const AI_CONVERSATION_TOO_LARGE: ErrorCode =
+    ErrorCode("invalid_input.ai_conversation_too_large");
+/// Contenu de conversation d'IA qui n'est pas un objet JSON.
+pub const AI_CONVERSATION_PAYLOAD: ErrorCode = ErrorCode("invalid_input.ai_conversation_payload");

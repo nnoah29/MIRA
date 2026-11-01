@@ -71,6 +71,7 @@ impl LoopFixture {
                 context: Vec::new(),
             },
             allow_tools,
+            mode: Default::default(),
         }
     }
 

@@ -74,5 +74,5 @@ pub fn current_snapshot() -> Value {
     for (name, response) in named_responses() {
         responses.insert(name, serde_json::to_value(&response).unwrap());
     }
-    serde_json::json!({ "contract": "1.4", "requests": requests, "responses": responses })
+    serde_json::json!({ "contract": "1.6", "requests": requests, "responses": responses })
 }

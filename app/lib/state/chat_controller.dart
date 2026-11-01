@@ -90,6 +90,12 @@ class ChatController extends ChangeNotifier {
   /// Vrai quand aucune connexion utilisable ne répond : l'assistant de démonstration parle.
   bool get demo => admin() == null || _connection == null;
 
+  /// Relit les connexions et rend l'identifiant de celle qui répond (`null` : aucune n'est utilisable).
+  Future<String?> usableConnectionId() async {
+    await refresh();
+    return _connection?.id;
+  }
+
   /// Libellé de la connexion qui répond (`null` en démonstration).
   String? get connectionLabel => _connection?.label;
 
@@ -235,6 +241,16 @@ class ChatController extends ChangeNotifier {
         break;
       case AiToolCalled() || AiToolFinished():
         applyToolEvent(reply, event);
+        notifyListeners();
+      case AiActionProposal():
+        reply.actions
+          ..removeWhere((a) => a.proposal.id == event.id)
+          ..add(ProposedAction(event));
+        notifyListeners();
+      case AiDraftProposal():
+        reply.drafts
+          ..removeWhere((d) => d.id == event.id)
+          ..add(event);
         notifyListeners();
       case AiDone():
         _onDone(run, event);
@@ -524,6 +540,7 @@ class ChatController extends ChangeNotifier {
     }
     final messages = decodeChat(doc.payload, doc.meta.payloadVersion);
     if (messages == null) return t('Conversation illisible');
+    _expirePendingActions(messages);
     if (busy) return null;
     _consent = _content = null;
     chat = [welcome(), ...messages];
@@ -532,6 +549,18 @@ class ChatController extends ChangeNotifier {
     notifyListeners();
     return null;
   }
+
+  /// Une action laissée en attente dans une conversation ancienne ne peut plus être confirmée : ses messages ont pu changer.
+  void _expirePendingActions(List<ChatMsg> messages) {
+    for (final m in messages) {
+      for (final a in m.actions.where((a) => a.status == 'pending')) {
+        a.status = 'dismissed';
+      }
+    }
+  }
+
+  /// Enregistre de nouveau le fil, par exemple après qu'une action proposée a été confirmée ou ignorée.
+  Future<void> resave() => _saving = _save();
 
   /// Enregistre le fil visible (accueil exclu) quand un tour vient de finir ; un échec n'arrête jamais le chat.
   Future<void> _save() async {

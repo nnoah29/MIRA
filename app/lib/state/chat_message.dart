@@ -1,5 +1,7 @@
 //! Message du fil de l'assistant : auteur, texte (affiché au fur et à mesure), brouillon et références.
 
+import '../engine/ai_models.dart';
+
 /// État d'un appel d'outil de l'IA dans la conversation.
 enum ToolState { running, ok, denied, error }
 
@@ -23,6 +25,13 @@ class ToolActivity {
   });
 }
 
+/// Action sur la boîte proposée par l'IA et son état : `pending`, `done` (confirmée et appliquée) ou `dismissed` (ignorée).
+class ProposedAction {
+  final AiActionProposal proposal;
+  String status;
+  ProposedAction(this.proposal, {this.status = 'pending'});
+}
+
 class ChatMsg {
   final String role; // 'me' | 'ai'
   bool done;
@@ -36,6 +45,12 @@ class ChatMsg {
 
   /// Identifiants des messages consultés par les outils, sans doublon.
   final List<String> sources = [];
+
+  /// Brouillons proposés par l'IA pendant cette réponse, un par appel d'outil.
+  final List<AiDraftProposal> drafts = [];
+
+  /// Actions sur la boîte proposées par l'IA pendant cette réponse, une par appel d'outil.
+  final List<ProposedAction> actions = [];
 
   /// Texte venu du moteur d'IA (non traduisible) ; faux pour la démonstration et les notices.
   final bool fromEngine;

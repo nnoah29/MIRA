@@ -69,5 +69,6 @@ pub fn chat_start(connection: &AiConnection, text: &str) -> ChatStart {
         connection: Some(connection.id.clone()),
         request: user_request(text),
         allow_tools: false,
+        mode: Default::default(),
     }
 }

@@ -2958,6 +2958,120 @@ class MailStore extends ChangeNotifier {
     );
   }
 
+  /// Messages que l'IA a vraiment lus avec ses outils dans cette conversation, plus le mail ouvert : les seuls qu'elle peut proposer de modifier.
+  Set<String> _actionableIds() => {
+    for (final m in chatCtl.chat) ...m.sources,
+    ?open,
+  };
+
+  /// Messages visés par une action proposée que l'app connaît et que l'IA a lus : un identifiant inventé ou inconnu est ignoré.
+  List<Mail> actionTargets(AiActionProposal p) {
+    final allowed = _actionableIds();
+    final seen = <String>{};
+    return [
+      for (final id in p.messages)
+        if (allowed.contains(id) &&
+            !_isEngineDraft(id) &&
+            seen.add(id) &&
+            byId(id) != null)
+          byId(id)!,
+    ];
+  }
+
+  /// Exécute l'action confirmée par les actions habituelles de l'app (annulables) ; rend le nombre de messages touchés.
+  int applyActionProposal(AiActionProposal p) {
+    final ms = actionTargets(p).where((m) => !_isEngineDraft(m.id)).toList();
+    if (ms.isEmpty) {
+      toast(t('Ces messages ne sont plus disponibles'), err: true);
+      return 0;
+    }
+    final ids = [for (final m in ms) m.id];
+    switch (p.action) {
+      case 'archive':
+        moveTo(ids, 'archive', tkey('archivé'), tkey('archivés'));
+      case 'trash':
+        moveTo(ids, 'trash', tkey('mis à la corbeille'));
+      case 'mark_read' || 'mark_unread':
+        _markProposed(ms, unread: p.action == 'mark_unread');
+      case 'star' || 'unstar':
+        _starProposed(ms, starred: p.action == 'star');
+      default:
+        return 0;
+    }
+    return ms.length;
+  }
+
+  void _markProposed(List<Mail> ms, {required bool unread}) {
+    for (final m in ms) {
+      _setUnread(m, unread);
+    }
+    notifyListeners();
+    _syncAction(ms, (a) => a.read(!unread));
+    toast(
+      '${tn(ms.length, 'message', 'messages')} ${t(unread ? (ms.length > 1 ? 'marqués comme non lus' : 'marqué comme non lu') : (ms.length > 1 ? 'marqués comme lus' : 'marqué comme lu'))}',
+    );
+  }
+
+  void _starProposed(List<Mail> ms, {required bool starred}) {
+    for (final m in ms) {
+      m.starred = starred;
+    }
+    notifyListeners();
+    _syncAction(ms, (a) => a.flag(starred));
+    toast(
+      '${tn(ms.length, 'message', 'messages')} ${t(starred ? (ms.length > 1 ? 'mis en favoris' : 'mis en favori') : (ms.length > 1 ? 'retirés des favoris' : 'retiré des favoris'))}',
+    );
+  }
+
+  /// L'utilisateur confirme ou ignore une action proposée ; seule la confirmation agit, et le choix est enregistré avec la conversation.
+  void settleAction(ProposedAction item, {required bool apply}) {
+    if (item.status != 'pending') return;
+    if (apply && applyActionProposal(item.proposal) == 0) return;
+    item.status = apply ? 'done' : 'dismissed';
+    notifyListeners();
+    unawaited(chatCtl.resave());
+  }
+
+  /// Adresse d'envoi d'une proposition de l'IA : celle qu'elle nomme si l'utilisateur l'a, sinon la règle habituelle.
+  String _fromOfProposal(AiDraftProposal p, Mail? original) {
+    final wanted = (p.identity ?? '').trim().toLowerCase();
+    final hit = senderChoices().where((x) => x.email.toLowerCase() == wanted);
+    return hit.isNotEmpty ? hit.first.email : fromFor(original);
+  }
+
+  /// Ouvre le composeur prérempli avec le brouillon proposé par l'IA : nouveau message, ou réponse avec citation si le message visé existe ; la signature est ajoutée par l'app.
+  void openProposal(AiDraftProposal p) {
+    final original = p.replyTo == null ? null : byId(p.replyTo);
+    final from = _fromOfProposal(p, original);
+    final people = [
+      for (final e in p.to ?? const <AiAddressEntry>[])
+        Person(e.name ?? e.address, e.address),
+    ];
+    final cc = [
+      for (final e in p.cc ?? const <AiAddressEntry>[])
+        Person(e.name ?? e.address, e.address),
+    ];
+    final text = '${p.body ?? ''}\n\n${signatureFor(from)}';
+    final reply = original != null;
+    final last = original?.msgs.last;
+    final other = last == null
+        ? null
+        : (isMine(last.from.email) ? original!.to[0] : last.from);
+    openCompose(
+      ComposeInit(
+        from: from,
+        mode: reply ? 'reply' : 'new',
+        replyTo: reply ? original.id : null,
+        to: people.isNotEmpty ? people : [?other],
+        cc: cc,
+        subject: p.subject ?? (reply ? 'Re: ${stripRe(original.subject)}' : ''),
+        text: text,
+        flags: RichController.gapFlags(text),
+        quote: reply ? quoteOf(original) : null,
+      ),
+    );
+  }
+
   void openCompose(ComposeInit i) {
     if (c != null) {
       saveDraft();

@@ -1,16 +1,17 @@
 //! Exécution d'un appel d'outil : décision, lecture par la façade, résultat masqué puis borné et cadré.
 
-use mira_vocabulary::{ContentKind, ToolCall, ToolState};
+use mira_vocabulary::{ActionProposal, ContentKind, DraftProposal, ToolCall, ToolState};
 
 use super::ending::Ending;
 use super::framing::frame_result;
 use super::guard::Guard;
 use super::prepare::ChatPlan;
 use super::progress::Progress;
-use super::tool_consent::{ToolDecision, decide_tool};
+use super::tool_consent::{ToolDecision, decide_call};
+use super::tools_plan::is_announced;
 use super::truncate::{MAX_INPUT_CHARS, request_chars};
 use crate::ai::tools::body::{RESULT_CHARS, bounded};
-use crate::ai::tools::{kind_of, run};
+use crate::ai::tools::{propose, run};
 
 const MIN_ROOM_CHARS: usize = 300;
 const DENIED_TEXT: &str =
@@ -24,6 +25,8 @@ pub(super) struct Finished {
     pub(super) sources: Vec<String>,
     pub(super) denied: Option<ContentKind>,
     pub(super) sent: Option<ContentKind>,
+    pub(super) proposal: Option<DraftProposal>,
+    pub(super) action: Option<ActionProposal>,
 }
 
 impl Finished {
@@ -36,6 +39,8 @@ impl Finished {
             sources: Vec::new(),
             denied: None,
             sent: None,
+            proposal: None,
+            action: None,
         }
     }
 
@@ -56,11 +61,30 @@ pub(super) async fn execute(
     progress: &mut Progress,
     call: &ToolCall,
 ) -> Result<Finished, Ending> {
-    let kind = kind_of(&call.name);
-    match decide_tool(plan.local, &plan.allowed_kinds, kind) {
+    let decision = decide_call(plan.local, &plan.allowed_kinds, &call.name);
+    if decision != ToolDecision::Unknown && !is_announced(plan, &call.name) {
+        return Ok(Finished::error("outil indisponible à ce stade"));
+    }
+    match decision {
         ToolDecision::Unknown => Ok(Finished::error("outil inconnu")),
         ToolDecision::Denied(kind) => Ok(Finished::denied(kind)),
+        ToolDecision::Proposal => Ok(proposed(plan, progress, call)),
         ToolDecision::Run(_) => run_known(plan, guard, progress, call).await,
+    }
+}
+
+/// Valide une proposition de brouillon : rien n'est lu ni envoyé, seul le texte fixe revient au modèle.
+fn proposed(plan: &ChatPlan, progress: &mut Progress, call: &ToolCall) -> Finished {
+    let ran = propose(plan.mode, call);
+    Finished {
+        text: progress.answer.mask_tool_text(&ran.text),
+        state: ran.state,
+        results: ran.results,
+        sources: Vec::new(),
+        denied: None,
+        sent: None,
+        proposal: ran.proposal,
+        action: ran.action,
     }
 }
 
@@ -83,6 +107,8 @@ async fn run_known(
         sent: (ran.state == ToolState::Ok).then_some(ran.kind),
         sources: ran.sources,
         denied: None,
+        proposal: None,
+        action: None,
     })
 }
 

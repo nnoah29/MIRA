@@ -5,8 +5,8 @@ use std::sync::Weak;
 
 use mira_vocabulary::error::codes::not_found;
 use mira_vocabulary::{
-    AiConnection, AiConnectionId, AiProviderDescriptor, AiProviderId, ChatRequest, ContentKind,
-    ErrorCategory, MaskingSettings, MiraError,
+    AiConnection, AiConnectionId, AiProviderDescriptor, AiProviderId, ChatMode, ChatRequest,
+    ContentKind, ErrorCategory, MaskingSettings, MiraError,
 };
 
 use super::checks::{check, context_summary};
@@ -31,6 +31,7 @@ pub(crate) struct ChatPlan {
     pub(crate) kinds: Vec<ContentKind>,
     pub(crate) allowed_kinds: Vec<ContentKind>,
     pub(crate) host: Option<Weak<Engine>>,
+    pub(crate) mode: ChatMode,
     pub(crate) parts: u32,
     pub(crate) chars: u32,
 }
@@ -45,7 +46,8 @@ pub(crate) fn prepare(
     let checked = check(engine, &connection, &start)?;
     let enabled = start.allow_tools && checked.descriptor.supports_tools && host.is_some();
     let (kinds, parts) = context_summary(&start.request);
-    let request = with_tools(start.request, enabled);
+    let mode = start.mode;
+    let request = with_tools(start.request, enabled, mode);
     let (request, masker) = shape_request(request, &connection.masking);
     Ok(ChatPlan {
         descriptor: checked.descriptor,
@@ -58,6 +60,7 @@ pub(crate) fn prepare(
         kinds,
         allowed_kinds: connection.allowed_kinds,
         host: host.filter(|_| enabled),
+        mode,
         parts,
         chars: request_chars(&request),
         request,

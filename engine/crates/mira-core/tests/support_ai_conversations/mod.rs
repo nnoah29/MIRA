@@ -2,6 +2,8 @@
 
 #![allow(dead_code)]
 
+pub mod changes;
+
 use std::sync::Arc;
 
 use mira_core::api::{AiRequest, AiResponse, Engine, Request, Response};

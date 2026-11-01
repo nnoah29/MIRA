@@ -129,5 +129,8 @@ pub fn op_name(request: &AiRequest) -> &'static str {
         AiRequest::SaveAiConversation { .. } => "save_ai_conversation",
         AiRequest::ListAiConversations { .. } => "list_ai_conversations",
         AiRequest::GetAiConversation { .. } => "get_ai_conversation",
+        AiRequest::RenameAiConversation { .. } => "rename_ai_conversation",
+        AiRequest::DeleteAiConversation { .. } => "delete_ai_conversation",
+        AiRequest::ClearAiConversations => "clear_ai_conversations",
     }
 }

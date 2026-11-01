@@ -73,6 +73,14 @@ pub enum AiRequest {
     GetAiConversation {
         id: String,
     },
+    RenameAiConversation {
+        id: String,
+        title: String,
+    },
+    DeleteAiConversation {
+        id: String,
+    },
+    ClearAiConversations,
 }
 
 /// Types autorisés par un consentement sans liste : le mail ouvert, comme avant le contrat 1.2.

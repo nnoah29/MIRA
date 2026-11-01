@@ -201,10 +201,23 @@
         "op": "clear_ai_api_key"
       }
     },
+    "ai.clear_ai_conversations": {
+      "domain": "ai",
+      "request": {
+        "op": "clear_ai_conversations"
+      }
+    },
     "ai.clear_ai_journal": {
       "domain": "ai",
       "request": {
         "op": "clear_ai_journal"
+      }
+    },
+    "ai.delete_ai_conversation": {
+      "domain": "ai",
+      "request": {
+        "id": "conversation-1",
+        "op": "delete_ai_conversation"
       }
     },
     "ai.get_ai_conversation": {
@@ -255,6 +268,14 @@
       "request": {
         "connection": "ai-1",
         "op": "remove_ai_connection"
+      }
+    },
+    "ai.rename_ai_conversation": {
+      "domain": "ai",
+      "request": {
+        "id": "conversation-1",
+        "op": "rename_ai_conversation",
+        "title": "Facture reçue"
       }
     },
     "ai.save_ai_conversation": {

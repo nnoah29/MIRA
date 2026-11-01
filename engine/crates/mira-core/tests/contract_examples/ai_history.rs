@@ -40,6 +40,14 @@ pub fn requests() -> Vec<AiRequest> {
         AiRequest::GetAiConversation {
             id: "conversation-1".to_string(),
         },
+        AiRequest::RenameAiConversation {
+            id: "conversation-1".to_string(),
+            title: "Facture reçue".to_string(),
+        },
+        AiRequest::DeleteAiConversation {
+            id: "conversation-1".to_string(),
+        },
+        AiRequest::ClearAiConversations,
     ]
 }
 

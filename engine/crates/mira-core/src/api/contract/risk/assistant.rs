@@ -24,6 +24,9 @@ pub(super) fn ai_risk(request: &AiRequest) -> ToolRisk {
         | AiRequest::ClearAiJournal
         | AiRequest::SaveAiConversation { .. }
         | AiRequest::ListAiConversations { .. }
-        | AiRequest::GetAiConversation { .. } => ToolRisk::Sensitive,
+        | AiRequest::GetAiConversation { .. }
+        | AiRequest::RenameAiConversation { .. }
+        | AiRequest::DeleteAiConversation { .. }
+        | AiRequest::ClearAiConversations => ToolRisk::Sensitive,
     }
 }

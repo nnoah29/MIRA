@@ -44,6 +44,7 @@ class DraftAiController extends ChangeNotifier {
   StreamSubscription<AiChatEvent>? _sub;
   Completer<void>? _finished;
   String? _operation;
+  String? _stopReason;
   bool _stopped = false;
   bool _disposed = false;
   int _generation = 0;
@@ -122,6 +123,7 @@ class DraftAiController extends ChangeNotifier {
     summary = null;
     _last = null;
     _operation = null;
+    _stopReason = null;
     _stopped = false;
     _selection = selection;
     _notify();
@@ -150,6 +152,8 @@ class DraftAiController extends ChangeNotifier {
         _fail(
           engineErrorText(EngineException(event.code ?? 'internal.bug', '')),
         );
+      case AiDone():
+        _stopReason = event.reason;
       default:
         break;
     }
@@ -179,11 +183,25 @@ class DraftAiController extends ChangeNotifier {
       } else {
         error = problem;
       }
-    } else if (!_stopped && error == null && (reply ?? '').trim().isEmpty) {
-      reply = t('L’IA n’a rien proposé : reformule ta demande.');
+    } else if (!_stopped && error == null) {
+      error = _whyNothing();
+      if (error == null && (reply ?? '').trim().isEmpty) {
+        reply = t('L’IA n’a rien proposé : reformule ta demande.');
+      }
     }
     _end(error: error);
   }
+
+  /// Pourquoi l'IA n'a rien proposé quand le moteur le sait : limite de longueur atteinte, ou trop de recherches.
+  String? _whyNothing() => switch (_stopReason) {
+    'max_tokens' => t(
+      'La réponse de l’IA a été coupée par sa limite de longueur avant d’écrire le brouillon : certains modèles « réfléchissent » longuement. Réessaie avec une demande plus courte, ou choisis un autre modèle.',
+    ),
+    'max_tool_rounds' => t(
+      'L’IA a enchaîné trop de recherches sans écrire : indique-lui l’adresse du destinataire dans ta demande.',
+    ),
+    _ => null,
+  };
 
   void _end({String? error}) {
     this.error = error;

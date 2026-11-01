@@ -447,4 +447,60 @@ void main() {
     expect(c.body.text, '> $text');
     expect(ai.error, isNotNull);
   });
+
+  Map<String, dynamic> search() => {
+    'type': 'tool_called',
+    'id': 's1',
+    'name': 'search_messages',
+    'summary': 'boss',
+  };
+
+  test('a_generation_cut_by_the_length_limit_says_so', () async {
+    engine.scripts.add([
+      {'type': 'started', 'operation': 'op-9'},
+      search(),
+      {'type': 'done', 'reason': 'max_tokens'},
+    ]);
+    final before = c.body.text;
+    final ai = make();
+    await ai.run('écris à mon boss');
+    expect(ai.error, contains('limite'));
+    expect(ai.reply, isNull);
+    expect(c.body.text, before);
+    expect(ai.busy, isFalse);
+  });
+
+  test('too_many_searches_say_so_and_ask_for_the_address', () async {
+    engine.scripts.add([
+      {'type': 'started', 'operation': 'op-9'},
+      search(),
+      {'type': 'done', 'reason': 'max_tool_rounds'},
+    ]);
+    final ai = make();
+    await ai.run('écris à mon boss');
+    expect(ai.error, contains('recherches'));
+    expect(ai.error, contains('adresse'));
+  });
+
+  test('a_proposal_wins_over_the_length_limit', () async {
+    engine.scripts.add([
+      {'type': 'started', 'operation': 'op-9'},
+      proposal({'body': 'Texte complet'}),
+      {'type': 'done', 'reason': 'max_tokens'},
+    ]);
+    final ai = make();
+    await ai.run('écris');
+    expect(ai.error, isNull);
+    expect(c.body.text, 'Texte complet\n\n$signature');
+  });
+
+  test(
+    'the_request_asks_for_a_larger_output_budget_for_thinking_models',
+    () async {
+      engine.scripts.add(turn(const [], text: 'Ok'));
+      await make().run('écris');
+      final request = engine.chatStarts.single['request'] as Map;
+      expect(request['max_output_tokens'], 8192);
+    },
+  );
 }

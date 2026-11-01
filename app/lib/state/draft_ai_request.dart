@@ -13,6 +13,9 @@ const chatTailBudget = 4000;
 /// Nombre de caractères du corps du brouillon transmis à l'IA : la borne du moteur pour un corps proposé.
 const draftBodyBudget = 50000;
 
+/// Limite de jetons demandée pour écrire un brouillon : les modèles qui « réfléchissent » dépensent la moitié de la limite par défaut du moteur (4096) avant d'écrire.
+const draftOutputTokens = 8192;
+
 /// Passage sélectionné du corps : sa plage et son texte au moment de la demande.
 class DraftSelection {
   final int start;
@@ -102,5 +105,6 @@ Map<String, dynamic> buildDraftRequest(
       {'role': 'user', 'text': text},
     ],
     'context': [draftContextPart(c)],
+    'max_output_tokens': draftOutputTokens,
   };
 }

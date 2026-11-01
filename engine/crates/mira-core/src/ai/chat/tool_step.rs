@@ -65,6 +65,31 @@ async fn finish_call(
     progress
         .used
         .record(&call.name, finished.sent, text.chars().count());
+    let is_error = finished.state != ToolState::Ok;
+    announce_end(guard, call, finished).await?;
+    Ok(ToolOutcome {
+        call_id: call.id.clone(),
+        text,
+        is_error,
+    })
+}
+
+/// Annonce la proposition de brouillon éventuelle, puis la fin de l'appel.
+async fn announce_end(
+    guard: &Guard<'_>,
+    call: &ToolCall,
+    finished: Finished,
+) -> Result<(), Ending> {
+    if let Some(proposal) = finished.proposal {
+        let id = call.id.clone();
+        let proposed = ChatDelta::DraftProposed { id, proposal };
+        guard.send(proposed).await.map_err(Ending::from)?;
+    }
+    if let Some(proposal) = finished.action {
+        let id = call.id.clone();
+        let proposed = ChatDelta::ActionProposed { id, proposal };
+        guard.send(proposed).await.map_err(Ending::from)?;
+    }
     let end = ChatDelta::ToolFinished {
         id: call.id.clone(),
         state: finished.state,
@@ -73,10 +98,5 @@ async fn finish_call(
         denied_kind: finished.denied,
     };
     guard.send(end).await.map_err(Ending::from)?;
-    let is_error = finished.state != ToolState::Ok;
-    Ok(ToolOutcome {
-        call_id: call.id.clone(),
-        text,
-        is_error,
-    })
+    Ok(())
 }

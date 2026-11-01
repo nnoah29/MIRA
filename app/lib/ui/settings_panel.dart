@@ -483,7 +483,13 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 changes: s.source!.templateChanges,
               ),
             ]),
-            8 when s.aiAdmin != null => box([AiSettings(admin: s.aiAdmin!)]),
+            8 when s.aiAdmin != null => box([
+              AiSettings(
+                admin: s.aiAdmin!,
+                history: s.history,
+                onHistoryCleared: s.chatCtl.startNew,
+              ),
+            ]),
             9 when s.source != null => box([const MaintenanceSettings()]),
             _ when s.source != null => box([const AccountsSettings()]),
             _ => box([

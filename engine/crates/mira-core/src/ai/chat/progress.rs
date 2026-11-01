@@ -62,6 +62,8 @@ impl Progress {
             }
             ChatDelta::Masked { .. }
             | ChatDelta::ToolCalled { .. }
+            | ChatDelta::DraftProposed { .. }
+            | ChatDelta::ActionProposed { .. }
             | ChatDelta::ToolFinished { .. } => Vec::new(),
         }
     }

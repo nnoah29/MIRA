@@ -1,5 +1,5 @@
 {
-  "contract": "1.3",
+  "contract": "1.6",
   "requests": {
     "account.add_account": {
       "domain": "account",
@@ -201,16 +201,50 @@
         "op": "clear_ai_api_key"
       }
     },
+    "ai.clear_ai_conversations": {
+      "domain": "ai",
+      "request": {
+        "op": "clear_ai_conversations"
+      }
+    },
     "ai.clear_ai_journal": {
       "domain": "ai",
       "request": {
         "op": "clear_ai_journal"
       }
     },
+    "ai.delete_ai_conversation": {
+      "domain": "ai",
+      "request": {
+        "id": "conversation-1",
+        "op": "delete_ai_conversation"
+      }
+    },
+    "ai.get_ai_conversation": {
+      "domain": "ai",
+      "request": {
+        "id": "conversation-1",
+        "op": "get_ai_conversation"
+      }
+    },
+    "ai.get_ai_history_enabled": {
+      "domain": "ai",
+      "request": {
+        "op": "get_ai_history_enabled"
+      }
+    },
     "ai.list_ai_connections": {
       "domain": "ai",
       "request": {
         "op": "list_ai_connections"
+      }
+    },
+    "ai.list_ai_conversations": {
+      "domain": "ai",
+      "request": {
+        "before": "conversation-1",
+        "limit": 50,
+        "op": "list_ai_conversations"
       }
     },
     "ai.list_ai_journal": {
@@ -242,6 +276,24 @@
         "op": "remove_ai_connection"
       }
     },
+    "ai.rename_ai_conversation": {
+      "domain": "ai",
+      "request": {
+        "id": "conversation-1",
+        "op": "rename_ai_conversation",
+        "title": "Facture reçue"
+      }
+    },
+    "ai.save_ai_conversation": {
+      "domain": "ai",
+      "request": {
+        "id": "conversation-1",
+        "op": "save_ai_conversation",
+        "payload": "{\"messages\":[]}",
+        "payload_version": 1,
+        "title": "Où en est la facture ?"
+      }
+    },
     "ai.set_ai_allowed_content": {
       "domain": "ai",
       "request": {
@@ -258,6 +310,13 @@
         "connection": "ai-1",
         "key": "sk-exemple",
         "op": "set_ai_api_key"
+      }
+    },
+    "ai.set_ai_history_enabled": {
+      "domain": "ai",
+      "request": {
+        "enabled": false,
+        "op": "set_ai_history_enabled"
       }
     },
     "ai.set_ai_masking": {
@@ -1495,9 +1554,58 @@
       },
       "type": "ai"
     },
+    "ai.conversation": {
+      "data": {
+        "data": {
+          "created_at": 1700000000000,
+          "id": "conversation-1",
+          "payload": "{\"messages\":[]}",
+          "payload_version": 1,
+          "title": "Où en est la facture ?",
+          "updated_at": 1700000060000
+        },
+        "type": "conversation"
+      },
+      "type": "ai"
+    },
+    "ai.conversation_meta": {
+      "data": {
+        "data": {
+          "created_at": 1700000000000,
+          "id": "conversation-1",
+          "payload_version": 1,
+          "title": "Où en est la facture ?",
+          "updated_at": 1700000060000
+        },
+        "type": "conversation_meta"
+      },
+      "type": "ai"
+    },
+    "ai.conversations": {
+      "data": {
+        "data": [
+          {
+            "created_at": 1700000000000,
+            "id": "conversation-1",
+            "payload_version": 1,
+            "title": "Où en est la facture ?",
+            "updated_at": 1700000060000
+          }
+        ],
+        "type": "conversations"
+      },
+      "type": "ai"
+    },
     "ai.done": {
       "data": {
         "type": "done"
+      },
+      "type": "ai"
+    },
+    "ai.history_enabled": {
+      "data": {
+        "data": true,
+        "type": "history_enabled"
       },
       "type": "ai"
     },
@@ -1595,7 +1703,7 @@
         ],
         "version": {
           "major": 1,
-          "minor": 3
+          "minor": 6
         }
       },
       "type": "contract_info"

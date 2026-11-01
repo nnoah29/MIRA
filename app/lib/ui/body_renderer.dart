@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../platform_info.dart';
 
 /// Les messages simples s'affichent par le moteur de widgets ; mettre à `false` pour renvoyer tous les HTML à la vue web.
 const bool simpleBodiesNative = true;
@@ -16,7 +16,7 @@ final _heavyCss = RegExp(
 );
 
 /// Sous Linux (WebKitGTK) et Android (WebView), le corps HTML s'affiche dans une vraie vue web ; ailleurs, par le moteur de widgets.
-final bool webViewEnabled = Platform.isLinux || Platform.isAndroid;
+final bool webViewEnabled = runsOnLinux || runsOnAndroid;
 
 /// Le HTML est-il assez simple (texte, liens, citations, quelques images) pour se passer de la vue web ?
 bool isSimpleHtml(String html) {

@@ -1,12 +1,12 @@
 {
-    "name": "MIRA",
+    "name": "MIRA — démo",
     "short_name": "MIRA",
-    "start_url": ".",
+    "start_url": "./",
     "display": "standalone",
     "background_color": "#1b1b1b",
     "theme_color": "#1b1b1b",
-    "description": "Client mail MIRA (données fictives).",
-    "orientation": "portrait-primary",
+    "description": "Démonstration en ligne du client mail MIRA, avec des données fictives.",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {
@@ -31,5 +31,11 @@
             "type": "image/png",
             "purpose": "maskable"
         }
+    ],
+    "id": "./",
+    "scope": "./",
+    "categories": [
+        "productivity",
+        "utilities"
     ]
 }

@@ -120,6 +120,117 @@ class AiToolCalled extends AiChatEvent {
   const AiToolCalled(this.id, this.name, this.summary);
 }
 
+/// Une personne d'une proposition de brouillon : nom affiché éventuel et adresse validée par le moteur.
+class AiAddressEntry {
+  final String? name;
+  final String address;
+  const AiAddressEntry(this.name, this.address);
+
+  factory AiAddressEntry.fromJson(Map<String, dynamic> json) =>
+      AiAddressEntry(json['name'] as String?, '${json['address']}');
+
+  Map<String, dynamic> toJson() => {'name': name, 'address': address};
+}
+
+List<AiAddressEntry>? _people(Object? raw) => raw == null
+    ? null
+    : [
+        for (final p in raw as List)
+          AiAddressEntry.fromJson((p as Map).cast<String, dynamic>()),
+      ];
+
+/// Brouillon que l'IA propose : [kind] vaut `new` (nouveau message) ou `edit` (brouillon ouvert) ; seuls les champs présents changent. L'app seule l'applique.
+class AiDraftProposal extends AiChatEvent {
+  final String id;
+  final String kind;
+  final List<AiAddressEntry>? to;
+  final List<AiAddressEntry>? cc;
+  final String? subject;
+  final String? body;
+  final String? selection;
+  final String? replyTo;
+  final String? identity;
+  const AiDraftProposal({
+    required this.id,
+    required this.kind,
+    this.to,
+    this.cc,
+    this.subject,
+    this.body,
+    this.selection,
+    this.replyTo,
+    this.identity,
+  });
+
+  /// Lit la ligne `draft_proposed` du flux : l'identifiant de l'appel et la proposition.
+  factory AiDraftProposal.fromLine(Map<String, dynamic> line) =>
+      AiDraftProposal.fromJson({
+        ...(line['proposal'] as Map).cast<String, dynamic>(),
+        'id': line['id'],
+      });
+
+  factory AiDraftProposal.fromJson(Map<String, dynamic> json) =>
+      AiDraftProposal(
+        id: '${json['id']}',
+        kind: '${json['kind']}',
+        to: _people(json['to']),
+        cc: _people(json['cc']),
+        subject: json['subject'] as String?,
+        body: json['body'] as String?,
+        selection: json['selection'] as String?,
+        replyTo: json['reply_to'] as String?,
+        identity: json['identity'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'kind': kind,
+    'to': to?.map((p) => p.toJson()).toList(),
+    'cc': cc?.map((p) => p.toJson()).toList(),
+    'subject': subject,
+    'body': body,
+    'selection': selection,
+    'reply_to': replyTo,
+    'identity': identity,
+  };
+}
+
+/// Action sur la boîte que l'IA propose : [action] vaut `archive`, `trash`, `mark_read`, `mark_unread`, `star` ou `unstar`. Rien ne change avant la confirmation de l'utilisateur.
+class AiActionProposal extends AiChatEvent {
+  final String id;
+  final String action;
+  final List<String> messages;
+  final String? reason;
+  const AiActionProposal({
+    required this.id,
+    required this.action,
+    required this.messages,
+    this.reason,
+  });
+
+  /// Lit la ligne `action_proposed` du flux : l'identifiant de l'appel et la proposition.
+  factory AiActionProposal.fromLine(Map<String, dynamic> line) =>
+      AiActionProposal.fromJson({
+        ...(line['proposal'] as Map).cast<String, dynamic>(),
+        'id': line['id'],
+      });
+
+  factory AiActionProposal.fromJson(Map<String, dynamic> json) =>
+      AiActionProposal(
+        id: '${json['id']}',
+        action: '${json['action']}',
+        messages: [for (final m in (json['messages'] as List)) '$m'],
+        reason: json['reason'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'action': action,
+    'messages': messages,
+    'reason': reason,
+  };
+}
+
 /// Fin d'un appel d'outil : [state] vaut `ok`, `denied` ou `error` ; [sources] sont les messages consultés, [deniedKind] le type de contenu refusé.
 class AiToolFinished extends AiChatEvent {
   final String id;

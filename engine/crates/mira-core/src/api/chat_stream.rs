@@ -2,7 +2,7 @@
 
 use std::sync::{Arc, Weak};
 
-use mira_vocabulary::{AiConnectionId, ChatDelta, ChatRequest, MiraError, OperationId};
+use mira_vocabulary::{AiConnectionId, ChatDelta, ChatMode, ChatRequest, MiraError, OperationId};
 use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc, oneshot};
 
@@ -18,6 +18,8 @@ pub struct ChatStart {
     pub request: ChatRequest,
     #[serde(default)]
     pub allow_tools: bool,
+    #[serde(default)]
+    pub mode: ChatMode,
 }
 
 /// Génération en cours : son opération (annulable) et les deltas, terminés par un seul `Done`.

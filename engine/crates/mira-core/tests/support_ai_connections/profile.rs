@@ -10,7 +10,8 @@ pub fn reopened_from_version_16(path: &Path, rows: &[(&str, Option<i64>)]) -> Da
     drop(Database::open(path).unwrap());
     let raw = rusqlite::Connection::open(path).unwrap();
     raw.execute_batch(
-        "DROP TABLE ai_journal;
+        "DROP TABLE ai_conversations;
+         DROP TABLE ai_journal;
          ALTER TABLE ai_connections DROP COLUMN allowed_kinds;
          ALTER TABLE ai_connections DROP COLUMN masking_json;
          PRAGMA user_version = 16;",

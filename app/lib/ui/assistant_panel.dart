@@ -9,6 +9,9 @@ import '../theme/app_theme.dart';
 import '../theme/icons.dart';
 import 'ai_consent_dialog.dart';
 import 'ai_content_dialog.dart';
+import 'chat_action_card.dart';
+import 'chat_draft_card.dart';
+import 'chat_history_view.dart';
 import 'chat_markdown.dart';
 import 'chat_sources.dart';
 import 'chat_tool_chips.dart';
@@ -29,6 +32,7 @@ class _AssistantPanelState extends State<AssistantPanel> {
   final thread = ScrollController();
   int lastLen = -1;
   String lastShown = '';
+  bool showHistory = false;
 
   @override
   void initState() {
@@ -57,6 +61,55 @@ class _AssistantPanelState extends State<AssistantPanel> {
     await _askConsent(s);
     if (!mounted) return s.chatCtl.declineContent();
     await _askContent(s);
+  }
+
+  /// Affiche ou masque la liste des conversations ; elle se relit à chaque ouverture.
+  void _toggleHistory(MailStore s) {
+    setState(() => showHistory = !showHistory);
+    if (showHistory) s.history.load();
+  }
+
+  /// Reprend une conversation et revient au fil ; en cas d'erreur la liste reste et un message s'affiche.
+  Future<void> _openConversation(MailStore s, String id) async {
+    final error = await s.chatCtl.open(id);
+    if (!mounted) return;
+    if (error != null) return s.toast(error, err: true);
+    if (s.chatCtl.conversationId == id) setState(() => showHistory = false);
+  }
+
+  /// Lignes d'état sous l'en-tête : historique coupé, dernier enregistrement échoué.
+  List<Widget> _historyNotes(MailStore s, double hp) {
+    final p = context.pal;
+    return [
+      if (s.history.available && !s.history.enabled)
+        Padding(
+          padding: EdgeInsets.fromLTRB(hp, 0, hp, 8),
+          child: KeyedSubtree(
+            key: const ValueKey('chat-history-disabled-note'),
+            child: Mono(
+              t(
+                'Historique désactivé : cette conversation ne sera pas enregistrée',
+              ),
+              color: p.dim,
+              height: null,
+            ),
+          ),
+        ),
+      if (s.chatCtl.saveFailed)
+        Padding(
+          padding: EdgeInsets.fromLTRB(hp, 0, hp, 8),
+          child: KeyedSubtree(
+            key: const ValueKey('chat-history-save-failed'),
+            child: Mono(
+              t(
+                'Conversation non enregistrée : nouvel essai au prochain message',
+              ),
+              color: p.dim,
+              height: null,
+            ),
+          ),
+        ),
+    ];
   }
 
   Future<void> _askConsent(MailStore s) async {
@@ -205,8 +258,20 @@ class _AssistantPanelState extends State<AssistantPanel> {
                 ],
               ),
               const Spacer(),
+              if (s.history.available) ...[
+                IBtn(
+                  'clock',
+                  key: const ValueKey('chat-history-open'),
+                  tip: t('Historique'),
+                  on: showHistory,
+                  onTap: () => _toggleHistory(s),
+                ),
+                const SizedBox(width: 8),
+              ],
               Btn(
                 icon: 'plus',
+                iconOnly: w < 560,
+                tip: t('Nouvelle conversation'),
                 label: t('Nouvelle conversation'),
                 onTap: s.clearChat,
               ),
@@ -224,170 +289,190 @@ class _AssistantPanelState extends State<AssistantPanel> {
                   : () => s.showView(PaneView.settings),
             ),
           ),
-        Container(
-          margin: EdgeInsets.fromLTRB(hp, 4, hp, 0),
-          child: DashedBox(
-            color: p.line,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            child: Row(
-              children: [
-                KeyedSubtree(
-                  key: const ValueKey('ctx-icon'),
-                  child: Ico('inbox', color: p.muted),
-                ),
-                const SizedBox(width: 12),
-                Mono(t('Contexte'), color: p.accent, height: null),
-                Expanded(
-                  child: Text(
-                    _ctxLabel(s, m?.subject),
-                    key: const ValueKey('ctx-text'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Fonts.sans(size: 14, color: p.muted),
+        if (showHistory)
+          Expanded(
+            child: ChatHistoryView(
+              state: s.history,
+              currentId: s.chatCtl.conversationId,
+              busy: s.busy,
+              grid: s.historyGrid,
+              onLayout: (grid) =>
+                  s.setSetting('historyView', grid ? 'grid' : 'list'),
+              onOpen: (id) => _openConversation(s, id),
+              onCurrentRemoved: s.chatCtl.startNew,
+              onSettings: s.source == null
+                  ? null
+                  : () => s.showView(PaneView.settings),
+            ),
+          )
+        else ...[
+          ..._historyNotes(s, hp),
+          Container(
+            margin: EdgeInsets.fromLTRB(hp, 4, hp, 0),
+            child: DashedBox(
+              color: p.line,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              child: Row(
+                children: [
+                  KeyedSubtree(
+                    key: const ValueKey('ctx-icon'),
+                    child: Ico('inbox', color: p.muted),
                   ),
-                ),
-                ..._ctxActions(s, m != null),
+                  const SizedBox(width: 12),
+                  Mono(t('Contexte'), color: p.accent, height: null),
+                  Expanded(
+                    child: Text(
+                      _ctxLabel(s, m?.subject),
+                      key: const ValueKey('ctx-text'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Fonts.sans(size: 14, color: p.muted),
+                    ),
+                  ),
+                  ..._ctxActions(s, m != null),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              controller: thread,
+              padding: EdgeInsets.fromLTRB(
+                hp,
+                narrow ? 16 : 24,
+                hp,
+                narrow ? 16 : 24,
+              ),
+              children: [
+                for (var i = 0; i < s.chat.length; i++)
+                  FadeSlideIn(
+                    from: Offset(s.chat[i].role == 'me' ? 14 : -14, 6),
+                    child: Padding(
+                      padding: EdgeInsets.only(top: i == 0 ? 0 : 16),
+                      child: Align(
+                        alignment: s.chat[i].role == 'me'
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: LayoutBuilder(
+                          builder: (_, box) => _Bubble(
+                            s.chat[i],
+                            i,
+                            maxW: (box.maxWidth * .88).clamp(0, 720).toDouble(),
+                            onAuthorize: (msg, tool) =>
+                                _authorize(s, msg, tool),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
-        ),
-        Expanded(
-          child: ListView(
-            controller: thread,
-            padding: EdgeInsets.fromLTRB(
-              hp,
-              narrow ? 16 : 24,
-              hp,
-              narrow ? 16 : 24,
+          Padding(
+            padding: EdgeInsets.fromLTRB(hp, 0, hp, 14),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final sg in suggestions)
+                  Hov(
+                    onTap: () => _send(s, sg[1]),
+                    builder: (_, h) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 11,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: h ? p.accent : p.line),
+                      ),
+                      child: Mono(
+                        sg[0],
+                        ls: .12,
+                        color: h ? p.accent : p.muted,
+                        height: null,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-            children: [
-              for (var i = 0; i < s.chat.length; i++)
-                FadeSlideIn(
-                  from: Offset(s.chat[i].role == 'me' ? 14 : -14, 6),
-                  child: Padding(
-                    padding: EdgeInsets.only(top: i == 0 ? 0 : 16),
-                    child: Align(
-                      alignment: s.chat[i].role == 'me'
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                      child: LayoutBuilder(
-                        builder: (_, box) => _Bubble(
-                          s.chat[i],
-                          i,
-                          maxW: (box.maxWidth * .88).clamp(0, 720).toDouble(),
-                          onAuthorize: (msg, tool) => _authorize(s, msg, tool),
-                        ),
+          ),
+          Container(
+            margin: EdgeInsets.fromLTRB(hp, 0, hp, 24),
+            decoration: BoxDecoration(
+              color: p.surface,
+              border: Border.all(color: p.line),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  child: CallbackShortcuts(
+                    bindings: {
+                      const SingleActivator(LogicalKeyboardKey.enter): () =>
+                          _send(s),
+                    },
+                    child: TextField(
+                      controller: input,
+                      focusNode: focus,
+                      minLines: 2,
+                      maxLines: 2,
+                      cursorColor: p.accent,
+                      cursorWidth: 1,
+                      style: Fonts.sans(size: 15, color: p.text),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                        hintText: t('Demande quelque chose à l’assistant…'),
+                        hintStyle: Fonts.sans(size: 15, color: p.dim),
                       ),
                     ),
                   ),
                 ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: EdgeInsets.fromLTRB(hp, 0, hp, 14),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final sg in suggestions)
-                Hov(
-                  onTap: () => _send(s, sg[1]),
-                  builder: (_, h) => Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 11,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: h ? p.accent : p.line),
-                    ),
-                    child: Mono(
-                      sg[0],
-                      ls: .12,
-                      color: h ? p.accent : p.muted,
-                      height: null,
-                    ),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 10, 8),
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: p.lineSoft)),
                   ),
-                ),
-            ],
-          ),
-        ),
-        Container(
-          margin: EdgeInsets.fromLTRB(hp, 0, hp, 24),
-          decoration: BoxDecoration(
-            color: p.surface,
-            border: Border.all(color: p.line),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                child: CallbackShortcuts(
-                  bindings: {
-                    const SingleActivator(LogicalKeyboardKey.enter): () =>
-                        _send(s),
-                  },
-                  child: TextField(
-                    controller: input,
-                    focusNode: focus,
-                    minLines: 2,
-                    maxLines: 2,
-                    cursorColor: p.accent,
-                    cursorWidth: 1,
-                    style: Fonts.sans(size: 15, color: p.text),
-                    decoration: InputDecoration(
-                      isDense: true,
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                      hintText: t('Demande quelque chose à l’assistant…'),
-                      hintStyle: Fonts.sans(size: 15, color: p.dim),
-                    ),
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 8, 10, 8),
-                decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: p.lineSoft)),
-                ),
-                child: Row(
-                  children: [
-                    Ico('spark', size: 13, color: p.dim),
-                    const SizedBox(width: 8),
-                    Mono(
-                      demo ? t('Réponses simulées') : t('Réponses de l’IA'),
-                      height: null,
-                    ),
-                    const Spacer(),
-                    if (s.busy)
-                      Btn(
-                        key: const ValueKey('chat-stop'),
-                        icon: 'x',
-                        label: t('Arrêter'),
-                        onTap: s.stopChat,
-                      )
-                    else
-                      Hov(
-                        onTap: () => _send(s),
-                        builder: (_, _) => Container(
-                          key: const ValueKey('chat-send'),
-                          width: 34,
-                          height: 34,
-                          color: p.accent,
-                          alignment: Alignment.center,
-                          child: Ico('send', color: p.onAccent),
-                        ),
+                  child: Row(
+                    children: [
+                      Ico('spark', size: 13, color: p.dim),
+                      const SizedBox(width: 8),
+                      Mono(
+                        demo ? t('Réponses simulées') : t('Réponses de l’IA'),
+                        height: null,
                       ),
-                  ],
+                      const Spacer(),
+                      if (s.busy)
+                        Btn(
+                          key: const ValueKey('chat-stop'),
+                          icon: 'x',
+                          label: t('Arrêter'),
+                          onTap: s.stopChat,
+                        )
+                      else
+                        Hov(
+                          onTap: () => _send(s),
+                          builder: (_, _) => Container(
+                            key: const ValueKey('chat-send'),
+                            width: 34,
+                            height: 34,
+                            color: p.accent,
+                            alignment: Alignment.center,
+                            child: Ico('send', color: p.onAccent),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -483,6 +568,17 @@ class _Bubble extends StatelessWidget {
                   canAuthorize: s.chatCtl.canAuthorize(msg),
                   onAuthorize: (tool) => onAuthorize(msg, tool),
                 ),
+              if (!me)
+                for (final d in msg.drafts.where((d) => d.kind == 'new'))
+                  ChatDraftCard(d, onOpen: () => s.openProposal(d)),
+              if (!me)
+                for (final a in msg.actions)
+                  ChatActionCard(
+                    a,
+                    targets: s.actionTargets(a.proposal),
+                    onConfirm: () => s.settleAction(a, apply: true),
+                    onDismiss: () => s.settleAction(a, apply: false),
+                  ),
               if (!me &&
                   msg.done &&
                   (msg.refs ?? const []).isEmpty &&
@@ -538,6 +634,7 @@ class _Bubble extends StatelessWidget {
                   msg.done &&
                   msg.fromEngine &&
                   !msg.failed &&
+                  msg.drafts.isEmpty &&
                   msg.text.isNotEmpty &&
                   s.byId(s.open) != null)
                 Padding(

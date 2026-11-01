@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:mira/engine/engine_client.dart';
 
+import 'fake_ai_history.dart';
+
 /// Moteur factice du domaine `ai` : garde les requêtes, tient les connexions en mémoire, rejoue des flux de chat.
 class FakeAiEngine implements EngineClient, ChatStreamingClient {
+  final history = FakeAiHistory();
   final calls = <Map<String, dynamic>>[];
   final chatStarts = <Map<String, dynamic>>[];
   final providers = <Map<String, dynamic>>[];
@@ -76,7 +79,10 @@ class FakeAiEngine implements EngineClient, ChatStreamingClient {
     return _wrap('connection', found);
   }
 
-  Map<String, dynamic> _answer(Map<String, dynamic> r) => switch (r['op']) {
+  Map<String, dynamic> _answer(Map<String, dynamic> r) =>
+      history.answer(r) ?? _answerAi(r);
+
+  Map<String, dynamic> _answerAi(Map<String, dynamic> r) => switch (r['op']) {
     'list_ai_providers' => _wrap('providers', [...providers]),
     'list_ai_connections' => _wrap('connections', [...connections]),
     'add_ai_connection' => _add(r),

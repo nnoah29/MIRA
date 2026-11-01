@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:webview_all/webview_all.dart';
 
 import '../engine/web_document.dart';
+import '../platform_info.dart';
 import 'body_skeleton.dart';
 import 'html_body.dart';
 import 'native_cover.dart';
@@ -182,7 +182,7 @@ class _WebMailBodyState extends State<WebMailBody>
         widget.html,
         remoteImages: widget.remoteImages,
         inline: widget.inline,
-        viewport: Platform.isAndroid,
+        viewport: runsOnAndroid,
       ),
     );
   }

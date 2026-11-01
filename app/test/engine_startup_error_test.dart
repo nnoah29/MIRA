@@ -27,6 +27,14 @@ void main() {
     },
   );
 
+  test('la démo en ligne prévient que les données sont fictives', () async {
+    final store = MailStore(await prefs(), webDemo: true);
+    expect(store.toasts, hasLength(1));
+    expect(store.toasts.single.err, isFalse);
+    expect(store.toasts.single.msg, contains('fictives'));
+    store.dispose();
+  });
+
   test('un moteur qui s\'ouvre ne laisse aucun message', () async {
     final store = MailStore(await prefs());
     expect(store.toasts, isEmpty);

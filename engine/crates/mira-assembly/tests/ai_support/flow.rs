@@ -72,6 +72,7 @@ pub async fn chat_with(
         connection: Some(id.clone()),
         request,
         allow_tools: false,
+        mode: Default::default(),
     };
     fixture.engine.chat_stream(start).await
 }

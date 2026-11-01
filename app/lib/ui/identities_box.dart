@@ -74,7 +74,9 @@ class _IdentitiesBoxState extends State<IdentitiesBox> {
     try {
       await job();
       await load();
-      if (mounted) await context.read<MailStore>().identitiesChanged();
+      if (mounted) {
+        await context.read<MailStore>().identitiesChanged(widget.account.id);
+      }
       if (mounted && done != null) context.read<MailStore>().toast(done);
     } catch (e) {
       if (mounted) setState(() => error = _msg(e));

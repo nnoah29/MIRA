@@ -11,6 +11,7 @@ import '../data/html_lite.dart';
 import '../data/models.dart';
 import '../data/seed.dart';
 import '../engine/ai_admin.dart';
+import '../engine/ai_history_admin.dart';
 import '../engine/blocks_html.dart';
 import '../engine/compose_admin.dart';
 import '../engine/engine_client.dart';
@@ -33,6 +34,7 @@ import 'arrival_gate.dart';
 import 'assistant.dart';
 import 'chat_context.dart';
 import 'chat_controller.dart';
+import 'chat_history_state.dart';
 import 'chat_message.dart';
 import '../ui/chat_markdown.dart' show plainFromMarkdown;
 import 'contacts.dart';
@@ -143,6 +145,9 @@ class MailStore extends ChangeNotifier {
 
   /// Raison pour laquelle le moteur n'a pas pu s'ouvrir (l'app montre alors la démonstration) ; `null` si tout va bien.
   final String? engineError;
+
+  /// Vrai pour la démonstration en ligne (navigateur) : l'app prévient que les données sont fictives.
+  final bool webDemo;
   StreamSubscription<String>? _changeSub;
   StreamSubscription<void>? _syncSub;
   StreamSubscription<void>? _counterSub;
@@ -161,8 +166,19 @@ class MailStore extends ChangeNotifier {
   AiAdmin? get aiAdmin => aiAdminOverride ?? source?.aiAdmin;
 
   /// Fil de l'assistant (moteur d'IA ou repli de démonstration).
+  /// Historique des conversations de l'assistant (`null` côté moteur : démonstration).
+  AiHistoryAdmin? get historyAdmin {
+    final ai = aiAdmin;
+    return ai == null ? null : AiHistoryAdmin(ai.client);
+  }
+
+  /// Conversations enregistrées : liste, interrupteur, effacement.
+  late final ChatHistoryState history = ChatHistoryState(() => historyAdmin)
+    ..addListener(notifyListeners);
+
   late final ChatController chatCtl = ChatController(
     admin: () => aiAdmin,
+    history: () => history,
     welcome: _welcome,
     demoAnswer: (q) => answerTo(this, q),
     after: _after,
@@ -173,6 +189,7 @@ class MailStore extends ChangeNotifier {
     bool watchWallpaper = false,
     this.source,
     this.engineError,
+    this.webDemo = false,
     this.aiAdminOverride,
   }) {
     contactBook = ContactBook.decode(
@@ -198,6 +215,7 @@ class MailStore extends ChangeNotifier {
     labelCounter = CounterMode.parse(prefs.getString('labelCounter'));
     accentHex = prefs.getString('accent');
     dense = prefs.getString('dense') == '1';
+    historyGrid = prefs.getString('historyView') == 'grid';
     htmlMode = HtmlMode.parse(prefs.getString('htmlMode'));
     live = prefs.getString('live') != '0';
     final extra = <Account>[];
@@ -250,6 +268,14 @@ class MailStore extends ChangeNotifier {
     if (source != null) {
       wakeSnoozed();
       _armWake();
+    }
+    if (webDemo) {
+      toast(
+        t(
+          'Démonstration en ligne : les données sont fictives. Installe MIRA pour lire tes vrais mails.',
+        ),
+        ms: 12000,
+      );
     }
     final failure = engineError;
     if (failure != null) {
@@ -373,6 +399,9 @@ class MailStore extends ChangeNotifier {
   }
 
   late bool dense, live;
+
+  /// Vrai quand l'historique des conversations s'affiche en grille de cartes (sinon en liste).
+  bool historyGrid = false;
   late HtmlMode htmlMode;
 
   /// Signature : celle de l'utilisateur, sinon la formule par défaut dans la langue active.
@@ -430,6 +459,7 @@ class MailStore extends ChangeNotifier {
     }
     c?.timer?.cancel();
     chatCtl.dispose();
+    history.dispose();
     super.dispose();
   }
 
@@ -799,6 +829,9 @@ class MailStore extends ChangeNotifier {
       case 'dense':
         dense = v == '1';
         prefs.setString('dense', v);
+      case 'historyView':
+        historyGrid = v == 'grid';
+        prefs.setString('historyView', historyGrid ? 'grid' : 'list');
       case 'htmlMode':
         htmlMode = HtmlMode.parse(v);
         prefs.setString('htmlMode', htmlMode.code);
@@ -1007,11 +1040,12 @@ class MailStore extends ChangeNotifier {
   }
 
   /// Relit les identités du moteur (après ajout, modification ou changement par défaut).
-  Future<void> identitiesChanged() async {
+  Future<void> identitiesChanged(String accountId) async {
     final src = source;
     if (src == null) return;
     await src.refreshIdentities();
     _applyIdentities();
+    await _reloadAccount(accountId);
     notifyListeners();
   }
 
@@ -1385,6 +1419,8 @@ class MailStore extends ChangeNotifier {
     for (final m in l)
       Object.hash(
         m.id,
+        m.from.name,
+        m.from.email,
         m.date,
         m.unread,
         m.starred,
@@ -2922,6 +2958,120 @@ class MailStore extends ChangeNotifier {
     );
   }
 
+  /// Messages que l'IA a vraiment lus avec ses outils dans cette conversation, plus le mail ouvert : les seuls qu'elle peut proposer de modifier.
+  Set<String> _actionableIds() => {
+    for (final m in chatCtl.chat) ...m.sources,
+    ?open,
+  };
+
+  /// Messages visés par une action proposée que l'app connaît et que l'IA a lus : un identifiant inventé ou inconnu est ignoré.
+  List<Mail> actionTargets(AiActionProposal p) {
+    final allowed = _actionableIds();
+    final seen = <String>{};
+    return [
+      for (final id in p.messages)
+        if (allowed.contains(id) &&
+            !_isEngineDraft(id) &&
+            seen.add(id) &&
+            byId(id) != null)
+          byId(id)!,
+    ];
+  }
+
+  /// Exécute l'action confirmée par les actions habituelles de l'app (annulables) ; rend le nombre de messages touchés.
+  int applyActionProposal(AiActionProposal p) {
+    final ms = actionTargets(p).where((m) => !_isEngineDraft(m.id)).toList();
+    if (ms.isEmpty) {
+      toast(t('Ces messages ne sont plus disponibles'), err: true);
+      return 0;
+    }
+    final ids = [for (final m in ms) m.id];
+    switch (p.action) {
+      case 'archive':
+        moveTo(ids, 'archive', tkey('archivé'), tkey('archivés'));
+      case 'trash':
+        moveTo(ids, 'trash', tkey('mis à la corbeille'));
+      case 'mark_read' || 'mark_unread':
+        _markProposed(ms, unread: p.action == 'mark_unread');
+      case 'star' || 'unstar':
+        _starProposed(ms, starred: p.action == 'star');
+      default:
+        return 0;
+    }
+    return ms.length;
+  }
+
+  void _markProposed(List<Mail> ms, {required bool unread}) {
+    for (final m in ms) {
+      _setUnread(m, unread);
+    }
+    notifyListeners();
+    _syncAction(ms, (a) => a.read(!unread));
+    toast(
+      '${tn(ms.length, 'message', 'messages')} ${t(unread ? (ms.length > 1 ? 'marqués comme non lus' : 'marqué comme non lu') : (ms.length > 1 ? 'marqués comme lus' : 'marqué comme lu'))}',
+    );
+  }
+
+  void _starProposed(List<Mail> ms, {required bool starred}) {
+    for (final m in ms) {
+      m.starred = starred;
+    }
+    notifyListeners();
+    _syncAction(ms, (a) => a.flag(starred));
+    toast(
+      '${tn(ms.length, 'message', 'messages')} ${t(starred ? (ms.length > 1 ? 'mis en favoris' : 'mis en favori') : (ms.length > 1 ? 'retirés des favoris' : 'retiré des favoris'))}',
+    );
+  }
+
+  /// L'utilisateur confirme ou ignore une action proposée ; seule la confirmation agit, et le choix est enregistré avec la conversation.
+  void settleAction(ProposedAction item, {required bool apply}) {
+    if (item.status != 'pending') return;
+    if (apply && applyActionProposal(item.proposal) == 0) return;
+    item.status = apply ? 'done' : 'dismissed';
+    notifyListeners();
+    unawaited(chatCtl.resave());
+  }
+
+  /// Adresse d'envoi d'une proposition de l'IA : celle qu'elle nomme si l'utilisateur l'a, sinon la règle habituelle.
+  String _fromOfProposal(AiDraftProposal p, Mail? original) {
+    final wanted = (p.identity ?? '').trim().toLowerCase();
+    final hit = senderChoices().where((x) => x.email.toLowerCase() == wanted);
+    return hit.isNotEmpty ? hit.first.email : fromFor(original);
+  }
+
+  /// Ouvre le composeur prérempli avec le brouillon proposé par l'IA : nouveau message, ou réponse avec citation si le message visé existe ; la signature est ajoutée par l'app.
+  void openProposal(AiDraftProposal p) {
+    final original = p.replyTo == null ? null : byId(p.replyTo);
+    final from = _fromOfProposal(p, original);
+    final people = [
+      for (final e in p.to ?? const <AiAddressEntry>[])
+        Person(e.name ?? e.address, e.address),
+    ];
+    final cc = [
+      for (final e in p.cc ?? const <AiAddressEntry>[])
+        Person(e.name ?? e.address, e.address),
+    ];
+    final text = '${p.body ?? ''}\n\n${signatureFor(from)}';
+    final reply = original != null;
+    final last = original?.msgs.last;
+    final other = last == null
+        ? null
+        : (isMine(last.from.email) ? original!.to[0] : last.from);
+    openCompose(
+      ComposeInit(
+        from: from,
+        mode: reply ? 'reply' : 'new',
+        replyTo: reply ? original.id : null,
+        to: people.isNotEmpty ? people : [?other],
+        cc: cc,
+        subject: p.subject ?? (reply ? 'Re: ${stripRe(original.subject)}' : ''),
+        text: text,
+        flags: RichController.gapFlags(text),
+        quote: reply ? quoteOf(original) : null,
+      ),
+    );
+  }
+
   void openCompose(ComposeInit i) {
     if (c != null) {
       saveDraft();
@@ -3151,6 +3301,19 @@ class MailStore extends ChangeNotifier {
     final admin = source?.composer;
     if (o == null || admin == null) return Future.value();
     return _outboxOp(m, () => admin.cancelSend(o.action), t('Envoi annulé'));
+  }
+
+  /// Remplace un envoi en attente par un envoi immédiat (avec le délai d'annulation habituel).
+  Future<void> sendOutboxNow(Mail m) {
+    final o = m.outbox;
+    final admin = source?.composer;
+    if (o == null || o.state != 'pending' || admin == null) {
+      return Future.value();
+    }
+    return _outboxOp(m, () async {
+      await admin.cancelSend(o.action);
+      await admin.send(o.draft);
+    }, t('Envoi lancé'));
   }
 
   /// Relance un envoi échoué.
@@ -3680,7 +3843,7 @@ class MailStore extends ChangeNotifier {
   }
 
   // ---- assistant ----
-  void clearChat() => chatCtl.clear();
+  void clearChat() => chatCtl.startNew();
 
   Future<void> sendChat(String text) => chatCtl.send(text, chatInput());
 

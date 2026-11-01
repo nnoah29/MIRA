@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -14,6 +15,7 @@ import 'engine/engine_mail_source.dart';
 import 'engine/mail_source.dart';
 import 'engine/rust_engine_client.dart';
 import 'i18n/i18n.dart';
+import 'platform_info.dart';
 import 'state/folder_map.dart';
 import 'state/mail_notifier.dart';
 import 'state/store.dart';
@@ -41,6 +43,7 @@ Future<void> main() async {
     watchWallpaper: true,
     source: opening.source,
     engineError: opening.error,
+    webDemo: kIsWeb,
   );
   unawaited(store.useNotifications(PluginNotifications()));
   AppLifecycleListener(
@@ -54,11 +57,11 @@ Future<void> main() async {
 Future<({MailSource? source, String? error})> openEngineSource(
   SharedPreferences prefs,
 ) async {
-  if (Platform.environment['MIRA_DEMO'] == '1') {
+  if (kIsWeb || Platform.environment['MIRA_DEMO'] == '1') {
     return (source: null, error: null);
   }
   try {
-    final android = Platform.isAndroid;
+    final android = runsOnAndroid;
     final client = await RustEngineClient.open(
       home: android ? (await getApplicationSupportDirectory()).path : null,
       secretsKey: android ? await androidSecretsKey() : null,

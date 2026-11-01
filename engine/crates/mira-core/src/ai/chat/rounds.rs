@@ -1,4 +1,4 @@
-//! Tours de génération : le modèle répond, demande des outils, le moteur les exécute, jusqu'à huit tours.
+//! Tours de génération : le modèle répond, demande des outils, le moteur les exécute, jusqu'à huit tours ; après quatre tours de lecture, seuls les outils qui écrivent restent annoncés.
 
 use mira_vocabulary::StopReason;
 
@@ -8,8 +8,10 @@ use super::prepare::ChatPlan;
 use super::progress::Progress;
 use super::stream::converse;
 use super::tool_step::run_tools;
+use crate::ai::tools::is_proposal;
 
 const MAX_ROUNDS: usize = 8;
+const READ_ROUNDS: usize = 4;
 
 /// Mène les tours ; un huitième tour qui demande encore des outils termine sans les exécuter.
 pub(super) async fn run_rounds(
@@ -33,6 +35,9 @@ pub(super) async fn run_rounds(
             return ending;
         }
         progress.close_round();
+        if round == READ_ROUNDS {
+            plan.request.tools.retain(|tool| is_proposal(&tool.name));
+        }
     }
     Ending::Finished(StopReason::MaxToolRounds)
 }

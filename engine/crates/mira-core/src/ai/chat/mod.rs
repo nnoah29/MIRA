@@ -30,7 +30,7 @@ mod truncate;
 
 pub use context::render_context;
 pub use framing::{TOOLS_NOTICE, frame_result};
-pub use tool_consent::{ToolDecision, decide_tool};
+pub use tool_consent::{ToolDecision, decide_call, decide_tool};
 pub(crate) use truncate::TRUNCATION_MARK;
 pub use truncate::{MAX_INPUT_CHARS, truncate_request};
 

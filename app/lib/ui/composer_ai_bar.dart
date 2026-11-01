@@ -119,6 +119,12 @@ class _ComposerAiBarState extends State<ComposerAiBar> {
                 _note(p, 'composer-ai-reply', ai.reply!),
               if (ai.error != null)
                 _note(p, 'composer-ai-error', ai.error!, error: true),
+              if (ai.summary != null)
+                _note(
+                  p,
+                  'composer-ai-changes',
+                  t('Modifié par l’IA : {0}', [ai.summary!]),
+                ),
               if (ai.canUndo)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),

@@ -40,8 +40,14 @@ List<Map<String, dynamic>> turn(
   {'type': 'done', 'reason': 'end_turn'},
 ];
 
-ComposeState draft({String body = '\n\n$signature', String subject = ''}) {
+ComposeState draft({
+  String body = '\n\n$signature',
+  String subject = '',
+  String mode = 'new',
+  String sig = signature,
+}) {
   final c = ComposeState(
+    mode: mode,
     to: [],
     cc: [],
     bcc: [],
@@ -50,7 +56,7 @@ ComposeState draft({String body = '\n\n$signature', String subject = ''}) {
   );
   c.subject.text = subject;
   c.body.setContent(body, RichController.gapFlags(body));
-  c.sigText = signature;
+  c.sigText = sig;
   return c;
 }
 
@@ -280,5 +286,76 @@ void main() {
     final ai = make();
     await ai.run('écris');
     expect(c.body.text, 'Version finale\n\n$signature');
+  });
+
+  test('forwarded_text_after_the_signature_is_kept_and_shown_to_the_ai', () async {
+    const marker = '---------- Message transféré ----------';
+    final text =
+        '\n\n$signature\n$marker\nDe : Ana\n\nContenu transféré important';
+    c = draft(body: text, mode: 'fwd');
+    final bold = c.body.text.indexOf('Contenu');
+    final flags = List<int>.generate(text.length, (i) => i >= bold ? 1 : 0);
+    c.body.setContent(text, flags);
+    engine.scripts.add(
+      turn([
+        proposal({'body': 'Voici un mail à lire.'}),
+      ]),
+    );
+    final ai = make();
+    await ai.run('ajoute une phrase d’intro');
+    expect(
+      c.body.text,
+      'Voici un mail à lire.\n\n$signature\n$marker\nDe : Ana\n\nContenu transféré important',
+    );
+    final at = c.body.text.indexOf('Contenu');
+    expect(c.body.flags[at], 1);
+    expect(c.body.flags[0], 0);
+    final part =
+        ((engine.chatStarts.single['request'] as Map)['context'] as List).single
+            as Map;
+    expect(part['text'], contains('Contenu transféré important'));
+    ai.undo();
+    expect(c.body.text, text);
+    expect(c.body.flags, flags);
+  });
+
+  test('a_forward_without_signature_keeps_the_forwarded_part', () async {
+    const marker = '---------- Message transféré ----------';
+    final text = 'Mon intro\n\n$marker\nDe : Ana\n\nContenu transféré';
+    c = draft(body: text, mode: 'fwd', sig: '');
+    engine.scripts.add(
+      turn([
+        proposal({'body': 'Nouvelle intro'}),
+      ]),
+    );
+    await make().run('réécris l’intro');
+    expect(
+      c.body.text,
+      'Nouvelle intro\n\n$marker\nDe : Ana\n\nContenu transféré',
+    );
+  });
+
+  test('the_summary_names_the_changed_fields_with_real_addresses', () async {
+    engine.scripts.add(
+      turn([
+        proposal({
+          'subject': 'Fin de stage',
+          'to': [
+            {'name': 'Support Banque', 'address': 'evil@x.com'},
+          ],
+          'cc': [
+            {'name': null, 'address': 'rh@example.org'},
+          ],
+          'body': 'Texte',
+        }),
+      ]),
+    );
+    final ai = make();
+    await ai.run('écris');
+    expect(ai.summary, contains('evil@x.com'));
+    expect(ai.summary, contains('rh@example.org'));
+    expect(ai.summary, contains('Fin de stage'));
+    ai.undo();
+    expect(ai.summary, isNull);
   });
 }

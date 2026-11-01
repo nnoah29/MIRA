@@ -31,6 +31,9 @@ class DraftAiController extends ChangeNotifier {
   bool busy = false;
   String? reply;
   String? error;
+
+  /// Ce que la dernière application a changé (objet, destinataires avec leurs adresses, corps) ; `null` sans application ou après annulation.
+  String? summary;
   DraftSnapshot? _undo;
   DraftSelection? _selection;
   AiDraftProposal? _last;
@@ -95,6 +98,7 @@ class DraftAiController extends ChangeNotifier {
     if (snapshot == null) return;
     snapshot.restore(compose());
     _undo = null;
+    summary = null;
     onChanged();
     _notify();
   }
@@ -103,6 +107,7 @@ class DraftAiController extends ChangeNotifier {
     busy = true;
     reply = null;
     error = null;
+    summary = null;
     _last = null;
     _operation = null;
     _stopped = false;
@@ -149,6 +154,7 @@ class DraftAiController extends ChangeNotifier {
       final problem = applyProposal(compose(), proposal, _selection);
       if (problem == null) {
         _undo = snapshot;
+        summary = changesOf(proposal);
         onChanged();
       } else {
         error = problem;

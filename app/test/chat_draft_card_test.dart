@@ -139,4 +139,26 @@ void main() {
     expect(store.c!.from, isNot('nobody@nowhere.test'));
     await close(tester, store);
   });
+
+  testWidgets('card_always_shows_the_real_address_next_to_the_name', (
+    tester,
+  ) async {
+    final store = await withProposal(
+      tester,
+      proposal(
+        to: [
+          {'name': 'Support Banque', 'address': 'evil@x.com'},
+        ],
+      ),
+    );
+    final card = key('chat-draft-c1');
+    expect(
+      find.descendant(
+        of: card,
+        matching: find.textContaining('Support Banque <evil@x.com>'),
+      ),
+      findsOneWidget,
+    );
+    await close(tester, store);
+  });
 }

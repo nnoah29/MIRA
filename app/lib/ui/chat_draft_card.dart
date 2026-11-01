@@ -16,7 +16,9 @@ class ChatDraftCard extends StatelessWidget {
   String get _recipients {
     final to = draft.to ?? const <AiAddressEntry>[];
     if (to.isEmpty) return t('(aucun destinataire)');
-    return to.map((p) => p.name ?? p.address).join(', ');
+    return to
+        .map((p) => p.name == null ? p.address : '${p.name} <${p.address}>')
+        .join(', ');
   }
 
   @override

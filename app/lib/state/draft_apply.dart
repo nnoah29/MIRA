@@ -51,9 +51,15 @@ List<Person> _people(List<AiAddressEntry> list) => [
 ];
 
 void _setBody(ComposeState c, String body) {
-  final tail = c.sigText.isEmpty ? '' : '\n\n${c.sigText}';
-  final text = '$body$tail';
-  c.body.setContent(text, RichController.gapFlags(text));
+  final text = c.body.text;
+  final flags = c.body.flags;
+  final at = authoredEnd(c);
+  final head = at >= text.length ? body : '$body\n\n';
+  final tail = flags.length > at ? flags.sublist(at) : const <int>[];
+  c.body.setContent('$head${text.substring(at)}', [
+    ...RichController.gapFlags(head),
+    ...tail,
+  ]);
   c.body.selection = TextSelection.collapsed(offset: body.length);
 }
 
@@ -99,4 +105,19 @@ String? applyProposal(ComposeState c, AiDraftProposal p, DraftSelection? from) {
     _setBody(c, body);
   }
   return null;
+}
+
+String _who(AiAddressEntry e) =>
+    e.name == null ? e.address : '${e.name} <${e.address}>';
+
+/// Ce que la proposition a changé, avec les vraies adresses : l'utilisateur voit à qui le message ira.
+String changesOf(AiDraftProposal p) {
+  final parts = [
+    if (p.subject != null) '${t('Objet')} : ${p.subject}',
+    if (p.to != null) '${t('À')} : ${p.to!.map(_who).join(', ')}',
+    if (p.cc != null) '${t('Cc')} : ${p.cc!.map(_who).join(', ')}',
+    if (p.body != null) t('Corps'),
+    if (p.selection != null) t('Passage remplacé'),
+  ];
+  return parts.join(' · ');
 }

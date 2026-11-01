@@ -7,6 +7,9 @@ import '../i18n/i18n.dart';
 import 'chat_context.dart';
 import 'store.dart';
 
+/// Nombre de caractères de la suite non modifiable (message transféré) transmis au service.
+const chatTailBudget = 4000;
+
 /// Passage sélectionné du corps : sa plage et son texte au moment de la demande.
 class DraftSelection {
   final int start;
@@ -27,12 +30,28 @@ String composerSystemPrompt({required bool selection, DateTime? now}) {
   return '$role ${t('Date du jour : {0}.', [longDay(now ?? DateTime.now())])}';
 }
 
-/// Corps du brouillon sans la signature ajoutée par l'app.
-String bodyBeforeSignature(ComposeState c) {
+/// Fin du texte écrit par l'utilisateur : avant sa signature, ou avant le message transféré ; ce qui suit n'est jamais modifié par l'IA.
+int authoredEnd(ComposeState c) {
   final text = c.body.text;
   final sig = c.sigText;
-  final at = sig.isEmpty ? -1 : text.lastIndexOf(sig);
-  return (at < 0 ? text : text.substring(0, at)).trimRight();
+  final signed = sig.isEmpty ? -1 : text.lastIndexOf(sig);
+  if (signed >= 0) return signed;
+  final marker = c.mode == 'fwd'
+      ? text.indexOf(t('---------- Message transféré ----------'))
+      : -1;
+  return marker >= 0 ? marker : text.length;
+}
+
+/// Corps du brouillon sans la signature ajoutée par l'app ni la suite non modifiable.
+String bodyBeforeSignature(ComposeState c) =>
+    c.body.text.substring(0, authoredEnd(c)).trimRight();
+
+/// Suite du corps après le texte écrit, signature exceptée : le message transféré, que l'IA lit sans le changer.
+String continuation(ComposeState c) {
+  final rest = c.body.text.substring(authoredEnd(c));
+  final sig = c.sigText;
+  final cut = sig.isNotEmpty && rest.startsWith(sig) ? sig.length : 0;
+  return rest.substring(cut).trim();
 }
 
 String _clip(String text, int budget) =>
@@ -54,6 +73,11 @@ Map<String, String> draftContextPart(ComposeState c) => {
     '${t('Cc')} : ${_people(c.cc)}',
     '',
     _clip(bodyBeforeSignature(c), chatBodyBudget),
+    if (continuation(c).isNotEmpty) ...[
+      '',
+      '${t('Suite du message (non modifiable)')} :',
+      _clip(continuation(c), chatTailBudget),
+    ],
   ].join('\n'),
 };
 

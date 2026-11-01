@@ -215,4 +215,28 @@ void main() {
     expect(own, isEmpty, reason: own.join('\n'));
     await close(tester, store);
   });
+
+  testWidgets('the_bar_lists_what_the_ai_changed_with_real_addresses', (
+    tester,
+  ) async {
+    final (store, _) = await withComposer(
+      tester,
+      scripts: [
+        turn([
+          proposal({
+            'subject': 'Fin de stage',
+            'to': [
+              {'name': 'Support Banque', 'address': 'evil@x.com'},
+            ],
+            'body': 'Texte',
+          }),
+        ]),
+      ],
+    );
+    await ask(tester, 'écris');
+    final changes = key('composer-ai-changes');
+    expect(changes, findsOneWidget);
+    expect(tester.widget<Text>(changes).data, contains('evil@x.com'));
+    await close(tester, store);
+  });
 }

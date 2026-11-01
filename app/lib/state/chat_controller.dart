@@ -90,6 +90,12 @@ class ChatController extends ChangeNotifier {
   /// Vrai quand aucune connexion utilisable ne répond : l'assistant de démonstration parle.
   bool get demo => admin() == null || _connection == null;
 
+  /// Relit les connexions et rend l'identifiant de celle qui répond (`null` : aucune n'est utilisable).
+  Future<String?> usableConnectionId() async {
+    await refresh();
+    return _connection?.id;
+  }
+
   /// Libellé de la connexion qui répond (`null` en démonstration).
   String? get connectionLabel => _connection?.label;
 

@@ -37,25 +37,26 @@ Table `ai_conversations` :
 | `title` TEXT | 80 caractères au plus |
 | `created_at`, `updated_at` | dates ; index sur `updated_at DESC` |
 | `payload_version` INTEGER | version de la forme du payload |
-| `payload` TEXT | JSON opaque pour le moteur |
+| `payload` TEXT | texte JSON (objet), opaque pour le moteur |
 
-L'interrupteur `history_enabled` (global, `true` par défaut) est rangé dans `engine_settings` (v011). **À vérifier au plan** : si la forme de cette table ne convient pas, colonne dédiée.
+L'interrupteur (global, `true` par défaut) est rangé dans `engine_settings` (v011) sous la clé `ai_history_enabled` (`"1"` / `"0"`), lue et écrite par des méthodes dédiées du dépôt : la structure `EngineSettings` et le contrat des réglages ne changent pas. Dans le contrat, `payload` est une **chaîne** (texte JSON) : le vocabulaire n'a pas `serde_json`, et le moteur reste ainsi réellement opaque ; il vérifie seulement que c'est un objet JSON.
 
 ### Contrat 1.4
 
 Un handler par opération dans `api/handlers/ai/conversations/`, routage par `match` exhaustif.
 
-| Requête | Effet | Risque (`risk_of`) |
-|---|---|---|
-| `ListAiConversations { limit, before }` | métadonnées seules, plus récentes d'abord | Read |
-| `GetAiConversation { id }` | conversation complète | Read |
-| `SaveAiConversation { id, title, payload_version, payload }` | upsert idempotent | Write |
-| `RenameAiConversation { id, title }` | renomme | Write |
-| `DeleteAiConversation { id }` | supprime | Write |
-| `ClearAiConversations` | supprime tout | Write |
-| `SetAiHistoryEnabled { enabled }` | interrupteur | Write |
+| Requête | Effet | Réponse | Risque (`risk_of`) |
+|---|---|---|---|
+| `ListAiConversations { limit, before }` | métadonnées seules, plus récentes d'abord | `Conversations` | Sensitive |
+| `GetAiConversation { id }` | conversation complète | `Conversation` | Sensitive |
+| `SaveAiConversation { id, title, payload_version, payload }` | upsert idempotent | `ConversationMeta` | Sensitive |
+| `RenameAiConversation { id, title }` | renomme (l'ordre ne change pas) | `ConversationMeta` | Sensitive |
+| `DeleteAiConversation { id }` | supprime | `Done` | Sensitive |
+| `ClearAiConversations` | supprime tout | `Done` | Sensitive |
+| `SetAiHistoryEnabled { enabled }` | interrupteur | `HistoryEnabled` | Sensitive |
+| `GetAiHistoryEnabled` | lit l'interrupteur | `HistoryEnabled` | Read |
 
-Le catalogue d'outils de l'IA reste à cinq outils : aucune de ces requêtes ne lui est exposée.
+`ToolRisk` n'a pas de niveau « Write » (`Read`, `Reversible`, `Confirmed`, `Sensitive`) : toutes les écritures du domaine IA sont `Sensitive`, comme `ClearAiJournal`. Les lectures de conversations sont aussi `Sensitive`, pour que l'historique ne puisse jamais être exposé au modèle par un futur outil ; seul `GetAiHistoryEnabled` est `Read`. Le catalogue d'outils reste à cinq outils. Le contrat passe de 1.3 à 1.4.
 
 ### Bornes et erreurs
 
@@ -64,6 +65,8 @@ Le catalogue d'outils de l'IA reste à cinq outils : aucune de ces requêtes ne 
 - Rétention : 200 conversations ; l'enregistrement d'une 201e supprime la plus ancienne par `updated_at`. Pas de limite d'âge.
 - `Save` avec l'historique désactivé : `incompatible_state.ai_history_disabled` (l'app vérifie aussi, le moteur reste la garde).
 - `Get`/`Rename`/`Delete` d'un `id` inconnu : `not_found.ai_conversation`.
+- `List` : `limit` de 1 à 200, sinon `invalid_input.parameter` ; `before` est l'`id` de la dernière ligne reçue (ordre `updated_at DESC, rowid DESC`).
+- Le titre est compté en caractères (pas en octets), vide ou blanc refusé.
 
 ### Confidentialité
 
@@ -73,10 +76,10 @@ Le catalogue d'outils de l'IA reste à cinq outils : aucune de ces requêtes ne 
 
 ## 3. Pont et état Flutter
 
-Le pont est générique (`AiAdmin._send` → `req('ai', op, data)` en JSON) : les opérations 1.4 passent sans nouveau code de pont ni régénération `frb`. **À confirmer au plan** en lisant le routeur du pont.
+Le pont est générique (`bridge/src/api/engine.rs::execute(request_json)` ; côté Dart `AiAdmin._send` → `req('ai', op, data)`) : les opérations 1.4 passent sans nouveau code de pont ni régénération `frb` (vérifié).
 
 1. **`AiHistoryAdmin`** (`engine/ai_history_admin.dart`), classe séparée d'`AiAdmin` : `list`, `get`, `save`, `rename`, `delete`, `clearAll`, `setEnabled`.
-2. **Modèles** (`engine/ai_conversation_models.dart`) : `AiConversationMeta { id, title, updatedAt }` ; payload v1 = liste de messages (`role`, `text`, `draft`, `refs`, `sources`, `tools[{id, name, summary, state, results, deniedKind}]`, `failed`, `note`, `maskedCount`, `fromEngine`). `shown` n'est pas enregistré ; un message non terminé n'est jamais enregistré. Version inconnue ou ligne corrompue → conversation « illisible », supprimable.
+2. **Modèles** (`engine/ai_conversation_models.dart`) : `AiConversationMeta { id, title, updatedAt }` ; payload v1 = objet `{"messages": [...]}`, le message d'accueil exclu (il est recréé à l'ouverture), chaque message portant (`role`, `text`, `draft`, `refs`, `sources`, `tools[{id, name, summary, state, results, deniedKind}]`, `failed`, `note`, `maskedCount`, `fromEngine`). `shown` n'est pas enregistré ; un message non terminé n'est jamais enregistré. Version inconnue ou ligne corrompue → conversation « illisible », supprimable.
 3. **`ChatHistoryState`** (`state/chat_history_state.dart`), `ChangeNotifier` calqué sur `AiJournalState` : pages de 50, `load`, `more`, `rename`, `delete`, `clearAll`, génération pour écarter les lectures périmées, erreurs via `engineErrorText`.
 4. **`ChatController`** : `conversationId` courant (UUID créé à la première question), `startNew()`, `open(id)`, sauvegarde automatique dans `_finish` (une par tour terminé, sans minuterie). Pas de sauvegarde en démo, avec l'historique coupé, ou si le fil ne contient que l'accueil. Titre = première question nettoyée, tronquée à 80, fixe sauf renommage.
 
@@ -118,8 +121,9 @@ L'assistant est un volet unique (plein écran sous 1100 px) sans colonne latéra
 
 Dépendances : 2 ← 1 ; 5 ← 4. Un commit par lot, tests d'abord. Tests ciblés par lot (`cargo test -p …`, `flutter test <fichiers>`) ; `./ci.sh` seulement avec l'accord de l'utilisateur.
 
-## 7. Points à confirmer au plan
+## 7. Points levés à l'écriture du plan
 
-- Forme de `engine_settings` pour `history_enabled`.
-- Routage du pont : aucun changement attendu hors `Request`/`Response`.
-- Présence d'une icône « historique » dans `theme/icons.dart`.
+- `engine_settings` : clé dédiée `ai_history_enabled`, sans toucher `EngineSettings`.
+- Pont : aucun changement (vérifié).
+- Icône « historique » : `clock` existe déjà dans `theme/icons.dart`.
+- « Tout effacer » depuis l'historique remet aussi le fil ouvert à neuf (sinon le prochain tour ressusciterait la conversation effacée).

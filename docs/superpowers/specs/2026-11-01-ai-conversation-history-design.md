@@ -1,6 +1,6 @@
 # Historique des conversations avec l'assistant IA — design
 
-Date : 2026-11-01 · Statut : à relire · Chemin : architectural (nouveau stockage, contrat 1.3 → 1.4, nouvelle interface)
+Date : 2026-11-01 · Statut : implémenté · Chemin : architectural (nouveau stockage, contrat 1.3 → 1.4, nouvelle interface)
 
 ## 1. Objectif
 

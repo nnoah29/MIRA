@@ -7,11 +7,13 @@ import 'package:provider/provider.dart';
 
 import '../data/format.dart';
 import '../data/models.dart';
+import '../state/draft_ai_controller.dart';
 import '../state/rich_controller.dart';
 import '../state/store.dart';
 import '../state/template_insert.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
+import 'composer_ai_bar.dart';
 import 'composer_templates.dart';
 import 'overlays.dart';
 import '../data/documents.dart';
@@ -39,8 +41,40 @@ class _ComposerState extends State<Composer> {
   final wrapKey = GlobalKey();
   double fieldW = 400;
   String _lastBody = '';
+  DraftAiController? _ai;
+  bool _aiOpen = false;
 
   ComposeState get c => widget.c;
+
+  /// Écriture assistée de ce brouillon, créée à la première utilisation.
+  DraftAiController get ai => _ai ??= _makeAi();
+
+  DraftAiController _makeAi() {
+    final s = context.read<MailStore>();
+    return DraftAiController(
+      admin: () => s.aiAdmin,
+      connection: s.chatCtl.usableConnectionId,
+      compose: () => c,
+      onChanged: s.touch,
+    )..addListener(_onAi);
+  }
+
+  void _onAi() {
+    if (mounted) setState(() {});
+  }
+
+  /// Lance une action de l'IA sur le passage sélectionné ; la barre s'ouvre pour montrer l'avancement et l'annulation.
+  void _selectionAction(String instruction) {
+    final sel = c.body.selection;
+    if (!sel.isValid || sel.isCollapsed || sel.end > c.body.text.length) return;
+    final picked = DraftSelection(
+      sel.start,
+      sel.end,
+      c.body.text.substring(sel.start, sel.end),
+    );
+    setState(() => _aiOpen = true);
+    ai.run(instruction, selection: picked);
+  }
 
   @override
   void initState() {
@@ -103,6 +137,8 @@ class _ComposerState extends State<Composer> {
   @override
   void dispose() {
     c.body.removeListener(_onBody);
+    _ai?.removeListener(_onAi);
+    _ai?.dispose();
     scroll.dispose();
     super.dispose();
   }
@@ -242,7 +278,7 @@ class _ComposerState extends State<Composer> {
     final w = MediaQuery.sizeOf(context).width;
     final narrow = w <= 1100;
     final hp = narrow ? 16.0 : 32.0;
-    final mobile = w <= 760;
+    final aiOn = s.aiAdmin != null;
     final bodyStyle = Fonts.sans(size: 16, color: p.body, height: 1.8);
     c.body
       ..baseColor = p.body
@@ -400,7 +436,8 @@ class _ComposerState extends State<Composer> {
                   final bottom = boxes.map((b) => b.bottom).reduce(math.max);
                   final left = boxes.map((b) => b.left).reduce(math.min);
                   final off = scroll.hasClients ? scroll.offset : 0.0;
-                  const fw = 232.0, fh = 40.0;
+                  final fw = aiOn ? 340.0 : 232.0;
+                  final fh = aiOn ? 76.0 : 40.0;
                   final x = (left + hp - 0)
                       .clamp(8.0, math.max(8.0, box.maxWidth - fw - 8))
                       .toDouble();
@@ -409,7 +446,11 @@ class _ComposerState extends State<Composer> {
                   fmt = Positioned(
                     left: x,
                     top: y,
-                    child: _FmtBar(c: c, onCmd: _cmd),
+                    child: _FmtBar(
+                      c: c,
+                      onCmd: _cmd,
+                      onAi: aiOn ? _selectionAction : null,
+                    ),
                   );
                 }
               }
@@ -508,6 +549,8 @@ class _ComposerState extends State<Composer> {
               ),
             ),
           ),
+        if (_aiOpen && aiOn)
+          ComposerAiBar(ai: ai, onClose: () => setState(() => _aiOpen = false)),
         Container(
           padding: EdgeInsets.symmetric(horizontal: hp, vertical: 14),
           decoration: BoxDecoration(
@@ -527,12 +570,23 @@ class _ComposerState extends State<Composer> {
               ],
               const SizedBox(width: 10),
               IBtn('trash', tip: t('Supprimer le brouillon'), onTap: s.discard),
+              if (aiOn) ...[
+                const SizedBox(width: 10),
+                IBtn(
+                  'spark',
+                  key: const ValueKey('composer-ai-open'),
+                  tip: t('Écrire avec l’IA'),
+                  on: _aiOpen,
+                  onTap: () => setState(() => _aiOpen = !_aiOpen),
+                ),
+              ],
               const Spacer(),
               Builder(
                 builder: (ctx) => Btn(
                   icon: 'clock',
                   label: t('Programmer'),
-                  iconOnly: mobile && false,
+                  iconOnly: w < 560,
+                  tip: t('Programmer'),
                   onTap: () => showSchedPop(ctx),
                 ),
               ),
@@ -613,7 +667,8 @@ class _Shake extends StatelessWidget {
 class _FmtBar extends StatelessWidget {
   final ComposeState c;
   final void Function(String) onCmd;
-  const _FmtBar({required this.c, required this.onCmd});
+  final void Function(String instruction)? onAi;
+  const _FmtBar({required this.c, required this.onCmd, this.onAi});
 
   @override
   Widget build(BuildContext context) {
@@ -669,51 +724,64 @@ class _FmtBar extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          b(
-            'b',
-            (col) => letter('B', col),
-            on: bd.isOn(Fx.bold | Fx.strong) || bd.isOn(Fx.bold),
-            tip: t('Gras'),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              b(
+                'b',
+                (col) => letter('B', col),
+                on: bd.isOn(Fx.bold | Fx.strong) || bd.isOn(Fx.bold),
+                tip: t('Gras'),
+              ),
+              const SizedBox(width: 2),
+              b(
+                'i',
+                (col) => letter('I', col, style: FontStyle.italic),
+                on: bd.isOn(Fx.italic),
+                tip: t('Italique'),
+              ),
+              const SizedBox(width: 2),
+              b(
+                'u',
+                (col) => letter('U', col, deco: TextDecoration.underline),
+                on: bd.isOn(Fx.underline),
+                tip: t('Souligné'),
+              ),
+              hr(),
+              b(
+                'left',
+                (col) => Ico('alignl', size: 14, color: col),
+                on: !c.center,
+                tip: t('Aligner à gauche'),
+              ),
+              const SizedBox(width: 2),
+              b(
+                'center',
+                (col) => Ico('alignc', size: 14, color: col),
+                on: c.center,
+                tip: t('Centrer'),
+              ),
+              hr(),
+              b(
+                'link',
+                (col) => Ico('link', size: 14, color: col),
+                tip: t('Lien'),
+              ),
+              const SizedBox(width: 2),
+              b(
+                'list',
+                (col) => Ico('list', size: 14, color: col),
+                tip: t('Liste'),
+              ),
+            ],
           ),
-          const SizedBox(width: 2),
-          b(
-            'i',
-            (col) => letter('I', col, style: FontStyle.italic),
-            on: bd.isOn(Fx.italic),
-            tip: t('Italique'),
-          ),
-          const SizedBox(width: 2),
-          b(
-            'u',
-            (col) => letter('U', col, deco: TextDecoration.underline),
-            on: bd.isOn(Fx.underline),
-            tip: t('Souligné'),
-          ),
-          hr(),
-          b(
-            'left',
-            (col) => Ico('alignl', size: 14, color: col),
-            on: !c.center,
-            tip: t('Aligner à gauche'),
-          ),
-          const SizedBox(width: 2),
-          b(
-            'center',
-            (col) => Ico('alignc', size: 14, color: col),
-            on: c.center,
-            tip: t('Centrer'),
-          ),
-          hr(),
-          b('link', (col) => Ico('link', size: 14, color: col), tip: t('Lien')),
-          const SizedBox(width: 2),
-          b(
-            'list',
-            (col) => Ico('list', size: 14, color: col),
-            tip: t('Liste'),
-          ),
+          if (onAi != null) ...[
+            const SizedBox(height: 4),
+            ComposerAiActions(onAction: onAi!),
+          ],
         ],
       ),
     );

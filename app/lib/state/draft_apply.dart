@@ -75,6 +75,11 @@ String? _replaceSelection(ComposeState c, String text, DraftSelection? from) {
   if (start < 0) {
     return t('Le passage sélectionné a changé : relance l’action.');
   }
+  if (!intact && start != body.lastIndexOf(from.text)) {
+    return t(
+      'Le passage sélectionné apparaît plusieurs fois : relance l’action.',
+    );
+  }
   c.body.value = TextEditingValue(
     text: body.replaceRange(start, start + from.text.length, text),
     selection: TextSelection(

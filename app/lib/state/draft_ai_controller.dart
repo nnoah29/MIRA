@@ -21,12 +21,16 @@ class DraftAiController extends ChangeNotifier {
     required this.connection,
     required this.compose,
     required this.onChanged,
+    this.signature,
   });
 
   final AiAdmin? Function() admin;
   final Future<String?> Function() connection;
   final ComposeState Function() compose;
   final VoidCallback onChanged;
+
+  /// Signature de l'expéditeur du brouillon, pour la retrouver dans un brouillon rouvert.
+  final String Function()? signature;
 
   bool busy = false;
   String? reply;
@@ -42,6 +46,7 @@ class DraftAiController extends ChangeNotifier {
   String? _operation;
   bool _stopped = false;
   bool _disposed = false;
+  int _generation = 0;
 
   /// Vrai quand la dernière application peut être annulée.
   bool get canUndo => _undo != null;
@@ -50,8 +55,9 @@ class DraftAiController extends ChangeNotifier {
   Future<void> run(String instruction, {DraftSelection? selection}) async {
     final text = instruction.trim();
     if (busy || text.isEmpty) return;
-    _begin(selection);
+    final generation = _begin(selection);
     final id = await connection();
+    if (generation != _generation || _disposed) return;
     final ai = admin();
     if (ai == null || id == null) {
       return _end(
@@ -60,6 +66,7 @@ class DraftAiController extends ChangeNotifier {
         ),
       );
     }
+    _detectSignature();
     final request = buildDraftRequest(compose(), text, selection: selection);
     final mode = {'kind': 'composer', 'selection': selection != null};
     final finished = _finished = Completer<void>();
@@ -76,9 +83,13 @@ class DraftAiController extends ChangeNotifier {
 
   /// Arrête la génération en gardant le brouillon tel qu'il est.
   Future<void> stop() async {
-    final finished = _finished;
-    if (!busy || finished == null) return;
+    if (!busy) return;
     _stopped = true;
+    final finished = _finished;
+    if (finished == null) {
+      _generation++;
+      return _end();
+    }
     final operation = _operation;
     await _sub?.cancel();
     final ai = admin();
@@ -103,8 +114,9 @@ class DraftAiController extends ChangeNotifier {
     _notify();
   }
 
-  void _begin(DraftSelection? selection) {
+  int _begin(DraftSelection? selection) {
     busy = true;
+    _finished = null;
     reply = null;
     error = null;
     summary = null;
@@ -113,6 +125,14 @@ class DraftAiController extends ChangeNotifier {
     _stopped = false;
     _selection = selection;
     _notify();
+    return ++_generation;
+  }
+
+  void _detectSignature() {
+    final draft = compose();
+    final sig = signature?.call() ?? '';
+    if (draft.sigText.isNotEmpty || sig.trim().isEmpty) return;
+    if (draft.body.text.contains(sig)) draft.sigText = sig;
   }
 
   void _onEvent(AiChatEvent event) {
@@ -179,6 +199,9 @@ class DraftAiController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _generation++;
+    final finished = _finished;
+    if (finished != null && !finished.isCompleted) finished.complete();
     unawaited(_sub?.cancel());
     super.dispose();
   }

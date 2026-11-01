@@ -56,6 +56,7 @@ class _ComposerState extends State<Composer> {
       connection: s.chatCtl.usableConnectionId,
       compose: () => c,
       onChanged: s.touch,
+      signature: () => s.signatureFor(c.from),
     )..addListener(_onAi);
   }
 

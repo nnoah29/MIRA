@@ -4,7 +4,7 @@ use mira_vocabulary::{DraftProposal, DraftProposalKind, ToolSpec};
 use serde::Deserialize;
 
 use super::args::parse;
-use super::proposal::recipients;
+use super::proposal::{identifier, recipients};
 use super::proposal_text::{accepted, body, subject};
 use super::run_result::ToolRun;
 
@@ -56,7 +56,7 @@ fn build(arguments: &str) -> Result<DraftProposal, String> {
     proposal.cc = recipients(args.cc, "cc")?;
     proposal.subject = subject(args.subject)?;
     proposal.body = Some(text);
-    proposal.reply_to = args.reply_to.filter(|id| !id.trim().is_empty());
-    proposal.identity = args.identity.filter(|id| !id.trim().is_empty());
+    proposal.reply_to = identifier(args.reply_to, "reply_to")?;
+    proposal.identity = identifier(args.identity, "identity")?;
     Ok(proposal)
 }

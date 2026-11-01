@@ -6,6 +6,7 @@ use super::render::cut;
 
 pub(super) const MAX_RECIPIENTS: usize = 20;
 const MAX_NAME_CHARS: usize = 80;
+const MAX_IDENTIFIER_CHARS: usize = 200;
 
 /// Destinataires d'une liste ; une adresse invalide ou une liste trop longue est expliquée au modèle.
 pub(super) fn recipients(
@@ -56,4 +57,17 @@ fn plain_name(name: &str) -> bool {
             || matches!(c, '<' | '>' | '@' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}')
     };
     name.chars().count() <= MAX_NAME_CHARS && !name.chars().any(hidden)
+}
+
+/// Identifiant ou adresse d'envoi donné par le modèle : absent s'il est vide, refusé au-delà de 200 caractères.
+pub(super) fn identifier(value: Option<String>, field: &str) -> Result<Option<String>, String> {
+    let Some(value) = value.filter(|text| !text.trim().is_empty()) else {
+        return Ok(None);
+    };
+    match value.chars().count() > MAX_IDENTIFIER_CHARS {
+        true => Err(format!(
+            "« {field} » dépasse {MAX_IDENTIFIER_CHARS} caractères"
+        )),
+        false => Ok(Some(value)),
+    }
 }

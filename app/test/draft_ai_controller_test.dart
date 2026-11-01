@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -67,11 +69,12 @@ void main() {
   late int touched;
   late String? connectionId;
 
-  DraftAiController make() => DraftAiController(
+  DraftAiController make({String Function()? signature}) => DraftAiController(
     admin: () => AiAdmin(engine),
     connection: () async => connectionId,
     compose: () => c,
     onChanged: () => touched++,
+    signature: signature,
   );
 
   setUp(() {
@@ -357,5 +360,91 @@ void main() {
     expect(ai.summary, contains('Fin de stage'));
     ai.undo();
     expect(ai.summary, isNull);
+  });
+
+  test('a_long_draft_reaches_the_ai_up_to_50000_characters', () async {
+    final long = '${'a' * 30000}FIN-DU-BROUILLON';
+    c = draft(body: '$long\n\n$signature');
+    engine.scripts.add(turn(const [], text: 'Ok'));
+    await make().run('relis');
+    final part =
+        ((engine.chatStarts.single['request'] as Map)['context'] as List).single
+            as Map;
+    expect(part['text'], contains('FIN-DU-BROUILLON'));
+  });
+
+  test('the_signature_of_a_reopened_draft_is_detected_and_kept', () async {
+    c = draft(body: 'Texte\n\n$signature', mode: 'draft', sig: '');
+    engine.scripts.add(
+      turn([
+        proposal({'body': 'Neuf'}),
+      ]),
+    );
+    await make(signature: () => signature).run('réécris');
+    expect(c.body.text, 'Neuf\n\n$signature');
+    expect(c.sigText, signature);
+  });
+
+  test(
+    'stopping_while_the_connection_resolves_prevents_the_generation',
+    () async {
+      final wait = Completer<String?>();
+      final ai = DraftAiController(
+        admin: () => AiAdmin(engine),
+        connection: () => wait.future,
+        compose: () => c,
+        onChanged: () {},
+      );
+      final running = ai.run('écris');
+      await pumpEventQueue();
+      expect(ai.busy, isTrue);
+      await ai.stop();
+      expect(ai.busy, isFalse);
+      wait.complete('ai-1');
+      await running;
+      expect(engine.chatStarts, isEmpty);
+      expect(ai.busy, isFalse);
+    },
+  );
+
+  test('a_composer_closed_while_connecting_starts_nothing', () async {
+    final wait = Completer<String?>();
+    final ai = DraftAiController(
+      admin: () => AiAdmin(engine),
+      connection: () => wait.future,
+      compose: () => c,
+      onChanged: () => touched++,
+    );
+    final running = ai.run('écris');
+    await pumpEventQueue();
+    ai.dispose();
+    wait.complete('ai-1');
+    await running;
+    expect(engine.chatStarts, isEmpty);
+    expect(touched, 0);
+  });
+
+  test('a_repeated_selection_that_moved_is_refused', () async {
+    const text = 'merci beaucoup, merci encore';
+    c = draft(body: text);
+    engine.manual = true;
+    final ai = make();
+    final running = ai.run(
+      'reformule',
+      selection: const DraftSelection(0, 5, 'merci'),
+    );
+    await pumpEventQueue();
+    c.body.value = c.body.value.copyWith(
+      text: '> $text',
+      selection: const TextSelection.collapsed(offset: 0),
+    );
+    engine.live!
+      ..add({'type': 'started', 'operation': 'op-9'})
+      ..add(proposal({'selection': 'grand merci'}))
+      ..add({'type': 'done', 'reason': 'end_turn'})
+      ..close();
+    await running;
+    expect(c.body.text, '> $text');
+    expect(ai.error, isNotNull);
   });
 }

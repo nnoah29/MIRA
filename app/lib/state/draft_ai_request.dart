@@ -10,6 +10,9 @@ import 'store.dart';
 /// Nombre de caractères de la suite non modifiable (message transféré) transmis au service.
 const chatTailBudget = 4000;
 
+/// Nombre de caractères du corps du brouillon transmis à l'IA : la borne du moteur pour un corps proposé.
+const draftBodyBudget = 50000;
+
 /// Passage sélectionné du corps : sa plage et son texte au moment de la demande.
 class DraftSelection {
   final int start;
@@ -72,7 +75,7 @@ Map<String, String> draftContextPart(ComposeState c) => {
     '${t('À')} : ${_people(c.to)}',
     '${t('Cc')} : ${_people(c.cc)}',
     '',
-    _clip(bodyBeforeSignature(c), chatBodyBudget),
+    _clip(bodyBeforeSignature(c), draftBodyBudget),
     if (continuation(c).isNotEmpty) ...[
       '',
       '${t('Suite du message (non modifiable)')} :',

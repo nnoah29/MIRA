@@ -44,3 +44,15 @@ fn ordinary_names_are_kept() {
     assert_eq!(to[1].name.as_deref(), Some("Dupont, Jean"));
     assert_eq!(to[2].address, "s@b.fr");
 }
+
+/// `reply_to` et `identity` sont bornés à 200 caractères : au-delà, l'appel est refusé sans proposition
+#[test]
+fn identifiers_are_bounded() {
+    for field in ["reply_to", "identity"] {
+        let ok = compose(json!({"body": "x", field: "a".repeat(200)}));
+        assert_eq!(ok.state, ToolState::Ok, "{field}");
+        let run = compose(json!({"body": "x", field: "a".repeat(201)}));
+        assert_eq!(run.state, ToolState::Error, "{field}");
+        assert!(run.proposal.is_none(), "{field}");
+    }
+}

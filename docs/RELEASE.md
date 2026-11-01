@@ -120,6 +120,30 @@ modification locale.
 
 ## 4. Construire les artefacts
 
+### Avec le script (recommandé)
+
+`packaging/release.sh` fait les étapes 4 à 6 de ce guide, depuis n'importe quelle
+branche : il construit dans une copie propre du tag (`target/release-build/vX.Y.Z`,
+git worktree), jamais dans votre arbre de travail.
+
+```bash
+packaging/release.sh 2.1.0 --check     # vérifie seulement les prérequis
+packaging/release.sh 2.1.0             # construit, contrôle, écrit SHA256SUMS
+packaging/release.sh 2.1.0 --draft     # idem, puis crée le brouillon GitHub
+```
+
+Il refuse de démarrer si le tag n'est pas annoté, sur `origin` et dans `origin/main`,
+si les versions (`pubspec`, `app_info.dart`, `VERSION`, `metainfo`, `PKGBUILD`) ne
+correspondent pas, si le numéro de build Android n'augmente pas, ou s'il manque un
+outil (`appimagetool`, `cargo-ndk`, cibles Rust Android, NDK, identifiants OAuth de
+production). `--no-appimage`, `--no-android` et `--no-oauth` servent aux essais ;
+`--draft` les refuse. Après la construction, il contrôle chaque fichier (version,
+moteur présent, version du bundle), produit `SHA256SUMS` avec `install.sh` et
+écrit `packaging/out/release-X.Y.Z.log`. Il ne publie jamais : `--draft` crée un
+brouillon. Les étapes 5 (essais sur machine propre) et 7 (AUR) restent manuelles.
+
+### À la main
+
 Vérifier d'abord que la machine de release possède les outils nécessaires :
 
 ```bash

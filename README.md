@@ -29,6 +29,7 @@ I looked for a mail client on Linux and none of them appealed to me: too austere
 - **Works offline.** Your mail is copied to your device. Read, reply, archive and sort on a train or a plane; everything goes out when the network is back.
 - **Private by default.** There is no MIRA server and no telemetry. Remote images and trackers stay blocked until you allow them.
 - **Fast.** Messages open the moment you click, with no spinners.
+- **An optional AI assistant, on your terms.** Bring your own key (or a local model), choose exactly what the AI may see, and nothing is ever sent or deleted without you. [Details below.](#ai-assistant-optional)
 
 <p align="center">
   <img src="docs/screenshots/mira-inbox.webp" alt="The MIRA inbox with its folders, labels and quick filters" width="900">
@@ -47,6 +48,21 @@ I looked for a mail client on Linux and none of them appealed to me: too austere
 </p>
 
 > **NB:** following your wallpaper colours is a Linux-only option and needs [ShellArie](https://github.com/Arch-Noah/ShellArie), my Quickshell shell for Hyprland. MIRA reads the colours ShellArie extracts from your wallpaper and updates live. Without ShellArie, or on Android, the option does nothing: pick an accent colour in the settings instead. Everything else in MIRA works without it.
+
+## AI assistant (optional)
+
+The assistant is off until you add a connection in the settings. There is no MIRA server in between: your requests go straight from your device to the provider you chose.
+
+- **Bring your own key.** Anthropic, OpenAI, Google, Groq, Mistral, or any OpenAI-compatible service, including a model running on your own machine. The key stays on your device.
+- **Ask about your mail.** Summarise a message, find what a thread decided, or ask a question about your mailbox. The assistant searches and reads your mail itself, read-only.
+- **Write with AI.** The ✦ button in the composer writes or reworks the draft you have open from a plain instruction, or rephrases, shortens, corrects or translates a selection. One click on **Undo** brings your text back exactly.
+- **Drafts you review.** Ask for an email and the assistant proposes a complete draft (recipients, subject, body) as a card in the chat. Nothing opens until you click it.
+- **Mailbox actions you confirm.** The assistant can propose to archive, trash, mark as read or unread, or star messages. You see which messages and why, then confirm or ignore.
+- **Conversation history.** Several conversations, like a chat app: resume, rename, delete, switch to a card grid, or turn saving off.
+
+**Your mail, your rules.** You allow each kind of content separately (a message, a list of messages, a search result); a new connection allows none. For remote providers, IBAN, card numbers, secrets and one-time codes are masked before they leave your device, and restored in the answer. For a local model, which never leaves your machine, masking and the per-kind permission are off by default. A journal records each request (when, which model, which kinds of content) but never what was said.
+
+**The AI never sends an email and never deletes anything for good.** It only proposes; MIRA applies a change after you ask for it or confirm it. Writing and mailbox actions need a model that supports tools.
 
 ## Install
 

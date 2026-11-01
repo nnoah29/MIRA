@@ -242,6 +242,11 @@ class ChatController extends ChangeNotifier {
       case AiToolCalled() || AiToolFinished():
         applyToolEvent(reply, event);
         notifyListeners();
+      case AiActionProposal():
+        reply.actions
+          ..removeWhere((a) => a.proposal.id == event.id)
+          ..add(ProposedAction(event));
+        notifyListeners();
       case AiDraftProposal():
         reply.drafts
           ..removeWhere((d) => d.id == event.id)
@@ -543,6 +548,9 @@ class ChatController extends ChangeNotifier {
     notifyListeners();
     return null;
   }
+
+  /// Enregistre de nouveau le fil, par exemple après qu'une action proposée a été confirmée ou ignorée.
+  Future<void> resave() => _saving = _save();
 
   /// Enregistre le fil visible (accueil exclu) quand un tour vient de finir ; un échec n'arrête jamais le chat.
   Future<void> _save() async {

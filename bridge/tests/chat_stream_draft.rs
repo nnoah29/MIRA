@@ -69,3 +69,39 @@ async fn composer_mode_comes_from_the_json() {
     );
     assert!(runtime::close().await.contains("\"ok\":true"));
 }
+
+/// Une action sur la boîte proposée arrive comme ligne `action_proposed`, sans rien modifier
+#[tokio::test(flavor = "multi_thread")]
+async fn action_proposed_line_reaches_the_sink() {
+    let f = start().await;
+    let args = r#"{"action":"archive","messages":["m1","m2"],"reason":"Newsletters lues"}"#;
+    f.server.queue(openai_tool_turn(
+        "",
+        &[("c1", "propose_mailbox_action", args)],
+        None,
+    ));
+    f.server
+        .queue(openai_stream(&["À toi de confirmer."], None));
+    let json = chat_json_mode(
+        Some(&f.connection),
+        "archive mes newsletters",
+        ChatMode::Assistant,
+    );
+    let lines = collect_lines(&json).await;
+    let expected = [
+        "started",
+        "tool_called",
+        "action_proposed",
+        "tool_finished",
+        "text",
+        "done",
+    ];
+    assert_eq!(kinds(&lines), expected, "{lines:?}");
+    assert_eq!(lines[2]["id"], "c1");
+    assert_eq!(lines[2]["proposal"]["action"], "archive");
+    assert_eq!(
+        lines[2]["proposal"]["messages"],
+        serde_json::json!(["m1", "m2"])
+    );
+    assert!(runtime::close().await.contains("\"ok\":true"));
+}

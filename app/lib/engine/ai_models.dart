@@ -195,6 +195,42 @@ class AiDraftProposal extends AiChatEvent {
   };
 }
 
+/// Action sur la boîte que l'IA propose : [action] vaut `archive`, `trash`, `mark_read`, `mark_unread`, `star` ou `unstar`. Rien ne change avant la confirmation de l'utilisateur.
+class AiActionProposal extends AiChatEvent {
+  final String id;
+  final String action;
+  final List<String> messages;
+  final String? reason;
+  const AiActionProposal({
+    required this.id,
+    required this.action,
+    required this.messages,
+    this.reason,
+  });
+
+  /// Lit la ligne `action_proposed` du flux : l'identifiant de l'appel et la proposition.
+  factory AiActionProposal.fromLine(Map<String, dynamic> line) =>
+      AiActionProposal.fromJson({
+        ...(line['proposal'] as Map).cast<String, dynamic>(),
+        'id': line['id'],
+      });
+
+  factory AiActionProposal.fromJson(Map<String, dynamic> json) =>
+      AiActionProposal(
+        id: '${json['id']}',
+        action: '${json['action']}',
+        messages: [for (final m in (json['messages'] as List)) '$m'],
+        reason: json['reason'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'action': action,
+    'messages': messages,
+    'reason': reason,
+  };
+}
+
 /// Fin d'un appel d'outil : [state] vaut `ok`, `denied` ou `error` ; [sources] sont les messages consultés, [deniedKind] le type de contenu refusé.
 class AiToolFinished extends AiChatEvent {
   final String id;

@@ -54,12 +54,13 @@ fn build(arguments: &str) -> Result<ActionProposal, String> {
         .reason
         .map(|text| text.trim().to_string())
         .filter(|text| !text.is_empty());
-    if let Some(text) = reason.as_deref() {
-        if text.contains(['\n', '\r']) || text.chars().count() > MAX_REASON_CHARS {
-            return Err(format!(
-                "la raison doit tenir sur une ligne de {MAX_REASON_CHARS} caractères au plus"
-            ));
-        }
+    let bad = reason
+        .as_deref()
+        .is_some_and(|text| text.contains(['\n', '\r']) || text.chars().count() > MAX_REASON_CHARS);
+    if bad {
+        return Err(format!(
+            "la raison doit tenir sur une ligne de {MAX_REASON_CHARS} caractères au plus"
+        ));
     }
     Ok(ActionProposal {
         action: args.action,

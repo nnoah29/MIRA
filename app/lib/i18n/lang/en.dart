@@ -543,6 +543,9 @@ const Map<String, String> enStrings = {
   'Conversation illisible': 'Unreadable conversation',
   'Cette conversation n’existe plus': 'This conversation no longer exists',
   'Attends la fin de la réponse': 'Wait for the reply to finish',
+  'Conserver l’historique des conversations': 'Keep conversation history',
+  'Effacer tout l’historique': 'Delete all history',
+  'Enregistre sur cet appareil le texte affiché des conversations. Les contenus envoyés au modèle en coulisses ne sont pas conservés.': 'Saves the displayed text of conversations on this device. Content sent to the model behind the scenes is not kept.',
   'Aucune conversation enregistrée': 'No saved conversations',
   'Conversation non enregistrée : nouvel essai au prochain message':
       'Conversation not saved: will retry with the next message',

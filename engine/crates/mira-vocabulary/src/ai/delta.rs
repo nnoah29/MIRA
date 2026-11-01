@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::content::ContentKind;
+use super::draft::DraftProposal;
 use super::tool::ToolState;
 
 /// Raison pour laquelle la réponse s'arrête ; un échec porte son code stable.
@@ -51,6 +52,10 @@ pub enum ChatDelta {
         results: u32,
         sources: Vec<String>,
         denied_kind: Option<ContentKind>,
+    },
+    DraftProposed {
+        id: String,
+        proposal: DraftProposal,
     },
     Done {
         reason: StopReason,

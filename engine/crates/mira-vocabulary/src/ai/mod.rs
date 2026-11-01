@@ -6,6 +6,7 @@ pub mod content;
 pub mod conversation;
 pub mod delta;
 pub mod descriptor;
+pub mod draft;
 pub mod error;
 pub mod journal;
 pub mod masking;

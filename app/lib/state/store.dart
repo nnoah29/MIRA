@@ -215,6 +215,7 @@ class MailStore extends ChangeNotifier {
     labelCounter = CounterMode.parse(prefs.getString('labelCounter'));
     accentHex = prefs.getString('accent');
     dense = prefs.getString('dense') == '1';
+    historyGrid = prefs.getString('historyView') == 'grid';
     htmlMode = HtmlMode.parse(prefs.getString('htmlMode'));
     live = prefs.getString('live') != '0';
     final extra = <Account>[];
@@ -398,6 +399,9 @@ class MailStore extends ChangeNotifier {
   }
 
   late bool dense, live;
+
+  /// Vrai quand l'historique des conversations s'affiche en grille de cartes (sinon en liste).
+  bool historyGrid = false;
   late HtmlMode htmlMode;
 
   /// Signature : celle de l'utilisateur, sinon la formule par défaut dans la langue active.
@@ -825,6 +829,9 @@ class MailStore extends ChangeNotifier {
       case 'dense':
         dense = v == '1';
         prefs.setString('dense', v);
+      case 'historyView':
+        historyGrid = v == 'grid';
+        prefs.setString('historyView', historyGrid ? 'grid' : 'list');
       case 'htmlMode':
         htmlMode = HtmlMode.parse(v);
         prefs.setString('htmlMode', htmlMode.code);

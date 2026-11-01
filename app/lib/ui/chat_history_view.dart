@@ -2,12 +2,11 @@
 
 import 'package:flutter/material.dart';
 
-import '../data/format.dart';
 import '../engine/ai_history_models.dart';
 import '../i18n/i18n.dart';
 import '../state/chat_history_state.dart';
-import '../state/chat_message_json.dart';
 import '../theme/app_theme.dart';
+import 'chat_history_card.dart';
 import 'chat_history_dialogs.dart';
 import 'widgets.dart';
 
@@ -16,6 +15,12 @@ class ChatHistoryView extends StatelessWidget {
   final ChatHistoryState state;
   final String? currentId;
   final bool busy;
+
+  /// Vrai : grille de cartes ; faux : liste.
+  final bool grid;
+
+  /// Choisit l'affichage en grille (`true`) ou en liste (`false`).
+  final ValueChanged<bool> onLayout;
 
   /// Reprend la conversation choisie (la vue ne sait pas où elle s'affiche ensuite).
   final Future<void> Function(String id) onOpen;
@@ -30,6 +35,8 @@ class ChatHistoryView extends StatelessWidget {
     required this.state,
     required this.currentId,
     required this.busy,
+    required this.grid,
+    required this.onLayout,
     required this.onOpen,
     required this.onCurrentRemoved,
     this.onSettings,
@@ -94,9 +101,69 @@ class ChatHistoryView extends StatelessWidget {
     ),
   );
 
+  Widget _layoutToggle() => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        IBtn(
+          'list',
+          key: const ValueKey('chat-history-layout-list'),
+          tip: t('Liste'),
+          on: !grid,
+          onTap: () => onLayout(false),
+        ),
+        const SizedBox(width: 4),
+        IBtn(
+          'grid',
+          key: const ValueKey('chat-history-layout-grid'),
+          tip: t('Grille'),
+          on: grid,
+          onTap: () => onLayout(true),
+        ),
+      ],
+    ),
+  );
+
+  Widget _grid(BuildContext context) => GridView.builder(
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+      maxCrossAxisExtent: 240,
+      mainAxisExtent: 132,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+    ),
+    itemCount: state.items.length,
+    itemBuilder: (_, i) {
+      final m = state.items[i];
+      return ChatHistoryCard(
+        m,
+        current: m.id == currentId,
+        busy: busy,
+        onOpen: () => onOpen(m.id),
+        onRename: () => _rename(context, m),
+        onDelete: () => _delete(context, m),
+      );
+    },
+  );
+
+  List<Widget> _rows(BuildContext context) => [
+    for (final m in state.items)
+      _Row(
+        m,
+        current: m.id == currentId,
+        busy: busy,
+        onOpen: () => onOpen(m.id),
+        onRename: () => _rename(context, m),
+        onDelete: () => _delete(context, m),
+      ),
+  ];
+
   Widget _list(BuildContext context, double hp) => ListView(
     padding: EdgeInsets.fromLTRB(hp, 8, hp, 24),
     children: [
+      _layoutToggle(),
       if (state.error != null)
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
@@ -106,15 +173,7 @@ class ChatHistoryView extends StatelessWidget {
             style: Fonts.sans(size: 13, color: context.pal.dim),
           ),
         ),
-      for (final m in state.items)
-        _Row(
-          m,
-          current: m.id == currentId,
-          busy: busy,
-          onOpen: () => onOpen(m.id),
-          onRename: () => _rename(context, m),
-          onDelete: () => _delete(context, m),
-        ),
+      if (grid) _grid(context) else ..._rows(context),
       _footer(context),
     ],
   );
@@ -154,23 +213,12 @@ class _Row extends StatelessWidget {
     children: [
       Text(
         meta.title,
-        maxLines: 1,
+        maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: Fonts.sans(size: 15, color: p.text),
       ),
-      const SizedBox(height: 2),
-      Row(
-        children: [
-          Mono(rowTime(meta.updatedAt.millisecondsSinceEpoch), height: null),
-          if (meta.payloadVersion != chatPayloadVersion) ...[
-            const SizedBox(width: 10),
-            KeyedSubtree(
-              key: ValueKey('chat-history-unreadable-${meta.id}'),
-              child: Mono(t('Illisible'), color: p.accent, height: null),
-            ),
-          ],
-        ],
-      ),
+      const SizedBox(height: 4),
+      ChatHistoryStamp(meta),
     ],
   );
 
@@ -185,8 +233,9 @@ class _Row extends StatelessWidget {
         opacity: busy ? .45 : 1,
         child: Container(
           key: current ? ValueKey('chat-history-current-${meta.id}') : null,
-          constraints: const BoxConstraints(minHeight: 48),
-          padding: const EdgeInsets.symmetric(vertical: 6),
+          constraints: const BoxConstraints(minHeight: 64),
+          margin: const EdgeInsets.only(bottom: 4),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: current
                 ? p.surface

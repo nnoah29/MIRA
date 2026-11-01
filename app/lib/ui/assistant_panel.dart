@@ -293,6 +293,9 @@ class _AssistantPanelState extends State<AssistantPanel> {
               state: s.history,
               currentId: s.chatCtl.conversationId,
               busy: s.busy,
+              grid: s.historyGrid,
+              onLayout: (grid) =>
+                  s.setSetting('historyView', grid ? 'grid' : 'list'),
               onOpen: (id) => _openConversation(s, id),
               onCurrentRemoved: s.chatCtl.startNew,
               onSettings: s.source == null

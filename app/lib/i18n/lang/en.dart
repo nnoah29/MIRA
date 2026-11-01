@@ -280,6 +280,7 @@ const Map<String, String> enStrings = {
   'Centrer': 'Center',
   'Lien': 'Link',
   'Liste': 'List',
+  'Grille': 'Grid',
   'Adresse du lien': 'Link address',
   'Annuler': 'Cancel',
   'OK': 'OK',

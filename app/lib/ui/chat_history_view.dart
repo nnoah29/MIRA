@@ -1,0 +1,224 @@
+//! Vue « Historique » du panneau assistant : conversations enregistrées, reprise, renommage, suppression.
+
+import 'package:flutter/material.dart';
+
+import '../data/format.dart';
+import '../engine/ai_history_models.dart';
+import '../i18n/i18n.dart';
+import '../state/chat_history_state.dart';
+import '../state/chat_message_json.dart';
+import '../theme/app_theme.dart';
+import 'chat_history_dialogs.dart';
+import 'widgets.dart';
+
+/// Liste des conversations enregistrées, plus récentes d'abord, avec « Afficher plus » et « Tout effacer ».
+class ChatHistoryView extends StatelessWidget {
+  final ChatHistoryState state;
+  final String? currentId;
+  final bool busy;
+
+  /// Reprend la conversation choisie (la vue ne sait pas où elle s'affiche ensuite).
+  final Future<void> Function(String id) onOpen;
+
+  /// La conversation ouverte vient d'être supprimée ou effacée : le fil doit repartir à neuf.
+  final VoidCallback onCurrentRemoved;
+
+  /// Ouvre les réglages (lien de l'état « historique désactivé »).
+  final VoidCallback? onSettings;
+  const ChatHistoryView({
+    super.key,
+    required this.state,
+    required this.currentId,
+    required this.busy,
+    required this.onOpen,
+    required this.onCurrentRemoved,
+    this.onSettings,
+  });
+
+  Future<void> _rename(BuildContext context, AiConversationMeta m) async {
+    final title = await showRenameDialog(context, m.title);
+    if (title != null && title != m.title) await state.rename(m.id, title);
+  }
+
+  Future<void> _delete(BuildContext context, AiConversationMeta m) async {
+    if (!await showDeleteDialog(context, m.title)) return;
+    await state.delete(m.id);
+    if (m.id == currentId) onCurrentRemoved();
+  }
+
+  Future<void> _clear(BuildContext context) async {
+    if (!await showClearHistoryDialog(context)) return;
+    await state.clearAll();
+    onCurrentRemoved();
+  }
+
+  Widget _empty(BuildContext context) {
+    final p = context.pal;
+    return Center(
+      key: const ValueKey('chat-history-empty'),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            state.enabled
+                ? t('Aucune conversation enregistrée')
+                : t('L’historique est désactivé'),
+            style: Fonts.sans(size: 14, color: p.dim),
+          ),
+          if (!state.enabled && onSettings != null) ...[
+            const SizedBox(height: 12),
+            Btn(label: t('Réglages'), onTap: onSettings),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _footer(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 16),
+    child: Row(
+      children: [
+        if (state.hasMore)
+          Btn(
+            key: const ValueKey('chat-history-more'),
+            label: t('Afficher plus'),
+            onTap: state.more,
+          ),
+        const Spacer(),
+        Btn(
+          key: const ValueKey('chat-history-clear'),
+          label: t('Tout effacer'),
+          onTap: () => _clear(context),
+        ),
+      ],
+    ),
+  );
+
+  Widget _list(BuildContext context, double hp) => ListView(
+    padding: EdgeInsets.fromLTRB(hp, 8, hp, 24),
+    children: [
+      if (state.error != null)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            state.error!,
+            key: const ValueKey('chat-history-error'),
+            style: Fonts.sans(size: 13, color: context.pal.dim),
+          ),
+        ),
+      for (final m in state.items)
+        _Row(
+          m,
+          current: m.id == currentId,
+          busy: busy,
+          onOpen: () => onOpen(m.id),
+          onRename: () => _rename(context, m),
+          onDelete: () => _delete(context, m),
+        ),
+      _footer(context),
+    ],
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final hp = MediaQuery.sizeOf(context).width <= 1100 ? 16.0 : 32.0;
+    return ListenableBuilder(
+      listenable: state,
+      builder: (context, _) {
+        if (!state.loaded) return const SizedBox.shrink();
+        if (state.items.isEmpty && state.error == null) return _empty(context);
+        return _list(context, hp);
+      },
+    );
+  }
+}
+
+class _Row extends StatelessWidget {
+  final AiConversationMeta meta;
+  final bool current;
+  final bool busy;
+  final VoidCallback onOpen;
+  final VoidCallback onRename;
+  final VoidCallback onDelete;
+  const _Row(
+    this.meta, {
+    required this.current,
+    required this.busy,
+    required this.onOpen,
+    required this.onRename,
+    required this.onDelete,
+  });
+
+  Widget _titles(Pal p) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        meta.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Fonts.sans(size: 15, color: p.text),
+      ),
+      const SizedBox(height: 2),
+      Row(
+        children: [
+          Mono(rowTime(meta.updatedAt.millisecondsSinceEpoch), height: null),
+          if (meta.payloadVersion != chatPayloadVersion) ...[
+            const SizedBox(width: 10),
+            KeyedSubtree(
+              key: ValueKey('chat-history-unreadable-${meta.id}'),
+              child: Mono(t('Illisible'), color: p.accent, height: null),
+            ),
+          ],
+        ],
+      ),
+    ],
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.pal;
+    return Hov(
+      key: ValueKey('chat-history-row-${meta.id}'),
+      onTap: busy ? null : onOpen,
+      tip: busy ? t('Attends la fin de la réponse') : null,
+      builder: (_, hover) => Opacity(
+        opacity: busy ? .45 : 1,
+        child: Container(
+          key: current ? ValueKey('chat-history-current-${meta.id}') : null,
+          constraints: const BoxConstraints(minHeight: 48),
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          decoration: BoxDecoration(
+            color: current
+                ? p.surface
+                : (hover && !busy ? p.surface.withValues(alpha: .5) : null),
+            border: Border(
+              bottom: BorderSide(color: p.lineSoft),
+              left: BorderSide(
+                color: current ? p.accent : Colors.transparent,
+                width: 2,
+              ),
+            ),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 12),
+              Expanded(child: _titles(p)),
+              IBtn(
+                'pen',
+                key: ValueKey('chat-history-rename-${meta.id}'),
+                tip: t('Renommer'),
+                onTap: onRename,
+              ),
+              IBtn(
+                'trash',
+                key: ValueKey('chat-history-delete-${meta.id}'),
+                tip: t('Supprimer'),
+                onTap: onDelete,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -542,6 +542,23 @@ const Map<String, String> enStrings = {
       'This conversation is too large to be saved',
   'Conversation illisible': 'Unreadable conversation',
   'Cette conversation n’existe plus': 'This conversation no longer exists',
+  'Attends la fin de la réponse': 'Wait for the reply to finish',
+  'Aucune conversation enregistrée': 'No saved conversations',
+  'Conversation non enregistrée : nouvel essai au prochain message':
+      'Conversation not saved: will retry with the next message',
+  'Effacer': 'Delete',
+  'Effacer tout l’historique ?': 'Delete the whole history?',
+  'Historique': 'History',
+  'Historique désactivé : cette conversation ne sera pas enregistrée':
+      'History is off: this conversation will not be saved',
+  'Illisible': 'Unreadable',
+  'L’historique est désactivé': 'History is turned off',
+  'Renommer la conversation': 'Rename conversation',
+  'Supprimer cette conversation ?': 'Delete this conversation?',
+  'Tout effacer': 'Delete all',
+  'Toutes les conversations enregistrées sont effacées de cet appareil.':
+      'All saved conversations are deleted from this device.',
+  '« {0} » est effacée de cet appareil.': '“{0}” is deleted from this device.',
   'Aucune clé enregistrée pour ce service d’IA':
       'No key saved for this AI service',
   'Choisis d’abord un modèle d’IA': 'First choose an AI model',

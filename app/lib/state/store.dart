@@ -173,7 +173,8 @@ class MailStore extends ChangeNotifier {
   }
 
   /// Conversations enregistrées : liste, interrupteur, effacement.
-  late final ChatHistoryState history = ChatHistoryState(() => historyAdmin);
+  late final ChatHistoryState history = ChatHistoryState(() => historyAdmin)
+    ..addListener(notifyListeners);
 
   late final ChatController chatCtl = ChatController(
     admin: () => aiAdmin,

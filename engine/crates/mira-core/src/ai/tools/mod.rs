@@ -18,6 +18,7 @@ mod messages;
 mod proposal;
 mod proposal_text;
 mod propose;
+mod propose_action;
 pub mod render;
 mod run;
 mod run_result;

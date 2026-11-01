@@ -1,5 +1,5 @@
 {
-  "contract": "1.5",
+  "contract": "1.6",
   "requests": {
     "account.add_account": {
       "domain": "account",
@@ -1703,7 +1703,7 @@
         ],
         "version": {
           "major": 1,
-          "minor": 5
+          "minor": 6
         }
       },
       "type": "contract_info"

@@ -1,6 +1,6 @@
 //! Exécution d'un appel d'outil : décision, lecture par la façade, résultat masqué puis borné et cadré.
 
-use mira_vocabulary::{ContentKind, DraftProposal, ToolCall, ToolState};
+use mira_vocabulary::{ActionProposal, ContentKind, DraftProposal, ToolCall, ToolState};
 
 use super::ending::Ending;
 use super::framing::frame_result;
@@ -25,6 +25,7 @@ pub(super) struct Finished {
     pub(super) denied: Option<ContentKind>,
     pub(super) sent: Option<ContentKind>,
     pub(super) proposal: Option<DraftProposal>,
+    pub(super) action: Option<ActionProposal>,
 }
 
 impl Finished {
@@ -38,6 +39,7 @@ impl Finished {
             denied: None,
             sent: None,
             proposal: None,
+            action: None,
         }
     }
 
@@ -77,6 +79,7 @@ fn proposed(plan: &ChatPlan, progress: &mut Progress, call: &ToolCall) -> Finish
         denied: None,
         sent: None,
         proposal: ran.proposal,
+        action: ran.action,
     }
 }
 
@@ -100,6 +103,7 @@ async fn run_known(
         sources: ran.sources,
         denied: None,
         proposal: None,
+        action: None,
     })
 }
 

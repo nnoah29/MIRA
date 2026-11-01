@@ -85,6 +85,11 @@ async fn announce_end(
         let proposed = ChatDelta::DraftProposed { id, proposal };
         guard.send(proposed).await.map_err(Ending::from)?;
     }
+    if let Some(proposal) = finished.action {
+        let id = call.id.clone();
+        let proposed = ChatDelta::ActionProposed { id, proposal };
+        guard.send(proposed).await.map_err(Ending::from)?;
+    }
     let end = ChatDelta::ToolFinished {
         id: call.id.clone(),
         state: finished.state,

@@ -6,7 +6,7 @@ use serde_json::Value;
 use super::render::{cut, one_line};
 use super::{
     compose_draft, edit_draft, get_message, get_thread, list_identities, list_mailboxes,
-    list_messages, search_messages,
+    list_messages, propose_action, search_messages,
 };
 
 const SUMMARY_CHARS: usize = 80;
@@ -27,7 +27,7 @@ pub fn specs() -> Vec<ToolSpec> {
 pub fn specs_for(mode: ChatMode) -> Vec<ToolSpec> {
     let mut all = specs();
     match mode {
-        ChatMode::Assistant => all.push(compose_draft::spec()),
+        ChatMode::Assistant => all.extend([compose_draft::spec(), propose_action::spec()]),
         ChatMode::Composer { selection } => all.push(edit_draft::spec(selection)),
     }
     all
@@ -35,7 +35,7 @@ pub fn specs_for(mode: ChatMode) -> Vec<ToolSpec> {
 
 /// Dit si l'outil est une proposition de brouillon : il n'envoie rien au service et n'exige aucun type de contenu.
 pub fn is_proposal(name: &str) -> bool {
-    name == compose_draft::NAME || name == edit_draft::NAME
+    [compose_draft::NAME, edit_draft::NAME, propose_action::NAME].contains(&name)
 }
 
 /// Type de contenu que renvoie l'outil, ou rien s'il est inconnu.
@@ -51,10 +51,10 @@ pub fn kind_of(name: &str) -> Option<ContentKind> {
 /// Extrait d'argument à montrer à l'utilisateur (la requête saisie par le modèle), sur une ligne.
 pub fn summary_of(call: &ToolCall) -> String {
     let arguments: Option<Value> = serde_json::from_str(&call.arguments).ok();
-    let key = if is_proposal(&call.name) {
-        "subject"
-    } else {
-        "query"
+    let key = match call.name.as_str() {
+        propose_action::NAME => "reason",
+        name if is_proposal(name) => "subject",
+        _ => "query",
     };
     let query = arguments
         .as_ref()

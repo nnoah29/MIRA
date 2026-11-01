@@ -1,5 +1,6 @@
 //! Vocabulaire de l'assistant IA : fournisseurs, requêtes, deltas, modèles, connexions, erreurs.
 
+pub mod action;
 pub mod chat;
 pub mod connection;
 pub mod content;

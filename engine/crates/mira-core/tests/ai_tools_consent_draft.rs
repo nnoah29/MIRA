@@ -7,7 +7,7 @@ use mira_vocabulary::ContentKind;
 /// Sur une connexion distante sans aucun type autorisé, une proposition passe
 #[test]
 fn proposal_tools_need_no_authorized_kind() {
-    for name in ["compose_draft", "edit_draft"] {
+    for name in ["compose_draft", "edit_draft", "propose_mailbox_action"] {
         assert_eq!(
             decide_call(false, &[], name),
             ToolDecision::Proposal,

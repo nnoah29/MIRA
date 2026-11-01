@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::action::ActionProposal;
 use super::content::ContentKind;
 use super::draft::DraftProposal;
 use super::tool::ToolState;
@@ -56,6 +57,10 @@ pub enum ChatDelta {
     DraftProposed {
         id: String,
         proposal: DraftProposal,
+    },
+    ActionProposed {
+        id: String,
+        proposal: ActionProposal,
     },
     Done {
         reason: StopReason,

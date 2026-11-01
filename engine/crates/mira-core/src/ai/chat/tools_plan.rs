@@ -2,14 +2,17 @@
 
 use mira_vocabulary::{ChatMode, ChatRequest};
 
-use super::framing::{COMPOSE_NOTICE, TOOLS_NOTICE};
+use super::framing::{ACTION_NOTICE, COMPOSE_NOTICE, TOOLS_NOTICE};
 use crate::ai::tools::specs_for;
 
 /// Annonce les outils du mode et les consignes qui les encadrent, ou aucun si `enabled` est faux.
 pub(super) fn with_tools(mut request: ChatRequest, enabled: bool, mode: ChatMode) -> ChatRequest {
     request.tools = if enabled { specs_for(mode) } else { Vec::new() };
     if enabled {
-        let notice = format!("{TOOLS_NOTICE}\n\n{COMPOSE_NOTICE}");
+        let actions = matches!(mode, ChatMode::Assistant)
+            .then(|| format!("\n\n{ACTION_NOTICE}"))
+            .unwrap_or_default();
+        let notice = format!("{TOOLS_NOTICE}\n\n{COMPOSE_NOTICE}{actions}");
         request.system = Some(match request.system.take() {
             Some(system) => format!("{system}\n\n{notice}"),
             None => notice,

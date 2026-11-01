@@ -29,3 +29,13 @@ pub fn edit(mode: ChatMode, arguments: Value) -> ToolRun {
     };
     propose(mode, &call)
 }
+
+/// Appelle `propose_mailbox_action` en mode assistant.
+pub fn action(arguments: Value) -> ToolRun {
+    let call = ToolCall {
+        id: "c1".to_string(),
+        name: "propose_mailbox_action".to_string(),
+        arguments: arguments.to_string(),
+    };
+    propose(ChatMode::Assistant, &call)
+}

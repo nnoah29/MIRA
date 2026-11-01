@@ -3,6 +3,7 @@
 pub mod chat;
 pub mod connection;
 pub mod content;
+pub mod conversation;
 pub mod delta;
 pub mod descriptor;
 pub mod error;

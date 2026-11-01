@@ -36,3 +36,5 @@ pub const AI_MODEL: ErrorCode = ErrorCode("not_found.ai_model");
 pub const AI_CONNECTION: ErrorCode = ErrorCode("not_found.ai_connection");
 /// Fournisseur d'IA inconnu du catalogue.
 pub const AI_PROVIDER: ErrorCode = ErrorCode("not_found.ai_provider");
+/// Conversation d'IA enregistrée inconnue.
+pub const AI_CONVERSATION: ErrorCode = ErrorCode("not_found.ai_conversation");

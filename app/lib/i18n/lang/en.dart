@@ -578,6 +578,8 @@ const Map<String, String> enStrings = {
   'Le service d’IA limite le nombre de requêtes : réessaie plus tard':
       'The AI service is limiting requests: try again later',
   'Service d’IA indisponible': 'AI service unavailable',
+  'Crédit ou quota du service d’IA épuisé':
+      'AI service credit or quota exhausted',
   'Cette règle apparaît déjà plus haut dans le fichier':
       'This rule already appears earlier in the file',
   'Fichier YAML invalide': 'Invalid YAML file',

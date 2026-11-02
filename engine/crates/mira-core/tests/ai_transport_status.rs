@@ -39,11 +39,12 @@ fn map_status_table() {
         (500, AiError::Unavailable),
         (502, AiError::Unavailable),
         (599, AiError::Unavailable),
-        (402, AiError::BadResponse),
-        (405, AiError::BadResponse),
-        (418, AiError::BadResponse),
-        (302, AiError::BadResponse),
-        (200, AiError::BadResponse),
+        (402, AiError::QuotaExhausted),
+        (408, AiError::Unavailable),
+        (405, AiError::UnexpectedStatus { status: 405 }),
+        (418, AiError::UnexpectedStatus { status: 418 }),
+        (302, AiError::UnexpectedStatus { status: 302 }),
+        (200, AiError::UnexpectedStatus { status: 200 }),
     ];
     for (code, expected) in table {
         assert_eq!(map_status(code, None), expected, "{code}");

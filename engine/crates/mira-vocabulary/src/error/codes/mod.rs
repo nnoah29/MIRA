@@ -90,6 +90,7 @@ pub const ALL: &[ErrorCode] = &[
     server::AI_RATE_LIMITED,
     server::AI_UNAVAILABLE,
     server::AI_BAD_RESPONSE,
+    server::AI_QUOTA_EXHAUSTED,
     local_storage::DISK_FULL,
     local_storage::CORRUPTED,
     local_storage::MIGRATION_REQUIRED,

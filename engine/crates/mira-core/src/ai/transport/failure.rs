@@ -13,7 +13,8 @@ pub fn map_status(status: u16, retry_after: Option<&str>) -> AiError {
             retry_after_secs: retry_after.and_then(parse_retry_after),
         },
         400 | 413 | 422 => AiError::InputTooLarge,
-        500..=599 => AiError::Unavailable,
-        _ => AiError::BadResponse,
+        402 => AiError::QuotaExhausted,
+        408 | 500..=599 => AiError::Unavailable,
+        other => AiError::UnexpectedStatus { status: other },
     }
 }

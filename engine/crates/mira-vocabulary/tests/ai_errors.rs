@@ -9,7 +9,7 @@ use mira_vocabulary::error::codes::{
 use mira_vocabulary::{AiError, ErrorCode, EventCategory, EventKind, MiraError, OperationId};
 
 /// Table attendue : chaque variante d'`AiError` et son code stable.
-fn table() -> [(AiError, ErrorCode); 9] {
+fn table() -> [(AiError, ErrorCode); 11] {
     [
         (AiError::KeyRejected, authentication::AI_KEY_REJECTED),
         (AiError::ModelNotFound, not_found::AI_MODEL),
@@ -23,6 +23,11 @@ fn table() -> [(AiError, ErrorCode); 9] {
         (AiError::UrlInvalid, invalid_input::AI_URL_INVALID),
         (AiError::Unavailable, server::AI_UNAVAILABLE),
         (AiError::BadResponse, server::AI_BAD_RESPONSE),
+        (
+            AiError::UnexpectedStatus { status: 405 },
+            server::AI_BAD_RESPONSE,
+        ),
+        (AiError::QuotaExhausted, server::AI_QUOTA_EXHAUSTED),
         (
             AiError::ConsentRequired,
             incompatible_state::AI_CONSENT_REQUIRED,

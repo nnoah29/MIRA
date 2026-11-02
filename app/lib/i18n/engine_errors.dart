@@ -110,6 +110,7 @@ const engineErrorTexts = <String, String>{
   'secrets.secret_missing':
       'Mot de passe introuvable dans le trousseau : saisis-le à nouveau',
   'server.ai_bad_response': 'Réponse inattendue du service d’IA',
+  'server.ai_quota_exhausted': 'Crédit ou quota du service d’IA épuisé',
   'server.ai_rate_limited':
       'Le service d’IA limite le nombre de requêtes : réessaie plus tard',
   'server.ai_unavailable': 'Service d’IA indisponible',

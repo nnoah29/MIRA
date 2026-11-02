@@ -22,3 +22,5 @@ pub const AI_RATE_LIMITED: ErrorCode = ErrorCode("server.ai_rate_limited");
 pub const AI_UNAVAILABLE: ErrorCode = ErrorCode("server.ai_unavailable");
 /// Réponse du service d'IA non conforme au format attendu.
 pub const AI_BAD_RESPONSE: ErrorCode = ErrorCode("server.ai_bad_response");
+/// Crédit ou quota du service d'IA épuisé.
+pub const AI_QUOTA_EXHAUSTED: ErrorCode = ErrorCode("server.ai_quota_exhausted");

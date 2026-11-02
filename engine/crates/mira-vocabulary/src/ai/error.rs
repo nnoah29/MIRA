@@ -24,6 +24,10 @@ pub enum AiError {
     Unavailable,
     #[error("réponse inattendue du service d'IA")]
     BadResponse,
+    #[error("réponse inattendue du service d'IA")]
+    UnexpectedStatus { status: u16 },
+    #[error("crédit ou quota du service d'IA épuisé")]
+    QuotaExhausted,
     #[error("consentement requis avant d'envoyer du texte au service d'IA")]
     ConsentRequired,
     #[error("ce type de contenu n'est pas autorisé pour ce service d'IA")]
@@ -42,7 +46,8 @@ impl AiError {
             Self::InputTooLarge => invalid_input::AI_INPUT_TOO_LARGE,
             Self::UrlInvalid => invalid_input::AI_URL_INVALID,
             Self::Unavailable => server::AI_UNAVAILABLE,
-            Self::BadResponse => server::AI_BAD_RESPONSE,
+            Self::BadResponse | Self::UnexpectedStatus { .. } => server::AI_BAD_RESPONSE,
+            Self::QuotaExhausted => server::AI_QUOTA_EXHAUSTED,
             Self::ConsentRequired => incompatible_state::AI_CONSENT_REQUIRED,
             Self::ContentNotAllowed => incompatible_state::AI_CONTENT_NOT_ALLOWED,
             Self::Cancelled => cancelled::BY_USER,
@@ -54,9 +59,11 @@ impl AiError {
         match self {
             Self::KeyRejected => ErrorCategory::Authentication,
             Self::ModelNotFound => ErrorCategory::NotFound,
-            Self::RateLimited { .. } | Self::Unavailable | Self::BadResponse => {
-                ErrorCategory::Server
-            }
+            Self::RateLimited { .. }
+            | Self::Unavailable
+            | Self::BadResponse
+            | Self::UnexpectedStatus { .. }
+            | Self::QuotaExhausted => ErrorCategory::Server,
             Self::InputTooLarge | Self::UrlInvalid => ErrorCategory::InvalidInput,
             Self::ConsentRequired | Self::ContentNotAllowed => ErrorCategory::IncompatibleState,
             Self::Cancelled => ErrorCategory::Cancelled,

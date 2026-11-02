@@ -19,6 +19,8 @@ import '../engine/engine_settings_admin.dart';
 import '../engine/label_admin.dart';
 import '../engine/label_settings_admin.dart';
 import '../engine/local_label_admin.dart';
+import 'attachment_mention.dart';
+import 'draft_ai_request.dart';
 import 'local_label_migration.dart';
 import 'local_labels.dart';
 import 'label_query.dart';
@@ -84,6 +86,9 @@ class ComposeState {
 
   /// L'expéditeur a été choisi à la main : le brouillon existe même sans autre contenu.
   bool fromChosen = false;
+
+  /// Envoi retenu parce que le texte annonce une pièce jointe absente : (programmation, heure) à rejouer.
+  (String?, int?)? attachAsk;
 
   /// Le dernier enregistrement au moteur a échoué : sa copie n'est plus celle de l'écran.
   bool pushFailed = false;
@@ -3124,6 +3129,7 @@ class MailStore extends ChangeNotifier {
     final cs = c;
     if (cs == null) return;
     cs.dirty = true;
+    cs.attachAsk = null;
     cs.saved = t('Enregistrement…');
     cs.timer?.cancel();
     cs.timer = Timer(const Duration(milliseconds: 1200), () {
@@ -3548,7 +3554,19 @@ class MailStore extends ChangeNotifier {
     toast(had != null ? t('Brouillon supprimé') : t('Message abandonné'));
   }
 
-  Future<void> send([String? sched, int? at]) async {
+  /// Le texte écrit (signature et citation exclues) ou l'objet annonce une pièce jointe, et aucune n'est jointe.
+  bool _forgotAttachment(ComposeState cs) =>
+      cs.atts.isEmpty &&
+      (mentionsAttachment(bodyBeforeSignature(cs)) ||
+          mentionsAttachment(cs.subject.text));
+
+  /// Envoie malgré l'avertissement de pièce jointe oubliée, avec la programmation demandée au départ.
+  Future<void> sendAnyway() {
+    final ask = c?.attachAsk;
+    return send(ask?.$1, ask?.$2, true);
+  }
+
+  Future<void> send([String? sched, int? at, bool anyway = false]) async {
     final cs = c;
     if (cs == null) return;
     if (cs.to.isEmpty) {
@@ -3557,6 +3575,12 @@ class MailStore extends ChangeNotifier {
       toast(t('Ajoute au moins un destinataire'), err: true);
       return;
     }
+    if (!anyway && _forgotAttachment(cs)) {
+      cs.attachAsk = (sched, at);
+      notifyListeners();
+      return;
+    }
+    cs.attachAsk = null;
     if (source != null) return _sendReal(cs, sched, at);
     cs.timer?.cancel();
     final blocks = [...cs.body.toBlocks(), ...?cs.quote];

@@ -2192,6 +2192,71 @@ void main() {
       store.dispose();
     });
 
+    test(
+      'un texte qui annonce une pièce jointe sans en avoir retient l\'envoi',
+      () async {
+        final (store, fake) = await start();
+        store.c!.body.setContent('Voir le devis ci-joint', List.filled(22, 0));
+        await store.send();
+        expect(fake.composed.where((c) => c['op'] == 'send_draft'), isEmpty);
+        expect(store.c, isNotNull);
+        expect(store.c!.attachAsk, isNotNull);
+        await store.sendAnyway();
+        expect(last(fake, 'send_draft')['draft'], 'dr1');
+        expect(store.c, isNull);
+        store.dispose();
+      },
+    );
+
+    test('avec une pièce jointe, l\'envoi part sans avertissement', () async {
+      final (store, fake) = await start();
+      store.c!.body.setContent('Voir le devis ci-joint', List.filled(22, 0));
+      store.c!.atts.add(Attachment('devis.pdf', 'PDF', '9'));
+      await store.send();
+      expect(last(fake, 'send_draft')['draft'], 'dr1');
+      expect(store.c, isNull);
+      store.dispose();
+    });
+
+    test(
+      'la signature ne compte pas comme une mention de pièce jointe',
+      () async {
+        final (store, fake) = await start();
+        const sig = 'Noah, voir PJ';
+        store.c!.body.setContent(
+          'Bonjour\n\n$sig',
+          List.filled(15 + sig.length - 2, 0),
+        );
+        store.c!.sigText = sig;
+        await store.send();
+        expect(last(fake, 'send_draft')['draft'], 'dr1');
+        store.dispose();
+      },
+    );
+
+    test('modifier le message lève l\'avertissement', () async {
+      final (store, _) = await start();
+      store.c!.body.setContent('Voir le devis ci-joint', List.filled(22, 0));
+      await store.send();
+      expect(store.c!.attachAsk, isNotNull);
+      store.touch();
+      expect(store.c!.attachAsk, isNull);
+      store.dispose();
+    });
+
+    test(
+      'un envoi programmé est retenu aussi, puis repart avec son horaire',
+      () async {
+        final (store, fake) = await start();
+        store.c!.body.setContent('Voir le devis ci-joint', List.filled(22, 0));
+        await store.send('Demain 08:00', 4102444800000);
+        expect(fake.composed.where((c) => c['op'] == 'send_draft'), isEmpty);
+        await store.sendAnyway();
+        expect(last(fake, 'send_draft')['at'], 4102444800000);
+        store.dispose();
+      },
+    );
+
     test('envoyer met le brouillon en file puis ferme la rédaction', () async {
       final (store, fake) = await start();
       await store.send();

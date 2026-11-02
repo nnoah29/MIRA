@@ -285,6 +285,9 @@ const Map<String, String> enStrings = {
   'Annuler': 'Cancel',
   'OK': 'OK',
   'Joindre un fichier': 'Attach a file',
+  'Ton message parle d’une pièce jointe, mais aucun fichier n’est joint.':
+      'Your message mentions an attachment, but no file is attached.',
+  'Envoyer quand même': 'Send anyway',
   'Supprimer le brouillon': 'Delete draft',
   'Programmer': 'Schedule',
   'Programmer l’envoi': 'Schedule sending',

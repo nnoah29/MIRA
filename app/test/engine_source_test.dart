@@ -26,6 +26,7 @@ class FakeEngine implements EngineClient {
   bool labelOnly = false;
   bool serverCopy = false;
   bool failActions = false;
+  bool failDraftUpdate = false;
   String outboxState = 'pending';
   final searches = <String>[];
   final limits = <int>[];
@@ -279,6 +280,9 @@ class FakeEngine implements EngineClient {
         };
         return _write('draft', drafts['dr1']);
       case 'compose.update_draft':
+        if (failDraftUpdate) {
+          throw const EngineException('invalid_input.address', 'refusé');
+        }
         composed.add({'op': r['op'], ...r});
         drafts[r['draft']]!.addAll((r['changes'] as Map).cast());
         return {'type': 'done'};
@@ -2147,6 +2151,28 @@ void main() {
       await store.c!.push;
       expect(fake.composed.where((c) => c['op'] == 'create_draft').length, 1);
       expect(fake.composed.where((c) => c['op'] == 'update_draft').length, 2);
+      store.dispose();
+    });
+
+    test('envoyer ne part pas avec une version périmée si le dernier enregistrement a échoué', () async {
+      final (store, fake) = await start();
+      store.c!.dirty = true;
+      store.saveDraft();
+      await store.c!.push;
+      expect(fake.drafts['dr1']!['to'], [
+        {'name': 'Bob', 'address': 'bob@example.org'},
+      ]);
+      store.c!.to
+        ..clear()
+        ..add(const Person('Carol', 'carol@example.org'));
+      fake.failDraftUpdate = true;
+      await store.send();
+      expect(
+        fake.composed.where((c) => c['op'] == 'send_draft'),
+        isEmpty,
+        reason: 'le moteur aurait envoyé à bob@example.org',
+      );
+      expect(store.c, isNotNull);
       store.dispose();
     });
 

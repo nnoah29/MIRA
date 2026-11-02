@@ -85,6 +85,9 @@ class ComposeState {
   /// L'expéditeur a été choisi à la main : le brouillon existe même sans autre contenu.
   bool fromChosen = false;
 
+  /// Le dernier enregistrement au moteur a échoué : sa copie n'est plus celle de l'écran.
+  bool pushFailed = false;
+
   /// Brouillon correspondant dans le moteur (`null` : pas encore créé).
   String? engineId;
 
@@ -3401,6 +3404,7 @@ class MailStore extends ChangeNotifier {
   void _queuePush(ComposeState cs) {
     if (source?.composer == null) return;
     cs.push = cs.push.then((_) => _pushDraft(cs)).catchError((_) {
+      cs.pushFailed = true;
       cs.saved = t('Enregistrement impossible');
       notifyListeners();
     });
@@ -3450,6 +3454,7 @@ class MailStore extends ChangeNotifier {
     );
     await _syncAttachments(cs, admin);
     cs.copyStale = true;
+    cs.pushFailed = false;
   }
 
   /// En quittant la rédaction : le brouillon est copié dans « Brouillons » sur le serveur.
@@ -3644,7 +3649,9 @@ class MailStore extends ChangeNotifier {
       saveDraft();
       await cs.push;
       final id = cs.engineId;
-      if (id == null) throw const EngineException('draft_missing', '');
+      if (id == null || cs.pushFailed) {
+        throw const EngineException('draft_missing', '');
+      }
       final action = await admin.send(
         id,
         at: sched == null ? null : when ?? scheduledMs(sched),

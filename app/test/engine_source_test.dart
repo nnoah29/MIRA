@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mira/data/html_lite.dart';
 import 'package:mira/data/models.dart';
@@ -2173,6 +2174,21 @@ void main() {
         reason: 'le moteur aurait envoyé à bob@example.org',
       );
       expect(store.c, isNotNull);
+      store.dispose();
+    });
+
+    test('un enregistrement refusé est journalisé avec sa raison', () async {
+      final (store, fake) = await start();
+      final lines = <String>[];
+      final previous = debugPrint;
+      debugPrint = (String? m, {int? wrapWidth}) => lines.add('$m');
+      addTearDown(() => debugPrint = previous);
+      fake.failDraftUpdate = true;
+      store.c!.dirty = true;
+      store.saveDraft();
+      await store.c!.push;
+      expect(store.c!.saved, 'Enregistrement impossible');
+      expect(lines.join('\n'), contains('invalid_input.address'));
       store.dispose();
     });
 

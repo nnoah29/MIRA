@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart' show Uint8List, setEquals;
+import 'package:flutter/foundation.dart' show Uint8List, debugPrint, setEquals;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -3403,7 +3403,8 @@ class MailStore extends ChangeNotifier {
   /// Met l'enregistrement au moteur à la suite des précédents (jamais deux en même temps).
   void _queuePush(ComposeState cs) {
     if (source?.composer == null) return;
-    cs.push = cs.push.then((_) => _pushDraft(cs)).catchError((_) {
+    cs.push = cs.push.then((_) => _pushDraft(cs)).catchError((Object error) {
+      debugPrint('Enregistrement du brouillon refusé : $error');
       cs.pushFailed = true;
       cs.saved = t('Enregistrement impossible');
       notifyListeners();
@@ -3657,7 +3658,8 @@ class MailStore extends ChangeNotifier {
         at: sched == null ? null : when ?? scheduledMs(sched),
       );
       _afterSend(cs, id, action, sched, when);
-    } catch (_) {
+    } catch (error) {
+      debugPrint('Envoi refusé : $error');
       toast(t('Envoi impossible, le message reste en brouillon'), err: true);
     } finally {
       _sending = false;

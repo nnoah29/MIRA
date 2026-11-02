@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../data/email_address.dart';
 import '../data/format.dart';
 import '../data/models.dart';
 import '../state/draft_ai_controller.dart';
@@ -928,12 +929,11 @@ class _RecipientBoxState extends State<RecipientBox> {
 
   bool _add(String v, {bool refocus = false}) {
     final cleaned = v.trim().replaceAll(RegExp(r'[,;]+$'), '');
-    final m = _emailRe.firstMatch(cleaned);
-    if (m == null) {
+    final em = _emailRe.firstMatch(cleaned)?.group(0);
+    if (em == null || !isEngineAddress(em)) {
       setState(() => bad = true);
       return false;
     }
-    final em = m.group(0)!;
     Person? known;
     for (final c in context.read<MailStore>().contactPeople()) {
       if (c.email.toLowerCase() == em.toLowerCase()) known = c;

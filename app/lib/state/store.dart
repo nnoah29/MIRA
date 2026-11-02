@@ -3404,7 +3404,7 @@ class MailStore extends ChangeNotifier {
   void _queuePush(ComposeState cs) {
     if (source?.composer == null) return;
     cs.push = cs.push.then((_) => _pushDraft(cs)).catchError((Object error) {
-      debugPrint('Enregistrement du brouillon refusé : $error');
+      debugPrint('Draft save refused: $error');
       cs.pushFailed = true;
       cs.saved = t('Enregistrement impossible');
       notifyListeners();
@@ -3659,7 +3659,7 @@ class MailStore extends ChangeNotifier {
       );
       _afterSend(cs, id, action, sched, when);
     } catch (error) {
-      debugPrint('Envoi refusé : $error');
+      debugPrint('Send refused: $error');
       toast(t('Envoi impossible, le message reste en brouillon'), err: true);
     } finally {
       _sending = false;

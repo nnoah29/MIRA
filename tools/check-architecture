@@ -10,7 +10,8 @@ Vérifie, à partir de `cargo metadata` et des sources :
   A6  aucun nom de provider ni de fournisseur (mail ou IA) dans les sources de mira-core (invariant 1) ;
   A7  aucun chargement dynamique (libloading, dlopen) dans le workspace (D-02) ;
   A8  chaque bibliothèque externe n'est utilisée que dans son module d'encapsulation du cœur (invariant 5, annexe H) ;
-  A9  aucune notion d'écran ou de widget dans le cœur (invariant 4).
+  A9  aucune notion d'écran ou de widget dans le cœur (invariant 4) ;
+  A10 mira-host ne dépend d'aucun provider (mira-provider-*, mira-ai-*), même en dev : il passe par mira-assembly.
 
 Usage : check-architecture <dossier-du-workspace>
 """
@@ -77,6 +78,9 @@ def check_packages(packages):
             for bad in mira_every:
                 if bad.startswith(("mira-provider-", "mira-ai-")) or bad == "mira-assembly":
                     errors.append(f"A3 mira-core dépend de {bad}")
+        elif name == "mira-host":
+            for bad in {d for d in mira_every if d.startswith(("mira-provider-", "mira-ai-"))}:
+                errors.append(f"A10 mira-host dépend de {bad} (il passe par mira-assembly)")
         elif name == "mira-testkit":
             for bad in {d for d in normal if d.startswith("mira-")}:
                 errors.append(f"A5 mira-testkit dépend de {bad}")

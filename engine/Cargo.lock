@@ -1406,6 +1406,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "mira-host"
+version = "0.1.0"
+dependencies = [
+ "mira-assembly",
+ "mira-testkit",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
 name = "mira-provider-generic"
 version = "0.1.0"
 dependencies = [

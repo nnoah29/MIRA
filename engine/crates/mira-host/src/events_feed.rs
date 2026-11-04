@@ -4,7 +4,7 @@ use mira_assembly::api::{Engine, EventRequest, Request, Response};
 use mira_assembly::mira_vocabulary::{EventFilter, EventSeq};
 use serde_json::to_value;
 
-use crate::session::current;
+use crate::Host;
 
 /// Numéro du dernier événement déjà enregistré (`None` si le journal est vide).
 async fn latest_seq(engine: &Engine) -> Option<EventSeq> {
@@ -29,8 +29,8 @@ async fn latest_seq(engine: &Engine) -> Option<EventSeq> {
 }
 
 /// Envoie chaque événement (JSON) à `emit` ; sans `after`, seuls les événements futurs sont livrés (pas de rejeu du journal).
-pub async fn pump_events(after: Option<u64>, mut emit: impl FnMut(String) -> bool) {
-    let Some(engine) = current() else { return };
+pub async fn pump_events(host: &Host, after: Option<u64>, mut emit: impl FnMut(String) -> bool) {
+    let Some(engine) = host.engine() else { return };
     let start = match after {
         Some(seq) => Some(EventSeq(seq)),
         None => latest_seq(&engine).await,

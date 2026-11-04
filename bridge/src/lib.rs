@@ -3,7 +3,6 @@
 
 pub mod api;
 pub mod chat_feed;
-pub mod events_feed;
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 mod frb_generated;
 pub mod original_html;

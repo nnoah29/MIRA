@@ -1409,6 +1409,8 @@ dependencies = [
 name = "mira-host"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
+ "mail-parser",
  "mira-assembly",
  "mira-testkit",
  "ring",

@@ -10,6 +10,7 @@ mod import;
 mod import_apply;
 mod import_file;
 mod import_file_one;
+mod import_file_settings;
 mod list;
 mod recolor;
 mod rename;

@@ -124,7 +124,7 @@ class LocalLabelAdmin {
     );
   }
 
-  /// Les libellés en texte YAML portable (nom et couleur), pour un fichier.
+  /// Les libellés en texte YAML portable (nom, couleur et réglages), pour un fichier.
   Future<String> exportLabelsFile() async {
     final r = await _send('export_local_labels_file') as Map;
     return r['yaml'] as String;

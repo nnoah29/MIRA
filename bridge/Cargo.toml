@@ -20,10 +20,10 @@ panic = "deny"
 
 [dependencies]
 mira-assembly = { path = "../engine/crates/mira-assembly" }
+mira-host = { path = "../engine/crates/mira-host" }
 flutter_rust_bridge = "=2.11.1"
 serde_json = "1"
 base64 = "0.22"
-ring = "0.17"
 mail-parser = "0.11"
 tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "sync", "time"] }
 

@@ -3,13 +3,11 @@
 
 pub mod api;
 pub mod chat_feed;
-pub mod envelope;
 pub mod events_feed;
-pub mod file_secrets;
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 mod frb_generated;
 pub mod original_html;
-pub mod platform;
-pub mod polling;
 pub mod runtime;
 pub mod session;
+
+pub use mira_host::{envelope, file_secrets, platform, polling};

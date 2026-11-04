@@ -1411,6 +1411,7 @@ version = "0.1.0"
 dependencies = [
  "mira-assembly",
  "mira-testkit",
+ "ring",
  "serde_json",
  "tempfile",
  "tokio",

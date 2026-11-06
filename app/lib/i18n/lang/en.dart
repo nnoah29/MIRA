@@ -1351,4 +1351,9 @@ const Map<String, String> enStrings = {
   'masqué': 'masked',
   'masqués': 'masked',
   '{0} → {1} jetons': '{0} → {1} tokens',
+  'Connexion au moteur en arrière-plan perdue':
+      'Lost the connection to the background engine',
+  'Moteur en arrière-plan injoignable': 'Background engine unreachable',
+  'Le moteur en arrière-plan est détaché':
+      'The background engine is detached',
 };

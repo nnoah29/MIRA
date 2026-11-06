@@ -99,6 +99,9 @@ class RemoteConnection {
   /// Aboutit à la fermeture de la connexion, quelle qu'en soit la cause.
   Future<void> get closed => _closed.future;
 
+  /// Vrai une fois la connexion fermée.
+  bool get isClosed => _closed.isCompleted;
+
   /// Envoie une trame portant un `id` et rend la trame `result` de même `id`.
   Future<Map<String, dynamic>> request(Map<String, dynamic> frame) {
     if (_closed.isCompleted) {

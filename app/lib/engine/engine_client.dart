@@ -37,8 +37,11 @@ abstract interface class ChatStreamingClient {
 }
 
 /// Ouvre l'enveloppe `{ok, data | error}` ; lève [EngineException] si `ok` est faux.
-Map<String, dynamic> openEnvelope(String json) {
-  final env = jsonDecode(json) as Map<String, dynamic>;
+Map<String, dynamic> openEnvelope(String json) =>
+    openEnvelopeMap(jsonDecode(json) as Map<String, dynamic>);
+
+/// Comme [openEnvelope], pour une enveloppe déjà décodée.
+Map<String, dynamic> openEnvelopeMap(Map<String, dynamic> env) {
   if (env['ok'] == true) {
     final data = env['data'];
     return data is Map<String, dynamic> ? data : <String, dynamic>{};

@@ -25,6 +25,12 @@ pub fn start(
         Err(error) if error.kind() == std::io::ErrorKind::AddrInUse => {
             return Err(say_error("un démon écoute déjà sur cette socket", 3));
         }
+        Err(error) if error.kind() == std::io::ErrorKind::PermissionDenied => {
+            return Err(say_error(
+                "le dossier de la socket est ouvert à d'autres utilisateurs",
+                1,
+            ));
+        }
         Err(_) => return Err(say_error("socket Unix inutilisable", 1)),
     }
     if let Some(port) = config.tcp_port {

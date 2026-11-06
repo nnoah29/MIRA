@@ -3,6 +3,7 @@
 use std::process::ExitCode;
 use std::sync::Arc;
 
+use mira_assembly::mira_vocabulary::error::codes::incompatible_state;
 use mira_host::Host;
 use mira_protocol::HostState;
 use serde_json::Value;
@@ -11,9 +12,6 @@ use crate::config::DaemonConfig;
 use crate::report::{say, say_error};
 use crate::server::ServerContext;
 use crate::{listen, setup, shutdown, signals};
-
-/// Code d'erreur du moteur quand un autre moteur tient déjà le profil (D-27).
-const PROFILE_LOCKED: &str = "incompatible_state.profile_locked";
 
 /// Fait vivre le démon jusqu'à son arrêt et rend le code de sortie.
 pub async fn run(config: DaemonConfig) -> ExitCode {
@@ -41,7 +39,7 @@ async fn serve_until_stopped(
 ) -> ExitCode {
     let opened: Value = serde_json::from_str(&ctx.host.open(engine)).unwrap_or(Value::Null);
     if opened["ok"] != true {
-        return if opened["error"]["code"] == PROFILE_LOCKED {
+        return if opened["error"]["code"] == incompatible_state::PROFILE_LOCKED.0 {
             say_error("ce profil est déjà utilisé par un autre démon", 3)
         } else {
             say_error("ouverture du moteur impossible", 1)
@@ -50,6 +48,6 @@ async fn serve_until_stopped(
     ctx.set_state(HostState::Ready);
     say("mira-daemon prêt");
     signals::wait_for_stop(ctx).await;
-    shutdown::run(ctx.clone()).await;
+    let _ = shutdown::run(ctx.clone()).await;
     ExitCode::SUCCESS
 }

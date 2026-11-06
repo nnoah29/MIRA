@@ -9,7 +9,7 @@ use crate::support::{TestClient, TestDaemon};
 
 /// Un démon de test et un client attaché ; les échanges se font par trames.
 pub struct SocketLink {
-    _daemon: TestDaemon,
+    pub daemon: TestDaemon,
     pub client: Mutex<TestClient>,
     next_id: AtomicU64,
 }
@@ -20,7 +20,7 @@ impl SocketLink {
         let mut client = TestClient::connect(&daemon).await;
         client.hello_ok(daemon.token()).await;
         Self {
-            _daemon: daemon,
+            daemon,
             client: Mutex::new(client),
             next_id: AtomicU64::new(1),
         }

@@ -46,3 +46,10 @@ pub async fn attach(dir: &Path) -> TestClient {
     client.hello_ok(token.trim()).await;
     client
 }
+
+/// Arguments minimaux : seulement le profil jetable et le trousseau chiffré ; socket et jeton prennent leur défaut.
+pub fn default_args(dir: &Path) -> Vec<String> {
+    let mut args = base_args(dir);
+    args.truncate(4);
+    args
+}

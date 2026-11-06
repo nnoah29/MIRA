@@ -89,3 +89,20 @@ async fn ping_is_answered_with_pong_and_the_same_nonce() {
     client.send(Frame::Ping { nonce: 77 }).await;
     assert_eq!(client.recv().await, Some(Frame::Pong { nonce: 77 }));
 }
+
+/// Une réponse plus grande que la taille maximale d'une trame devient une enveloppe d'échec ; la connexion continue.
+#[tokio::test(flavor = "multi_thread")]
+async fn an_oversize_result_becomes_a_failure_envelope_and_the_connection_survives() {
+    let home = tempfile::tempdir().unwrap();
+    let daemon =
+        TestDaemon::start_with(Some(config(home.path())), |ctx| ctx.max_frame = 1024).await;
+    let mut client = TestClient::connect(&daemon).await;
+    client.hello_ok(daemon.token()).await;
+    let big = client
+        .call(json!({"domain": "provider", "request": {"op": "list_providers"}}))
+        .await;
+    assert_eq!(big["ok"], false, "{big}");
+    assert_eq!(big["error"]["message"], "réponse trop grande");
+    client.send(Frame::Ping { nonce: 3 }).await;
+    assert_eq!(client.recv().await, Some(Frame::Pong { nonce: 3 }));
+}

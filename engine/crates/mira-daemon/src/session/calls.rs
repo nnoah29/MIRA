@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
-use mira_protocol::Frame;
 use serde_json::Value;
 
+use super::reply::result_frame;
 use super::{Exchanges, Outbox};
 use crate::server::ServerContext;
 
@@ -20,7 +20,6 @@ pub fn spawn_call(
     tokio::spawn(async move {
         let text = ctx.host.execute(&request.to_string()).await;
         exchanges.finish(id);
-        let envelope = serde_json::from_str(&text).unwrap_or(Value::Null);
-        let _ = out.send(Frame::Result { id, envelope }).await;
+        let _ = out.send(result_frame(id, &text, ctx.max_frame)).await;
     });
 }

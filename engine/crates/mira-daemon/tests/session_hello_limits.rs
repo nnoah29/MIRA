@@ -66,3 +66,28 @@ async fn bytes_trickled_slower_than_the_timeout_are_closed() {
         "la connexion lente doit être fermée avant la fin du hello"
     );
 }
+
+/// Un `hello` qui annonce plus que la limite des `hello` est refusé sur son en-tête, avant son corps.
+#[tokio::test(flavor = "multi_thread")]
+async fn an_oversize_hello_is_refused_from_its_header() {
+    let daemon = TestDaemon::start_closed().await;
+    let mut client = TestClient::connect(&daemon).await;
+    client.send_raw(&(1024u32 * 1024).to_be_bytes()).await;
+    let outcome = client.recv_for(Duration::from_secs(1)).await;
+    assert!(matches!(outcome, Recv::Closed), "{outcome:?}");
+}
+
+/// Au-delà du nombre de connexions qui attendent leur `hello`, les suivantes sont fermées aussitôt.
+#[tokio::test(flavor = "multi_thread")]
+async fn too_many_connections_awaiting_hello_are_refused() {
+    let daemon = TestDaemon::start_with(None, |ctx| {
+        ctx.pending_hello = std::sync::Arc::new(tokio::sync::Semaphore::new(2));
+    })
+    .await;
+    let _first = TestClient::connect(&daemon).await;
+    let _second = TestClient::connect(&daemon).await;
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    let mut third = TestClient::connect(&daemon).await;
+    let outcome = third.recv_for(Duration::from_secs(1)).await;
+    assert!(matches!(outcome, Recv::Closed), "{outcome:?}");
+}

@@ -74,17 +74,15 @@ impl Driver for SocketDriver {
         self.link.result_of(id, frame).await
     }
 
-    /// `host_op shutdown`
+    /// `host_op shutdown`, puis l'enveloppe de la fermeture réelle du moteur (comme `Host::close` sur les autres chemins)
     async fn close(&self) -> String {
         let id = self.link.id();
-        self.link
-            .result_of(
-                id,
-                Frame::HostOp {
-                    id,
-                    op: HostOp::Shutdown,
-                },
-            )
-            .await
+        let frame = Frame::HostOp {
+            id,
+            op: HostOp::Shutdown,
+        };
+        let answer = self.link.result_of(id, frame).await;
+        assert!(answer.contains("\"ok\":true"), "{answer}");
+        mira_daemon::shutdown::run(self.link.daemon.context()).await
     }
 }

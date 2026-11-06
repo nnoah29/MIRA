@@ -81,3 +81,32 @@ async fn hello_ok_reports_starting_then_ready() {
     };
     assert_eq!(host_state, HostState::Ready);
 }
+
+/// Si le moteur reste tenu pendant l'arrêt, `shutdown::run` rend l'enveloppe d'échec de la fermeture.
+#[tokio::test(flavor = "multi_thread")]
+async fn shutdown_reports_a_close_refused_because_the_engine_is_still_held() {
+    let home = tempfile::tempdir().unwrap();
+    let daemon = TestDaemon::start_with(Some(config(home.path())), |ctx| {
+        ctx.shutdown_wait = Duration::from_millis(200);
+    })
+    .await;
+    let held = daemon.context().host.engine();
+    let outcome = mira_daemon::shutdown::run(daemon.context()).await;
+    assert!(outcome.contains("moteur encore utilisé"), "{outcome}");
+    drop(held);
+}
+
+/// Deux arrêts simultanés rendent le même résultat, une fois la fermeture terminée et le profil libéré.
+#[tokio::test(flavor = "multi_thread")]
+async fn two_concurrent_shutdowns_both_wait_for_the_close() {
+    let home = tempfile::tempdir().unwrap();
+    let daemon = TestDaemon::start(config(home.path())).await;
+    let (first, second) = tokio::join!(
+        mira_daemon::shutdown::run(daemon.context()),
+        mira_daemon::shutdown::run(daemon.context())
+    );
+    assert_eq!(first, second);
+    assert!(first.contains("\"ok\":true"), "{first}");
+    let reopened = Host::new().open(config(home.path()));
+    assert!(reopened.contains("\"ok\":true"), "{reopened}");
+}

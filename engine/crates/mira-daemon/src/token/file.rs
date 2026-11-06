@@ -49,7 +49,7 @@ fn refuse_shared(_metadata: &std::fs::Metadata) -> std::io::Result<()> {
 /// Crée le fichier privé (0600 sous Unix) avec un jeton neuf ; en cas de course, relit celui du gagnant.
 pub fn create_private(path: &Path) -> std::io::Result<String> {
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)?;
+        create_parent(parent)?;
     }
     let token = random_hex()?;
     let mut options = std::fs::OpenOptions::new();
@@ -72,4 +72,13 @@ fn random_hex() -> std::io::Result<String> {
         .fill(&mut bytes)
         .map_err(|_| std::io::Error::other("aléa indisponible"))?;
     Ok(bytes.iter().map(|b| format!("{b:02x}")).collect())
+}
+
+/// Crée le dossier du jeton et ses parents manquants, en n'autorisant que le propriétaire (0700 sous Unix).
+fn create_parent(parent: &Path) -> std::io::Result<()> {
+    let mut builder = std::fs::DirBuilder::new();
+    builder.recursive(true);
+    #[cfg(unix)]
+    std::os::unix::fs::DirBuilderExt::mode(&mut builder, 0o700);
+    builder.create(parent)
 }

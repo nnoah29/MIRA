@@ -32,7 +32,7 @@ fn defaults_resolve_socket_and_token_under_the_profile() {
     assert_eq!(paths.token, root.join("daemon.token"));
 }
 
-/// Avec XDG_RUNTIME_DIR, la socket va dans `mira/<profil>.sock` ; une option explicite l'emporte.
+/// Avec XDG_RUNTIME_DIR, la socket va dans `mira-daemon/<profil>.sock` ; une option explicite l'emporte.
 #[test]
 fn socket_defaults_to_xdg_runtime_dir_when_set() {
     let home = tempfile::tempdir().unwrap();
@@ -40,7 +40,7 @@ fn socket_defaults_to_xdg_runtime_dir_when_set() {
     let config = DaemonConfig::try_parse_from(["mira-daemon"]).unwrap();
     let runtime = Path::new("/run/user/1000");
     let paths = resolve_paths(&config, &env, Some(runtime)).unwrap();
-    assert_eq!(paths.socket, runtime.join("mira/default.sock"));
+    assert_eq!(paths.socket, runtime.join("mira-daemon/default.sock"));
     let explicit = DaemonConfig::try_parse_from(["mira-daemon", "--socket", "/x/y.sock"]).unwrap();
     assert_eq!(
         resolve_paths(&explicit, &env, Some(runtime))

@@ -19,6 +19,7 @@ impl RunningDaemon {
         let mut command = Command::new(env!("CARGO_BIN_EXE_mira-daemon"));
         command
             .args(args)
+            .env_remove("XDG_RUNTIME_DIR")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
         let mut child = command.spawn().unwrap();

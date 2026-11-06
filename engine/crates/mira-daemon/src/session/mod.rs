@@ -7,6 +7,7 @@ mod exchanges;
 mod hello;
 mod host_ops;
 mod open;
+mod reply;
 mod stop;
 mod stream;
 mod stream_control;
@@ -43,14 +44,19 @@ enum Outcome {
 
 /// Sert une connexion jusqu'à sa fin ; toute violation du protocole la ferme sans explication.
 pub async fn run(accepted: Accepted, ctx: Arc<ServerContext>) {
+    let Ok(permit) = ctx.pending_hello.clone().try_acquire_owned() else {
+        return;
+    };
     let (mut reader, mut writer) = tokio::io::split(accepted.stream);
-    if !hello::handshake(&mut reader, &mut writer, &ctx).await {
+    let welcome = hello::handshake(&mut reader, &mut writer, &ctx).await;
+    drop(permit);
+    if !welcome {
         return;
     }
     let (out, queue) = mpsc::channel(OUTBOX_DEPTH);
-    let writer_task = tokio::spawn(write_loop(writer, queue, ctx.max_frame));
+    let mut writer_task = tokio::spawn(write_loop(writer, queue, ctx.max_frame));
     let exchanges = Exchanges::default();
-    let outcome = read_loop(&mut reader, &out, &ctx, &exchanges).await;
+    let outcome = read_loop(&mut reader, &out, &ctx, &exchanges, &mut writer_task).await;
     exchanges.cancel_all();
     finish(outcome, out, writer_task).await;
 }
@@ -64,18 +70,20 @@ async fn write_loop(mut writer: Writer, mut queue: mpsc::Receiver<Frame>, max: u
     }
 }
 
-/// Lit et aiguille les trames jusqu'à la fin de la connexion, une violation ou l'arrêt du serveur.
+/// Lit et aiguille les trames jusqu'à la fin de la connexion, une violation, l'arrêt du serveur ou l'échec de l'écriture.
 async fn read_loop(
     reader: &mut Reader,
     out: &Outbox,
     ctx: &Arc<ServerContext>,
     exchanges: &Exchanges,
+    writer_task: &mut JoinHandle<()>,
 ) -> Outcome {
     let mut closing = ctx.closing_receiver();
     loop {
         let read = tokio::select! {
             read = read_frame(reader, ctx.max_frame) => read,
             _ = wait_closing(&mut closing) => return Outcome::Closing,
+            _ = &mut *writer_task => return Outcome::Violation,
         };
         match read {
             Ok(Some(frame)) => {

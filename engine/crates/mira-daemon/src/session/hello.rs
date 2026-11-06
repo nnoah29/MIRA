@@ -7,6 +7,9 @@ use tokio::io::{AsyncRead, AsyncWrite};
 use crate::server::ServerContext;
 use crate::wire::{read_frame, write_frame};
 
+/// Taille maximale d'un `hello` : un client non authentifié ne fait pas allouer plus.
+pub const HELLO_MAX_BYTES: u32 = 8 * 1024;
+
 /// Jeton d'abord (un inconnu n'apprend rien), puis versions.
 fn verdict(
     ctx: &ServerContext,
@@ -27,7 +30,11 @@ where
     R: AsyncRead + Unpin,
     W: AsyncWrite + Unpin,
 {
-    let read = tokio::time::timeout(ctx.hello_timeout, read_frame(reader, ctx.max_frame)).await;
+    let read = tokio::time::timeout(
+        ctx.hello_timeout,
+        read_frame(reader, ctx.max_frame.min(HELLO_MAX_BYTES)),
+    )
+    .await;
     let Ok(Ok(Some(Frame::Hello {
         protocol_version,
         contract_version,

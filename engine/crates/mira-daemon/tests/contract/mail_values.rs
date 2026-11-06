@@ -18,6 +18,20 @@ fn subjects(items: &[Value]) -> Vec<&str> {
     subjects
 }
 
+/// Texte du corps d'un message ; le corps peut n'être téléchargé qu'un instant après la liste, on attend jusqu'à 5 s.
+async fn body_text<D: Driver>(driver: &D, id: &Value) -> String {
+    let request =
+        json!({"domain": "message", "request": {"op": "get_message_body", "message": id}});
+    for _ in 0..50 {
+        let body = send(driver, &request).await;
+        if let Some(text) = body["data"]["data"]["text"].as_str() {
+            return text.to_string();
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    }
+    panic!("corps jamais disponible");
+}
+
 /// Vérifie le premier message (expéditeur, drapeaux, corps) et rend les trois messages lus.
 async fn check_listing<D: Driver>(driver: &D, page: &Value) -> (Value, Value) {
     let items = page["data"]["data"]["items"].as_array().unwrap();
@@ -25,11 +39,9 @@ async fn check_listing<D: Driver>(driver: &D, page: &Value) -> (Value, Value) {
     let first = items.iter().find(|m| m["subject"] == "Bonjour").unwrap();
     assert_eq!(first["from"][0]["address"], "bob@example.org");
     assert_eq!(first["flags"]["seen"], false);
-    let body = send(driver, &json!({"domain": "message", "request": {"op": "get_message_body", "message": first["id"]}})).await;
     assert!(
-        body["data"]["data"]["text"]
-            .as_str()
-            .unwrap()
+        body_text(driver, &first["id"])
+            .await
             .contains("Texte du premier.")
     );
     assert!(!page.to_string().contains(PASSWORD));

@@ -8,7 +8,7 @@ Un transport ne fournit qu'un **flux d'octets bidirectionnel fiable**. Le démon
 
 | Transport | Option | Protection |
 |---|---|---|
-| Socket Unix | défaut (`$XDG_RUNTIME_DIR/mira/<profil>.sock`, sinon `<dossier du profil>/daemon.sock`, ou `--socket`) | dossier `0700`, socket `0600`, uid du pair égal à celui du démon, plus le jeton |
+| Socket Unix | défaut (`$XDG_RUNTIME_DIR/mira-daemon/<profil>.sock`, sinon `<dossier du profil>/daemon.sock`, ou `--socket`) | dossier `0700`, socket `0600`, uid du pair égal à celui du démon, plus le jeton |
 | TCP loopback | `--tcp-port <n>` (`0` = port libre, annoncé sur stdout) | écoute sur `127.0.0.1` seulement, jeton |
 
 Le démon n'écoute jamais ailleurs que sur le loopback. Il n'y a pas de named pipe (Windows : TCP loopback, phase 5) ni de TLS (version 4).
@@ -39,7 +39,7 @@ Une trame est un corps **JSON** précédé de sa longueur sur **4 octets, grand-
 
 ## 3. Poignée de main
 
-1. Le client envoie `hello` **dans les 5 secondes** qui suivent la connexion (la lecture de la trame entière est bornée, pas octet par octet). Toute autre première trame, le silence ou la lenteur ferment la connexion sans réponse.
+1. Le client envoie `hello` **dans les 5 secondes** qui suivent la connexion (la lecture de la trame entière est bornée, pas octet par octet), et sa taille ne dépasse pas **8 Kio** (jugée sur l'en-tête). Au plus 64 connexions attendent leur `hello` en même temps ; les suivantes sont fermées aussitôt. Toute autre première trame, le silence ou la lenteur ferment la connexion sans réponse.
 2. Le démon vérifie le **jeton d'abord** (comparaison en temps constant), puis les versions : majeure du protocole égale ; version du contrat compatible selon la règle de `mira-vocabulary` (même majeure, mineure du client inférieure ou égale à celle du moteur).
 3. Succès : `hello_ok`. Échec : `hello_err` à raison fixe, puis fermeture. Le jeton n'est jamais renvoyé, journalisé ni écrit sur stdout ou stderr.
 4. Un second `hello` ferme la connexion.
@@ -48,7 +48,7 @@ Le jeton est un fichier de 32 octets aléatoires en hexadécimal, créé en `060
 
 ## 4. Appels
 
-`call` est exécuté par le moteur dans une tâche indépendante : plusieurs appels peuvent être en vol sur une connexion, les réponses arrivent dans n'importe quel ordre et s'apparient par `id`. Une requête illisible reçoit une enveloppe d'échec, pas une fermeture. **Fermer la connexion n'annule jamais un appel** : un envoi de message ou une synchronisation lancés par un client se terminent même s'il disparaît.
+`call` est exécuté par le moteur dans une tâche indépendante : plusieurs appels peuvent être en vol sur une connexion, les réponses arrivent dans n'importe quel ordre et s'apparient par `id`. Une requête illisible reçoit une enveloppe d'échec, pas une fermeture. Une réponse plus grande que la taille maximale d'une trame devient une enveloppe d'échec au message fixe `réponse trop grande`. Si l'écriture vers le client échoue, la session se termine (les appels déjà lancés continuent). **Fermer la connexion n'annule jamais un appel** : un envoi de message ou une synchronisation lancés par un client se terminent même s'il disparaît.
 
 Un `id` ne peut pas être réutilisé tant que son échange est en cours ; le faire ferme la connexion. `credit` et `cancel` sur un `id` inconnu (course avec un `end`) sont ignorés.
 
@@ -62,7 +62,7 @@ Un `id` ne peut pas être réutilisé tant que son échange est en cours ; le fa
 
 ## 6. Opérations d'hôte
 
-`host_op` `shutdown` répond `result` (succès) puis arrête le démon : il cesse d'accepter, ferme les connexions (une seconde pour écrire ce qui est en file), laisse finir les appels en vol (5 secondes au plus), ferme le moteur et libère le verrou du profil. Toute connexion authentifiée peut l'envoyer. `set_poll_secs` et `retry_unlock` viendront avec les phases suivantes.
+`host_op` `shutdown` répond `result` (succès) puis arrête le démon (un seul arrêt à la fois, même demandé deux fois ou par un signal en même temps) : il cesse d'accepter, ferme les connexions (une seconde pour écrire ce qui est en file), laisse finir les appels en vol (5 secondes au plus), ferme le moteur et libère le verrou du profil. Toute connexion authentifiée peut l'envoyer. `set_poll_secs` et `retry_unlock` viendront avec les phases suivantes.
 
 ## 7. Le démon
 

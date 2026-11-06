@@ -23,7 +23,7 @@ pub fn environment_of(config: &DaemonConfig) -> ProfileEnvironment {
     environment
 }
 
-/// Résout la socket et le jeton : l'option l'emporte, sinon `<exécution>/mira/<profil>.sock` ou le dossier du profil.
+/// Résout la socket et le jeton : l'option l'emporte, sinon `<exécution>/mira-daemon/<profil>.sock` ou le dossier du profil.
 pub fn resolve_paths(
     config: &DaemonConfig,
     environment: &ProfileEnvironment,
@@ -32,7 +32,7 @@ pub fn resolve_paths(
     let root = ProfilePaths::resolve(&ProfileId::from_raw(&config.profile), environment)?.root;
     let socket = match (&config.socket, runtime_dir) {
         (Some(explicit), _) => explicit.clone(),
-        (None, Some(runtime)) => runtime.join(format!("mira/{}.sock", config.profile)),
+        (None, Some(runtime)) => runtime.join(format!("mira-daemon/{}.sock", config.profile)),
         (None, None) => root.join("daemon.sock"),
     };
     let token = config

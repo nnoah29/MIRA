@@ -5,8 +5,9 @@ use mira_assembly::mira_vocabulary::{
     AccountId, AiConnectionId, AiSecretRef, ProfileId, SecretKind, SecretRef,
 };
 use mira_assembly::ports::{SecretStore, SecretValue};
-use mira_bridge::file_secrets::FileSecretStore;
+use mira_host::file_secrets::FileSecretStore;
 
+/// Référence de secret du compte `acc1` pour ce genre de secret.
 fn secret_ref(kind: SecretKind) -> SecretRef {
     SecretRef {
         profile: ProfileId::from_raw("default"),
@@ -15,6 +16,7 @@ fn secret_ref(kind: SecretKind) -> SecretRef {
     }
 }
 
+/// Les secrets écrits survivent à la réouverture du fichier et la suppression est idempotente.
 #[test]
 fn put_get_delete_round_trip_and_survive_reopening() {
     let dir = tempfile::tempdir().unwrap();
@@ -26,12 +28,8 @@ fn put_get_delete_round_trip_and_survive_reopening() {
     store
         .put(&password, &SecretValue::new("s3cret-pass"))
         .unwrap();
-    store
-        .put(
-            &secret_ref(SecretKind::RefreshToken),
-            &SecretValue::new("tok"),
-        )
-        .unwrap();
+    let token_ref = secret_ref(SecretKind::RefreshToken);
+    store.put(&token_ref, &SecretValue::new("tok")).unwrap();
     let reopened = FileSecretStore::new(path.clone(), &key).unwrap();
     assert_eq!(
         reopened.get(&password).unwrap().unwrap().expose(),
@@ -40,16 +38,11 @@ fn put_get_delete_round_trip_and_survive_reopening() {
     reopened.delete(&password).unwrap();
     reopened.delete(&password).unwrap();
     assert!(reopened.get(&password).unwrap().is_none());
-    assert_eq!(
-        reopened
-            .get(&secret_ref(SecretKind::RefreshToken))
-            .unwrap()
-            .unwrap()
-            .expose(),
-        "tok"
-    );
+    let token = reopened.get(&token_ref).unwrap().unwrap();
+    assert_eq!(token.expose(), "tok");
 }
 
+/// Le fichier ne contient jamais le secret en clair et une autre clé ne le lit pas.
 #[test]
 fn the_file_never_contains_the_secret_and_another_key_cannot_read_it() {
     let dir = tempfile::tempdir().unwrap();
@@ -68,6 +61,7 @@ fn the_file_never_contains_the_secret_and_another_key_cannot_read_it() {
     assert!(FileSecretStore::new(dir.path().join("x"), &[0u8; 16]).is_err());
 }
 
+/// Un secret de connexion d'IA fait l'aller-retour comme un secret de compte.
 #[test]
 fn file_store_roundtrips_an_ai_secret() {
     let dir = tempfile::tempdir().unwrap();
@@ -84,20 +78,10 @@ fn file_store_roundtrips_an_ai_secret() {
     store.put(&ai, &SecretValue::new("sk-ai-key")).unwrap();
     let reopened = FileSecretStore::new(path.clone(), &key).unwrap();
     assert_eq!(reopened.get(&ai).unwrap().unwrap().expose(), "sk-ai-key");
-    assert_eq!(
-        reopened
-            .get(&secret_ref(SecretKind::Password))
-            .unwrap()
-            .unwrap()
-            .expose(),
-        "pw"
-    );
-    assert!(
-        !std::fs::read(&path)
-            .unwrap()
-            .windows(9)
-            .any(|w| w == b"sk-ai-key")
-    );
+    let password = reopened.get(&secret_ref(SecretKind::Password));
+    assert_eq!(password.unwrap().unwrap().expose(), "pw");
+    let raw = std::fs::read(&path).unwrap();
+    assert!(!raw.windows(9).any(|w| w == b"sk-ai-key"));
     reopened.delete(&ai).unwrap();
     reopened.delete(&ai).unwrap();
     assert!(reopened.get(&ai).unwrap().is_none());

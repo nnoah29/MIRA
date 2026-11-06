@@ -3,7 +3,7 @@
 
 use std::time::Duration;
 
-use mira_bridge::polling::supervisor_for;
+use mira_host::polling::supervisor_for;
 
 /// Sans valeur, le moteur garde le délai propre à chaque fournisseur.
 #[test]

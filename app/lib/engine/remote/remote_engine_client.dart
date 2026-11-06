@@ -5,16 +5,18 @@ import '../engine_client.dart';
 import 'byte_channel.dart';
 import 'connection.dart';
 import 'endpoint.dart';
+import 'event_stream.dart';
 import 'frame_builders.dart';
 import 'host_state.dart';
 
 /// Client du moteur par le démon : le même contrat JSON que le pont FFI, porté par le protocole de trames.
 class RemoteEngineClient implements EngineClient, ChatStreamingClient {
-  RemoteEngineClient._(this._open, this._connection);
+  RemoteEngineClient._(this._open, this._connection, this._eventBackoff);
 
   final Future<RemoteConnection> Function() _open;
   RemoteConnection _connection;
   Future<RemoteConnection>? _reconnecting;
+  final Duration _eventBackoff;
   bool _detached = false;
 
   /// Se connecte au démon et fait la poignée de main ; les échecs de connexion ou de refus sont remontés tels quels.
@@ -25,6 +27,7 @@ class RemoteEngineClient implements EngineClient, ChatStreamingClient {
     Future<ByteChannel> Function()? channelFactory,
     Duration pingInterval = const Duration(seconds: 15),
     Duration helloTimeout = const Duration(seconds: 5),
+    Duration eventBackoff = const Duration(milliseconds: 500),
   }) async {
     final connect = channelFactory ?? endpoint.connect;
     Future<RemoteConnection> open() async => RemoteConnection.open(
@@ -35,7 +38,7 @@ class RemoteEngineClient implements EngineClient, ChatStreamingClient {
       pingInterval: pingInterval,
       helloTimeout: helloTimeout,
     );
-    return RemoteEngineClient._(open, await open());
+    return RemoteEngineClient._(open, await open(), eventBackoff);
   }
 
   /// État de l'hôte annoncé à la dernière poignée de main.
@@ -103,7 +106,7 @@ class RemoteEngineClient implements EngineClient, ChatStreamingClient {
 
   @override
   Stream<Map<String, dynamic>> events({int? after}) =>
-      throw UnimplementedError('flux d\'événements : tâche suivante');
+      EventPump(live, after: after, backoff: _eventBackoff).stream;
 
   @override
   Stream<Map<String, dynamic>> chatStream(Map<String, dynamic> start) =>

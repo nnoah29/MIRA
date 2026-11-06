@@ -14,6 +14,10 @@ class DaemonRig {
   String hostState;
   final List<FakeDaemon> daemons = [];
 
+  /// Instants (depuis la création du rig) de chaque connexion demandée.
+  final List<Duration> attemptTimes = [];
+  final Stopwatch _clock = Stopwatch()..start();
+
   /// Si vrai, la prochaine connexion échoue comme un démon absent.
   bool refuseConnections = false;
 
@@ -30,6 +34,7 @@ class DaemonRig {
 
   /// Fabrique de canaux à passer à `RemoteEngineClient.attach`.
   Future<ByteChannel> factory() async {
+    attemptTimes.add(_clock.elapsed);
     if (refuseConnections) {
       _refused++;
       throw const SocketException('connexion refusée');

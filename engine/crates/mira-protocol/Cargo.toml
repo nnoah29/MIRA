@@ -1,0 +1,17 @@
+[package]
+name = "mira-protocol"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Protocole de trames entre un client MIRA et le démon : types, codec et règles de poignée de main"
+
+[lints]
+workspace = true
+
+[dependencies]
+mira-vocabulary.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true

@@ -1420,6 +1420,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "mira-protocol"
+version = "0.1.0"
+dependencies = [
+ "mira-vocabulary",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "mira-provider-generic"
 version = "0.1.0"
 dependencies = [

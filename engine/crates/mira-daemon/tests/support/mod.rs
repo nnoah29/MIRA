@@ -18,10 +18,13 @@ pub mod mail_daemon;
 pub mod process;
 pub mod process_args;
 
+#[allow(clippy::duplicate_mod)]
 #[path = "../contract/chat_fixture.rs"]
 pub mod chat_fixture;
+#[allow(clippy::duplicate_mod)]
 #[path = "../contract/mail_fixture.rs"]
 pub mod mail_fixture;
+#[allow(clippy::duplicate_mod)]
 #[path = "../contract/mail_samples.rs"]
 pub mod mail_samples;
 

@@ -67,8 +67,9 @@ async fn forward(
 ) -> EndReason {
     loop {
         let line = tokio::select! {
-            line = queue.recv() => line,
+            biased;
             why = stream.stopped() => return why.into(),
+            line = queue.recv() => line,
         };
         let Some(line) = line else {
             return stream.reason().map_or(EndReason::Finished, Into::into);

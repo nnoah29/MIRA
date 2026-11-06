@@ -5,7 +5,8 @@ use std::path::{Path, PathBuf};
 
 use tokio::net::UnixListener;
 
-use super::unix_files::{clear_stale, prepare_directory};
+pub use super::unix_files::check_directory_owner;
+use super::unix_files::{clear_stale, lock_socket, prepare_directory};
 use super::{Accepted, Listener, Trust};
 
 /// Écoute sur une socket Unix privée ; le fichier est supprimé à la fermeture.
@@ -14,6 +15,7 @@ pub struct UnixSocketListener {
     listener: UnixListener,
     path: PathBuf,
     owner_uid: u32,
+    _lock: std::fs::File,
 }
 
 /// Dit si le pair est le propriétaire de la socket.
@@ -22,19 +24,25 @@ pub fn peer_is_owner(peer_uid: u32, owner_uid: u32) -> bool {
 }
 
 impl UnixSocketListener {
-    /// Prépare le dossier, remplace une socket périmée, lie la socket et la passe en 0600.
+    /// Prépare le dossier, prend le verrou de la socket, remplace une socket périmée, lie la socket et la passe en 0600.
     pub fn bind(path: &Path) -> std::io::Result<Self> {
-        if let Some(directory) = path.parent().filter(|d| !d.as_os_str().is_empty()) {
+        let directory = path.parent().filter(|d| !d.as_os_str().is_empty());
+        if let Some(directory) = directory {
             prepare_directory(directory)?;
+        }
+        let lock = lock_socket(path)?;
+        let owner_uid = lock.metadata()?.uid();
+        if let Some(directory) = directory {
+            check_directory_owner(directory, owner_uid)?;
         }
         clear_stale(path)?;
         let listener = UnixListener::bind(path)?;
         std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))?;
-        let owner_uid = std::fs::metadata(path)?.uid();
         Ok(Self {
             listener,
             path: path.to_path_buf(),
             owner_uid,
+            _lock: lock,
         })
     }
 }

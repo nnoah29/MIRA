@@ -1,6 +1,7 @@
 //! Jeton local du démon : 256 bits aléatoires dans un fichier privé, comparé en temps constant.
 
 mod file;
+mod publish;
 
 use std::path::Path;
 

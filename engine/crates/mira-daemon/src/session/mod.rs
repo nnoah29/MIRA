@@ -11,6 +11,7 @@ mod reply;
 mod stop;
 mod stream;
 mod stream_control;
+mod stream_wait;
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -21,6 +22,8 @@ use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 
 pub use exchanges::Exchanges;
+pub use stop::Stop;
+pub use stream::Stream;
 
 use crate::server::{ServerContext, wait_closing};
 use crate::transport::{Accepted, ByteStream};

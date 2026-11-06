@@ -14,6 +14,7 @@ pub struct AiDaemon {
     pub server: FakeAiServer,
     pub connection: String,
     pub home: tempfile::TempDir,
+    pub setup_bytes: Vec<u8>,
 }
 
 impl AiDaemon {
@@ -25,11 +26,13 @@ impl AiDaemon {
         let mut client = TestClient::connect(&daemon).await;
         client.hello_ok(daemon.token()).await;
         let connection = ready_connection(&mut client, &server.base_url()).await;
+        let setup_bytes = client.received_bytes().to_vec();
         Self {
             daemon,
             server,
             connection,
             home,
+            setup_bytes,
         }
     }
 

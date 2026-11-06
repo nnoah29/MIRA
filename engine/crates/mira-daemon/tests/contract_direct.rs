@@ -7,4 +7,8 @@ mod support;
 
 use drivers::direct::DirectDriver;
 
-contract::suite::mail_suite!(DirectDriver);
+contract::suite_mail::mail_suite!(DirectDriver);
+contract::suite_chat::chat_suite!(DirectDriver);
+contract::suite_chat_errors::chat_errors_suite!(DirectDriver);
+contract::suite_chat_extras::chat_extras_suite!(DirectDriver);
+contract::suite_data::data_suite!(DirectDriver);

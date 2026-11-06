@@ -13,9 +13,10 @@ impl TestClient {
         self.send(Frame::OpenEvents { id, after, credit }).await;
     }
 
-    /// Ouvre un flux de chat avec cette demande JSON.
+    /// Ouvre un flux de chat avec cette demande ; un texte qui n'est pas du JSON voyage comme chaîne JSON (le protocole ne porte que du JSON).
     pub async fn open_chat(&mut self, id: u64, request: &str, credit: u32) {
-        let request: Value = serde_json::from_str(request).unwrap();
+        let request =
+            serde_json::from_str(request).unwrap_or_else(|_| Value::String(request.into()));
         self.send(Frame::OpenChat {
             id,
             request,

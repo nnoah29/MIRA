@@ -11,8 +11,10 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'engine/engine_client.dart' show EngineException;
 import 'engine/engine_mail_source.dart';
 import 'engine/mail_source.dart';
+import 'engine/remote/engine_opening.dart';
 import 'engine/rust_engine_client.dart';
 import 'i18n/i18n.dart';
 import 'platform_info.dart';
@@ -62,12 +64,19 @@ Future<({MailSource? source, String? error})> openEngineSource(
   }
   try {
     final android = runsOnAndroid;
-    final client = await RustEngineClient.open(
-      home: android ? (await getApplicationSupportDirectory()).path : null,
-      secretsKey: android ? await androidSecretsKey() : null,
+    final deps = EngineOpeningDeps.real(
+      prefs: prefs,
+      openEmbedded: () async => RustEngineClient.open(
+        home: android ? (await getApplicationSupportDirectory()).path : null,
+        secretsKey: android ? await androidSecretsKey() : null,
+      ),
+    );
+    final opened = await openEngineClient(
+      deps: deps,
+      mode: parseEngineMode(Platform.environment['MIRA_ENGINE']),
     );
     final source = await EngineMailSource.load(
-      client,
+      opened.client,
       folderMap: decodeFolderMap(prefs.getString('folderMap')),
     );
     return (source: source, error: null);
@@ -82,6 +91,7 @@ Future<({MailSource? source, String? error})> openEngineSource(
 
 /// Raison lisible d'un échec d'ouverture du moteur : message de l'erreur et, pour Android, sa cause.
 String engineFailureText(Object error) {
+  if (error is EngineException && error.localized) return error.message;
   if (error is! PlatformException) return '$error';
   final detail = error.details;
   final message = error.message ?? error.code;

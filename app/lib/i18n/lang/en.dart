@@ -1354,6 +1354,11 @@ const Map<String, String> enStrings = {
   'Connexion au moteur en arrière-plan perdue':
       'Lost the connection to the background engine',
   'Moteur en arrière-plan injoignable': 'Background engine unreachable',
+  'Le trousseau du système est verrouillé : déverrouillez-le puis relancez MIRA':
+      'The system keyring is locked: unlock it, then restart MIRA',
+  'Le moteur en arrière-plan n’est pas compatible avec cette version de MIRA : redémarrez-le': 'The background engine is not compatible with this version of MIRA: restart it',
+  'Accès refusé par le moteur en arrière-plan':
+      'Access refused by the background engine',
   'Jeton du moteur en arrière-plan introuvable':
       'Background engine token not found',
   'Le jeton du moteur est lisible par d’autres utilisateurs':

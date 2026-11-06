@@ -1,0 +1,247 @@
+import 'dart:io';
+import 'dart:math';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../i18n/i18n.dart';
+import '../../platform_info.dart';
+import '../engine_client.dart';
+import 'connection.dart';
+import 'daemon_launcher.dart';
+import 'daemon_paths.dart';
+import 'daemon_token.dart';
+import 'endpoint.dart';
+import 'host_state.dart';
+import 'remote_engine_client.dart';
+
+/// Quel moteur l'app ouvre : le démon s'il tourne ou peut démarrer, sinon l'embarqué.
+enum EngineMode {
+  /// Démon si possible, moteur embarqué en dernier recours.
+  auto,
+
+  /// Toujours le moteur embarqué (pont FFI).
+  embedded,
+
+  /// Toujours le démon ; son absence est une erreur.
+  daemon,
+}
+
+/// Lit `MIRA_ENGINE` : `embedded`, `daemon`, tout autre valeur donne [EngineMode.auto].
+EngineMode parseEngineMode(String? value) => switch (value) {
+  'embedded' => EngineMode.embedded,
+  'daemon' => EngineMode.daemon,
+  _ => EngineMode.auto,
+};
+
+/// Aucun démon n'écoute (pas de socket, socket périmée ou connexion refusée).
+class DaemonAbsent implements Exception {
+  const DaemonAbsent();
+
+  @override
+  String toString() => 'DaemonAbsent';
+}
+
+/// Tout ce que la politique de choix touche : remplaçable dans les tests.
+class EngineOpeningDeps {
+  EngineOpeningDeps({
+    required this.env,
+    required this.isLinuxDesktop,
+    required this.attachDaemon,
+    required this.launchDaemon,
+    required this.openEmbedded,
+    Future<void> Function(Duration)? pause,
+  }) : pause = pause ?? Future<void>.delayed;
+
+  /// Variables d'environnement (chemins du profil).
+  final Map<String, String> env;
+
+  /// Vrai sous Linux de bureau, la seule plateforme qui peut choisir le démon.
+  final bool isLinuxDesktop;
+
+  /// S'attache au démon de ces chemins ; lève [DaemonAbsent] ou [SocketException] s'il n'y en a pas.
+  final Future<RemoteEngineClient> Function(DaemonPaths paths) attachDaemon;
+
+  /// Démarre le démon ; faux si aucun binaire n'est disponible.
+  final Future<bool> Function(String profile, String? home) launchDaemon;
+
+  /// Ouvre le moteur embarqué.
+  final Future<EngineClient> Function() openEmbedded;
+
+  /// Attente entre deux essais.
+  final Future<void> Function(Duration) pause;
+
+  /// Dépendances réelles : environnement du processus, socket Unix, lanceur de `mira-daemon`.
+  factory EngineOpeningDeps.real({
+    required SharedPreferences prefs,
+    required Future<EngineClient> Function() openEmbedded,
+  }) {
+    final clientId = loadClientId(prefs);
+    return EngineOpeningDeps(
+      env: Platform.environment,
+      isLinuxDesktop: runsOnLinux,
+      openEmbedded: openEmbedded,
+      attachDaemon: (paths) => _attachReal(paths, clientId),
+      launchDaemon: (profile, home) async {
+        final launcher = DaemonLauncher();
+        if (launcher.findBinary() == null) return false;
+        await launcher.start(profile: profile, home: home);
+        return true;
+      },
+    );
+  }
+}
+
+Future<RemoteEngineClient> _attachReal(
+  DaemonPaths paths,
+  String clientId,
+) async {
+  if (!File(paths.socket).existsSync()) throw const DaemonAbsent();
+  final token = await readDaemonToken(paths.token);
+  try {
+    return await RemoteEngineClient.attach(
+      DaemonEndpoint(unixSocket: paths.socket, token: token),
+      clientId: clientId,
+    );
+  } on SocketException {
+    throw const DaemonAbsent();
+  }
+}
+
+/// Identifiant stable de cette installation, créé au premier besoin (128 bits aléatoires, hexadécimal).
+String loadClientId(SharedPreferences prefs) {
+  final known = prefs.getString('engineClientId');
+  if (known != null && known.isNotEmpty) return known;
+  final random = Random.secure();
+  final id = [
+    for (var i = 0; i < 16; i++)
+      random.nextInt(256).toRadixString(16).padLeft(2, '0'),
+  ].join();
+  prefs.setString('engineClientId', id);
+  return id;
+}
+
+const Duration _poll = Duration(milliseconds: 250);
+const Duration _launchWait = Duration(seconds: 20);
+const Duration _startingWait = Duration(seconds: 30);
+
+EngineException _unavailable() => EngineException.local(
+  'transport.unavailable',
+  t('Moteur en arrière-plan injoignable'),
+);
+
+/// Refus de poignée de main : jamais de repli, un message lisible.
+EngineException _refused(HandshakeRefused refusal) => switch (refusal.reason) {
+  'auth' => EngineException.local(
+    'host.auth_refused',
+    t('Accès refusé par le moteur en arrière-plan'),
+  ),
+  'protocol_version' || 'contract_version' => _updateRequired(),
+  _ => _unavailable(),
+};
+
+EngineException _updateRequired() => EngineException.local(
+  'host.update_required',
+  t(
+    'Le moteur en arrière-plan n’est pas compatible avec cette version de MIRA : redémarrez-le',
+  ),
+);
+
+/// Une tentative d'attache ; `null` si aucun démon ne répond.
+Future<RemoteEngineClient?> _attachOnce(
+  EngineOpeningDeps deps,
+  DaemonPaths paths,
+) async {
+  try {
+    return await deps.attachDaemon(paths);
+  } on DaemonAbsent {
+    return null;
+  } on SocketException {
+    return null;
+  } on ConnectionLost {
+    return null;
+  } on HandshakeRefused catch (refusal) {
+    throw _refused(refusal);
+  }
+}
+
+/// S'attache et attend que l'hôte soit prêt ; `null` si aucun démon ne répond.
+Future<RemoteEngineClient?> _attachReady(
+  EngineOpeningDeps deps,
+  DaemonPaths paths,
+) async {
+  var waited = Duration.zero;
+  while (true) {
+    final client = await _attachOnce(deps, paths);
+    if (client == null) return null;
+    switch (client.hostState) {
+      case HostState.ready || HostState.unknown:
+        return client;
+      case HostState.keyringLocked:
+        await client.close();
+        throw EngineException.local(
+          'host.keyring_locked',
+          t(
+            'Le trousseau du système est verrouillé : déverrouillez-le puis relancez MIRA',
+          ),
+        );
+      case HostState.updateRequired:
+        await client.close();
+        throw _updateRequired();
+      case HostState.starting:
+        await client.close();
+        if (waited >= _startingWait) throw _unavailable();
+        await deps.pause(_poll);
+        waited += _poll;
+    }
+  }
+}
+
+/// Démarre le démon puis l'attend jusqu'à 20 s ; `null` sans binaire ou sans réponse.
+Future<RemoteEngineClient?> _launchAndAttach(
+  EngineOpeningDeps deps,
+  DaemonPaths paths,
+  String profile,
+  String? home,
+) async {
+  if (!await deps.launchDaemon(profile, home)) return null;
+  for (var waited = Duration.zero; waited < _launchWait; waited += _poll) {
+    final client = await _attachReady(deps, paths);
+    if (client != null) return client;
+    await deps.pause(_poll);
+  }
+  return null;
+}
+
+/// Ouvre le moteur selon la politique : embarqué hors Linux de bureau, sinon démon vivant, démon lancé, puis embarqué.
+/// Les états `keyring_locked` et `update_required` et un jeton refusé ne déclenchent jamais le repli.
+Future<({EngineClient client, EngineMode used})> openEngineClient({
+  required EngineOpeningDeps deps,
+  EngineMode mode = EngineMode.auto,
+  String profile = 'default',
+  String? home,
+}) async {
+  Future<({EngineClient client, EngineMode used})> embedded() async =>
+      (client: await deps.openEmbedded(), used: EngineMode.embedded);
+  if (mode == EngineMode.embedded || !deps.isLinuxDesktop) return embedded();
+  RemoteEngineClient? client;
+  try {
+    final paths = resolveDaemonPaths(
+      profile: profile,
+      env: deps.env,
+      home: home,
+    );
+    client =
+        await _attachReady(deps, paths) ??
+        await _launchAndAttach(deps, paths, profile, home);
+  } on ArgumentError {
+    client = null;
+  } on EngineException catch (error) {
+    final launchFailure =
+        error.code == 'transport.daemon_start_failed' ||
+        error.code == 'transport.daemon_missing';
+    if (mode == EngineMode.daemon || !launchFailure) rethrow;
+  }
+  if (client != null) return (client: client, used: EngineMode.daemon);
+  if (mode == EngineMode.daemon) throw _unavailable();
+  return embedded();
+}

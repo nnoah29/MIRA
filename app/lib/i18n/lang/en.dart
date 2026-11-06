@@ -1354,6 +1354,14 @@ const Map<String, String> enStrings = {
   'Connexion au moteur en arrière-plan perdue':
       'Lost the connection to the background engine',
   'Moteur en arrière-plan injoignable': 'Background engine unreachable',
-  'Le moteur en arrière-plan est détaché':
-      'The background engine is detached',
+  'Jeton du moteur en arrière-plan introuvable':
+      'Background engine token not found',
+  'Le jeton du moteur est lisible par d’autres utilisateurs':
+      'The engine token is readable by other users',
+  'Jeton du moteur en arrière-plan illisible':
+      'Background engine token unreadable',
+  'Moteur en arrière-plan introuvable': 'Background engine not found',
+  'Impossible de démarrer le moteur en arrière-plan':
+      'Could not start the background engine',
+  'Le moteur en arrière-plan est détaché': 'The background engine is detached',
 };

@@ -2,6 +2,7 @@
 
 mod calls;
 mod recv;
+mod streams;
 
 use std::path::Path;
 

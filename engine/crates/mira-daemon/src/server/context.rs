@@ -17,12 +17,13 @@ pub struct ServerContext {
     pub max_frame: u32,
     pub hello_timeout: Duration,
     pub event_queue: usize,
+    pub event_lag_grace: Duration,
     state: watch::Sender<HostState>,
     closing: watch::Sender<bool>,
 }
 
 impl ServerContext {
-    /// Contexte aux valeurs par défaut : 16 Mio par trame, `hello` sous 5 s, file d'événements de 256, état `starting`.
+    /// Contexte aux valeurs par défaut : 16 Mio par trame, `hello` sous 5 s, file d'événements de 256 attendue 5 s avant `lagged`, état `starting`.
     pub fn new(host: Arc<Host>, token: Token) -> Self {
         Self {
             host,
@@ -30,6 +31,7 @@ impl ServerContext {
             max_frame: MAX_FRAME_BYTES,
             hello_timeout: Duration::from_secs(5),
             event_queue: 256,
+            event_lag_grace: Duration::from_secs(5),
             state: watch::channel(HostState::Starting).0,
             closing: watch::channel(false).0,
         }

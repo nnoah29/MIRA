@@ -1,8 +1,14 @@
 //! Une session par connexion : poignée de main, puis lecture des trames et écriture sérialisée des réponses.
 
 mod calls;
+mod chat;
+mod events;
 mod exchanges;
 mod hello;
+mod open;
+mod stop;
+mod stream;
+mod stream_control;
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -42,7 +48,9 @@ pub async fn run(accepted: Accepted, ctx: Arc<ServerContext>) {
     }
     let (out, queue) = mpsc::channel(OUTBOX_DEPTH);
     let writer_task = tokio::spawn(write_loop(writer, queue, ctx.max_frame));
-    let outcome = read_loop(&mut reader, &out, &ctx).await;
+    let exchanges = Exchanges::default();
+    let outcome = read_loop(&mut reader, &out, &ctx, &exchanges).await;
+    exchanges.cancel_all();
     finish(outcome, out, writer_task).await;
 }
 
@@ -56,8 +64,12 @@ async fn write_loop(mut writer: Writer, mut queue: mpsc::Receiver<Frame>, max: u
 }
 
 /// Lit et aiguille les trames jusqu'à la fin de la connexion, une violation ou l'arrêt du serveur.
-async fn read_loop(reader: &mut Reader, out: &Outbox, ctx: &Arc<ServerContext>) -> Outcome {
-    let exchanges = Exchanges::default();
+async fn read_loop(
+    reader: &mut Reader,
+    out: &Outbox,
+    ctx: &Arc<ServerContext>,
+    exchanges: &Exchanges,
+) -> Outcome {
     let mut closing = ctx.closing_receiver();
     loop {
         let read = tokio::select! {
@@ -66,7 +78,7 @@ async fn read_loop(reader: &mut Reader, out: &Outbox, ctx: &Arc<ServerContext>) 
         };
         match read {
             Ok(Some(frame)) => {
-                if !dispatch(frame, out, ctx, &exchanges).await {
+                if !dispatch(frame, out, ctx, exchanges).await {
                     return Outcome::Violation;
                 }
             }
@@ -92,8 +104,15 @@ async fn dispatch(
             fresh
         }
         Frame::Ping { nonce } => out.send(Frame::Pong { nonce }).await.is_ok(),
-        Frame::Credit { .. } | Frame::Cancel { .. } => true,
-        _ => false,
+        Frame::Credit { id, n } => {
+            exchanges.add_credit(id, n);
+            true
+        }
+        Frame::Cancel { id } => {
+            exchanges.cancel(id);
+            true
+        }
+        other => open::open_frame(other, out, ctx, exchanges),
     }
 }
 

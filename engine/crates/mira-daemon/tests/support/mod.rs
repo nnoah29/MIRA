@@ -7,10 +7,19 @@
 )]
 //! Support des tests du démon : démon jetable, client brut qui enregistre les octets reçus, moteur de test.
 
+pub mod ai_daemon;
+pub mod chat_helpers;
 pub mod client;
 pub mod daemon;
 mod daemon_access;
 pub mod engine_config;
+pub mod event_helpers;
+pub mod mail_daemon;
+
+#[path = "../contract/chat_fixture.rs"]
+pub mod chat_fixture;
+#[path = "../contract/mail_fixture.rs"]
+pub mod mail_fixture;
 
 pub use client::{Recv, TestClient, hello_with, valid_hello};
 pub use daemon::TestDaemon;

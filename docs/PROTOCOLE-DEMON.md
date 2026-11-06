@@ -83,7 +83,31 @@ Une socket laissée par un démon tué est remplacée au redémarrage ; une sock
 
 Aucune trame émise par le démon ne contient un secret (mots de passe, clés d'IA, jetons OAuth, jeton local) ; seul `has_key` dit qu'une clé existe. Les secrets que le contrat accepte déjà **en entrée** (mot de passe de `AddAccount`, clé de `SetAiApiKey`) restent permis dans les `call` entrants : ces transports sont locaux et authentifiés. Le test `secrets_in_frames` capture les octets émis par le démon pendant un scénario complet.
 
-## 9. Où sont les tests
+## 9. Client Dart
+
+Le client vit dans `app/lib/engine/remote/` ; `RemoteEngineClient` implémente `EngineClient` et `ChatStreamingClient`, comme `RustEngineClient` (pont FFI).
+
+| Fichier | Rôle |
+|---|---|
+| `frames.dart`, `frame_builders.dart` | codec incrémental des trames et constructeurs des trames clientes ; les octets sont vérifiés contre les vecteurs `engine/crates/mira-protocol/tests/golden/frames.json`, partagés avec le test Rust `golden` |
+| `byte_channel.dart` | interface `ByteChannel` (flux d'octets) et `SocketChannel` (socket Unix ou TCP loopback) |
+| `connection.dart` | poignée de main, appariement des `result` et des flux par `id`, `ping` toutes les 15 s, connexion déclarée morte après 3 intervalles sans aucune trame |
+| `remote_engine_client.dart` | appels, HTML d'origine, détachement (`close`), arrêt du démon (`shutdown`), reconnexion |
+| `event_stream.dart`, `chat_stream.dart` | flux d'événements et de chat avec crédits |
+| `daemon_paths.dart`, `daemon_token.dart`, `daemon_launcher.dart` | chemins (mêmes règles que le moteur), lecture du jeton (refusé s'il est lisible par d'autres), lancement détaché de `mira-daemon` |
+| `engine_opening.dart` | choix démon / embarqué et états de l'hôte |
+
+Règles du client :
+
+- **Crédits.** Événements : fenêtre de 256, 128 rendus tous les 128 événements remis. Chat : fenêtre de 64, 32 rendus toutes les 32 lignes.
+- **Événements.** Après `end lagged`, `end finished` ou une coupure, le flux est rouvert avec `after` égal au dernier `seq` reçu (attente de 0,5 s doublée jusqu'à 5 s, remise à 0,5 s après un événement). Sans événement reçu ni `after` donné, rien n'est rejoué : les événements survenus pendant la coupure sont perdus.
+- **Chat.** Annuler l'abonnement envoie `cancel`. Une coupure remet l'erreur `transport.disconnected` ; un chat n'est jamais rouvert.
+- **Appels.** Une coupure en plein appel remet `transport.disconnected` ; l'appel suivant se reconnecte (une seule connexion pour plusieurs appels simultanés), sinon `transport.unavailable`. Les trames de type inconnu envoyées par le démon sont ignorées.
+- **Détachement.** `close()` ferme la connexion et n'arrête jamais le démon.
+- **Choix du moteur** (`MIRA_ENGINE=auto|embedded|daemon`, défaut `auto`) : hors Linux de bureau, toujours le moteur embarqué. Sous Linux, `auto` s'attache à un démon vivant, sinon lance `mira-daemon` (variable `MIRA_DAEMON_BIN`, puis à côté de l'exécutable, puis `engine/target/{release,debug}`) et l'attend 20 s, sinon passe au moteur embarqué. `daemon` n'a pas ce repli. Les états `keyring_locked` et `update_required`, un jeton refusé ou illisible et une version incompatible sont des erreurs lisibles : **jamais de repli sur l'embarqué**, qui se heurterait au même verrou ou au même trousseau. Un hôte `starting` est interrogé toutes les 250 ms (30 s au plus).
+- **Identité.** `client_id` : 128 bits aléatoires gardés dans les préférences (`engineClientId`) ; `client_name` : `mira-app`.
+
+## 10. Où sont les tests
 
 | Sujet | Test (`engine/crates/mira-daemon/tests/` sauf mention) |
 |---|---|
@@ -95,3 +119,4 @@ Aucune trame émise par le démon ne contient un secret (mots de passe, clés d'
 | Binaire | `config.rs`, `binary_lifecycle.rs` |
 | Contrat sur trois chemins | `contract_direct.rs`, `contract_socket.rs`, `bridge/tests/contract_bridge.rs` (mêmes scénarios, `tests/contract/`) |
 | Aucun secret dans les trames | `secrets_in_frames.rs` |
+| Client Dart | `app/test/remote/` (trames, canaux, connexion, appels, événements, chat, chemins, jeton, lancement, politique de choix) ; `remote_daemon_test.dart` joue le vrai binaire (ignoré s'il n'est pas construit : `make daemon` ou `cd engine && cargo build -p mira-daemon`) |

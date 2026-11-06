@@ -21,7 +21,7 @@ workspace = true
 mira-protocol.workspace = true
 mira-host.workspace = true
 mira-assembly.workspace = true
-tokio.workspace = true
+tokio = { workspace = true, features = ["signal"] }
 serde_json.workspace = true
 ring.workspace = true
 thiserror.workspace = true

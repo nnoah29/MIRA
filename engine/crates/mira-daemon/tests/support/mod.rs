@@ -15,6 +15,8 @@ mod daemon_access;
 pub mod engine_config;
 pub mod event_helpers;
 pub mod mail_daemon;
+pub mod process;
+pub mod process_args;
 
 #[path = "../contract/chat_fixture.rs"]
 pub mod chat_fixture;

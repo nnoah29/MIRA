@@ -5,7 +5,7 @@ use mira_protocol::{Auth, Frame, HelloRefusal, PROTOCOL_VERSION, ProtocolVersion
 use tokio::io::{AsyncRead, AsyncWrite};
 
 use crate::server::ServerContext;
-use crate::wire::{read_frame, write_frame};
+use crate::wire::{WireError, read_frame, write_frame};
 
 /// Taille maximale d'un `hello` : un client non authentifié ne fait pas allouer plus.
 pub const HELLO_MAX_BYTES: u32 = 8 * 1024;
@@ -24,7 +24,24 @@ fn verdict(
     check_hello(protocol, contract, CONTRACT_VERSION)
 }
 
-/// Lit `hello` dans le délai, répond `hello_ok` ou `hello_err` ; faux si la connexion doit se fermer.
+/// Réponse à un `hello` bien formé : `hello_ok` annonçant l'état, ou le refus.
+fn answer(
+    ctx: &ServerContext,
+    protocol: ProtocolVersion,
+    contract: ContractVersion,
+    auth: &Auth,
+) -> Frame {
+    match verdict(ctx, protocol, contract, auth) {
+        Ok(()) => Frame::HelloOk {
+            protocol_version: PROTOCOL_VERSION,
+            contract_version: CONTRACT_VERSION,
+            host_state: ctx.host_state(),
+        },
+        Err(reason) => Frame::HelloErr { reason },
+    }
+}
+
+/// Lit `hello` dans le délai, répond `hello_ok` ou `hello_err` (`malformed` pour un `hello` illisible) ; faux si la connexion doit se fermer.
 pub async fn handshake<R, W>(reader: &mut R, writer: &mut W, ctx: &ServerContext) -> bool
 where
     R: AsyncRead + Unpin,
@@ -35,22 +52,17 @@ where
         read_frame(reader, ctx.max_frame.min(HELLO_MAX_BYTES)),
     )
     .await;
-    let Ok(Ok(Some(Frame::Hello {
-        protocol_version,
-        contract_version,
-        auth,
-        ..
-    }))) = read
-    else {
-        return false;
-    };
-    let reply = match verdict(ctx, protocol_version, contract_version, &auth) {
-        Ok(()) => Frame::HelloOk {
-            protocol_version: PROTOCOL_VERSION,
-            contract_version: CONTRACT_VERSION,
-            host_state: ctx.host_state(),
+    let reply = match read {
+        Ok(Ok(Some(Frame::Hello {
+            protocol_version,
+            contract_version,
+            auth,
+            ..
+        }))) => answer(ctx, protocol_version, contract_version, &auth),
+        Ok(Err(WireError::Malformed)) => Frame::HelloErr {
+            reason: HelloRefusal::Malformed,
         },
-        Err(reason) => Frame::HelloErr { reason },
+        _ => return false,
     };
     let accepted = matches!(reply, Frame::HelloOk { .. });
     write_frame(writer, &reply, ctx.max_frame).await.is_ok() && accepted

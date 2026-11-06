@@ -5,7 +5,7 @@ mod support;
 
 use std::time::Duration;
 
-use support::{TestClient, TestDaemon};
+use support::{Recv, TestClient, TestDaemon};
 
 /// Une trame annoncée au-delà du maximum ferme la connexion ; un autre client est servi ensuite.
 #[tokio::test(flavor = "multi_thread")]
@@ -19,7 +19,7 @@ async fn an_oversize_frame_closes_the_connection_and_the_daemon_keeps_serving() 
     other.hello_ok(daemon.token()).await;
 }
 
-/// Une trame coupée ferme seulement sa connexion.
+/// Une trame coupée par la fin du flux ferme sa connexion (constaté par le client), et le démon continue de servir les autres.
 #[tokio::test(flavor = "multi_thread")]
 async fn a_truncated_frame_closes_only_that_connection() {
     let daemon = TestDaemon::start_closed().await;
@@ -27,8 +27,9 @@ async fn a_truncated_frame_closes_only_that_connection() {
     client.hello_ok(daemon.token()).await;
     client.send_raw(&[0, 0, 0, 40]).await;
     client.send_raw(b"{\"type\":\"ca").await;
-    drop(client);
-    tokio::time::sleep(Duration::from_millis(100)).await;
+    client.half_close().await;
+    let outcome = client.recv_for(Duration::from_secs(2)).await;
+    assert!(matches!(outcome, Recv::Closed), "{outcome:?}");
     let mut other = TestClient::connect(&daemon).await;
     other.hello_ok(daemon.token()).await;
 }

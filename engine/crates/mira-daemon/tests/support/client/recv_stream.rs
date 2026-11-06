@@ -3,6 +3,7 @@
 use std::time::Duration;
 
 use mira_protocol::Frame;
+use tokio::io::AsyncWriteExt;
 
 use super::{Recv, TestClient};
 
@@ -25,5 +26,10 @@ impl TestClient {
                 Recv::Closed => return None,
             }
         }
+    }
+
+    /// Ferme seulement le côté écriture : le démon voit la fin du flux mais peut encore répondre.
+    pub async fn half_close(&mut self) {
+        let _ = self.stream.shutdown().await;
     }
 }

@@ -3,6 +3,8 @@
 
 mod support;
 
+use std::time::Duration;
+
 use serde_json::json;
 use support::ai_daemon::AiDaemon;
 use support::chat_fixture::chat_json;
@@ -21,6 +23,12 @@ async fn no_frame_from_the_daemon_contains_a_mail_secret() {
     wait_inbox(&mut client, &account).await;
     let accounts = json!({"domain": "account", "request": {"op": "list_accounts"}});
     assert_eq!(client.call(accounts).await["ok"], true);
+    client.open_events(40, Some(0), 500).await;
+    let replayed = client.count_until_quiet(Duration::from_millis(400)).await;
+    assert!(
+        replayed.len() > 3,
+        "le journal rejoué doit contenir les événements du scénario"
+    );
     let seen = String::from_utf8_lossy(client.received_bytes()).to_string();
     assert!(
         seen.len() > 1000,

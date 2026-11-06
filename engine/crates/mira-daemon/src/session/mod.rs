@@ -125,13 +125,14 @@ async fn dispatch(
             exchanges.cancel(id);
             true
         }
+        Frame::Unknown | Frame::Pong { .. } => true,
         other => open::open_frame(other, out, ctx, exchanges),
     }
 }
 
-/// Ferme la connexion : à l'arrêt du serveur on laisse une seconde pour écrire ce qui est en file.
+/// Ferme la connexion : à l'arrêt du serveur ou à la demi-fermeture du client, on laisse une seconde pour écrire ce qui est en file.
 async fn finish(outcome: Outcome, out: Outbox, mut writer_task: JoinHandle<()>) {
-    if matches!(outcome, Outcome::Closing) {
+    if matches!(outcome, Outcome::Closing | Outcome::Gone) {
         drop(out);
         let _ = tokio::time::timeout(FLUSH_GRACE, &mut writer_task).await;
     }

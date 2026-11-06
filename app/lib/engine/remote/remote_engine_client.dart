@@ -3,6 +3,7 @@ import 'dart:async';
 import '../../i18n/i18n.dart';
 import '../engine_client.dart';
 import 'byte_channel.dart';
+import 'chat_stream.dart';
 import 'connection.dart';
 import 'endpoint.dart';
 import 'event_stream.dart';
@@ -110,7 +111,7 @@ class RemoteEngineClient implements EngineClient, ChatStreamingClient {
 
   @override
   Stream<Map<String, dynamic>> chatStream(Map<String, dynamic> start) =>
-      throw UnimplementedError('flux de chat : tâche suivante');
+      remoteChatStream(live, lostError, start);
 
   /// Détache le client : la connexion se ferme, le démon et son moteur continuent.
   @override

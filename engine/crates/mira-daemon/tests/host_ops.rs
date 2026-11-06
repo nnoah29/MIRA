@@ -9,7 +9,7 @@ use mira_host::Host;
 use mira_protocol::{Frame, HostOp, HostState};
 use support::{Recv, TestClient, TestDaemon, config};
 
-/// `shutdown` répond ok, puis `serve` rend la main, le moteur est fermé et le profil libéré.
+/// `shutdown` répond ok, puis `serve` rend la main ; une fois l'arrêt terminé, le moteur est fermé et le profil libéré.
 #[tokio::test(flavor = "multi_thread")]
 async fn shutdown_answers_ok_then_serve_returns_and_the_engine_is_closed() {
     let home = tempfile::tempdir().unwrap();
@@ -30,6 +30,8 @@ async fn shutdown_answers_ok_then_serve_returns_and_the_engine_is_closed() {
         .await
         .unwrap()
         .unwrap();
+    let closed = mira_daemon::shutdown::run(daemon.context()).await;
+    assert!(closed.contains("\"ok\":true"), "{closed}");
     assert!(daemon.context().host.engine().is_none());
     let reopened = Host::new().open(config(home.path()));
     assert!(reopened.contains("\"ok\":true"), "{reopened}");

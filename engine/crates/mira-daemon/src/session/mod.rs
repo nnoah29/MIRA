@@ -5,6 +5,7 @@ mod chat;
 mod events;
 mod exchanges;
 mod hello;
+mod host_ops;
 mod open;
 mod stop;
 mod stream;
@@ -103,6 +104,7 @@ async fn dispatch(
             }
             fresh
         }
+        Frame::HostOp { id, op } => host_ops::run_host_op(ctx, out, id, op).await,
         Frame::Ping { nonce } => out.send(Frame::Pong { nonce }).await.is_ok(),
         Frame::Credit { id, n } => {
             exchanges.add_credit(id, n);

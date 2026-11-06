@@ -6,9 +6,12 @@ use mira_assembly::api::{AccountDraft, AccountRequest, CredentialInput, Request,
 use mira_assembly::mira_vocabulary::{AuthMethodKind, IdempotencyKey};
 use mira_testkit::imap::FakeImapServer;
 use mira_testkit::smtp::FakeSmtpServer;
+use std::sync::Arc;
+
+use mira_assembly::ports::ManualClock;
 use serde_json::{Value, json};
 
-use super::mail_fixture::{PASSWORD, USER, config, servers};
+use super::mail_fixture::{PASSWORD, USER, config_with_clock, servers, test_clock};
 use super::{TestClient, TestDaemon};
 
 /// Démon dont le moteur parle aux faux serveurs ; les serveurs vivent aussi longtemps que lui.
@@ -17,6 +20,7 @@ pub struct MailDaemon {
     pub imap: FakeImapServer,
     pub smtp: FakeSmtpServer,
     pub home: tempfile::TempDir,
+    pub clock: Arc<ManualClock>,
 }
 
 impl MailDaemon {
@@ -24,13 +28,15 @@ impl MailDaemon {
     pub async fn start() -> Self {
         let (imap, smtp) = servers().await;
         let home = tempfile::tempdir().unwrap();
-        let engine = config(home.path(), imap.port(), smtp.port());
+        let clock = test_clock();
+        let engine = config_with_clock(home.path(), imap.port(), smtp.port(), clock.clone());
         let daemon = TestDaemon::start(engine).await;
         Self {
             daemon,
             imap,
             smtp,
             home,
+            clock,
         }
     }
 

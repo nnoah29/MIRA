@@ -20,6 +20,8 @@ pub mod mail_daemon;
 pub mod chat_fixture;
 #[path = "../contract/mail_fixture.rs"]
 pub mod mail_fixture;
+#[path = "../contract/mail_samples.rs"]
+pub mod mail_samples;
 
 pub use client::{Recv, TestClient, hello_with, valid_hello};
 pub use daemon::TestDaemon;

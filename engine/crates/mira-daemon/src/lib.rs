@@ -2,6 +2,7 @@
 
 pub mod server;
 pub mod session;
+pub mod shutdown;
 pub mod token;
 pub mod transport;
 pub mod wire;

@@ -8,7 +8,7 @@ Ce document décrit ce qui **existe**. Quand une décision n'a pas de code, ou q
 
 ## 1. Vue d'ensemble
 
-Workspace Cargo `engine/` (toolchain `1.99.0` épinglée, édition 2024, resolver 3). Neuf crates ; environ 38 600 lignes de Rust hors dossiers `tests/` ; 1 433 fichiers `.rs` ; 1 080 tests réussis, 1 ignoré (voir §10).
+Workspace Cargo `engine/` (toolchain `1.99.0` épinglée, édition 2024, resolver 3). Dix-sept crates (dont six `mira-ai-*`, les fournisseurs d'IA du §6) ; environ 38 600 lignes de Rust hors dossiers `tests/` ; 1 433 fichiers `.rs` ; 1 080 tests réussis, 1 ignoré (voir §10).
 
 | Crate | Rôle | Dépend de | Tests (attributs `#[test]`) |
 |---|---|---|---|
@@ -17,9 +17,11 @@ Workspace Cargo `engine/` (toolchain `1.99.0` épinglée, édition 2024, resolve
 | `mira-provider-gmail`, `-outlook`, `-yahoo`, `-generic` | Descriptions pures de services (données du §6.7, **non vérifiées en ligne**) | `mira-vocabulary` seulement (A2) | 13 / 8 / 8 / 4 |
 | `mira-assembly` | Composition root : `build_registry()`, `production_config(profil)`, réexports pour les clients (pont Flutter) | tout | 4 |
 | `mira-host` | Hôte du moteur : l'objet `Host` possède le moteur ouvert et rend des enveloppes JSON (`open`, `execute`, `close`, flux d'événements, flux de chat, HTML d'origine) ; trousseau chiffré fichier, réglages de relevé, adaptation de plateforme. Logique commune au pont FFI et au futur démon (spec du 2026-11-04) | `mira-assembly` et bibliothèques génériques, aucun provider (A10) | 7 |
+| `mira-protocol` | Protocole de trames entre un client et le démon : types des trames, codec (longueur sur 4 octets puis JSON, taille jugée avant le corps), règles de poignée de main. Pur : aucune entrée-sortie. Format décrit dans `docs/PROTOCOLE-DEMON.md` | `mira-vocabulary`, `serde`, `serde_json`, `thiserror` seulement (A11) | 13 |
+| `mira-daemon` | Démon : binaire `mira-daemon` et bibliothèque ; écouteurs (socket Unix `0600` avec uid du pair, TCP loopback), jeton local, sessions (poignée de main, appels concurrents, flux avec crédits et annulation), arrêt propre, verrou de profil | `mira-host`, `mira-protocol`, `mira-assembly`, aucun provider (A12) | 85 |
 | `mira-testkit` | Faux serveurs IMAP / SMTP / OAuth2 sur `127.0.0.1` ; boîte noire | aucun crate `mira-*` (A5) | 105 |
 
-Sens des dépendances : pont FFI (`bridge/`, hors workspace, réduit à ses enveloppes flutter_rust_bridge) → `mira-host` → `mira-assembly` → `mira-core` et providers → `mira-vocabulary`. Le cœur ne nomme aucun provider ; seul `mira-assembly/src/composition.rs` les connaît tous (une ligne par provider, repli `generic` en premier).
+Sens des dépendances : pont FFI (`bridge/`, hors workspace, réduit à ses enveloppes flutter_rust_bridge) et `mira-daemon` (qui ajoute `mira-protocol`) → `mira-host` → `mira-assembly` → `mira-core` et providers → `mira-vocabulary`. Le cœur ne nomme aucun provider ; seul `mira-assembly/src/composition.rs` les connaît tous (une ligne par provider, repli `generic` en premier).
 
 Données d'un profil (`C/profile/paths.rs`) : `$MIRA_HOME/profiles/<profil>/`, sinon `$XDG_DATA_HOME/mira/profiles/<profil>/`, sinon `~/.local/share/mira/profiles/<profil>/`, droits `0700`. Contenu : `mira.sqlite3` (WAL), `engine.lock` (verrou exclusif D-27), `attachments/` (cache des pièces jointes), `tmp/`. Un nom de profil vide, `.`, `..` ou contenant `/`, `\`, NUL est refusé.
 
@@ -224,7 +226,7 @@ Les invariants 1–33 et les scénarios S1–S14 sont reliés à leurs tests nom
 |---|---|
 | `tools/test-check-norms`, `tools/test-check-architecture` | auto-tests des garde-fous (fixtures `tools/fixtures/{ok,bad}`, workspace saboté) |
 | `tools/check-norms` | N1 fonction ≤ 30 lignes ; N2 ≤ 6 fonctions avec corps par fichier (tests compris) ; N3 noms `utils`/`helpers`/`common`/`misc` ; N4 aucun commentaire dans un corps ; N5 exactement une ligne `///` avant chaque `fn` (dernier relevé : 1 433 fichiers, 0 violation) |
-| `tools/check-architecture` | A0 crates attendus présents ; A1 vocabulaire = `serde` + `thiserror` ; A2 providers = vocabulaire seul ; A3 cœur sans provider ni assemblage ; (A4, règle des clients CLI/TUI, retirée avec eux) ; A5 testkit sans crate `mira-*` ; A6 aucun nom de provider dans le cœur, tests compris ; A7 pas de chargement dynamique ; A8 chaque bibliothèque externe dans son module (table `ENCAPSULATED`) ; A9 aucune notion d'écran |
+| `tools/check-architecture` | A0 crates attendus présents ; A1 vocabulaire = `serde` + `thiserror` ; A2 providers = vocabulaire seul ; A3 cœur sans provider ni assemblage ; (A4, règle des clients CLI/TUI, retirée avec eux) ; A5 testkit sans crate `mira-*` ; A6 aucun nom de provider dans le cœur, tests compris ; A7 pas de chargement dynamique ; A8 chaque bibliothèque externe dans son module (table `ENCAPSULATED`) ; A9 aucune notion d'écran ; A10 `mira-host` sans provider ; A11 `mira-protocol` pur (vocabulaire, `serde`, `serde_json`, `thiserror`) ; A12 `mira-daemon` sans provider |
 | `tools/check-forbidden-patterns` | `unwrap`/`expect`/`panic!`/`todo!`/`unimplemented!`/`dbg!`/`unsafe` hors tests ; `TODO` non référencé ; marqueurs de conflit git ; `libloading`/`dlopen` dans un `Cargo.toml` |
 | `cargo fmt --check`, `cargo clippy -D warnings` | lints du workspace : `unsafe_code = forbid`, `unwrap_used`/`expect_used`/`panic`/`todo` = deny |
 | `cargo test --workspace` | `cargo-nextest` ne s'installe pas (BLOQUÉ-01) ; `ci.sh` bascule sur `cargo test` |

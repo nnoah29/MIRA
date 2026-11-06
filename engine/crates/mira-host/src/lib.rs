@@ -2,6 +2,7 @@
 //! Un `Host` possède le moteur ouvert ; chaque processus en crée autant qu'il en a besoin.
 
 pub mod chat_feed;
+mod chat_lines;
 pub mod envelope;
 pub mod events_feed;
 pub mod file_secrets;

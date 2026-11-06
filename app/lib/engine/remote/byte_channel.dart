@@ -25,6 +25,8 @@ class SocketChannel implements ByteChannel {
       onDone: _finish,
       cancelOnError: true,
     );
+    // Un échec d'écriture (pair fermé) complète `done` avec une erreur que personne d'autre n'écoute.
+    unawaited(_socket.done.then((_) {}, onError: (Object _) => _finish()));
   }
 
   final Socket _socket;

@@ -50,7 +50,9 @@ class EngineOpeningDeps {
     required this.launchDaemon,
     required this.openEmbedded,
     Future<void> Function(Duration)? pause,
-  }) : pause = pause ?? Future<void>.delayed;
+    Duration Function()? clock,
+  }) : pause = pause ?? Future<void>.delayed,
+       clock = clock ?? _stopwatchClock();
 
   /// Variables d'environnement (chemins du profil).
   final Map<String, String> env;
@@ -69,6 +71,9 @@ class EngineOpeningDeps {
 
   /// Attente entre deux essais.
   final Future<void> Function(Duration) pause;
+
+  /// Temps écoulé (monotone) : les délais de démarrage se mesurent dessus, pas sur la somme des pauses.
+  final Duration Function() clock;
 
   /// Dépendances réelles : environnement du processus, socket Unix, lanceur de `mira-daemon`.
   factory EngineOpeningDeps.real({
@@ -107,6 +112,12 @@ Future<RemoteEngineClient> _attachReal(
   }
 }
 
+/// Horloge monotone qui démarre à l'appel.
+Duration Function() _stopwatchClock() {
+  final watch = Stopwatch()..start();
+  return () => watch.elapsed;
+}
+
 /// Identifiant stable de cette installation, créé au premier besoin (128 bits aléatoires, hexadécimal).
 String loadClientId(SharedPreferences prefs) {
   final known = prefs.getString('engineClientId');
@@ -142,7 +153,7 @@ EngineException _refused(HandshakeRefused refusal) => switch (refusal.reason) {
 EngineException _updateRequired() => EngineException.local(
   'host.update_required',
   t(
-    'Le moteur en arrière-plan n’est pas compatible avec cette version de MIRA : redémarrez-le',
+    'Le moteur en arrière-plan n’est pas compatible avec cette version de MIRA : arrêtez-le (pkill mira-daemon) puis relancez MIRA',
   ),
 );
 
@@ -169,7 +180,7 @@ Future<RemoteEngineClient?> _attachReady(
   EngineOpeningDeps deps,
   DaemonPaths paths,
 ) async {
-  var waited = Duration.zero;
+  final started = deps.clock();
   while (true) {
     final client = await _attachOnce(deps, paths);
     if (client == null) return null;
@@ -189,9 +200,8 @@ Future<RemoteEngineClient?> _attachReady(
         throw _updateRequired();
       case HostState.starting:
         await client.close();
-        if (waited >= _startingWait) throw _unavailable();
+        if (deps.clock() - started >= _startingWait) throw _unavailable();
         await deps.pause(_poll);
-        waited += _poll;
     }
   }
 }
@@ -204,7 +214,8 @@ Future<RemoteEngineClient?> _launchAndAttach(
   String? home,
 ) async {
   if (!await deps.launchDaemon(profile, home)) return null;
-  for (var waited = Duration.zero; waited < _launchWait; waited += _poll) {
+  final started = deps.clock();
+  while (deps.clock() - started < _launchWait) {
     final client = await _attachReady(deps, paths);
     if (client != null) return client;
     await deps.pause(_poll);

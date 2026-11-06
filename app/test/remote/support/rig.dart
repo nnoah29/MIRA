@@ -18,6 +18,9 @@ class DaemonRig {
   final List<Duration> attemptTimes = [];
   final Stopwatch _clock = Stopwatch()..start();
 
+  /// Délai avant qu'une connexion aboutisse (démon lent à répondre).
+  Duration connectDelay = Duration.zero;
+
   /// Si vrai, la prochaine connexion échoue comme un démon absent.
   bool refuseConnections = false;
 
@@ -35,6 +38,7 @@ class DaemonRig {
   /// Fabrique de canaux à passer à `RemoteEngineClient.attach`.
   Future<ByteChannel> factory() async {
     attemptTimes.add(_clock.elapsed);
+    if (connectDelay > Duration.zero) await Future<void>.delayed(connectDelay);
     if (refuseConnections) {
       _refused++;
       throw const SocketException('connexion refusée');

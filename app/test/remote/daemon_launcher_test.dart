@@ -36,18 +36,59 @@ void main() {
     final candidates = defaultBinaryCandidates(
       env: {'MIRA_DAEMON_BIN': '/custom/mira-daemon'},
       executableDir: '/opt/mira',
+      releaseMode: true,
     );
     expect(candidates, [
       '/custom/mira-daemon',
       '/opt/mira/mira-daemon',
       '/opt/mira/lib/mira-daemon',
-      '../engine/target/release/mira-daemon',
-      '../engine/target/debug/mira-daemon',
     ]);
-    expect(
-      defaultBinaryCandidates(env: {}, executableDir: '/o').first,
-      '/o/mira-daemon',
+  });
+
+  test('release_builds_never_search_cwd_relative_paths', () {
+    final candidates = defaultBinaryCandidates(
+      env: {},
+      executableDir: '/opt/mira',
+      releaseMode: true,
     );
+    expect(candidates.where((c) => !c.startsWith('/')), isEmpty);
+    expect(candidates.any((c) => c.contains('engine/target')), isFalse);
+  });
+
+  test(
+    'dev_builds_locate_the_repository_from_the_executable_not_from_the_cwd',
+    () {
+      final repo = Directory('${dir.path}/repo')..createSync();
+      Directory('${repo.path}/engine').createSync();
+      File('${repo.path}/engine/Cargo.toml').writeAsStringSync('[workspace]');
+      final bundle = Directory('${repo.path}/app/build/linux/x64/debug/bundle')
+        ..createSync(recursive: true);
+      final candidates = defaultBinaryCandidates(
+        env: {},
+        executableDir: bundle.path,
+        releaseMode: false,
+      );
+      expect(
+        candidates,
+        contains('${repo.path}/engine/target/release/mira-daemon'),
+      );
+      expect(
+        candidates,
+        contains('${repo.path}/engine/target/debug/mira-daemon'),
+      );
+      expect(candidates.where((c) => !c.startsWith('/')), isEmpty);
+    },
+  );
+
+  test('no_repository_above_the_executable_yields_no_dev_candidates', () {
+    final bundle = Directory('${dir.path}/nowhere/bundle')
+      ..createSync(recursive: true);
+    final candidates = defaultBinaryCandidates(
+      env: {},
+      executableDir: bundle.path,
+      releaseMode: false,
+    );
+    expect(candidates.any((c) => c.contains('engine/target')), isFalse);
   });
 
   test('no_binary_found_yields_null', () {

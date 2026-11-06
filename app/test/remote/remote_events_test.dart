@@ -247,4 +247,35 @@ void main() {
     );
     await client.close();
   });
+
+  test('events_end_after_the_client_is_closed_and_stop_reconnecting', () async {
+    final rig = DaemonRig();
+    final client = await attached(rig);
+    final done = Completer<void>();
+    client.events().listen((_) {}, onDone: done.complete);
+    await rig.daemon.next('open_events');
+    await client.close();
+    await done.future.timeout(const Duration(seconds: 2));
+    final connects = rig.connects;
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(rig.connects, connects);
+  });
+
+  test('cancelling_during_a_reconnection_never_reopens_a_stream', () async {
+    final rig = DaemonRig();
+    final client = await attached(rig);
+    final sub = client.events().listen((_) {});
+    await rig.daemon.next('open_events');
+    rig.connectDelay = const Duration(milliseconds: 120);
+    await rig.daemon.close();
+    await Future<void>.delayed(const Duration(milliseconds: 60));
+    await sub.cancel();
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    expect(rig.daemons, hasLength(2), reason: 'la reconnexion en vol a abouti');
+    expect(
+      rig.daemons.last.received.where((f) => f['type'] == 'open_events'),
+      isEmpty,
+    );
+    await client.close();
+  });
 }

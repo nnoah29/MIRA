@@ -45,10 +45,17 @@ class EventPump {
       var next = _Next.afterBackoff;
       try {
         next = await _consume(await _live());
+      } on EngineException catch (error) {
+        next = error.code == 'transport.closed'
+            ? _Next.never
+            : _Next.afterBackoff;
       } on Object {
         next = _Next.afterBackoff;
       }
-      if (next == _Next.never || _stopped) return;
+      if (next == _Next.never || _stopped) {
+        await _controller.close();
+        return;
+      }
       if (next == _Next.afterBackoff) await _wait();
     }
   }
@@ -66,6 +73,7 @@ class EventPump {
 
   /// Ouvre un flux sur cette connexion et le lit jusqu'à sa fin.
   Future<_Next> _consume(RemoteConnection connection) async {
+    if (_stopped) return _Next.never;
     final id = connection.nextId();
     _connection = connection;
     _streamId = id;

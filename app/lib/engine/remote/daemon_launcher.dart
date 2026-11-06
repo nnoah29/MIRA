@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kReleaseMode;
+
 import '../../i18n/i18n.dart';
 import '../engine_client.dart';
 
@@ -11,17 +13,37 @@ typedef ProcessStarter = Future<Process> Function(
   Map<String, String>? environment,
 });
 
-/// Emplacements où chercher `mira-daemon`, du plus explicite au plus courant.
+/// Racine du dépôt (dossier qui contient `engine/Cargo.toml`) au-dessus du dossier de l'exécutable ; `null` si aucune.
+String? _repositoryRoot(String executableDir) {
+  var dir = Directory(executableDir);
+  for (var i = 0; i < 8; i++) {
+    if (File('${dir.path}/engine/Cargo.toml').existsSync()) return dir.path;
+    final parent = dir.parent;
+    if (parent.path == dir.path) return null;
+    dir = parent;
+  }
+  return null;
+}
+
+/// Emplacements où chercher `mira-daemon`, du plus explicite au plus courant. Tous sont absolus :
+/// jamais relatifs au répertoire courant, où n'importe qui peut avoir déposé un exécutable.
+/// Les binaires de compilation du dépôt ne sont cherchés que hors version de production.
 List<String> defaultBinaryCandidates({
   required Map<String, String> env,
   required String executableDir,
-}) => [
-  if ((env['MIRA_DAEMON_BIN'] ?? '').isNotEmpty) env['MIRA_DAEMON_BIN']!,
-  '$executableDir/mira-daemon',
-  '$executableDir/lib/mira-daemon',
-  '../engine/target/release/mira-daemon',
-  '../engine/target/debug/mira-daemon',
-];
+  bool releaseMode = kReleaseMode,
+}) {
+  final root = releaseMode ? null : _repositoryRoot(executableDir);
+  return [
+    if ((env['MIRA_DAEMON_BIN'] ?? '').isNotEmpty) env['MIRA_DAEMON_BIN']!,
+    '$executableDir/mira-daemon',
+    '$executableDir/lib/mira-daemon',
+    if (root != null) ...[
+      '$root/engine/target/release/mira-daemon',
+      '$root/engine/target/debug/mira-daemon',
+    ],
+  ];
+}
 
 /// Démarre le démon quand aucun ne tourne : processus détaché, jamais de jeton en argument.
 class DaemonLauncher {

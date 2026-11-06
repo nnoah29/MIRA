@@ -26,7 +26,8 @@ class World {
   int attaches = 0;
   int launches = 0;
   int embedded = 0;
-  Duration paused = Duration.zero;
+  Duration now = Duration.zero;
+  Duration attachCost = Duration.zero;
 
   /// Après autant d'attaches, l'état annoncé devient `ready` (-1 : jamais).
   int readyAfter = 0;
@@ -37,6 +38,7 @@ class World {
     isLinuxDesktop: desktop,
     attachDaemon: (DaemonPaths paths) async {
       attaches++;
+      now += attachCost;
       if (readyAfter >= 0 && attaches > readyAfter) rig.hostState = 'ready';
       final error = attachError;
       if (error != null) throw error;
@@ -57,7 +59,8 @@ class World {
       embedded++;
       return EmbeddedClient();
     },
-    pause: (d) async => paused += d,
+    pause: (d) async => now += d,
+    clock: () => now,
   );
 }
 
@@ -117,8 +120,20 @@ void main() {
       ..launchMakesItAlive = false;
     final opened = await openEngineClient(deps: world.deps());
     expect(opened.used, EngineMode.embedded);
-    expect(world.paused, greaterThanOrEqualTo(const Duration(seconds: 20)));
-    expect(world.paused, lessThan(const Duration(seconds: 21)));
+    expect(world.now, greaterThanOrEqualTo(const Duration(seconds: 20)));
+    expect(world.now, lessThan(const Duration(seconds: 21)));
+  });
+
+  test('a_daemon_that_accepts_but_never_answers_gives_up_after_20_seconds_of_real_time', () async {
+    final world = World()
+      ..binaryExists = true
+      ..attachError = const ConnectionLost('handshake')
+      ..attachCost = const Duration(seconds: 5);
+    final opened = await openEngineClient(deps: world.deps());
+    expect(opened.used, EngineMode.embedded);
+    expect(world.attaches, lessThanOrEqualTo(7));
+    expect(world.now, greaterThanOrEqualTo(const Duration(seconds: 20)));
+    expect(world.now, lessThan(const Duration(seconds: 32)));
   });
 
   test('daemon_mode_reports_the_failure_instead_of_falling_back', () async {
@@ -138,7 +153,7 @@ void main() {
     final opened = await openEngineClient(deps: world.deps());
     expect(opened.used, EngineMode.daemon);
     expect(world.attaches, 4);
-    expect(world.paused, const Duration(milliseconds: 750));
+    expect(world.now, const Duration(milliseconds: 750));
   });
 
   test(
@@ -152,7 +167,7 @@ void main() {
         openEngineClient(deps: world.deps()),
         throwsA(failsWith('transport.unavailable')),
       );
-      expect(world.paused, greaterThanOrEqualTo(const Duration(seconds: 30)));
+      expect(world.now, greaterThanOrEqualTo(const Duration(seconds: 30)));
       expect(world.embedded, 0);
     },
   );

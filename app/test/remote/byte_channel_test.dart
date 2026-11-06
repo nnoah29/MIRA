@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -87,4 +88,27 @@ void main() {
     await channel.done.timeout(const Duration(seconds: 3));
     await server.close();
   });
+
+  test('a_peer_that_closes_during_writes_raises_no_uncaught_error', () async {
+    final uncaught = <Object>[];
+    await runZonedGuarded(() async {
+      final dir = Directory.systemTemp.createTempSync('mira-chan');
+      final path = '${dir.path}/s.sock';
+      final server = await ServerSocket.bind(
+        InternetAddress(path, type: InternetAddressType.unix),
+        0,
+      );
+      server.listen((s) => s.destroy());
+      final channel = await SocketChannel.connectUnix(path);
+      for (var i = 0; i < 40; i++) {
+        channel.send(List.filled(65536, 1));
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+      await channel.done;
+      await server.close();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      dir.deleteSync(recursive: true);
+    }, (error, _) => uncaught.add(error));
+    expect(uncaught, isEmpty);
+  }, testOn: 'linux');
 }

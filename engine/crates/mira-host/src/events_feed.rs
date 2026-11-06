@@ -29,7 +29,11 @@ async fn latest_seq(engine: &Engine) -> Option<EventSeq> {
 }
 
 /// Envoie chaque événement (JSON) à `emit` ; sans `after`, seuls les événements futurs sont livrés (pas de rejeu du journal).
-pub async fn pump_events(host: &Host, after: Option<u64>, mut emit: impl FnMut(String) -> bool) {
+pub async fn pump_events<F, Fut>(host: &Host, after: Option<u64>, mut emit: F)
+where
+    F: FnMut(String) -> Fut,
+    Fut: Future<Output = bool>,
+{
     let Some(engine) = host.engine() else { return };
     let start = match after {
         Some(seq) => Some(EventSeq(seq)),
@@ -42,8 +46,10 @@ pub async fn pump_events(host: &Host, after: Option<u64>, mut emit: impl FnMut(S
     let mut subscription = engine.subscribe(filter);
     drop(engine);
     while let Some(event) = subscription.next().await {
-        let line = to_value(&event).map(|value| value.to_string());
-        if line.is_ok_and(|line| !emit(line)) {
+        let Ok(line) = to_value(&event).map(|value| value.to_string()) else {
+            continue;
+        };
+        if !emit(line).await {
             return;
         }
     }

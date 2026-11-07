@@ -1,12 +1,8 @@
 //! Ouverture du moteur derrière un trousseau verrouillé : état annoncé, réessais espacés ou sur demande, sans fenêtre.
 
-use std::sync::Arc;
 use std::time::Duration;
 
 use mira_assembly::api::EngineConfig;
-use mira_assembly::mira_vocabulary::SecretLocation;
-use mira_assembly::mira_vocabulary::error::codes::secrets;
-use mira_assembly::ports::SecretStore;
 use mira_protocol::HostState;
 
 use crate::server::{ServerContext, wait_closing};
@@ -28,21 +24,21 @@ impl Default for UnlockBackoff {
     }
 }
 
-/// Entrée lue, jamais écrite, pour savoir si le trousseau répond.
-struct ProbeKey;
-
-impl SecretLocation for ProbeKey {
-    /// Clé fixe, sans rapport avec un compte.
-    fn storage_key(&self) -> String {
-        "daemon-probe".to_string()
-    }
+/// Sonde de l'état du trousseau du système.
+pub trait KeyringProbe: Send + Sync + std::fmt::Debug {
+    /// Vrai si le trousseau est verrouillé ; appel bloquant, jamais d'invite de déverrouillage.
+    fn locked(&self) -> bool;
 }
 
-/// Dit si le trousseau refuse l'accès parce qu'il est verrouillé.
-async fn is_locked(store: &Arc<dyn SecretStore>) -> bool {
-    let store = store.clone();
-    let probe = tokio::task::spawn_blocking(move || store.get(&ProbeKey)).await;
-    matches!(probe, Ok(Err(error)) if error.code == secrets::KEYRING_LOCKED.0)
+/// Trousseau qui ne se verrouille jamais (trousseau chiffré par fichier).
+#[derive(Debug, Clone, Copy)]
+pub struct NeverLocked;
+
+impl KeyringProbe for NeverLocked {
+    /// Jamais verrouillé.
+    fn locked(&self) -> bool {
+        false
+    }
 }
 
 /// Attend le délai, une demande de réessai ou l'arrêt ; vrai si l'arrêt est demandé.
@@ -60,11 +56,12 @@ pub async fn open_when_unlocked(
     ctx: &ServerContext,
     engine: EngineConfig,
     backoff: UnlockBackoff,
+    probe: &dyn KeyringProbe,
     on_locked: impl FnOnce(),
 ) -> Option<String> {
     let mut delay = backoff.first;
     let mut on_locked = Some(on_locked);
-    while is_locked(&engine.secrets).await {
+    while tokio::task::block_in_place(|| probe.locked()) {
         ctx.set_state(HostState::KeyringLocked);
         if let Some(announce) = on_locked.take() {
             announce();

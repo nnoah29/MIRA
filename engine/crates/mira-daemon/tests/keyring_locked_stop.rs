@@ -3,13 +3,12 @@
 
 mod support;
 
-use std::sync::Arc;
 use std::time::Duration;
 
 use mira_daemon::unlock::{UnlockBackoff, open_when_unlocked};
 use mira_protocol::{Frame, HostOp, HostState};
 use support::engine_config::config;
-use support::locked_store::LockedStore;
+use support::scripted_probe::ScriptedProbe;
 use support::unlock_harness::{context, wait_state};
 use support::{TestClient, TestDaemon};
 
@@ -18,15 +17,15 @@ use support::{TestClient, TestDaemon};
 async fn a_shutdown_during_the_wait_ends_it_without_opening_the_engine() {
     let dir = tempfile::tempdir().unwrap();
     let ctx = context(dir.path());
-    let mut engine = config(dir.path());
-    engine.secrets = Arc::new(LockedStore::locked_for(usize::MAX));
+    let engine = config(dir.path());
+    let probe = ScriptedProbe::locked_for(usize::MAX);
     let long = UnlockBackoff {
         first: Duration::from_secs(60),
         max: Duration::from_secs(60),
     };
     let task = tokio::spawn({
         let ctx = ctx.clone();
-        async move { open_when_unlocked(&ctx, engine, long, || {}).await }
+        async move { open_when_unlocked(&ctx, engine, long, &probe, || {}).await }
     });
     wait_state(&ctx, HostState::KeyringLocked).await;
     ctx.begin_shutdown();

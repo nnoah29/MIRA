@@ -6,6 +6,7 @@ pub mod idle;
 mod listen;
 mod report;
 pub mod run;
+pub mod secret_service;
 pub mod server;
 pub mod session;
 mod setup;

@@ -11,8 +11,9 @@ use serde_json::Value;
 use crate::config::DaemonConfig;
 use crate::desktop::Desktop;
 use crate::report::{say, say_error};
+use crate::secret_service::probe_for;
 use crate::server::ServerContext;
-use crate::unlock::UnlockBackoff;
+use crate::unlock::{KeyringProbe, UnlockBackoff};
 use crate::{idle, listen, setup, shutdown, signals, unlock};
 
 /// Fait vivre le démon jusqu'à son arrêt et rend le code de sortie.
@@ -31,7 +32,9 @@ pub async fn run(config: DaemonConfig) -> ExitCode {
         Err(code) => return code,
     };
     let desktop = Desktop::connect(&ctx).await;
-    let outcome = serve_until_stopped(&ctx, setup.engine, config.idle_grace(), &desktop).await;
+    let probe = probe_for(config.secrets_key_file.is_some());
+    let wait = (config.idle_grace(), &desktop, probe.as_ref());
+    let outcome = serve_until_stopped(&ctx, setup.engine, wait).await;
     ctx.begin_shutdown();
     for task in tasks {
         let _ = task.await;
@@ -44,9 +47,11 @@ async fn open_engine(
     ctx: &Arc<ServerContext>,
     engine: mira_assembly::api::EngineConfig,
     desktop: &Desktop,
+    probe: &dyn KeyringProbe,
 ) -> Result<bool, ExitCode> {
     let on_locked = || desktop.announce_keyring_locked();
-    let waiting = unlock::open_when_unlocked(ctx, engine, UnlockBackoff::default(), on_locked);
+    let waiting =
+        unlock::open_when_unlocked(ctx, engine, UnlockBackoff::default(), probe, on_locked);
     let envelope = tokio::select! {
         opened = waiting => opened,
         _ = signals::wait_for_stop(ctx) => None,
@@ -71,10 +76,9 @@ async fn open_engine(
 async fn serve_until_stopped(
     ctx: &Arc<ServerContext>,
     engine: mira_assembly::api::EngineConfig,
-    idle_grace: Option<std::time::Duration>,
-    desktop: &Desktop,
+    (idle_grace, desktop, probe): (Option<std::time::Duration>, &Desktop, &dyn KeyringProbe),
 ) -> ExitCode {
-    match open_engine(ctx, engine, desktop).await {
+    match open_engine(ctx, engine, desktop, probe).await {
         Ok(true) => {}
         Ok(false) => return ExitCode::SUCCESS,
         Err(code) => return code,

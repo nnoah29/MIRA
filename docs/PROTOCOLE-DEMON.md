@@ -71,7 +71,7 @@ Un `id` ne peut pas être réutilisé tant que son échange est en cours ; le fa
 
 **À la demande ou résident.** Lancé avec `--exit-when-idle` (par l'app), le démon s'arrête quand plus aucun client n'est resté attaché pendant le délai de grâce, la grâce courant dès qu'il est prêt. Lancé sans (unité `systemd --user`, `Type=simple`, `Restart=on-failure`), il reste actif.
 
-**Trousseau verrouillé.** Avant d'ouvrir le moteur, le démon lit une entrée fixe du trousseau ; s'il est verrouillé, il annonce `keyring_locked`, envoie une notification unique, réessaie après 5 s puis 10 s, 20 s… jusqu'à 60 s, et aussitôt sur `retry_unlock`, puis ouvre le moteur.
+**Trousseau verrouillé.** Avant d'ouvrir le moteur, le démon demande au Secret Service (D-Bus `org.freedesktop.secrets`, propriété `Locked` de la collection par défaut, sans invite et sans réveiller un service arrêté) si le trousseau est verrouillé ; avec `--secrets-key-file` il n'y a rien à déverrouiller. S'il l'est, il annonce `keyring_locked`, envoie une notification unique, réessaie après 5 s puis 10 s, 20 s… jusqu'à 60 s, et aussitôt sur `retry_unlock`, puis ouvre le moteur.
 
 **Notifications et icône.** Après `ready`, le démon écoute les arrivées du moteur et affiche des notifications du bureau par D-Bus (`org.freedesktop.Notifications`, action « Ouvrir » qui relance l'app) selon les réglages du moteur et la présence des clients (`set_presence`). Il affiche une icône de zone de notification (StatusNotifierItem) : « Ouvrir MIRA », une ligne d'état, « Quitter MIRA ». Sans bus de session ou sans hôte de zone de notification, il le dit une fois sur sa sortie et continue. `MIRA_APP_BIN` désigne l'app à relancer ; sinon le binaire `mira` voisin, sinon `gtk-launch io.github.nnoah29.Mira`.
 

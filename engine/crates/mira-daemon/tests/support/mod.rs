@@ -16,8 +16,8 @@ pub mod dbus_probe;
 pub mod engine_config;
 pub mod event_helpers;
 pub mod fake_notification_server;
+pub mod fake_secret_service;
 pub mod fake_watcher;
-pub mod locked_store;
 pub mod mail_daemon;
 pub mod notification_click;
 pub mod notifier_probe;
@@ -26,6 +26,7 @@ pub mod private_bus;
 pub mod process;
 pub mod process_args;
 pub mod process_env;
+pub mod scripted_probe;
 pub mod tray_probe;
 pub mod unlock_harness;
 

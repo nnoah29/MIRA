@@ -9,7 +9,7 @@ use std::time::Duration;
 use mira_daemon::unlock::{UnlockBackoff, open_when_unlocked};
 use mira_protocol::HostState;
 use support::engine_config::config;
-use support::locked_store::LockedStore;
+use support::scripted_probe::ScriptedProbe;
 use support::unlock_harness::{context, wait_state};
 
 const SHORT: UnlockBackoff = UnlockBackoff {
@@ -26,12 +26,12 @@ const LONG: UnlockBackoff = UnlockBackoff {
 async fn a_locked_keyring_is_announced_then_the_engine_opens_after_unlock() {
     let dir = tempfile::tempdir().unwrap();
     let ctx = context(dir.path());
-    let store = Arc::new(LockedStore::locked_for(2));
-    let mut engine = config(dir.path());
-    engine.secrets = store.clone();
+    let store = Arc::new(ScriptedProbe::locked_for(2));
+    let engine = config(dir.path());
     let task = tokio::spawn({
         let ctx = ctx.clone();
-        async move { open_when_unlocked(&ctx, engine, SHORT, || {}).await }
+        let probe = store.clone();
+        async move { open_when_unlocked(&ctx, engine, SHORT, probe.as_ref(), || {}).await }
     });
     wait_state(&ctx, HostState::KeyringLocked).await;
     let opened = task.await.unwrap().unwrap();
@@ -45,12 +45,12 @@ async fn a_locked_keyring_is_announced_then_the_engine_opens_after_unlock() {
 async fn retry_unlock_skips_the_wait() {
     let dir = tempfile::tempdir().unwrap();
     let ctx = context(dir.path());
-    let store = Arc::new(LockedStore::locked_for(1));
-    let mut engine = config(dir.path());
-    engine.secrets = store.clone();
+    let store = Arc::new(ScriptedProbe::locked_for(1));
+    let engine = config(dir.path());
     let task = tokio::spawn({
         let ctx = ctx.clone();
-        async move { open_when_unlocked(&ctx, engine, LONG, || {}).await }
+        let probe = store.clone();
+        async move { open_when_unlocked(&ctx, engine, LONG, probe.as_ref(), || {}).await }
     });
     wait_state(&ctx, HostState::KeyringLocked).await;
     ctx.retry_unlock.notify_one();
@@ -63,10 +63,9 @@ async fn retry_unlock_skips_the_wait() {
 async fn an_unlocked_keyring_opens_at_once() {
     let dir = tempfile::tempdir().unwrap();
     let ctx = context(dir.path());
-    let store = Arc::new(LockedStore::locked_for(0));
-    let mut engine = config(dir.path());
-    engine.secrets = store.clone();
-    let opened = open_when_unlocked(&ctx, engine, SHORT, || {})
+    let store = Arc::new(ScriptedProbe::locked_for(0));
+    let engine = config(dir.path());
+    let opened = open_when_unlocked(&ctx, engine, SHORT, store.as_ref(), || {})
         .await
         .unwrap();
     assert!(opened.contains("\"ok\":true"), "{opened}");
@@ -79,14 +78,14 @@ async fn an_unlocked_keyring_opens_at_once() {
 async fn the_lock_is_announced_to_the_callback_only_once() {
     let dir = tempfile::tempdir().unwrap();
     let ctx = context(dir.path());
-    let mut engine = config(dir.path());
-    engine.secrets = Arc::new(LockedStore::locked_for(3));
+    let engine = config(dir.path());
+    let probe = ScriptedProbe::locked_for(3);
     let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let counter = calls.clone();
     let on_locked = move || {
         counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
     };
-    let opened = open_when_unlocked(&ctx, engine, SHORT, on_locked).await;
+    let opened = open_when_unlocked(&ctx, engine, SHORT, &probe, on_locked).await;
     assert!(opened.unwrap().contains("\"ok\":true"));
     assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 1);
 }

@@ -76,9 +76,7 @@ jobs:
         with: { channel: stable }
       - run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev libdbus-1-dev dpkg-dev rpm fakeroot libfuse2 desktop-file-utils
-          curl -fsSL -o appimagetool https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
-          chmod +x appimagetool && sudo mv appimagetool /usr/local/bin/appimagetool
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev libdbus-1-dev dpkg-dev rpm fakeroot
       - name: Identifiants OAuth
         run: |
           umask 077
@@ -91,7 +89,6 @@ jobs:
           packaging/deb/build.sh
           packaging/rpm/build.sh
           packaging/tarball.sh
-          packaging/appimage/build.sh
       - uses: actions/upload-artifact@v4
         with:
           name: linux
@@ -99,7 +96,6 @@ jobs:
             packaging/out/*.deb
             packaging/out/*.rpm
             packaging/out/*.tar.gz
-            packaging/out/*.AppImage
   android:
     needs: [plan, tag]
     runs-on: ubuntu-22.04

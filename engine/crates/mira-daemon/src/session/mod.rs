@@ -1,5 +1,6 @@
 //! Une session par connexion : poignée de main, puis lecture des trames et écriture sérialisée des réponses.
 
+mod access;
 mod calls;
 mod chat;
 mod events;
@@ -21,6 +22,7 @@ use tokio::io::{ReadHalf, WriteHalf};
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 
+pub use access::Access;
 pub use exchanges::Exchanges;
 pub use stop::Stop;
 pub use stream::Stream;
@@ -53,14 +55,22 @@ pub async fn run(accepted: Accepted, ctx: Arc<ServerContext>) {
     let (mut reader, mut writer) = tokio::io::split(accepted.stream);
     let welcome = hello::handshake(&mut reader, &mut writer, &ctx).await;
     drop(permit);
-    if !welcome {
+    let Some(access) = welcome else {
         return;
-    }
+    };
     let _attached = ctx.clients.attach();
     let (out, queue) = mpsc::channel(OUTBOX_DEPTH);
     let mut writer_task = tokio::spawn(write_loop(writer, queue, ctx.max_frame));
     let exchanges = Exchanges::default();
-    let outcome = read_loop(&mut reader, &out, &ctx, &exchanges, &mut writer_task).await;
+    let outcome = read_loop(
+        &mut reader,
+        &out,
+        &ctx,
+        &exchanges,
+        &mut writer_task,
+        access,
+    )
+    .await;
     exchanges.cancel_all();
     finish(outcome, out, writer_task).await;
 }
@@ -81,6 +91,7 @@ async fn read_loop(
     ctx: &Arc<ServerContext>,
     exchanges: &Exchanges,
     writer_task: &mut JoinHandle<()>,
+    access: Access,
 ) -> Outcome {
     let mut closing = ctx.closing_receiver();
     loop {
@@ -91,7 +102,7 @@ async fn read_loop(
         };
         match read {
             Ok(Some(frame)) => {
-                if !dispatch(frame, out, ctx, exchanges).await {
+                if !access.permits(&frame) || !dispatch(frame, out, ctx, exchanges).await {
                     return Outcome::Violation;
                 }
             }

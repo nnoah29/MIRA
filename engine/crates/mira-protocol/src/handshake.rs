@@ -29,3 +29,8 @@ pub fn check_hello(
     }
     Ok(())
 }
+
+/// Dit si le client annonce un contrat plus récent que celui du moteur : c'est alors le moteur qui est périmé.
+pub fn client_is_newer(server: ContractVersion, client: ContractVersion) -> bool {
+    (client.major, client.minor) > (server.major, server.minor)
+}

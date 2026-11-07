@@ -11,7 +11,7 @@ use serde_json::Value;
 use crate::config::DaemonConfig;
 use crate::report::{say, say_error};
 use crate::server::ServerContext;
-use crate::{listen, setup, shutdown, signals};
+use crate::{idle, listen, setup, shutdown};
 
 /// Fait vivre le démon jusqu'à son arrêt et rend le code de sortie.
 pub async fn run(config: DaemonConfig) -> ExitCode {
@@ -28,7 +28,7 @@ pub async fn run(config: DaemonConfig) -> ExitCode {
         Ok(tasks) => tasks,
         Err(code) => return code,
     };
-    let outcome = serve_until_stopped(&ctx, setup.engine).await;
+    let outcome = serve_until_stopped(&ctx, setup.engine, config.idle_grace()).await;
     ctx.begin_shutdown();
     for task in tasks {
         let _ = task.await;
@@ -40,6 +40,7 @@ pub async fn run(config: DaemonConfig) -> ExitCode {
 async fn serve_until_stopped(
     ctx: &Arc<ServerContext>,
     engine: mira_assembly::api::EngineConfig,
+    idle_grace: Option<std::time::Duration>,
 ) -> ExitCode {
     let opened: Value = serde_json::from_str(&ctx.host.open(engine)).unwrap_or(Value::Null);
     if opened["ok"] != true {
@@ -51,7 +52,7 @@ async fn serve_until_stopped(
     }
     ctx.set_state(HostState::Ready);
     say("mira-daemon prêt");
-    signals::wait_for_stop(ctx).await;
+    idle::wait_for_end(ctx, idle_grace).await;
     let _ = shutdown::run(ctx.clone()).await;
     ExitCode::SUCCESS
 }

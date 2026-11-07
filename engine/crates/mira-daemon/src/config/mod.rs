@@ -5,6 +5,7 @@ mod key;
 mod paths;
 
 use std::path::PathBuf;
+use std::time::Duration;
 
 use clap::Parser;
 
@@ -43,12 +44,24 @@ pub struct DaemonConfig {
     /// Fichier de configuration (défaut : `daemon.toml` du dossier MIRA)
     #[arg(long)]
     pub config_file: Option<PathBuf>,
+    /// S'arrêter quand le dernier client est parti depuis `--idle-grace-secs` (démon lancé à la demande)
+    #[arg(long)]
+    pub exit_when_idle: bool,
+    /// Délai de grâce avant l'arrêt à l'inactivité, en secondes
+    #[arg(long, default_value_t = 30)]
+    pub idle_grace_secs: u64,
 }
 
 impl DaemonConfig {
     /// Nom du profil à ouvrir.
     pub fn profile(&self) -> &str {
         self.profile.as_deref().unwrap_or("default")
+    }
+
+    /// Délai de grâce de l'arrêt à l'inactivité, si le démon doit s'arrêter ainsi.
+    pub fn idle_grace(&self) -> Option<Duration> {
+        self.exit_when_idle
+            .then(|| Duration::from_secs(self.idle_grace_secs))
     }
 
     /// Complète les options absentes avec les valeurs du fichier.

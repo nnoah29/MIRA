@@ -56,6 +56,7 @@ pub async fn run(accepted: Accepted, ctx: Arc<ServerContext>) {
     if !welcome {
         return;
     }
+    let _attached = ctx.clients.attach();
     let (out, queue) = mpsc::channel(OUTBOX_DEPTH);
     let mut writer_task = tokio::spawn(write_loop(writer, queue, ctx.max_frame));
     let exchanges = Exchanges::default();

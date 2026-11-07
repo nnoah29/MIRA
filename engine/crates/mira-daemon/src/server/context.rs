@@ -7,6 +7,7 @@ use mira_host::Host;
 use mira_protocol::{HostState, MAX_FRAME_BYTES};
 use tokio::sync::{OnceCell, Semaphore, watch};
 
+use super::Clients;
 use crate::token::Token;
 
 /// Nombre de connexions qui peuvent attendre leur `hello` en même temps.
@@ -23,6 +24,7 @@ pub struct ServerContext {
     pub event_lag_grace: Duration,
     pub pending_hello: Arc<Semaphore>,
     pub shutdown_wait: Duration,
+    pub clients: Clients,
     state: watch::Sender<HostState>,
     closing: watch::Sender<bool>,
     outcome: OnceCell<String>,
@@ -40,6 +42,7 @@ impl ServerContext {
             event_lag_grace: Duration::from_secs(5),
             pending_hello: Arc::new(Semaphore::new(MAX_PENDING_HELLO)),
             shutdown_wait: Duration::from_secs(5),
+            clients: Clients::default(),
             state: watch::channel(HostState::Starting).0,
             closing: watch::channel(false).0,
             outcome: OnceCell::new(),

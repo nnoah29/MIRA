@@ -2119,6 +2119,7 @@ class MailStore extends ChangeNotifier {
     final src = source;
     final admin = src?.engineSettingsAdmin;
     if (admin == null) return;
+    unawaited(_reportPresence(_focused));
     _engineSettingsSub = src!.engineSettingsChanges.listen(
       (_) => refreshEngineSettings(),
     );

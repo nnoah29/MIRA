@@ -22,6 +22,7 @@ class RemoteEngineClient
   Future<RemoteConnection>? _reconnecting;
   final Duration _eventBackoff;
   bool _detached = false;
+  bool? _presence;
 
   /// Se connecte au démon et fait la poignée de main ; les échecs de connexion ou de refus sont remontés tels quels.
   static Future<RemoteEngineClient> attach(
@@ -71,7 +72,18 @@ class RemoteEngineClient
       await fresh.close();
       throw _detachedError();
     }
-    return _connection = fresh;
+    _connection = fresh;
+    _announcePresence(fresh);
+    return fresh;
+  }
+
+  /// Redit au démon le dernier focus connu : une connexion neuve n'a aucune présence.
+  void _announcePresence(RemoteConnection connection) {
+    final focused = _presence;
+    if (focused == null) return;
+    connection
+        .request(setPresenceFrame(connection.nextId(), focused))
+        .then<void>((_) {}, onError: (Object _) {});
   }
 
   EngineException _detachedError() => EngineException.local(
@@ -151,6 +163,7 @@ class RemoteEngineClient
   /// Déclare au démon si la fenêtre de l'app est au premier plan (il notifie ou non en conséquence).
   @override
   Future<void> setPresence(bool focused) async {
+    _presence = focused;
     await _exchange((id) => setPresenceFrame(id, focused));
   }
 

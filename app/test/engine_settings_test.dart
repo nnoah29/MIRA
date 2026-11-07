@@ -228,13 +228,13 @@ void main() {
     store.dispose();
   });
 
-  test('le focus de la fenêtre est déclaré au moteur', () async {
+  test('le focus de la fenêtre est déclaré dès l’ouverture puis à chaque changement', () async {
     final fake = FakeEngine()..engineSettingsOn = true;
     final (store, _) = await open(fake);
     store.appFocused = false;
     store.appFocused = true;
     await settle();
-    expect(fake.presenceCalls, [false, true]);
+    expect(fake.presenceCalls, [true, false, true]);
     store.dispose();
   });
 }

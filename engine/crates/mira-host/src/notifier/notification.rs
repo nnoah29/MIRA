@@ -11,7 +11,7 @@ pub struct Notification {
 }
 
 /// Affichage des notifications : D-Bus pour le démon, Dart pour le pont embarqué.
-pub trait NotificationSink: Send + Sync {
+pub trait NotificationSink: Send + Sync + std::fmt::Debug {
     /// Affiche la notification ; ne bloque pas et n'échoue pas (un affichage perdu n'arrête rien).
     fn show(&self, notification: Notification);
 }

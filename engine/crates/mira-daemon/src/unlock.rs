@@ -55,15 +55,20 @@ async fn wait_or_stop(ctx: &ServerContext, delay: Duration) -> bool {
     }
 }
 
-/// Ouvre le moteur dès que le trousseau répond ; `None` si l'arrêt est demandé pendant l'attente.
+/// Ouvre le moteur dès que le trousseau répond ; `on_locked` est appelé une seule fois, au premier refus ; `None` si l'arrêt est demandé pendant l'attente.
 pub async fn open_when_unlocked(
     ctx: &ServerContext,
     engine: EngineConfig,
     backoff: UnlockBackoff,
+    on_locked: impl FnOnce(),
 ) -> Option<String> {
     let mut delay = backoff.first;
+    let mut on_locked = Some(on_locked);
     while is_locked(&engine.secrets).await {
         ctx.set_state(HostState::KeyringLocked);
+        if let Some(announce) = on_locked.take() {
+            announce();
+        }
         if wait_or_stop(ctx, delay).await {
             return None;
         }

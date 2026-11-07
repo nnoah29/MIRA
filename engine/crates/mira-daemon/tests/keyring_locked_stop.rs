@@ -26,7 +26,7 @@ async fn a_shutdown_during_the_wait_ends_it_without_opening_the_engine() {
     };
     let task = tokio::spawn({
         let ctx = ctx.clone();
-        async move { open_when_unlocked(&ctx, engine, long).await }
+        async move { open_when_unlocked(&ctx, engine, long, || {}).await }
     });
     wait_state(&ctx, HostState::KeyringLocked).await;
     ctx.begin_shutdown();

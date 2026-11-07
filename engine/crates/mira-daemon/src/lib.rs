@@ -1,6 +1,7 @@
 //! Démon MIRA : héberge le moteur (via `mira-host`) et expose le contrat JSON par le protocole de `mira-protocol`.
 
 pub mod config;
+pub mod desktop;
 pub mod idle;
 mod listen;
 mod report;

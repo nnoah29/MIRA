@@ -20,3 +20,19 @@ fn any_other_locale_gives_english_texts() {
         assert_eq!(texts.many(2), "2 new messages", "{locale}");
     }
 }
+
+/// Les textes d'attente du trousseau existent dans les deux langues.
+#[test]
+fn the_keyring_texts_follow_the_locale() {
+    let french = Texts::for_locale("fr");
+    assert_eq!(
+        french.keyring_locked_title,
+        "MIRA attend le déverrouillage du trousseau"
+    );
+    let english = Texts::for_locale("en");
+    assert_eq!(
+        english.keyring_locked_title,
+        "MIRA is waiting for your keyring"
+    );
+    assert!(!french.keyring_locked_body.is_empty() && !english.keyring_locked_body.is_empty());
+}

@@ -31,7 +31,7 @@ async fn a_locked_keyring_is_announced_then_the_engine_opens_after_unlock() {
     engine.secrets = store.clone();
     let task = tokio::spawn({
         let ctx = ctx.clone();
-        async move { open_when_unlocked(&ctx, engine, SHORT).await }
+        async move { open_when_unlocked(&ctx, engine, SHORT, || {}).await }
     });
     wait_state(&ctx, HostState::KeyringLocked).await;
     let opened = task.await.unwrap().unwrap();
@@ -50,7 +50,7 @@ async fn retry_unlock_skips_the_wait() {
     engine.secrets = store.clone();
     let task = tokio::spawn({
         let ctx = ctx.clone();
-        async move { open_when_unlocked(&ctx, engine, LONG).await }
+        async move { open_when_unlocked(&ctx, engine, LONG, || {}).await }
     });
     wait_state(&ctx, HostState::KeyringLocked).await;
     ctx.retry_unlock.notify_one();
@@ -66,8 +66,27 @@ async fn an_unlocked_keyring_opens_at_once() {
     let store = Arc::new(LockedStore::locked_for(0));
     let mut engine = config(dir.path());
     engine.secrets = store.clone();
-    let opened = open_when_unlocked(&ctx, engine, SHORT).await.unwrap();
+    let opened = open_when_unlocked(&ctx, engine, SHORT, || {})
+        .await
+        .unwrap();
     assert!(opened.contains("\"ok\":true"), "{opened}");
     assert_eq!(store.probes(), 1);
     assert_eq!(ctx.host_state(), HostState::Starting);
+}
+
+/// Le rappel d'attente est appelé une seule fois, même après plusieurs essais verrouillés.
+#[tokio::test(flavor = "multi_thread")]
+async fn the_lock_is_announced_to_the_callback_only_once() {
+    let dir = tempfile::tempdir().unwrap();
+    let ctx = context(dir.path());
+    let mut engine = config(dir.path());
+    engine.secrets = Arc::new(LockedStore::locked_for(3));
+    let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let counter = calls.clone();
+    let on_locked = move || {
+        counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    };
+    let opened = open_when_unlocked(&ctx, engine, SHORT, on_locked).await;
+    assert!(opened.unwrap().contains("\"ok\":true"));
+    assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 1);
 }

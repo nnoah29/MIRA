@@ -9,6 +9,7 @@ use mira_protocol::HostState;
 use serde_json::Value;
 
 use crate::config::DaemonConfig;
+use crate::desktop::Desktop;
 use crate::report::{say, say_error};
 use crate::server::ServerContext;
 use crate::unlock::UnlockBackoff;
@@ -29,7 +30,8 @@ pub async fn run(config: DaemonConfig) -> ExitCode {
         Ok(tasks) => tasks,
         Err(code) => return code,
     };
-    let outcome = serve_until_stopped(&ctx, setup.engine, config.idle_grace()).await;
+    let desktop = Desktop::connect();
+    let outcome = serve_until_stopped(&ctx, setup.engine, config.idle_grace(), &desktop).await;
     ctx.begin_shutdown();
     for task in tasks {
         let _ = task.await;
@@ -41,8 +43,10 @@ pub async fn run(config: DaemonConfig) -> ExitCode {
 async fn open_engine(
     ctx: &Arc<ServerContext>,
     engine: mira_assembly::api::EngineConfig,
+    desktop: &Desktop,
 ) -> Result<bool, ExitCode> {
-    let waiting = unlock::open_when_unlocked(ctx, engine, UnlockBackoff::default());
+    let on_locked = || desktop.announce_keyring_locked();
+    let waiting = unlock::open_when_unlocked(ctx, engine, UnlockBackoff::default(), on_locked);
     let envelope = tokio::select! {
         opened = waiting => opened,
         _ = signals::wait_for_stop(ctx) => None,
@@ -68,14 +72,16 @@ async fn serve_until_stopped(
     ctx: &Arc<ServerContext>,
     engine: mira_assembly::api::EngineConfig,
     idle_grace: Option<std::time::Duration>,
+    desktop: &Desktop,
 ) -> ExitCode {
-    match open_engine(ctx, engine).await {
+    match open_engine(ctx, engine, desktop).await {
         Ok(true) => {}
         Ok(false) => return ExitCode::SUCCESS,
         Err(code) => return code,
     }
     ctx.set_state(HostState::Ready);
     say("mira-daemon prêt");
+    desktop.start_notifier(ctx.host.clone());
     idle::wait_for_end(ctx, idle_grace).await;
     let _ = shutdown::run(ctx.clone()).await;
     ExitCode::SUCCESS

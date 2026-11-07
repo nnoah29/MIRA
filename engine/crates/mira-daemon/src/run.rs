@@ -15,6 +15,10 @@ use crate::{listen, setup, shutdown, signals};
 
 /// Fait vivre le démon jusqu'à son arrêt et rend le code de sortie.
 pub async fn run(config: DaemonConfig) -> ExitCode {
+    let config = match setup::load_config(config) {
+        Ok(config) => config,
+        Err(code) => return code,
+    };
     let setup = match setup::prepare(&config) {
         Ok(setup) => setup,
         Err(code) => return code,

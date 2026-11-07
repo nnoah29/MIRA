@@ -1523,10 +1523,12 @@ dependencies = [
  "mira-protocol",
  "mira-testkit",
  "ring",
+ "serde",
  "serde_json",
  "tempfile",
  "thiserror",
  "tokio",
+ "toml",
 ]
 
 [[package]]

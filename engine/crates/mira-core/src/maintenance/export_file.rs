@@ -2,6 +2,7 @@
 
 use std::fs::{self, OpenOptions};
 use std::io::Write;
+#[cfg(unix)]
 use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
 
@@ -29,10 +30,11 @@ fn temporary_path(destination: &Path) -> Result<PathBuf, MiraError> {
 /// Écrit le contenu de façon atomique ; en cas d'échec, aucun fichier partiel ne reste
 pub fn write_export_file(destination: &Path, bytes: &[u8]) -> Result<(), MiraError> {
     let temporary = temporary_path(destination)?;
-    let written = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .mode(0o600)
+    let mut options = OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    options.mode(0o600);
+    let written = options
         .open(&temporary)
         .and_then(|mut file| file.write_all(bytes).and_then(|()| file.sync_all()))
         .and_then(|()| fs::rename(&temporary, destination));

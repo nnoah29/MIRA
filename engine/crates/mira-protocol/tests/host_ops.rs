@@ -23,3 +23,18 @@ fn retry_unlock_round_trips() {
 fn protocol_version_is_one_dot_one() {
     assert_eq!((PROTOCOL_VERSION.major, PROTOCOL_VERSION.minor), (1, 1));
 }
+
+/// `set_presence` porte l'identifiant de l'échange et l'état du focus, à plat.
+#[test]
+fn set_presence_round_trips() {
+    let text = r#"{"type":"set_presence","id":8,"focused":true}"#;
+    let frame: Frame = serde_json::from_str(text).unwrap();
+    assert_eq!(
+        frame,
+        Frame::SetPresence {
+            id: 8,
+            focused: true
+        }
+    );
+    assert_eq!(serde_json::to_string(&frame).unwrap(), text);
+}

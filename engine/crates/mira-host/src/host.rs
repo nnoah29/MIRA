@@ -4,10 +4,13 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 use mira_assembly::api::Engine;
 
+use crate::Presence;
+
 /// Possède au plus un moteur ouvert, partagé par tous les appels faits sur cet hôte.
 #[derive(Debug, Default)]
 pub struct Host {
     slot: Mutex<Option<Arc<Engine>>>,
+    presence: Presence,
 }
 
 impl Host {
@@ -15,7 +18,13 @@ impl Host {
     pub const fn new() -> Self {
         Self {
             slot: Mutex::new(None),
+            presence: Presence::new(),
         }
+    }
+
+    /// Présence des clients attachés à cet hôte.
+    pub const fn presence(&self) -> &Presence {
+        &self.presence
     }
 
     /// Verrouille l'emplacement du moteur, même si un appel précédent a paniqué.

@@ -38,3 +38,18 @@ fn set_presence_round_trips() {
     );
     assert_eq!(serde_json::to_string(&frame).unwrap(), text);
 }
+
+/// `test_notification` s'écrit comme les autres opérations d'hôte.
+#[test]
+fn test_notification_round_trips() {
+    let text = r#"{"type":"host_op","id":9,"op":"test_notification"}"#;
+    let frame: Frame = serde_json::from_str(text).unwrap();
+    assert_eq!(
+        frame,
+        Frame::HostOp {
+            id: 9,
+            op: HostOp::TestNotification
+        }
+    );
+    assert_eq!(serde_json::to_string(&frame).unwrap(), text);
+}

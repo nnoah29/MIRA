@@ -7,6 +7,7 @@ pub struct Texts {
     pub many_new_messages: String,
     pub keyring_locked_title: String,
     pub keyring_locked_body: String,
+    pub test_body: String,
 }
 
 impl Texts {
@@ -18,6 +19,7 @@ impl Texts {
                 "{n} nouveaux messages",
                 "MIRA attend le déverrouillage du trousseau",
                 "Déverrouillez votre trousseau de clés pour reprendre la synchronisation.",
+                "Les notifications fonctionnent.",
             ]
         } else {
             [
@@ -25,14 +27,16 @@ impl Texts {
                 "{n} new messages",
                 "MIRA is waiting for your keyring",
                 "Unlock your keyring to resume syncing.",
+                "Notifications are working.",
             ]
         };
-        let [single, many, locked_title, locked_body] = fields.map(str::to_string);
+        let [single, many, locked_title, locked_body, test_body] = fields.map(str::to_string);
         Self {
             new_message: single,
             many_new_messages: many,
             keyring_locked_title: locked_title,
             keyring_locked_body: locked_body,
+            test_body,
         }
     }
 

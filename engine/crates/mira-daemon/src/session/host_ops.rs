@@ -24,6 +24,10 @@ pub async fn run_host_op(ctx: &Arc<ServerContext>, out: &Outbox, id: u64, op: Ho
             tokio::spawn(shutdown::run(ctx.clone()));
             sent
         }
+        HostOp::TestNotification => {
+            ctx.test_notification.run();
+            reply_ok(out, id).await
+        }
         HostOp::RetryUnlock => {
             ctx.retry_unlock.notify_one();
             reply_ok(out, id).await

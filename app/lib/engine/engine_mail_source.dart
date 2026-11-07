@@ -141,6 +141,15 @@ class EngineMailSource implements MailSource {
   EngineSettingsAdmin get engineSettingsAdmin => EngineSettingsAdmin(client);
 
   @override
+  Future<bool> requestTestNotification() async {
+    if (client case final DaemonNotificationClient daemon) {
+      await daemon.testNotification();
+      return true;
+    }
+    return false;
+  }
+
+  @override
   Future<void> reportPresence(bool focused) async {
     if (client case final PresenceClient presence) {
       await presence.setPresence(focused);

@@ -27,7 +27,7 @@ Une trame est un corps **JSON** précédé de sa longueur sur **4 octets, grand-
 | `open_events` | C→S | `id`, `after` (entier ou `null`), `credit` (fenêtre initiale) |
 | `open_chat` | C→S | `id`, `request` (le `ChatStart` du contrat), `credit` |
 | `get_original_html` | C→S | `id`, `message` (identifiant du message) ; la réponse est un `result` |
-| `host_op` | C→S | `id`, `op` : `shutdown` ou `retry_unlock` (protocole 1.1) ; la réponse est un `result` |
+| `host_op` | C→S | `id`, `op` : `shutdown`, `retry_unlock` ou `test_notification` (le démon affiche une notification d’essai ; protocole 1.1) ; la réponse est un `result` |
 | `set_presence` | C→S | `id`, `focused` (booléen : la fenêtre du client est au premier plan) ; la réponse est un `result` (protocole 1.1). Chaque connexion compte pour une présence ; sa fermeture la retire. Le démon notifie ou non selon qu'un client est au premier plan |
 | `event` | S→C | `id`, `event` (un événement du journal) |
 | `chat_delta` | S→C | `id`, `line` (une ligne du flux de chat : `started`, `text`, `usage`, `done`, `error`, …) |

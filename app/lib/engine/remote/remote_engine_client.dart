@@ -14,7 +14,11 @@ import 'host_state.dart';
 
 /// Client du moteur par le démon : le même contrat JSON que le pont FFI, porté par le protocole de trames.
 class RemoteEngineClient
-    implements EngineClient, ChatStreamingClient, PresenceClient {
+    implements
+        EngineClient,
+        ChatStreamingClient,
+        PresenceClient,
+        DaemonNotificationClient {
   RemoteEngineClient._(this._open, this._connection, this._eventBackoff);
 
   final Future<RemoteConnection> Function() _open;
@@ -179,6 +183,12 @@ class RemoteEngineClient
   Future<void> setPresence(bool focused) async {
     _presence = focused;
     await _exchange((id) => setPresenceFrame(id, focused));
+  }
+
+  /// Demande au démon d'afficher une notification d'essai.
+  @override
+  Future<void> testNotification() async {
+    await _exchange(hostOpTestNotificationFrame);
   }
 
   /// Demande au démon de réessayer tout de suite d'ouvrir le trousseau du système.

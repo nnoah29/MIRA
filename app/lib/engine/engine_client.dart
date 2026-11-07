@@ -42,6 +42,12 @@ abstract interface class PresenceClient {
   Future<void> setPresence(bool focused);
 }
 
+/// Démon à qui l'app demande d'afficher lui-même une notification d'essai.
+abstract interface class DaemonNotificationClient {
+  /// Le démon affiche une notification d'essai.
+  Future<void> testNotification();
+}
+
 /// Moteur embarqué qui décide lui-même des notifications et les envoie à l'app, qui se contente de les afficher.
 abstract interface class NotificationStreamClient {
   /// Notifications décidées par le moteur (`id`, `title`, `body`, `sound`, `message`), dans la langue `locale` ; fermer le flux arrête le notifieur.

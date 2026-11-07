@@ -2627,8 +2627,14 @@ class MailStore extends ChangeNotifier {
     _writeEngineSettings(current.withMuted(next));
   }
 
-  /// Affiche une notification d'essai, même au premier plan.
+  /// Notification d'essai : le démon l'affiche s'il y en a un, sinon l'app (moteur embarqué).
   Future<void> testNotification() async {
+    try {
+      if (await source?.requestTestNotification() ?? false) return;
+    } catch (_) {
+      toast(t('Notifications indisponibles sur ce système'), err: true);
+      return;
+    }
     final n = notifications;
     if (n == null) {
       toast(t('Notifications indisponibles sur ce système'), err: true);

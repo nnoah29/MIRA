@@ -62,6 +62,13 @@ Map<String, dynamic> hostOpRetryUnlockFrame(int id) => {
   'op': 'retry_unlock',
 };
 
+/// Trame `host_op` qui demande au démon d'afficher une notification d'essai.
+Map<String, dynamic> hostOpTestNotificationFrame(int id) => {
+  'type': 'host_op',
+  'id': id,
+  'op': 'test_notification',
+};
+
 /// Trame `set_presence` : la fenêtre de l'app est (ou n'est plus) au premier plan.
 Map<String, dynamic> setPresenceFrame(int id, bool focused) => {
   'type': 'set_presence',

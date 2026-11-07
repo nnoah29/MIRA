@@ -39,6 +39,14 @@ void main() {
     await client.close();
   });
 
+  test('test_notification_asks_the_daemon_to_show_one', () async {
+    final rig = DaemonRig();
+    final client = await attach(rig);
+    await client.testNotification();
+    expect((await rig.daemon.next('host_op'))['op'], 'test_notification');
+    await client.close();
+  });
+
   test('the_last_presence_is_announced_again_after_a_reconnection', () async {
     final rig = DaemonRig();
     final client = await attach(rig);

@@ -13,7 +13,14 @@ import 'package:mira/state/mail_notifier.dart';
 import 'package:mira/state/store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class FakeEngine implements EngineClient, PresenceClient {
+class FakeEngine
+    implements EngineClient, PresenceClient, DaemonNotificationClient {
+  /// Demandes de notification d'essai faites au démon.
+  int testRequests = 0;
+
+  @override
+  Future<void> testNotification() async => testRequests++;
+
   /// Réglages de notification du moteur factice (défauts du moteur).
   Map<String, dynamic> engineNotifications = {
     'enabled': true,
@@ -727,6 +734,14 @@ void main() {
       store.appFocused = false;
       return (store, fake, n);
     }
+
+    test('le bouton d’essai demande la notification au démon', () async {
+      final (store, fake, n) = await start();
+      await store.testNotification();
+      expect(fake.testRequests, 1);
+      expect(n.shown, isEmpty);
+      store.dispose();
+    });
 
     test('le clic sur une notification ouvre le fil du message', () async {
       final (store, _, n) = await start();

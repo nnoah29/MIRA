@@ -129,6 +129,15 @@
   "hex": "0000002d7b2274797065223a22686f73745f6f70222c226964223a362c226f70223a2272657472795f756e6c6f636b227d"
  },
  {
+  "name": "host_op_test_notification",
+  "frame": {
+   "type": "host_op",
+   "id": 9,
+   "op": "test_notification"
+  },
+  "hex": "000000327b2274797065223a22686f73745f6f70222c226964223a392c226f70223a22746573745f6e6f74696669636174696f6e227d"
+ },
+ {
   "name": "set_presence",
   "frame": {
    "type": "set_presence",

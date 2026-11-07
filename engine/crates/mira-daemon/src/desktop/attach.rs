@@ -17,6 +17,7 @@ use crate::shutdown;
 
 const WINDOW: Duration = Duration::from_secs(2);
 const KEYRING_NOTICE_ID: u32 = 1;
+const TEST_NOTICE_ID: u32 = 2;
 
 /// Intégration au bureau d'un démon : un récepteur de notifications s'il y a un bus, et les textes de la langue.
 #[derive(Debug)]
@@ -63,6 +64,18 @@ impl Desktop {
             title: self.texts.keyring_locked_title.clone(),
             body: self.texts.keyring_locked_body.clone(),
             sound: false,
+            message: None,
+        });
+    }
+
+    /// Affiche une notification d'essai, pour que l'utilisateur vérifie que le démon sait notifier.
+    pub fn announce_test(&self) {
+        let Some(sink) = &self.sink else { return };
+        sink.show(Notification {
+            id: TEST_NOTICE_ID,
+            title: "MIRA".to_string(),
+            body: self.texts.test_body.clone(),
+            sound: true,
             message: None,
         });
     }

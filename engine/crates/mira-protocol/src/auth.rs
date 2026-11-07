@@ -32,4 +32,5 @@ pub enum HostState {
 pub enum HostOp {
     Shutdown,
     RetryUnlock,
+    TestNotification,
 }

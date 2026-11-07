@@ -34,6 +34,7 @@ void main() {
   test('the_presence_and_unlock_builders_match_the_shared_golden_frames', () {
     expect(setPresenceFrame(8, true), golden('set_presence'));
     expect(hostOpRetryUnlockFrame(6), golden('host_op_retry_unlock'));
+    expect(hostOpTestNotificationFrame(9), golden('host_op_test_notification'));
   });
 
   test('the_client_speaks_protocol_1_1_and_contract_1_7', () {

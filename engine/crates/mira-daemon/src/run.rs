@@ -31,9 +31,11 @@ pub async fn run(config: DaemonConfig) -> ExitCode {
         Ok(tasks) => tasks,
         Err(code) => return code,
     };
-    let desktop = Desktop::connect(&ctx).await;
+    let desktop = Arc::new(Desktop::connect(&ctx).await);
+    let tester = desktop.clone();
+    ctx.test_notification.set(move || tester.announce_test());
     let probe = probe_for(config.secrets_key_file.is_some());
-    let wait = (config.idle_grace(), &desktop, probe.as_ref());
+    let wait = (config.idle_grace(), desktop.as_ref(), probe.as_ref());
     let outcome = serve_until_stopped(&ctx, setup.engine, wait).await;
     ctx.begin_shutdown();
     for task in tasks {

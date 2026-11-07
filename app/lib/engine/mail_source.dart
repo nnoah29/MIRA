@@ -99,6 +99,9 @@ abstract class MailSource {
   /// Signale chaque changement des réglages du moteur.
   Stream<void> get engineSettingsChanges;
 
+  /// Demande au démon d'afficher une notification d'essai ; faux s'il n'y a pas de démon (l'app affiche alors la sienne).
+  Future<bool> requestTestNotification();
+
   /// Déclare au moteur si la fenêtre de l'app est au premier plan (sans effet en démonstration).
   Future<void> reportPresence(bool focused);
 

@@ -7,7 +7,7 @@ use mira_host::Host;
 use mira_protocol::{HostState, MAX_FRAME_BYTES};
 use tokio::sync::{Notify, OnceCell, Semaphore, watch};
 
-use super::Clients;
+use super::{Clients, TestHook};
 use crate::token::Token;
 
 /// Nombre de connexions qui peuvent attendre leur `hello` en même temps.
@@ -26,6 +26,7 @@ pub struct ServerContext {
     pub shutdown_wait: Duration,
     pub clients: Clients,
     pub retry_unlock: Notify,
+    pub test_notification: TestHook,
     pub(super) state: watch::Sender<HostState>,
     closing: watch::Sender<bool>,
     outcome: OnceCell<String>,
@@ -45,6 +46,7 @@ impl ServerContext {
             shutdown_wait: Duration::from_secs(5),
             clients: Clients::default(),
             retry_unlock: Notify::new(),
+            test_notification: TestHook::default(),
             state: watch::channel(HostState::Starting).0,
             closing: watch::channel(false).0,
             outcome: OnceCell::new(),

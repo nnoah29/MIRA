@@ -203,8 +203,34 @@ Future<RemoteEngineClient?> _attachReady(
   }
 }
 
+/// Le démon lancé a trouvé le profil pris (code 3) : sans doute l'ancien démon, en cours d'arrêt.
+class _ProfileBusy implements Exception {
+  const _ProfileBusy();
+}
+
+const int _lockLaunches = 5;
+const Duration _lockPause = Duration(milliseconds: 500);
+
 /// Démarre le démon puis l'attend jusqu'à 20 s ; `null` sans binaire ou sans réponse.
+/// Un démon qui sort en code 3 est relancé quelques fois : l'ancien libère le profil après sa socket.
 Future<RemoteEngineClient?> _launchAndAttach(
+  EngineOpeningDeps deps,
+  DaemonPaths paths,
+  String profile,
+  String? home,
+) async {
+  for (var attempt = 1; ; attempt++) {
+    try {
+      return await _launchOnce(deps, paths, profile, home);
+    } on _ProfileBusy {
+      if (attempt >= _lockLaunches) throw daemonExitedError(3);
+      await deps.pause(_lockPause);
+    }
+  }
+}
+
+/// Un lancement et son attente ; [_ProfileBusy] si le démon sort en code 3.
+Future<RemoteEngineClient?> _launchOnce(
   EngineOpeningDeps deps,
   DaemonPaths paths,
   String profile,
@@ -219,6 +245,7 @@ Future<RemoteEngineClient?> _launchAndAttach(
     final client = await _attachReady(deps, paths);
     if (client != null) return client;
     final exited = exitCode;
+    if (exited == 3) throw const _ProfileBusy();
     if (exited != null) throw daemonExitedError(exited);
     await deps.pause(_poll);
   }

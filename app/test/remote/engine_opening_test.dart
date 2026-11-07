@@ -31,6 +31,9 @@ class World {
   int restarts = 0;
   bool restartFixesIt = true;
   final Completer<int> exited = Completer<int>();
+
+  /// Sort de chaque lancement, dans l'ordre (`null` : le démon reste en vie) ; vide : `exited`.
+  final List<int?> exitPlan = [];
   int embedded = 0;
   Duration now = Duration.zero;
   Duration attachCost = Duration.zero;
@@ -58,8 +61,10 @@ class World {
     launchDaemon: (profile, home) async {
       launches++;
       if (!binaryExists) return null;
-      alive = launchMakesItAlive;
-      return LaunchedDaemon(exitCode: exited.future);
+      final plan = exitPlan.isEmpty ? null : exitPlan.removeAt(0);
+      alive = launchMakesItAlive && plan == null;
+      final exit = plan == null ? exited.future : Future.value(plan);
+      return LaunchedDaemon(exitCode: exit);
     },
     restartDaemon: (stale) async {
       restarts++;
@@ -239,6 +244,29 @@ void main() {
       throwsA(failsWith('transport.daemon_exited')),
     );
     expect(world.now, lessThan(const Duration(seconds: 5)));
+    expect(world.embedded, 0);
+  });
+
+  test(
+    'a_daemon_exiting_with_code_3_is_relaunched_until_the_old_one_is_gone',
+    () async {
+      final world = World()..binaryExists = true;
+      world.exitPlan.addAll([3, 3, null]);
+      final opened = await openEngineClient(deps: world.deps());
+      expect(opened.used, EngineMode.daemon);
+      expect(world.launches, 3);
+      expect(world.embedded, 0);
+    },
+  );
+
+  test('code_3_that_never_goes_away_ends_in_a_clear_error', () async {
+    final world = World()..binaryExists = true;
+    world.exitPlan.addAll([3, 3, 3, 3, 3, 3, 3]);
+    await expectLater(
+      openEngineClient(deps: world.deps()),
+      throwsA(failsWith('transport.daemon_exited')),
+    );
+    expect(world.launches, 5);
     expect(world.embedded, 0);
   });
 

@@ -180,6 +180,24 @@ void main() {
     expect(rowText(tester, 0), isNot(contains('server.ai_unavailable')));
   });
 
+  testWidgets('outcome_shows_the_http_status_the_service_returned', (
+    tester,
+  ) async {
+    await openJournal(tester, [
+      entry(0, outcome: 'server.ai_bad_response:http_405'),
+      entry(1, outcome: 'server.ai_quota_exhausted'),
+    ]);
+    expect(
+      rowText(tester, 0),
+      contains('Réponse inattendue du service d’IA (HTTP 405)'),
+    );
+    expect(rowText(tester, 0), isNot(contains('http_405')));
+    expect(
+      rowText(tester, 1),
+      contains('Crédit ou quota du service d’IA épuisé'),
+    );
+  });
+
   testWidgets('toggle_switches_between_connections_and_journal', (
     tester,
   ) async {

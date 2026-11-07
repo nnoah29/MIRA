@@ -1,0 +1,228 @@
+[
+ {
+  "name": "hello",
+  "frame": {
+   "type": "hello",
+   "protocol_version": {
+    "major": 1,
+    "minor": 0
+   },
+   "contract_version": {
+    "major": 1,
+    "minor": 6
+   },
+   "client_id": "c1",
+   "client_name": "mira-app",
+   "auth": {
+    "type": "local_token",
+    "token": "t"
+   }
+  },
+  "hex": "000000b67b2274797065223a2268656c6c6f222c2270726f746f636f6c5f76657273696f6e223a7b226d616a6f72223a312c226d696e6f72223a307d2c22636f6e74726163745f76657273696f6e223a7b226d616a6f72223a312c226d696e6f72223a367d2c22636c69656e745f6964223a226331222c22636c69656e745f6e616d65223a226d6972612d617070222c2261757468223a7b2274797065223a226c6f63616c5f746f6b656e222c22746f6b656e223a2274227d7d"
+ },
+ {
+  "name": "hello_ok",
+  "frame": {
+   "type": "hello_ok",
+   "protocol_version": {
+    "major": 1,
+    "minor": 0
+   },
+   "contract_version": {
+    "major": 1,
+    "minor": 6
+   },
+   "host_state": "ready"
+  },
+  "hex": "0000007a7b2274797065223a2268656c6c6f5f6f6b222c2270726f746f636f6c5f76657273696f6e223a7b226d616a6f72223a312c226d696e6f72223a307d2c22636f6e74726163745f76657273696f6e223a7b226d616a6f72223a312c226d696e6f72223a367d2c22686f73745f7374617465223a227265616479227d"
+ },
+ {
+  "name": "hello_err",
+  "frame": {
+   "type": "hello_err",
+   "reason": "contract_version"
+  },
+  "hex": "000000307b2274797065223a2268656c6c6f5f657272222c22726561736f6e223a22636f6e74726163745f76657273696f6e227d"
+ },
+ {
+  "name": "call",
+  "frame": {
+   "type": "call",
+   "id": 1,
+   "request": {
+    "domain": "account",
+    "request": {
+     "op": "list_accounts"
+    }
+   }
+  },
+  "hex": "000000567b2274797065223a2263616c6c222c226964223a312c2272657175657374223a7b22646f6d61696e223a226163636f756e74222c2272657175657374223a7b226f70223a226c6973745f6163636f756e7473227d7d7d"
+ },
+ {
+  "name": "result",
+  "frame": {
+   "type": "result",
+   "id": 1,
+   "envelope": {
+    "ok": true
+   }
+  },
+  "hex": "0000002f7b2274797065223a22726573756c74222c226964223a312c22656e76656c6f7065223a7b226f6b223a747275657d7d"
+ },
+ {
+  "name": "open_events",
+  "frame": {
+   "type": "open_events",
+   "id": 2,
+   "after": null,
+   "credit": 8
+  },
+  "hex": "000000357b2274797065223a226f70656e5f6576656e7473222c226964223a322c226166746572223a6e756c6c2c22637265646974223a387d"
+ },
+ {
+  "name": "open_events_after",
+  "frame": {
+   "type": "open_events",
+   "id": 2,
+   "after": 41,
+   "credit": 256
+  },
+  "hex": "000000357b2274797065223a226f70656e5f6576656e7473222c226964223a322c226166746572223a34312c22637265646974223a3235367d"
+ },
+ {
+  "name": "open_chat",
+  "frame": {
+   "type": "open_chat",
+   "id": 3,
+   "request": {
+    "mode": "x"
+   },
+   "credit": 8
+  },
+  "hex": "0000003d7b2274797065223a226f70656e5f63686174222c226964223a332c2272657175657374223a7b226d6f6465223a2278227d2c22637265646974223a387d"
+ },
+ {
+  "name": "get_original_html",
+  "frame": {
+   "type": "get_original_html",
+   "id": 4,
+   "message": "m1"
+  },
+  "hex": "000000327b2274797065223a226765745f6f726967696e616c5f68746d6c222c226964223a342c226d657373616765223a226d31227d"
+ },
+ {
+  "name": "host_op",
+  "frame": {
+   "type": "host_op",
+   "id": 5,
+   "op": "shutdown"
+  },
+  "hex": "000000297b2274797065223a22686f73745f6f70222c226964223a352c226f70223a2273687574646f776e227d"
+ },
+ {
+  "name": "host_op_retry_unlock",
+  "frame": {
+   "type": "host_op",
+   "id": 6,
+   "op": "retry_unlock"
+  },
+  "hex": "0000002d7b2274797065223a22686f73745f6f70222c226964223a362c226f70223a2272657472795f756e6c6f636b227d"
+ },
+ {
+  "name": "host_op_test_notification",
+  "frame": {
+   "type": "host_op",
+   "id": 9,
+   "op": "test_notification"
+  },
+  "hex": "000000327b2274797065223a22686f73745f6f70222c226964223a392c226f70223a22746573745f6e6f74696669636174696f6e227d"
+ },
+ {
+  "name": "set_presence",
+  "frame": {
+   "type": "set_presence",
+   "id": 8,
+   "focused": true
+  },
+  "hex": "0000002d7b2274797065223a227365745f70726573656e6365222c226964223a382c22666f6375736564223a747275657d"
+ },
+ {
+  "name": "event",
+  "frame": {
+   "type": "event",
+   "id": 2,
+   "event": {
+    "seq": 1
+   }
+  },
+  "hex": "000000297b2274797065223a226576656e74222c226964223a322c226576656e74223a7b22736571223a317d7d"
+ },
+ {
+  "name": "chat_delta",
+  "frame": {
+   "type": "chat_delta",
+   "id": 3,
+   "line": {
+    "type": "started"
+   }
+  },
+  "hex": "000000367b2274797065223a22636861745f64656c7461222c226964223a332c226c696e65223a7b2274797065223a2273746172746564227d7d"
+ },
+ {
+  "name": "credit",
+  "frame": {
+   "type": "credit",
+   "id": 2,
+   "n": 4
+  },
+  "hex": "0000001e7b2274797065223a22637265646974222c226964223a322c226e223a347d"
+ },
+ {
+  "name": "cancel",
+  "frame": {
+   "type": "cancel",
+   "id": 3
+  },
+  "hex": "000000187b2274797065223a2263616e63656c222c226964223a337d"
+ },
+ {
+  "name": "end_lagged",
+  "frame": {
+   "type": "end",
+   "id": 2,
+   "reason": {
+    "type": "lagged"
+   }
+  },
+  "hex": "000000307b2274797065223a22656e64222c226964223a322c22726561736f6e223a7b2274797065223a226c6167676564227d7d"
+ },
+ {
+  "name": "end_error",
+  "frame": {
+   "type": "end",
+   "id": 2,
+   "reason": {
+    "type": "error",
+    "code": "c",
+    "message": "m"
+   }
+  },
+  "hex": "000000487b2274797065223a22656e64222c226964223a322c22726561736f6e223a7b2274797065223a226572726f72222c22636f6465223a2263222c226d657373616765223a226d227d7d"
+ },
+ {
+  "name": "ping",
+  "frame": {
+   "type": "ping",
+   "nonce": 7
+  },
+  "hex": "000000197b2274797065223a2270696e67222c226e6f6e6365223a377d"
+ },
+ {
+  "name": "pong",
+  "frame": {
+   "type": "pong",
+   "nonce": 7
+  },
+  "hex": "000000197b2274797065223a22706f6e67222c226e6f6e6365223a377d"
+ }
+]

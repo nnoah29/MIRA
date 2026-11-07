@@ -1,0 +1,36 @@
+[package]
+name = "mira-daemon"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Démon MIRA : héberge le moteur et expose le contrat JSON sur une socket locale"
+
+[lib]
+name = "mira_daemon"
+
+[[bin]]
+name = "mira-daemon"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+mira-protocol.workspace = true
+mira-host.workspace = true
+mira-assembly.workspace = true
+tokio = { workspace = true, features = ["signal"] }
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+ring.workspace = true
+thiserror.workspace = true
+zbus = "5"
+ksni = { version = "0.3", default-features = false, features = ["async-io"] }
+clap.workspace = true
+
+[dev-dependencies]
+mira-testkit.workspace = true
+tempfile.workspace = true

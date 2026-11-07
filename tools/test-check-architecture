@@ -27,6 +27,9 @@ sabotage; echo '//! Cas Gmail' >> "$tmp/engine/crates/mira-core/src/lib.rs"; exp
 sabotage; printf '//! x\npub fn f() { let _ = rusqlite::version(); }\n' > "$tmp/engine/crates/mira-core/src/registry/leak.rs"; expect A8
 sabotage; printf '//! x\npub const ADDRESS: &str = "x@ymail.com";\n' >> "$tmp/engine/crates/mira-core/src/lib.rs"; expect A6
 sabotage; echo 'mira-core.workspace = true' >> "$tmp/engine/crates/mira-ai-groq/Cargo.toml"; expect A2
+sabotage; echo 'mira-provider-gmail.workspace = true' >> "$tmp/engine/crates/mira-host/Cargo.toml"; expect A10
+sabotage; echo 'tokio.workspace = true' >> "$tmp/engine/crates/mira-protocol/Cargo.toml"; expect A11
+sabotage; echo 'mira-provider-gmail.workspace = true' >> "$tmp/engine/crates/mira-daemon/Cargo.toml"; expect A12
 sabotage; echo 'mira-provider-generic.workspace = true' >> "$tmp/engine/crates/mira-ai-openai/Cargo.toml"; expect A2
 sabotage; echo '//! Cas Mistral' >> "$tmp/engine/crates/mira-core/src/lib.rs"; expect A6
 sabotage; printf '//! x\npub const URL: &str = "https://api.openai.com/v1";\n' >> "$tmp/engine/crates/mira-core/src/lib.rs"; expect A6

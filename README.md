@@ -100,6 +100,18 @@ MIRA_DEMO=1 flutter run -d linux
 
 MIRA is a Rust engine (`engine/`) with a Flutter interface (`app/`). Building and contributing: see [`docs/ENGINE.md`](docs/ENGINE.md) and [`app/README.md`](app/README.md).
 
+### Building from source: OAuth credentials
+
+Release builds embed (encrypted) the OAuth client of the official MIRA application, so end users never have to create anything on Google or Microsoft. Those credentials are **not** in this repository.
+
+If you build MIRA yourself, you are expected to bring your own:
+
+1. Create an OAuth client ("Desktop app") in the Google Cloud console and, if you want Outlook, an app registration in Microsoft Entra.
+2. Put them in a `config.toml` (`[oauth.gmail]`, `[oauth.outlook]`, see [`docs/ENGINE.md`](docs/ENGINE.md)): `~/.config/mira/config.toml` on Linux, `%APPDATA%\mira\config.toml` on Windows.
+3. Build with `MIRA_OAUTH_CONFIG` pointing to that file, or use `packaging/windows/build.ps1` on Windows. Without it, the build succeeds but Google and Microsoft sign-in will not work. App-password and plain IMAP/SMTP accounts are unaffected.
+
+Never commit that file.
+
 ## License
 
 MIRA is released under the [MIT License](LICENSE).

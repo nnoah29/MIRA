@@ -1,0 +1,29 @@
+name: windows
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ["engine/**", "bridge/**", "app/**", ".github/workflows/windows.yml"]
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.99.0"
+      - name: Moteur et hôte (compilation)
+        working-directory: engine
+        run: cargo check -p mira-core -p mira-host
+      - name: Pont FFI (bibliothèque)
+        working-directory: bridge
+        run: cargo build --release
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Application Windows
+        working-directory: app
+        env:
+          CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
+        run: |
+          flutter pub get
+          flutter build windows --release

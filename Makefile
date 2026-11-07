@@ -45,11 +45,14 @@ demo: app-deps ## Lance l'application sur les données de démonstration (sans m
 	cd $(APP) && MIRA_DEMO=1 flutter run --$(MODE) -d $(DEVICE)
 
 ##@ Construire
-.PHONY: build engine bridge app-deps app-build install-linux
+.PHONY: build engine daemon bridge app-deps app-build install-linux
 build: engine bridge ## Construit le moteur et le pont
 
 engine: ## Construit tout le workspace du moteur (release)
 	cd $(ENGINE) && cargo build --workspace --release
+
+daemon: ## Construit le démon engine/target/release/mira-daemon (l'app le lance si MIRA_ENGINE=auto|daemon)
+	cd $(ENGINE) && cargo build --release -p mira-daemon
 
 bridge: ## Construit la bibliothèque FFI (bridge/target/release/libmira_bridge.so)
 	cd $(BRIDGE) && cargo build --release

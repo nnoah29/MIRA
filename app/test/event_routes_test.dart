@@ -41,10 +41,7 @@ void main() {
   test('un événement qui change des données relit le compte ou met à jour un compteur', () {
     expect(effectsOf('message_updated'), {EventEffect.reload});
     expect(effectsOf('mailbox_counters_updated'), {EventEffect.counters});
-    expect(effectsOf('new_message_received'), {
-      EventEffect.reload,
-      EventEffect.verdict,
-    });
+    expect(effectsOf('new_message_received'), {EventEffect.reload});
     expect(effectsOf('sync_finished'), {EventEffect.sync, EventEffect.reload});
     expect(effectsOf('action_failed'), {EventEffect.reload});
     expect(effectsOf('account_deleted'), {EventEffect.accounts});

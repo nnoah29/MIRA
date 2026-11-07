@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mira/data/html_lite.dart';
 import 'package:mira/data/models.dart';
@@ -12,7 +13,28 @@ import 'package:mira/state/mail_notifier.dart';
 import 'package:mira/state/store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class FakeEngine implements EngineClient {
+class FakeEngine
+    implements EngineClient, PresenceClient, DaemonNotificationClient {
+  /// Demandes de notification d'essai faites au démon.
+  int testRequests = 0;
+
+  @override
+  Future<void> testNotification() async => testRequests++;
+
+  /// Réglages de notification du moteur factice (défauts du moteur).
+  Map<String, dynamic> engineNotifications = {
+    'enabled': true,
+    'preview': true,
+    'sound': true,
+    'when_focused': false,
+  };
+
+  /// Focus déclaré par l'app, dans l'ordre.
+  final presenceCalls = <bool>[];
+
+  @override
+  Future<void> setPresence(bool focused) async => presenceCalls.add(focused);
+
   final calls = <String>[];
   final queueAsked = <Map<String, dynamic>>[];
   final filteredAsked = <Map<String, dynamic>>[];
@@ -26,6 +48,7 @@ class FakeEngine implements EngineClient {
   bool labelOnly = false;
   bool serverCopy = false;
   bool failActions = false;
+  bool failDraftUpdate = false;
   String outboxState = 'pending';
   final searches = <String>[];
   final limits = <int>[];
@@ -59,6 +82,7 @@ class FakeEngine implements EngineClient {
         'poll_secs': enginePoll,
         'muted_accounts': engineMuted,
         'quiet_hours': engineQuiet,
+        'notifications': engineNotifications,
       },
     },
   };
@@ -279,6 +303,9 @@ class FakeEngine implements EngineClient {
         };
         return _write('draft', drafts['dr1']);
       case 'compose.update_draft':
+        if (failDraftUpdate) {
+          throw const EngineException('invalid_input.address', 'refusé');
+        }
         composed.add({'op': r['op'], ...r});
         drafts[r['draft']]!.addAll((r['changes'] as Map).cast());
         return {'type': 'done'};
@@ -532,6 +559,8 @@ class FakeEngine implements EngineClient {
         enginePoll = given['poll_secs'] as int?;
         engineMuted = [...(given['muted_accounts'] as List).cast<String>()];
         engineQuiet = (given['quiet_hours'] as Map?)?.cast<String, dynamic>();
+        engineNotifications = (given['notifications'] as Map)
+            .cast<String, dynamic>();
         if (_settingsAnswer().toString() != before) {
           feed.add({
             'kind': {
@@ -706,126 +735,20 @@ void main() {
       return (store, fake, n);
     }
 
-    Future<void> arrive(FakeEngine fake) async {
-      fake.arrived = true;
-      fake.feed.add({
-        'kind': {
-          'type': 'new_message_received',
-          'account': 'acc1',
-          'message': 'm10',
-          'mailbox': 'mb-inbox',
-        },
-      });
-      await Future<void>.delayed(const Duration(milliseconds: 400));
-    }
-
-    test(
-      'un nouveau message notifie expéditeur et objet ; le clic l’ouvre',
-      () async {
-        final (store, fake, n) = await start();
-        await arrive(fake);
-        expect(n.shown.single.$1, 'Bob');
-        expect(n.shown.single.$2, 'Arrivé à l’instant');
-        n.tap!(n.shown.single.$3!);
-        expect(store.open, n.shown.single.$3);
-        store.dispose();
-      },
-    );
-
-    test(
-      'rien au premier plan, en mode discret le contenu est masqué',
-      () async {
-        final (store, fake, n) = await start({'notifyPreview': '0'});
-        store.appFocused = true;
-        await arrive(fake);
-        expect(n.shown, isEmpty);
-        store.setNotify('notifyFocused', '1');
-        fake.arrived = false;
-        await store.refreshNow();
-        await arrive(fake);
-        expect(n.shown.single.$1, 'Nouveau message');
-        expect(n.shown.single.$2, 'alice@example.org');
-        store.dispose();
-      },
-    );
-
-    void verdict(FakeEngine fake, String id, bool silenced) => fake.feed.add({
-      'kind': {
-        'type': 'new_message_received',
-        'account': 'acc1',
-        'message': id,
-        'mailbox': 'mb-inbox',
-        'silenced': silenced,
-      },
-    });
-
-    void touch(FakeEngine fake) => fake.feed.add({
-      'kind': {'type': 'message_updated', 'account': 'acc1', 'message': 'm1'},
-    });
-
-    Map<String, dynamic> recent(
-      FakeEngine fake,
-      String id,
-      String thread,
-      int agoMs, {
-      bool seen = false,
-    }) => fake._msg(
-      id,
-      'Sujet $id',
-      thread: thread,
-      seen: seen,
-      date: DateTime.now().millisecondsSinceEpoch - agoMs,
-    );
-
-    Future<void> settle() =>
-        Future<void>.delayed(const Duration(milliseconds: 400));
-
-    test(
-      'fil avec deux nouveaux messages, le plus récent muet : notifié une fois',
-      () async {
-        final (store, fake, n) = await start();
-        fake.extraInbox.addAll([
-          recent(fake, 'm11', 't9', 2000),
-          recent(fake, 'm12', 't9', 1000),
-        ]);
-        verdict(fake, 'm11', false);
-        verdict(fake, 'm12', true);
-        await settle();
-        expect(n.shown, hasLength(1));
-        expect(n.shown.single.$3, 'acc1/inbox/t9');
-        store.dispose();
-      },
-    );
-
-    test('un nouveau message muet plus ancien que le dernier du fil n’ajoute aucune notification', () async {
+    test('le bouton d’essai demande la notification au démon', () async {
       final (store, fake, n) = await start();
-      fake.extraInbox.add(recent(fake, 'm15', 't8', 0));
-      verdict(fake, 'm15', false);
-      await settle();
-      expect(n.shown, hasLength(1));
-      fake.extraInbox.add(recent(fake, 'm14', 't8', 5000));
-      verdict(fake, 'm14', true);
-      await settle();
-      expect(n.shown, hasLength(1));
+      await store.testNotification();
+      expect(fake.testRequests, 1);
+      expect(n.shown, isEmpty);
       store.dispose();
     });
 
-    test('verdict reçu après la relecture : muet jamais notifié, non muet notifié une fois', () async {
-      final (store, fake, n) = await start();
-      fake.extraInbox.add(recent(fake, 'm16', 't7', 0));
-      touch(fake);
-      await settle();
-      expect(n.shown, isEmpty);
-      verdict(fake, 'm16', true);
-      await settle();
-      expect(n.shown, isEmpty);
-      fake.extraInbox.add(recent(fake, 'm17', 't6', 0));
-      touch(fake);
-      await settle();
-      expect(n.shown, isEmpty);
-      verdict(fake, 'm17', false);
-      await settle();
-      expect(n.shown.single.$3, 'acc1/inbox/t6');
+    test('le clic sur une notification ouvre le fil du message', () async {
+      final (store, _, n) = await start();
+      final target = store.mails.first;
+      final ref = target.msgs.first.ref!;
+      n.tap!(ref);
+      expect(store.open, target.id);
       store.dispose();
     });
 
@@ -837,54 +760,6 @@ void main() {
       });
       await got.timeout(const Duration(seconds: 2));
       store.dispose();
-    });
-
-    test('compte coupé ou notifications désactivées : rien', () async {
-      final (store, fake, n) = await start({'notifyMuted': '["acc1"]'});
-      await arrive(fake);
-      expect(n.shown, isEmpty);
-      store.dispose();
-    });
-
-    test('heures calmes, y compris à cheval sur minuit', () {
-      SharedPreferences.setMockInitialValues({'notifyQuiet': '22-7'});
-      return SharedPreferences.getInstance().then((p) {
-        final cfg = NotifySettings(p);
-        expect([22, 23, 0, 6].every(cfg.isQuiet), isTrue);
-        expect([7, 12, 21].any(cfg.isQuiet), isFalse);
-      });
-    });
-
-    test('les messages déjà connus ou anciens ne sont pas « nouveaux »', () {
-      final now = DateTime.now().millisecondsSinceEpoch;
-      Mail mail(String ref, int date) => Mail(
-        id: 'a/inbox/$ref',
-        folder: 'inbox',
-        from: const Person('B', 'b@x.org'),
-        to: const [],
-        subject: ref,
-        date: date,
-        unread: true,
-        msgs: [
-          Msg(
-            from: const Person('B', 'b@x.org'),
-            date: date,
-            body: const [],
-            ref: ref,
-          ),
-        ],
-        account: 'a',
-      );
-      final before = [mail('old', now)];
-      expect(newArrivals(null, [mail('x', now)], now), isEmpty);
-      expect(
-        newArrivals(before, [
-          mail('old', now),
-          mail('x', now),
-          mail('ancient', 0),
-        ], now).map((m) => m.subject),
-        ['x'],
-      );
     });
   });
 
@@ -2149,6 +2024,108 @@ void main() {
       expect(fake.composed.where((c) => c['op'] == 'update_draft').length, 2);
       store.dispose();
     });
+
+    test('envoyer ne part pas avec une version périmée si le dernier enregistrement a échoué', () async {
+      final (store, fake) = await start();
+      store.c!.dirty = true;
+      store.saveDraft();
+      await store.c!.push;
+      expect(fake.drafts['dr1']!['to'], [
+        {'name': 'Bob', 'address': 'bob@example.org'},
+      ]);
+      store.c!.to
+        ..clear()
+        ..add(const Person('Carol', 'carol@example.org'));
+      fake.failDraftUpdate = true;
+      await store.send();
+      expect(
+        fake.composed.where((c) => c['op'] == 'send_draft'),
+        isEmpty,
+        reason: 'le moteur aurait envoyé à bob@example.org',
+      );
+      expect(store.c, isNotNull);
+      store.dispose();
+    });
+
+    test('un enregistrement refusé est journalisé avec sa raison', () async {
+      final (store, fake) = await start();
+      final lines = <String>[];
+      final previous = debugPrint;
+      debugPrint = (String? m, {int? wrapWidth}) => lines.add('$m');
+      addTearDown(() => debugPrint = previous);
+      fake.failDraftUpdate = true;
+      store.c!.dirty = true;
+      store.saveDraft();
+      await store.c!.push;
+      expect(store.c!.saved, 'Enregistrement impossible');
+      expect(lines.join('\n'), contains('invalid_input.address'));
+      store.dispose();
+    });
+
+    test(
+      'un texte qui annonce une pièce jointe sans en avoir retient l\'envoi',
+      () async {
+        final (store, fake) = await start();
+        store.c!.body.setContent('Voir le devis ci-joint', List.filled(22, 0));
+        await store.send();
+        expect(fake.composed.where((c) => c['op'] == 'send_draft'), isEmpty);
+        expect(store.c, isNotNull);
+        expect(store.c!.attachAsk, isNotNull);
+        await store.sendAnyway();
+        expect(last(fake, 'send_draft')['draft'], 'dr1');
+        expect(store.c, isNull);
+        store.dispose();
+      },
+    );
+
+    test('avec une pièce jointe, l\'envoi part sans avertissement', () async {
+      final (store, fake) = await start();
+      store.c!.body.setContent('Voir le devis ci-joint', List.filled(22, 0));
+      store.c!.atts.add(Attachment('devis.pdf', 'PDF', '9'));
+      await store.send();
+      expect(last(fake, 'send_draft')['draft'], 'dr1');
+      expect(store.c, isNull);
+      store.dispose();
+    });
+
+    test(
+      'la signature ne compte pas comme une mention de pièce jointe',
+      () async {
+        final (store, fake) = await start();
+        const sig = 'Noah, voir PJ';
+        store.c!.body.setContent(
+          'Bonjour\n\n$sig',
+          List.filled(15 + sig.length - 2, 0),
+        );
+        store.c!.sigText = sig;
+        await store.send();
+        expect(last(fake, 'send_draft')['draft'], 'dr1');
+        store.dispose();
+      },
+    );
+
+    test('modifier le message lève l\'avertissement', () async {
+      final (store, _) = await start();
+      store.c!.body.setContent('Voir le devis ci-joint', List.filled(22, 0));
+      await store.send();
+      expect(store.c!.attachAsk, isNotNull);
+      store.touch();
+      expect(store.c!.attachAsk, isNull);
+      store.dispose();
+    });
+
+    test(
+      'un envoi programmé est retenu aussi, puis repart avec son horaire',
+      () async {
+        final (store, fake) = await start();
+        store.c!.body.setContent('Voir le devis ci-joint', List.filled(22, 0));
+        await store.send('Demain 08:00', 4102444800000);
+        expect(fake.composed.where((c) => c['op'] == 'send_draft'), isEmpty);
+        await store.sendAnyway();
+        expect(last(fake, 'send_draft')['at'], 4102444800000);
+        store.dispose();
+      },
+    );
 
     test('envoyer met le brouillon en file puis ferme la rédaction', () async {
       final (store, fake) = await start();

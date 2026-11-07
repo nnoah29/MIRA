@@ -1,5 +1,6 @@
 //! Emplacement du fichier de configuration : `MIRA_CONFIG`, sinon `$XDG_CONFIG_HOME/mira/config.toml`, sinon `~/.config/mira/config.toml`.
 
+use std::ffi::OsString;
 use std::path::PathBuf;
 
 const CONFIG_DIRECTORY: &str = "mira";
@@ -22,9 +23,16 @@ pub fn oauth_config_path(
 
 /// Lit les variables du processus et en déduit le chemin du fichier
 pub fn oauth_config_path_from_process() -> Option<PathBuf> {
+    oauth_config_path_from_lookup(&|name| std::env::var_os(name))
+}
+
+/// Déduit le chemin par une fonction de recherche ; `APPDATA` remplace `XDG_CONFIG_HOME` absent (Windows)
+pub fn oauth_config_path_from_lookup(lookup: &dyn Fn(&str) -> Option<OsString>) -> Option<PathBuf> {
     oauth_config_path(
-        std::env::var_os("MIRA_CONFIG").map(PathBuf::from),
-        std::env::var_os("XDG_CONFIG_HOME").map(PathBuf::from),
-        std::env::var_os("HOME").map(PathBuf::from),
+        lookup("MIRA_CONFIG").map(PathBuf::from),
+        lookup("XDG_CONFIG_HOME")
+            .or_else(|| lookup("APPDATA"))
+            .map(PathBuf::from),
+        lookup("HOME").map(PathBuf::from),
     )
 }

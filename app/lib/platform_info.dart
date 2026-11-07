@@ -7,3 +7,6 @@ bool get runsOnAndroid => !kIsWeb && Platform.isAndroid;
 
 /// Vrai sous Linux ; faux dans un navigateur, où `Platform` lève une erreur.
 bool get runsOnLinux => !kIsWeb && Platform.isLinux;
+
+/// Vrai sous Windows ; faux dans un navigateur, où `Platform` lève une erreur.
+bool get runsOnWindows => !kIsWeb && Platform.isWindows;

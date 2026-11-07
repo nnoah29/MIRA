@@ -38,7 +38,7 @@ impl Ending {
                 StopReason::ToolUse => "tool_use".to_string(),
                 StopReason::MaxToolRounds => "max_tool_rounds".to_string(),
                 StopReason::Cancelled => "cancelled".to_string(),
-                StopReason::Failed { code, .. } => code,
+                StopReason::Failed { code, .. } => failed_outcome(self, code),
             },
             _ => "cancelled".to_string(),
         }
@@ -72,5 +72,13 @@ fn retry_after(error: &AiError) -> Option<u64> {
     match error {
         AiError::RateLimited { retry_after_secs } => *retry_after_secs,
         _ => None,
+    }
+}
+
+/// Issue d'un échec : son code, suivi du statut HTTP quand le service en a rendu un sans variante propre.
+fn failed_outcome(ending: &Ending, code: String) -> String {
+    match ending {
+        Ending::Failed(AiError::UnexpectedStatus { status }) => format!("{code}:http_{status}"),
+        _ => code,
     }
 }

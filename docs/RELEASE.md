@@ -8,6 +8,12 @@ dépôt. Une release doit toujours pouvoir être reconstruite à partir de son t
 > Ne publiez jamais avec des modifications locales. Ne forcez jamais un tag
 > déjà public : une erreur se corrige par une nouvelle version.
 
+## 0. Release automatique (GitHub Actions)
+
+`.github/workflows/release.yml` s'exécute à chaque push sur `main`. Il ne fait rien sauf si l'historique poussé contient un commit dont le titre est exactement de la forme `chore(release): version X.Y.Z` (c'est le commit de l'étape 1, fusionné par la PR `dev` → `main`). Dans ce cas, dans l'ordre : contrôle de cohérence (`tools/check-release-version` : versions, build Android croissant, notes `docs/release-notes/vX.Y.Z.md` en anglais, tag inexistant, secret présent), `make check-all`, pose du tag annoté `vX.Y.Z`, construction en parallèle (Linux : deb, rpm, tar.gz (pas d'AppImage) ; Android : 2 APK ; Windows : zip), `SHA256SUMS` + `install.sh`, puis **brouillon** de release GitHub. La publication reste manuelle (étape 6, vérifications). AUR (étape 7) et les essais sur machine propre (étape 5) restent manuels.
+
+Prérequis une fois : secret de dépôt `MIRA_OAUTH_CONFIG_TOML` (contenu du `config.toml` de production). Avant la PR, ajouter `docs/release-notes/vX.Y.Z.md` au commit de release. `ci.yml` vérifie les PR vers `dev` et `main`.
+
 ## 1. Préparer la release sur `dev`
 
 Choisir la version selon Semantic Versioning : majeure pour une incompatibilité,
@@ -40,6 +46,7 @@ Mettre à jour la version dans un commit de release sur `dev` :
 | `packaging/arch/PKGBUILD` | `pkgver=$VERSION` |
 | `packaging/snap/snapcraft.yaml` | `version` et le nom d'archive source |
 | `packaging/flatpak/io.github.nnoah29.Mira.yml` | le nom d'archive source |
+| `docs/release-notes/vX.Y.Z.md` | notes de la release, en anglais (requises par le workflow) |
 
 Les versions des crates Rust (`0.1.0`) sont indépendantes de la version
 produit. Ne les modifier que si un crate doit aussi être publié.
@@ -119,6 +126,30 @@ Tous les fichiers distribués doivent être produits depuis ce tag, sans
 modification locale.
 
 ## 4. Construire les artefacts
+
+### Avec le script (recommandé)
+
+`packaging/release.sh` fait les étapes 4 à 6 de ce guide, depuis n'importe quelle
+branche : il construit dans une copie propre du tag (`target/release-build/vX.Y.Z`,
+git worktree), jamais dans votre arbre de travail.
+
+```bash
+packaging/release.sh 2.1.0 --check     # vérifie seulement les prérequis
+packaging/release.sh 2.1.0             # construit, contrôle, écrit SHA256SUMS
+packaging/release.sh 2.1.0 --draft     # idem, puis crée le brouillon GitHub
+```
+
+Il refuse de démarrer si le tag n'est pas annoté, sur `origin` et dans `origin/main`,
+si les versions (`pubspec`, `app_info.dart`, `VERSION`, `metainfo`, `PKGBUILD`) ne
+correspondent pas, si le numéro de build Android n'augmente pas, ou s'il manque un
+outil (`appimagetool`, `cargo-ndk`, cibles Rust Android, NDK, identifiants OAuth de
+production). `--no-appimage`, `--no-android` et `--no-oauth` servent aux essais ;
+`--draft` les refuse. Après la construction, il contrôle chaque fichier (version,
+moteur présent, version du bundle), produit `SHA256SUMS` avec `install.sh` et
+écrit `packaging/out/release-X.Y.Z.log`. Il ne publie jamais : `--draft` crée un
+brouillon. Les étapes 5 (essais sur machine propre) et 7 (AUR) restent manuelles.
+
+### À la main
 
 Vérifier d'abord que la machine de release possède les outils nécessaires :
 

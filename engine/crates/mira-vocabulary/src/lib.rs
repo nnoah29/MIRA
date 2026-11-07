@@ -33,7 +33,9 @@ pub use domain::appearance::Appearance;
 pub use domain::attachment::{Attachment, CacheState};
 pub use domain::auth::{AuthMethod, AuthMethodKind, OAuthSettings, SecretKind, SecretRef};
 pub use domain::draft::{Draft, DraftAttachment, DraftState};
-pub use domain::engine_settings::{EngineSettings, MAX_POLL_SECS, MIN_POLL_SECS, QuietHours};
+pub use domain::engine_settings::{
+    EngineSettings, MAX_POLL_SECS, MIN_POLL_SECS, NotificationSettings, QuietHours,
+};
 pub use domain::identity::Identity;
 pub use domain::label_import_report::{
     LabelImportEntry, LabelImportOutcome, LabelImportRefusal, LabelImportReport,

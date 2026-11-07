@@ -20,8 +20,15 @@ String aiOutcomeText(String outcome) => switch (outcome) {
   'cancelled' => t('Annulé'),
   'running' => t('En cours'),
   'interrupted' => t('Interrompu'),
-  _ => engineErrorText(EngineException(outcome, '')),
+  _ => _failureText(outcome),
 };
+
+/// Texte d'un échec : celui de son code, suivi du statut HTTP quand le moteur l'a noté (`code:http_405`).
+String _failureText(String outcome) {
+  final parts = outcome.split(':http_');
+  final text = engineErrorText(EngineException(parts.first, ''));
+  return parts.length == 2 ? '$text (HTTP ${parts[1]})' : text;
+}
 
 const _calm = {
   'end_turn',

@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../data/models.dart';
 import '../engine/engine_settings_admin.dart';
 
 /// Heures calmes écrites `de-à` en heures pleines ; `null` : jamais.
@@ -23,10 +22,12 @@ class NotifySettings {
   bool _flag(String k, bool byDefault) =>
       (prefs.getString(k) ?? (byDefault ? '1' : '0')) == '1';
 
-  bool get enabled => _flag('notify', true);
-  bool get preview => _flag('notifyPreview', true);
-  bool get sound => _flag('notifySound', true);
-  bool get whenFocused => _flag('notifyFocused', false);
+  bool get enabled => engine?.notifications.enabled ?? _flag('notify', true);
+  bool get preview =>
+      engine?.notifications.preview ?? _flag('notifyPreview', true);
+  bool get sound => engine?.notifications.sound ?? _flag('notifySound', true);
+  bool get whenFocused =>
+      engine?.notifications.whenFocused ?? _flag('notifyFocused', false);
 
   /// Heures calmes `(début, fin)` en heures pleines ; `null` : jamais.
   (int, int)? get quiet => engine != null
@@ -52,32 +53,6 @@ class NotifySettings {
     mute ? next.add(account) : next.remove(account);
     prefs.setString('notifyMuted', jsonEncode(next.toList()..sort()));
   }
-
-  /// Vrai si l'heure `hour` tombe dans les heures calmes (plage pouvant passer minuit).
-  bool isQuiet(int hour) {
-    final q = quiet;
-    if (q == null) return false;
-    final (from, to) = q;
-    return from <= to ? hour >= from && hour < to : hour >= from || hour < to;
-  }
-}
-
-/// Messages arrivés en réception depuis la lecture précédente : non lus, récents, inconnus avant.
-List<Mail> newArrivals(List<Mail>? before, List<Mail> fresh, int nowMs) {
-  if (before == null || before.isEmpty) return const [];
-  final known = {
-    for (final m in before)
-      for (final x in m.msgs) ?x.ref,
-  };
-  const day = 24 * 3600 * 1000;
-  return [
-    for (final m in fresh)
-      if (m.folder == 'inbox' &&
-          m.unread &&
-          nowMs - m.date < day &&
-          m.msgs.any((x) => x.ref != null && !known.contains(x.ref)))
-        m,
-  ];
 }
 
 /// Affichage des notifications par le système (remplaçable dans les tests).
@@ -94,7 +69,7 @@ abstract class SystemNotifications {
   });
 }
 
-/// Notifications du bureau (D-Bus sous Linux) et d'Android.
+/// Notifications du bureau (D-Bus sous Linux, centre de notifications Windows) et d'Android.
 class PluginNotifications implements SystemNotifications {
   final _plugin = FlutterLocalNotificationsPlugin();
 
@@ -107,6 +82,11 @@ class PluginNotifications implements SystemNotifications {
           defaultIcon: AssetsLinuxIcon('assets/icon/mira.png'),
         ),
         android: const AndroidInitializationSettings('@mipmap/ic_launcher'),
+        windows: const WindowsInitializationSettings(
+          appName: 'MIRA',
+          appUserModelId: 'io.github.nnoah29.Mira',
+          guid: '6f2b1c9e-3a7d-4e58-9b0a-4d1f7c52e8a3',
+        ),
       ),
       onDidReceiveNotificationResponse: (r) {
         final p = r.payload;

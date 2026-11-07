@@ -141,6 +141,22 @@ class EngineMailSource implements MailSource {
   EngineSettingsAdmin get engineSettingsAdmin => EngineSettingsAdmin(client);
 
   @override
+  Future<bool> requestTestNotification() async {
+    if (client case final DaemonNotificationClient daemon) {
+      await daemon.testNotification();
+      return true;
+    }
+    return false;
+  }
+
+  @override
+  Future<void> reportPresence(bool focused) async {
+    if (client case final PresenceClient presence) {
+      await presence.setPresence(focused);
+    }
+  }
+
+  @override
   TemplateAdmin get templateAdmin => TemplateAdmin(client);
 
   @override
@@ -153,7 +169,6 @@ class EngineMailSource implements MailSource {
   final StreamController<void> _settingsChanges = StreamController.broadcast();
   final StreamController<void> _labelChanges = StreamController.broadcast();
   final StreamController<void> _ruleChanges = StreamController.broadcast();
-  final Map<String, bool> _verdicts = {};
 
   @override
   Stream<void> get ruleChanges => _ruleChanges.stream;
@@ -175,16 +190,6 @@ class EngineMailSource implements MailSource {
 
   @override
   Stream<void> get accountEvents => _accountEvents.stream;
-
-  @override
-  bool? arrivalVerdict(String messageRef) => _verdicts[messageRef];
-
-  @override
-  void forgetVerdicts(Iterable<String> messageRefs) {
-    for (final r in messageRefs) {
-      _verdicts.remove(r);
-    }
-  }
 
   @override
   MaintenanceAdmin get maintenance => MaintenanceAdmin(client);
@@ -291,8 +296,6 @@ class EngineMailSource implements MailSource {
         if (account is String) _trackSync(account, type, kind);
       case EventEffect.accounts:
         _signal(_accountEvents);
-      case EventEffect.verdict:
-        _noteVerdict(kind);
       case EventEffect.rules:
         _signal(_ruleChanges);
       case EventEffect.localLabels:
@@ -312,11 +315,6 @@ class EngineMailSource implements MailSource {
 
   void _signal(StreamController<void> stream) {
     if (!stream.isClosed) stream.add(null);
-  }
-
-  void _noteVerdict(Map<String, dynamic> kind) {
-    _verdicts['${kind['message']}'] = kind['silenced'] == true;
-    if (_verdicts.length > 1000) _verdicts.remove(_verdicts.keys.first);
   }
 
   /// Reprend le compteur de non-lus d'une boîte annoncé par le moteur, sans relire le compte.

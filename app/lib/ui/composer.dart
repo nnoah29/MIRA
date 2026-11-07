@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../data/email_address.dart';
 import '../data/format.dart';
 import '../data/models.dart';
 import '../state/draft_ai_controller.dart';
@@ -13,6 +14,7 @@ import '../state/store.dart';
 import '../state/template_insert.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
+import 'attach_warning.dart';
 import 'composer_ai_bar.dart';
 import 'composer_templates.dart';
 import 'overlays.dart';
@@ -552,6 +554,13 @@ class _ComposerState extends State<Composer> {
           ),
         if (_aiOpen && aiOn)
           ComposerAiBar(ai: ai, onClose: () => setState(() => _aiOpen = false)),
+        if (c.attachAsk != null)
+          AttachWarning(
+            key: const ValueKey('attach-warning'),
+            padding: hp,
+            onAttach: _attach,
+            onSend: s.sendAnyway,
+          ),
         Container(
           padding: EdgeInsets.symmetric(horizontal: hp, vertical: 14),
           decoration: BoxDecoration(
@@ -593,6 +602,7 @@ class _ComposerState extends State<Composer> {
               ),
               const SizedBox(width: 10),
               Btn(
+                key: const ValueKey('composer-send'),
                 icon: 'send',
                 label: t('Envoyer'),
                 go: true,
@@ -928,12 +938,11 @@ class _RecipientBoxState extends State<RecipientBox> {
 
   bool _add(String v, {bool refocus = false}) {
     final cleaned = v.trim().replaceAll(RegExp(r'[,;]+$'), '');
-    final m = _emailRe.firstMatch(cleaned);
-    if (m == null) {
+    final em = _emailRe.firstMatch(cleaned)?.group(0);
+    if (em == null || !isEngineAddress(em)) {
       setState(() => bad = true);
       return false;
     }
-    final em = m.group(0)!;
     Person? known;
     for (final c in context.read<MailStore>().contactPeople()) {
       if (c.email.toLowerCase() == em.toLowerCase()) known = c;

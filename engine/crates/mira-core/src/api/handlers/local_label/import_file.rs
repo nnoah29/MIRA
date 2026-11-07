@@ -3,7 +3,7 @@
 use std::collections::HashSet;
 
 use mira_vocabulary::{
-    IdempotencyKey, LabelImportEntry, LabelImportOutcome, LabelImportReport, MiraError,
+    EventKind, IdempotencyKey, LabelImportEntry, LabelImportOutcome, LabelImportReport, MiraError,
 };
 use serde_json::Value;
 
@@ -12,6 +12,8 @@ use super::import_file_one::{import_label, shown_name};
 use super::writing::announce;
 use crate::api::contract::{LocalLabelResponse, Response};
 use crate::api::engine::Engine;
+use crate::events::EventSink;
+use crate::labels::refresh_inbox_counters;
 use crate::portability::digest::digest_of;
 use crate::portability::envelope::unwrap;
 use crate::ports::IdGenerator;
@@ -38,6 +40,8 @@ pub(crate) fn handle_import_labels_file(
     })?;
     if written {
         announce(engine)?;
+        engine.events.emit(EventKind::LabelSettingsChanged)?;
+        refresh_inbox_counters(&engine.database, &engine.events, true)?;
     }
     Ok(Response::LocalLabel(LocalLabelResponse::LabelsFileImport(
         report,

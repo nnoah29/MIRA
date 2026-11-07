@@ -12,9 +12,6 @@ enum EventEffect {
   /// Relit la liste des comptes.
   accounts,
 
-  /// Retient le verdict des règles sur une arrivée.
-  verdict,
-
   /// Signale un changement des règles.
   rules,
 
@@ -59,7 +56,7 @@ const Map<String, Set<EventEffect>> eventRoutes = {
   'mailbox_updated': _reload,
   'mailbox_deleted': _reload,
   'mailbox_counters_updated': {EventEffect.counters},
-  'new_message_received': {EventEffect.reload, EventEffect.verdict},
+  'new_message_received': {EventEffect.reload},
   'message_updated': _reload,
   'message_deleted': _reload,
   'body_available': _none,

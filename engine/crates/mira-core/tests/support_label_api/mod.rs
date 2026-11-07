@@ -12,3 +12,4 @@ pub mod files;
 pub mod seeds;
 pub mod settings;
 pub mod threads;
+pub mod tuning;

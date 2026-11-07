@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Vérifie qu'une version de release est cohérente dans tous les fichiers (docs/RELEASE.md §1) : tools/check-release-version X.Y.Z [TAG_PRECEDENT]
+set -euo pipefail
+version="${1:?usage : check-release-version X.Y.Z [tag-precedent]}"
+previous="${2:-}"
+root="$(cd "$(dirname "$0")/.." && pwd)"
+bad=0
+expect() { grep -q -- "$2" "$root/$1" || { echo "ERREUR : $1 ne contient pas « $2 »" >&2; bad=1; }; }
+
+[[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "ERREUR : version invalide : $version" >&2; exit 1; }
+expect app/pubspec.yaml "^version: ${version}+[0-9]\+"
+expect app/lib/app_info.dart "const appVersion = '${version}';"
+expect packaging/VERSION "^${version}\$"
+expect packaging/common/io.github.nnoah29.Mira.metainfo.xml "<release version=\"${version}\""
+expect packaging/arch/PKGBUILD "^pkgver=${version}\$"
+[ -s "$root/docs/release-notes/v${version}.md" ] || { echo "ERREUR : docs/release-notes/v${version}.md absent ou vide (notes en anglais)" >&2; bad=1; }
+
+if [ -n "$previous" ]; then
+  new_build="$(sed -n 's/^version: .*+\([0-9]*\)$/\1/p' "$root/app/pubspec.yaml")"
+  old_build="$(git -C "$root" show "$previous:app/pubspec.yaml" | sed -n 's/^version: .*+\([0-9]*\)$/\1/p')"
+  [ "$new_build" -gt "$old_build" ] || { echo "ERREUR : le numéro de build Android ($new_build) doit dépasser celui de $previous ($old_build)" >&2; bad=1; }
+fi
+exit "$bad"

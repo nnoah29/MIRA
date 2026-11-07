@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart' show Uint8List, setEquals;
+import 'package:flutter/foundation.dart' show Uint8List, debugPrint, setEquals;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,6 +19,8 @@ import '../engine/engine_settings_admin.dart';
 import '../engine/label_admin.dart';
 import '../engine/label_settings_admin.dart';
 import '../engine/local_label_admin.dart';
+import 'attachment_mention.dart';
+import 'draft_ai_request.dart';
 import 'local_label_migration.dart';
 import 'local_labels.dart';
 import 'label_query.dart';
@@ -30,7 +32,6 @@ import '../ui/body_renderer.dart';
 import '../theme/wall_source.dart';
 import '../theme/wall_theme.dart';
 import '../theme/app_theme.dart';
-import 'arrival_gate.dart';
 import 'assistant.dart';
 import 'chat_context.dart';
 import 'chat_controller.dart';
@@ -84,6 +85,12 @@ class ComposeState {
 
   /// L'expéditeur a été choisi à la main : le brouillon existe même sans autre contenu.
   bool fromChosen = false;
+
+  /// Envoi retenu parce que le texte annonce une pièce jointe absente : (programmation, heure) à rejouer.
+  (String?, int?)? attachAsk;
+
+  /// Le dernier enregistrement au moteur a échoué : sa copie n'est plus celle de l'écran.
+  bool pushFailed = false;
 
   /// Brouillon correspondant dans le moteur (`null` : pas encore créé).
   String? engineId;
@@ -1376,9 +1383,6 @@ class MailStore extends ChangeNotifier {
 
   final Set<String> _reloading = {}, _reloadAgain = {};
 
-  /// Nouveaux fils en attente du verdict des règles avant leur notification.
-  final ArrivalGate _arrivals = ArrivalGate();
-
   Future<void> _reloadOnce(String id) async {
     final src = source;
     final acc = accounts.where((a) => a.id == id).firstOrNull;
@@ -1389,16 +1393,6 @@ class MailStore extends ChangeNotifier {
       _applySnoozes(fresh);
       localLabels.apply(fresh);
       _keepLocalState(id, fresh);
-      final now = DateTime.now().millisecondsSinceEpoch;
-      _arrivals.hold(_boxes[id], newArrivals(_boxes[id], fresh, now), now);
-      final ready = _arrivals.release(
-        id,
-        fresh,
-        src.arrivalVerdict,
-        src.forgetVerdicts,
-        now,
-      );
-      if (ready.isNotEmpty) unawaited(_announce(acc, ready));
       if (_signature(fresh) == _signature(_boxes[id] ?? const [])) return;
       _boxes[id] = fresh;
       _rememberContacts();
@@ -2111,6 +2105,7 @@ class MailStore extends ChangeNotifier {
     final src = source;
     final admin = src?.engineSettingsAdmin;
     if (admin == null) return;
+    unawaited(_reportPresence(_focused));
     _engineSettingsSub = src!.engineSettingsChanges.listen(
       (_) => refreshEngineSettings(),
     );
@@ -2119,7 +2114,15 @@ class MailStore extends ChangeNotifier {
       final merged = _withLegacy(current);
       if (!merged.sameAs(current)) await admin.write(merged);
       _adopt(merged);
-      for (final k in const ['poll', 'notifyMuted', 'notifyQuiet']) {
+      for (final k in const [
+        'poll',
+        'notifyMuted',
+        'notifyQuiet',
+        'notify',
+        'notifyPreview',
+        'notifySound',
+        'notifyFocused',
+      ]) {
         await prefs.remove(k);
       }
       notifyListeners();
@@ -2138,6 +2141,26 @@ class MailStore extends ChangeNotifier {
           ? legacy.muted
           : current.mutedAccounts,
       quietHours: current.quietHours ?? legacy.quiet,
+      notifications: _legacyNotifications(current.notifications, legacy),
+    );
+  }
+
+  /// Réglages de notification du moteur, ou ceux des anciennes préférences tant que le moteur a encore les défauts.
+  NotificationPrefs _legacyNotifications(
+    NotificationPrefs current,
+    NotifySettings legacy,
+  ) {
+    const keys = ['notify', 'notifyPreview', 'notifySound', 'notifyFocused'];
+    final fromPrefs = keys.any(prefs.containsKey);
+    final untouched =
+        current.toJson().toString() ==
+        const NotificationPrefs().toJson().toString();
+    if (!fromPrefs || !untouched) return current;
+    return NotificationPrefs(
+      enabled: legacy.enabled,
+      preview: legacy.preview,
+      sound: legacy.sound,
+      whenFocused: legacy.whenFocused,
     );
   }
 
@@ -2494,7 +2517,17 @@ class MailStore extends ChangeNotifier {
 
   set appFocused(bool focused) {
     _focused = focused;
+    unawaited(_reportPresence(focused));
     focused ? _wakeUi() : _armSleep();
+  }
+
+  /// Déclare le focus au moteur ; un moteur injoignable ne gêne pas l'interface.
+  Future<void> _reportPresence(bool focused) async {
+    try {
+      await source?.reportPresence(focused);
+    } catch (_) {
+      /* présence non déclarée : le moteur notifiera */
+    }
   }
 
   /// Minutes passées sans le focus avant d'hiberner l'interface (0 : jamais).
@@ -2542,52 +2575,41 @@ class MailStore extends ChangeNotifier {
     }
   }
 
-  /// Ouvre un message depuis sa notification : compte, Réception, puis le message.
-  void openNotified(String id) {
-    final account = id.split('/').first;
-    if (!unified && account != activeId) switchAccount(account);
+  /// Ouvre un message depuis sa notification (identifiant du message du moteur) : compte, Réception, puis le fil.
+  void openNotified(String ref) {
+    final mail = _boxes.values
+        .expand((list) => list)
+        .where((m) => m.msgs.any((x) => x.ref == ref))
+        .firstOrNull;
+    if (mail == null) return;
+    if (!unified && mail.account != activeId) switchAccount(mail.account);
     if (folder != 'inbox' || label != null) selectFolder('inbox');
-    if (byId(id) != null) openMail(id);
+    if (byId(mail.id) != null) openMail(mail.id);
   }
 
-  /// Annonce les nouveaux messages d'un compte, selon les réglages ; plus de trois : une seule notification.
-  Future<void> _announce(Account acc, List<Mail> arrived) async {
-    final n = notifications;
-    final cfg = notifySettings;
-    if (n == null || arrived.isEmpty || !cfg.enabled) return;
-    if (cfg.muted.contains(acc.id)) return;
-    if (appFocused && !cfg.whenFocused) return;
-    if (cfg.isQuiet(DateTime.now().hour)) return;
-    try {
-      if (arrived.length > 3) {
-        await n.show(
-          acc.id.hashCode & 0x7fffffff,
-          t('{0} nouveaux messages', [arrived.length]),
-          acc.email,
-          payload: arrived.first.id,
-          sound: cfg.sound,
-        );
-        return;
-      }
-      for (final m in arrived) {
-        await n.show(
-          m.id.hashCode & 0x7fffffff,
-          cfg.preview ? shown(m.from) : t('Nouveau message'),
-          cfg.preview ? m.subject : acc.email,
-          payload: m.id,
-          sound: cfg.sound,
-        );
-      }
-    } catch (_) {
-      /* service de notifications indisponible : rien à afficher */
-    }
-  }
+  static const _notifyKeys = {
+    'notify': 0,
+    'notifyPreview': 1,
+    'notifySound': 2,
+    'notifyFocused': 3,
+  };
 
   /// Change un réglage de notification et redessine.
   void setNotify(String key, String value) {
     final current = engineSettings;
     if (key == 'notifyQuiet' && current != null) {
       return _writeEngineSettings(current.withQuiet(parseQuiet(value)));
+    }
+    if (current != null && _notifyKeys.containsKey(key)) {
+      final on = value == '1';
+      final prefsNow = current.notifications;
+      final changed = switch (key) {
+        'notify' => prefsNow.with_(enabled: on),
+        'notifyPreview' => prefsNow.with_(preview: on),
+        'notifySound' => prefsNow.with_(sound: on),
+        _ => prefsNow.with_(whenFocused: on),
+      };
+      return _writeEngineSettings(current.withNotifications(changed));
     }
     prefs.setString(key, value);
     notifyListeners();
@@ -2605,8 +2627,14 @@ class MailStore extends ChangeNotifier {
     _writeEngineSettings(current.withMuted(next));
   }
 
-  /// Affiche une notification d'essai, même au premier plan.
+  /// Notification d'essai : le démon l'affiche s'il y en a un, sinon l'app (moteur embarqué).
   Future<void> testNotification() async {
+    try {
+      if (await source?.requestTestNotification() ?? false) return;
+    } catch (_) {
+      toast(t('Notifications indisponibles sur ce système'), err: true);
+      return;
+    }
     final n = notifications;
     if (n == null) {
       toast(t('Notifications indisponibles sur ce système'), err: true);
@@ -3121,6 +3149,7 @@ class MailStore extends ChangeNotifier {
     final cs = c;
     if (cs == null) return;
     cs.dirty = true;
+    cs.attachAsk = null;
     cs.saved = t('Enregistrement…');
     cs.timer?.cancel();
     cs.timer = Timer(const Duration(milliseconds: 1200), () {
@@ -3400,7 +3429,9 @@ class MailStore extends ChangeNotifier {
   /// Met l'enregistrement au moteur à la suite des précédents (jamais deux en même temps).
   void _queuePush(ComposeState cs) {
     if (source?.composer == null) return;
-    cs.push = cs.push.then((_) => _pushDraft(cs)).catchError((_) {
+    cs.push = cs.push.then((_) => _pushDraft(cs)).catchError((Object error) {
+      debugPrint('Draft save refused: $error');
+      cs.pushFailed = true;
       cs.saved = t('Enregistrement impossible');
       notifyListeners();
     });
@@ -3450,6 +3481,7 @@ class MailStore extends ChangeNotifier {
     );
     await _syncAttachments(cs, admin);
     cs.copyStale = true;
+    cs.pushFailed = false;
   }
 
   /// En quittant la rédaction : le brouillon est copié dans « Brouillons » sur le serveur.
@@ -3542,7 +3574,19 @@ class MailStore extends ChangeNotifier {
     toast(had != null ? t('Brouillon supprimé') : t('Message abandonné'));
   }
 
-  Future<void> send([String? sched, int? at]) async {
+  /// Le texte écrit (signature et citation exclues) ou l'objet annonce une pièce jointe, et aucune n'est jointe.
+  bool _forgotAttachment(ComposeState cs) =>
+      cs.atts.isEmpty &&
+      (mentionsAttachment(bodyBeforeSignature(cs)) ||
+          mentionsAttachment(cs.subject.text));
+
+  /// Envoie malgré l'avertissement de pièce jointe oubliée, avec la programmation demandée au départ.
+  Future<void> sendAnyway() {
+    final ask = c?.attachAsk;
+    return send(ask?.$1, ask?.$2, true);
+  }
+
+  Future<void> send([String? sched, int? at, bool anyway = false]) async {
     final cs = c;
     if (cs == null) return;
     if (cs.to.isEmpty) {
@@ -3551,6 +3595,12 @@ class MailStore extends ChangeNotifier {
       toast(t('Ajoute au moins un destinataire'), err: true);
       return;
     }
+    if (!anyway && _forgotAttachment(cs)) {
+      cs.attachAsk = (sched, at);
+      notifyListeners();
+      return;
+    }
+    cs.attachAsk = null;
     if (source != null) return _sendReal(cs, sched, at);
     cs.timer?.cancel();
     final blocks = [...cs.body.toBlocks(), ...?cs.quote];
@@ -3644,13 +3694,16 @@ class MailStore extends ChangeNotifier {
       saveDraft();
       await cs.push;
       final id = cs.engineId;
-      if (id == null) throw const EngineException('draft_missing', '');
+      if (id == null || cs.pushFailed) {
+        throw const EngineException('draft_missing', '');
+      }
       final action = await admin.send(
         id,
         at: sched == null ? null : when ?? scheduledMs(sched),
       );
       _afterSend(cs, id, action, sched, when);
-    } catch (_) {
+    } catch (error) {
+      debugPrint('Send refused: $error');
       toast(t('Envoi impossible, le message reste en brouillon'), err: true);
     } finally {
       _sending = false;

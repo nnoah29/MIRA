@@ -8,6 +8,8 @@ packaging/build-all.sh        # bundle + .deb + .rpm + archive précompilée (+ 
 
 Tout est produit dans `packaging/out/` (ignoré par git).
 
+Pour une **release publiée**, utiliser `packaging/release.sh X.Y.Z` (construit depuis le tag dans une copie propre, contrôle chaque paquet, produit `SHA256SUMS`) : voir [`docs/RELEASE.md`](../docs/RELEASE.md) §4.
+
 | Format | Fichier produit | Commande | Testé ici |
 |---|---|---|---|
 | Bundle | `out/bundle/` | `build-bundle.sh` | oui |

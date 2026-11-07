@@ -36,9 +36,30 @@ abstract interface class ChatStreamingClient {
   Stream<Map<String, dynamic>> chatStream(Map<String, dynamic> start);
 }
 
+/// Moteur à qui l'app déclare le focus de sa fenêtre (le démon et le moteur embarqué en tiennent compte pour notifier).
+abstract interface class PresenceClient {
+  /// Déclare si la fenêtre de l'app est au premier plan.
+  Future<void> setPresence(bool focused);
+}
+
+/// Démon à qui l'app demande d'afficher lui-même une notification d'essai.
+abstract interface class DaemonNotificationClient {
+  /// Le démon affiche une notification d'essai.
+  Future<void> testNotification();
+}
+
+/// Moteur embarqué qui décide lui-même des notifications et les envoie à l'app, qui se contente de les afficher.
+abstract interface class NotificationStreamClient {
+  /// Notifications décidées par le moteur (`id`, `title`, `body`, `sound`, `message`), dans la langue `locale` ; fermer le flux arrête le notifieur.
+  Stream<Map<String, dynamic>> notifications(String locale);
+}
+
 /// Ouvre l'enveloppe `{ok, data | error}` ; lève [EngineException] si `ok` est faux.
-Map<String, dynamic> openEnvelope(String json) {
-  final env = jsonDecode(json) as Map<String, dynamic>;
+Map<String, dynamic> openEnvelope(String json) =>
+    openEnvelopeMap(jsonDecode(json) as Map<String, dynamic>);
+
+/// Comme [openEnvelope], pour une enveloppe déjà décodée.
+Map<String, dynamic> openEnvelopeMap(Map<String, dynamic> env) {
   if (env['ok'] == true) {
     final data = env['data'];
     return data is Map<String, dynamic> ? data : <String, dynamic>{};

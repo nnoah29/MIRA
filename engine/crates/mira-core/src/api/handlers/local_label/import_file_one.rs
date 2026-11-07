@@ -1,4 +1,4 @@
-//! Import d'un libellé du fichier : lecture, nom, doublons, plafond, puis insertion ou remplacement.
+//! Import d'un libellé du fichier : lecture, nom, doublons, plafond, puis insertion ou remplacement, réglages compris.
 
 use std::collections::HashSet;
 
@@ -8,8 +8,9 @@ use mira_vocabulary::{
 use serde_json::Value;
 
 use super::checks::{MAX_LABELS, MAX_NAME_LEN, clean_name};
+use super::import_file_settings::{merge_existing, write_new};
 use super::writing::default_color;
-use crate::portability::labels::{PortableLabelError, from_portable};
+use crate::portability::labels::{PortableLabelError, PortableSettings, read_portable_entry};
 use crate::ports::IdGenerator;
 use crate::storage::Tx;
 
@@ -27,14 +28,14 @@ pub(super) fn shown_name(value: &Value) -> String {
     name.chars().take(MAX_NAME_LEN).collect()
 }
 
-/// Nom contrôlé et couleur facultative d'une entrée, ou le sort « refusé » qui l'écarte
-fn read_entry(value: Value) -> Result<(String, Option<u32>), LabelImportOutcome> {
-    let parsed = from_portable(value).map_err(|error| match error {
+/// Nom contrôlé, couleur et réglages facultatifs d'une entrée, ou le sort « refusé » qui l'écarte
+fn read_entry(value: Value) -> Result<(String, Option<u32>, PortableSettings), LabelImportOutcome> {
+    let (parsed, settings) = read_portable_entry(value).map_err(|error| match error {
         PortableLabelError::InvalidColor => refused(LabelImportRefusal::InvalidColor),
         PortableLabelError::Invalid => refused(LabelImportRefusal::InvalidLabel),
     })?;
     let name = clean_name(&parsed.name).map_err(|_| refused(LabelImportRefusal::InvalidName))?;
-    Ok((name, parsed.color))
+    Ok((name, parsed.color, settings))
 }
 
 /// Importe une entrée du fichier ; seule une panne de stockage interrompt tout l'import
@@ -45,7 +46,7 @@ pub(super) fn import_label(
     replace: bool,
     (seen, count): Progress<'_>,
 ) -> Result<LabelImportOutcome, MiraError> {
-    let (name, color) = match read_entry(value) {
+    let (name, color, settings) = match read_entry(value) {
         Ok(entry) => entry,
         Err(refusal) => return Ok(refusal),
     };
@@ -53,8 +54,8 @@ pub(super) fn import_label(
         return Ok(refused(LabelImportRefusal::DuplicateInFile));
     }
     match tx.find_local_label_by_name(&name)? {
-        Some(existing) => update_existing(tx, existing, &name, color, replace),
-        None => add_new(tx, ids, name, color, count),
+        Some(existing) => update_existing(tx, existing, (&name, color, &settings), replace),
+        None => add_new(tx, ids, (name, color, &settings), count),
     }
 }
 
@@ -62,8 +63,7 @@ pub(super) fn import_label(
 fn add_new(
     tx: &Tx<'_>,
     ids: &dyn IdGenerator,
-    name: String,
-    color: Option<u32>,
+    (name, color, settings): (String, Option<u32>, &PortableSettings),
     count: &mut usize,
 ) -> Result<LabelImportOutcome, MiraError> {
     if *count >= MAX_LABELS {
@@ -71,7 +71,12 @@ fn add_new(
     }
     let color = color.unwrap_or_else(|| default_color(*count));
     let id = LocalLabelId::from_raw(ids.next_id());
-    tx.insert_local_label(&LocalLabel { id, name, color })?;
+    tx.insert_local_label(&LocalLabel {
+        id: id.clone(),
+        name,
+        color,
+    })?;
+    write_new(tx, &id, settings)?;
     *count += 1;
     Ok(LabelImportOutcome::Imported)
 }
@@ -80,13 +85,16 @@ fn add_new(
 fn update_existing(
     tx: &Tx<'_>,
     existing: LocalLabel,
-    name: &str,
-    color: Option<u32>,
+    (name, color, settings): (&str, Option<u32>, &PortableSettings),
     replace: bool,
 ) -> Result<LabelImportOutcome, MiraError> {
+    if !replace {
+        return Ok(LabelImportOutcome::AlreadyPresent);
+    }
     let color = color.unwrap_or(existing.color);
     let (same_name, same_color) = (existing.name == name, existing.color == color);
-    if !replace || (same_name && same_color) {
+    let settings_changed = merge_existing(tx, &existing.id, settings)?;
+    if same_name && same_color && !settings_changed {
         return Ok(LabelImportOutcome::AlreadyPresent);
     }
     if !same_name {

@@ -11,8 +11,12 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'engine/engine_client.dart'
+    show EngineClient, EngineException, NotificationStreamClient;
+import 'engine/notification_feed.dart';
 import 'engine/engine_mail_source.dart';
 import 'engine/mail_source.dart';
+import 'engine/remote/engine_opening.dart';
 import 'engine/rust_engine_client.dart';
 import 'i18n/i18n.dart';
 import 'platform_info.dart';
@@ -45,7 +49,10 @@ Future<void> main() async {
     engineError: opening.error,
     webDemo: kIsWeb,
   );
-  unawaited(store.useNotifications(PluginNotifications()));
+  final display = PluginNotifications();
+  unawaited(store.useNotifications(display));
+  final stream = opening.notifications;
+  if (stream != null) NotificationFeed(stream, display).start();
   AppLifecycleListener(
     onStateChange: (state) =>
         store.appFocused = state == AppLifecycleState.resumed,
@@ -54,34 +61,63 @@ Future<void> main() async {
 }
 
 /// Ouvre le moteur Rust ; `MIRA_DEMO=1` donne la démonstration, une erreur d'ouverture aussi, avec sa raison.
-Future<({MailSource? source, String? error})> openEngineSource(
-  SharedPreferences prefs,
-) async {
+Future<
+  ({
+    MailSource? source,
+    String? error,
+    Stream<Map<String, dynamic>>? notifications,
+  })
+>
+openEngineSource(SharedPreferences prefs) async {
   if (kIsWeb || Platform.environment['MIRA_DEMO'] == '1') {
-    return (source: null, error: null);
+    return (source: null, error: null, notifications: null);
   }
   try {
     final android = runsOnAndroid;
-    final client = await RustEngineClient.open(
-      home: android ? (await getApplicationSupportDirectory()).path : null,
-      secretsKey: android ? await androidSecretsKey() : null,
+    final deps = EngineOpeningDeps.real(
+      prefs: prefs,
+      openEmbedded: () async => RustEngineClient.open(
+        home: android ? (await getApplicationSupportDirectory()).path : null,
+        secretsKey: android ? await androidSecretsKey() : null,
+      ),
+    );
+    final opened = await openEngineClient(
+      deps: deps,
+      mode: parseEngineMode(Platform.environment['MIRA_ENGINE']),
     );
     final source = await EngineMailSource.load(
-      client,
+      opened.client,
       folderMap: decodeFolderMap(prefs.getString('folderMap')),
     );
-    return (source: source, error: null);
+    return (
+      source: source,
+      error: null,
+      notifications: _embeddedNotifications(opened.client, opened.used),
+    );
   } catch (e) {
     final reason = engineFailureText(e);
     stderr.writeln(
       'MIRA : moteur indisponible, données de démonstration ($reason)',
     ); // i18n:ignore
-    return (source: null, error: reason);
+    return (source: null, error: reason, notifications: null);
   }
+}
+
+/// Flux des notifications du moteur embarqué (le démon affiche les siennes) ; `null` sinon.
+Stream<Map<String, dynamic>>? _embeddedNotifications(
+  EngineClient client,
+  EngineMode used,
+) {
+  if (!appShowsNotifications(used)) return null;
+  if (client case final NotificationStreamClient engine) {
+    return engine.notifications(Platform.localeName);
+  }
+  return null;
 }
 
 /// Raison lisible d'un échec d'ouverture du moteur : message de l'erreur et, pour Android, sa cause.
 String engineFailureText(Object error) {
+  if (error is EngineException && error.localized) return error.message;
   if (error is! PlatformException) return '$error';
   final detail = error.details;
   final message = error.message ?? error.code;

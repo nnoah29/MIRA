@@ -8,7 +8,7 @@ Ce document décrit ce qui **existe**. Quand une décision n'a pas de code, ou q
 
 ## 1. Vue d'ensemble
 
-Workspace Cargo `engine/` (toolchain `1.99.0` épinglée, édition 2024, resolver 3). Neuf crates ; environ 38 600 lignes de Rust hors dossiers `tests/` ; 1 433 fichiers `.rs` ; 1 080 tests réussis, 1 ignoré (voir §10).
+Workspace Cargo `engine/` (toolchain `1.99.0` épinglée, édition 2024, resolver 3). Dix-sept crates (dont six `mira-ai-*`, les fournisseurs d'IA du §6) ; environ 38 600 lignes de Rust hors dossiers `tests/` ; 1 433 fichiers `.rs` ; 1 080 tests réussis, 1 ignoré (voir §10).
 
 | Crate | Rôle | Dépend de | Tests (attributs `#[test]`) |
 |---|---|---|---|
@@ -16,9 +16,18 @@ Workspace Cargo `engine/` (toolchain `1.99.0` épinglée, édition 2024, resolve
 | `mira-core` | Le moteur : 26 modules de premier niveau (§2) | `mira-vocabulary` + bibliothèques externes encapsulées | 716 |
 | `mira-provider-gmail`, `-outlook`, `-yahoo`, `-generic` | Descriptions pures de services (données du §6.7, **non vérifiées en ligne**) | `mira-vocabulary` seulement (A2) | 13 / 8 / 8 / 4 |
 | `mira-assembly` | Composition root : `build_registry()`, `production_config(profil)`, réexports pour les clients (pont Flutter) | tout | 4 |
+| `mira-host` | Hôte du moteur : l'objet `Host` possède le moteur ouvert et rend des enveloppes JSON (`open`, `execute`, `close`, flux d'événements, flux de chat, HTML d'origine) ; trousseau chiffré fichier, réglages de relevé, adaptation de plateforme. Logique commune au pont FFI et au futur démon (spec du 2026-11-04) | `mira-assembly` et bibliothèques génériques, aucun provider (A10) | 7 |
+| `mira-protocol` | Protocole de trames entre un client et le démon : types des trames, codec (longueur sur 4 octets puis JSON, taille jugée avant le corps), règles de poignée de main. Pur : aucune entrée-sortie. Format décrit dans `docs/PROTOCOLE-DEMON.md` | `mira-vocabulary`, `serde`, `serde_json`, `thiserror` seulement (A11) | 13 |
+| `mira-daemon` | Démon : binaire `mira-daemon` et bibliothèque ; écouteurs (socket Unix `0600` avec uid du pair, TCP loopback), jeton local, sessions (poignée de main, appels concurrents, flux avec crédits et annulation), arrêt propre, verrou de profil, fichier `daemon.toml`, arrêt à l'inactivité, trousseau verrouillé, `update_required`, présence, notifications du bureau (D-Bus) et icône de zone de notification (StatusNotifierItem) | `mira-host`, `mira-protocol`, `mira-assembly`, aucun provider (A12) | 85 |
 | `mira-testkit` | Faux serveurs IMAP / SMTP / OAuth2 sur `127.0.0.1` ; boîte noire | aucun crate `mira-*` (A5) | 105 |
 
-Sens des dépendances : pont FFI (`bridge/`, hors workspace) → `mira-assembly` → `mira-core` et providers → `mira-vocabulary`. Le cœur ne nomme aucun provider ; seul `mira-assembly/src/composition.rs` les connaît tous (une ligne par provider, repli `generic` en premier).
+**Notifications.** Le moteur décide (`mira_host::notifier` : `decide`, `compose`, `run_notifier`, récepteur `NotificationSink`) ; le démon fournit le récepteur D-Bus. La présence (`mira_host::Presence`, trame `set_presence`) dit si un client regarde MIRA. Les réglages (`EngineSettings.notifications`, contrat 1.7) sont dans le moteur. Avec le moteur embarqué (Android, repli Linux), le pont lance le même notifieur (`bridge/src/notifications.rs`, flux `watchNotifications`) et l'app Dart (`NotificationFeed`) affiche sans appliquer de règle ; l'ancienne logique Dart (porte d'arrivée, heures calmes, regroupement) est supprimée.
+
+**Mode résident.** Unité `systemd --user` `mira-daemon.service` (paquets deb, rpm, arch, tarball) activée par l'app après une question unique au premier lancement ; sans unité (AppImage, flatpak, snap, ou réponse « non »), le démon est lancé à la demande par l'app et s'arrête 30 s après son départ.
+
+Côté application, `app/lib/engine/remote/` est le client Dart du démon (`RemoteEngineClient`, protocole de `docs/PROTOCOLE-DEMON.md`) ; `app/lib/main.dart` choisit entre le démon et le moteur embarqué par `openEngineClient`.
+
+Sens des dépendances : pont FFI (`bridge/`, hors workspace, réduit à ses enveloppes flutter_rust_bridge) et `mira-daemon` (qui ajoute `mira-protocol`) → `mira-host` → `mira-assembly` → `mira-core` et providers → `mira-vocabulary`. Le cœur ne nomme aucun provider ; seul `mira-assembly/src/composition.rs` les connaît tous (une ligne par provider, repli `generic` en premier).
 
 Données d'un profil (`C/profile/paths.rs`) : `$MIRA_HOME/profiles/<profil>/`, sinon `$XDG_DATA_HOME/mira/profiles/<profil>/`, sinon `~/.local/share/mira/profiles/<profil>/`, droits `0700`. Contenu : `mira.sqlite3` (WAL), `engine.lock` (verrou exclusif D-27), `attachments/` (cache des pièces jointes), `tmp/`. Un nom de profil vide, `.`, `..` ou contenant `/`, `\`, NUL est refusé.
 
@@ -223,7 +232,7 @@ Les invariants 1–33 et les scénarios S1–S14 sont reliés à leurs tests nom
 |---|---|
 | `tools/test-check-norms`, `tools/test-check-architecture` | auto-tests des garde-fous (fixtures `tools/fixtures/{ok,bad}`, workspace saboté) |
 | `tools/check-norms` | N1 fonction ≤ 30 lignes ; N2 ≤ 6 fonctions avec corps par fichier (tests compris) ; N3 noms `utils`/`helpers`/`common`/`misc` ; N4 aucun commentaire dans un corps ; N5 exactement une ligne `///` avant chaque `fn` (dernier relevé : 1 433 fichiers, 0 violation) |
-| `tools/check-architecture` | A0 crates attendus présents ; A1 vocabulaire = `serde` + `thiserror` ; A2 providers = vocabulaire seul ; A3 cœur sans provider ni assemblage ; (A4, règle des clients CLI/TUI, retirée avec eux) ; A5 testkit sans crate `mira-*` ; A6 aucun nom de provider dans le cœur, tests compris ; A7 pas de chargement dynamique ; A8 chaque bibliothèque externe dans son module (table `ENCAPSULATED`) ; A9 aucune notion d'écran |
+| `tools/check-architecture` | A0 crates attendus présents ; A1 vocabulaire = `serde` + `thiserror` ; A2 providers = vocabulaire seul ; A3 cœur sans provider ni assemblage ; (A4, règle des clients CLI/TUI, retirée avec eux) ; A5 testkit sans crate `mira-*` ; A6 aucun nom de provider dans le cœur, tests compris ; A7 pas de chargement dynamique ; A8 chaque bibliothèque externe dans son module (table `ENCAPSULATED`) ; A9 aucune notion d'écran ; A10 `mira-host` sans provider ; A11 `mira-protocol` pur (vocabulaire, `serde`, `serde_json`, `thiserror`) ; A12 `mira-daemon` sans provider |
 | `tools/check-forbidden-patterns` | `unwrap`/`expect`/`panic!`/`todo!`/`unimplemented!`/`dbg!`/`unsafe` hors tests ; `TODO` non référencé ; marqueurs de conflit git ; `libloading`/`dlopen` dans un `Cargo.toml` |
 | `cargo fmt --check`, `cargo clippy -D warnings` | lints du workspace : `unsafe_code = forbid`, `unwrap_used`/`expect_used`/`panic`/`todo` = deny |
 | `cargo test --workspace` | `cargo-nextest` ne s'installe pas (BLOQUÉ-01) ; `ci.sh` bascule sur `cargo test` |
@@ -263,3 +272,9 @@ Limites, avec leur décision :
 - Événements : sept variantes jamais émises (§5). Pas de `RateLimited` bien que le refus `server.rate_limited` existe.
 - Production : `production_config` construit un `OAuthClientConfig` **vide** (aucun `client_id` par provider) : `mira account add-oauth` est refusé hors configuration injectée. Les valeurs des providers (serveurs, adresses OAuth, plafonds) viennent du §6.7 et n'ont pas été vérifiées en ligne (`docs/SOURCES.md` est vide). Aucun test ne réussit une poignée de main TLS ni STARTTLS : le testkit parle en clair (AG-03, AG-10).
 - Réglages D-11 et optimisation D-24 : non implémentés.
+
+## Windows (phase 5a, moteur embarqué)
+
+Sous Windows l'app charge `mira_bridge.dll` (à côté de `mira.exe`) et n'utilise pas de démon. Le profil se trouve sous `%LOCALAPPDATA%\mira\profiles` (`ProfileEnvironment::from_lookup`), les secrets dans le Gestionnaire d'identifiants (`keyring`), les droits 0600/0700 ne sont posés que sous Unix. Le workflow `.github/workflows/windows.yml` compile le moteur, le pont et l'app ; rien n'a été exécuté sous Windows. Le démon Windows (TCP loopback, démarrage à la session, notifications, zone de notification) reste à faire (5b).
+
+Identifiants OAuth sous Windows : comme sous Linux, ils sont chiffrés dans le moteur à la compilation (`MIRA_OAUTH_CONFIG`). `packaging/windows/build.ps1` lit par défaut `%APPDATA%\mira\config.toml`, qui sert aussi de fichier de repli à l'exécution (`oauth_config_path_from_lookup`). Un binaire compilé sans ce fichier ne peut pas connecter Google ni Microsoft chez les utilisateurs. La fenêtre Windows n'a plus de barre de titre (`WS_CAPTION` retiré) mais reste redimensionnable.

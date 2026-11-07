@@ -32,6 +32,7 @@ and write from a single, calm interface.
 %license %{_datadir}/licenses/mira-mail/LICENSE
 %{_bindir}/mira-mail
 %{_prefix}/lib/mira-mail/
+%{_prefix}/lib/systemd/user/mira-daemon.service
 %{_datadir}/applications/io.github.nnoah29.Mira.desktop
 %{_datadir}/icons/hicolor/512x512/apps/io.github.nnoah29.Mira.png
 %{_datadir}/icons/hicolor/scalable/apps/io.github.nnoah29.Mira.svg

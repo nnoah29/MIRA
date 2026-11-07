@@ -9,6 +9,8 @@ data="${XDG_DATA_HOME:-$HOME/.local/share}"
 root="$data/mira-mail"
 bin="$HOME/.local/bin/mira-mail"
 desktop="$data/applications/io.github.nnoah29.Mira.desktop"
+unit_dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+unit="$unit_dir/mira-daemon.service"
 icons="$data/icons/hicolor"
 force=0
 wanted=""
@@ -17,6 +19,8 @@ for arg in "$@"; do
   case "$arg" in
     --force) force=1 ;;
     --uninstall)
+      command -v systemctl >/dev/null && systemctl --user disable --now mira-daemon.service 2>/dev/null || true
+      rm -f "$unit"
       rm -rf "$root" "$bin" "$desktop" \
         "$icons/512x512/apps/io.github.nnoah29.Mira.png" "$icons/scalable/apps/io.github.nnoah29.Mira.svg" \
         "$data/metainfo/io.github.nnoah29.Mira.metainfo.xml"
@@ -89,6 +93,11 @@ sed "s|^Exec=.*|Exec=$bin|" "$root/current/share/io.github.nnoah29.Mira.desktop"
 install -m644 "$root/current/share/io.github.nnoah29.Mira.png" "$icons/512x512/apps/"
 install -m644 "$root/current/share/io.github.nnoah29.Mira.svg" "$icons/scalable/apps/"
 install -m644 "$root/current/share/io.github.nnoah29.Mira.metainfo.xml" "$data/metainfo/"
+if [ -f "$root/current/share/mira-daemon.service.in" ]; then
+  mkdir -p "$unit_dir"
+  sed "s|@DAEMON@|$root/current/app/mira-daemon|" "$root/current/share/mira-daemon.service.in" > "$unit"
+  command -v systemctl >/dev/null && systemctl --user daemon-reload || true
+fi
 command -v update-desktop-database >/dev/null && update-desktop-database -q "$data/applications" || true
 command -v gtk-update-icon-cache >/dev/null && gtk-update-icon-cache -q -t "$icons" || true
 

@@ -1,0 +1,167 @@
+name: release
+# Se déclenche à chaque push sur main. Une release n'est lancée que si l'historique poussé contient
+# le commit « chore(release): version X.Y.Z » ; sinon le workflow s'arrête sans rien faire.
+# Résultat : un tag annoté vX.Y.Z et un BROUILLON de release GitHub (à publier à la main après essais).
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+concurrency:
+  group: release
+  cancel-in-progress: false
+env:
+  OAUTH_SECRET: ${{ secrets.MIRA_OAUTH_CONFIG_TOML }}
+jobs:
+  plan:
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.find.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - id: find
+        name: Chercher le commit de release dans l'historique poussé
+        run: |
+          before="${{ github.event.before }}"
+          if [[ "$before" =~ ^0+$ ]]; then range="HEAD -1"; else range="$before..HEAD"; fi
+          subject="$(git log --format=%s $range | grep -E '^chore\(release\): version [0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)"
+          version="$(sed -nE 's/^chore\(release\): version ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' <<<"$subject")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Version de release détectée : '${version:-aucune}'"
+      - name: Contrôles de cohérence
+        if: steps.find.outputs.version != ''
+        run: |
+          v="${{ steps.find.outputs.version }}"
+          if git rev-parse -q --verify "refs/tags/v$v" >/dev/null; then echo "Le tag v$v existe déjà" >&2; exit 1; fi
+          previous="$(git tag --sort=-version:refname | head -1)"
+          tools/check-release-version "$v" "$previous"
+          test -n "$OAUTH_SECRET" || { echo "Secret MIRA_OAUTH_CONFIG_TOML absent : une release sans identifiants OAuth est refusée" >&2; exit 1; }
+  verify:
+    needs: plan
+    if: needs.plan.outputs.version != ''
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with: { toolchain: "1.99.0", components: "rustfmt, clippy" }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: "engine -> target" }
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable }
+      - run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev libdbus-1-dev dbus
+      - name: Tout vérifier (moteur, pont, app)
+        run: make check-all
+  tag:
+    needs: [plan, verify]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Poser le tag annoté
+        run: |
+          v="${{ needs.plan.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$v" -m "Release v$v" "${{ github.sha }}"
+          git push origin "v$v"
+  linux:
+    needs: [plan, tag]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "v${{ needs.plan.outputs.version }}" }
+      - uses: dtolnay/rust-toolchain@master
+        with: { toolchain: "1.99.0" }
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable }
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev libdbus-1-dev dpkg-dev rpm fakeroot libfuse2 desktop-file-utils
+          curl -fsSL -o appimagetool https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool && sudo mv appimagetool /usr/local/bin/appimagetool
+      - name: Identifiants OAuth
+        run: |
+          umask 077
+          printf '%s' "$OAUTH_SECRET" > "$RUNNER_TEMP/oauth.toml"
+          echo "MIRA_OAUTH_CONFIG=$RUNNER_TEMP/oauth.toml" >> "$GITHUB_ENV"
+      - name: Construire les formats Linux
+        run: |
+          rm -rf packaging/out && mkdir -p packaging/out
+          packaging/build-bundle.sh
+          packaging/deb/build.sh
+          packaging/rpm/build.sh
+          packaging/tarball.sh
+          packaging/appimage/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: |
+            packaging/out/*.deb
+            packaging/out/*.rpm
+            packaging/out/*.tar.gz
+            packaging/out/*.AppImage
+  android:
+    needs: [plan, tag]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "v${{ needs.plan.outputs.version }}" }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      - uses: dtolnay/rust-toolchain@master
+        with: { toolchain: "1.99.0", targets: "aarch64-linux-android,x86_64-linux-android" }
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable }
+      - run: cargo install cargo-ndk --locked
+      - name: Identifiants OAuth
+        run: |
+          umask 077
+          printf '%s' "$OAUTH_SECRET" > "$RUNNER_TEMP/oauth.toml"
+          echo "MIRA_OAUTH_CONFIG=$RUNNER_TEMP/oauth.toml" >> "$GITHUB_ENV"
+      - name: Construire les APK
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          packaging/android/build.sh
+          v="${{ needs.plan.outputs.version }}"
+          mv packaging/out/app-arm64-v8a-release.apk "packaging/out/mira-mail-$v-android-arm64-v8a.apk"
+          mv packaging/out/app-x86_64-release.apk "packaging/out/mira-mail-$v-android-x86_64.apk"
+      - uses: actions/upload-artifact@v4
+        with: { name: android, path: "packaging/out/*.apk" }
+  windows:
+    needs: [plan, tag]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "v${{ needs.plan.outputs.version }}" }
+      - uses: dtolnay/rust-toolchain@master
+        with: { toolchain: "1.99.0" }
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable }
+      - name: Construire et archiver
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP 'mira'; New-Item -ItemType Directory -Force $dir | Out-Null
+          Set-Content -Path (Join-Path $dir 'config.toml') -Value $env:OAUTH_SECRET -NoNewline
+          $env:MIRA_OAUTH_CONFIG = Join-Path $dir 'config.toml'
+          packaging\windows\build.ps1
+          $v = '${{ needs.plan.outputs.version }}'
+          Compress-Archive -Path app\build\windows\x64\runner\Release\* -DestinationPath "mira-mail-$v-windows-x64.zip"
+      - uses: actions/upload-artifact@v4
+        with: { name: windows, path: "mira-mail-*-windows-x64.zip" }
+  publish:
+    needs: [plan, linux, android, windows]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "v${{ needs.plan.outputs.version }}" }
+      - uses: actions/download-artifact@v4
+        with: { path: dist, merge-multiple: true }
+      - name: Manifeste et brouillon de release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="${{ needs.plan.outputs.version }}"
+          cp packaging/install.sh dist/install.sh
+          (cd dist && sha256sum * | grep -v ' SHA256SUMS$' > SHA256SUMS && sha256sum -c SHA256SUMS)
+          gh release create "v$v" dist/* --title "MIRA $v" \
+            --notes-file "docs/release-notes/v$v.md" --verify-tag --draft

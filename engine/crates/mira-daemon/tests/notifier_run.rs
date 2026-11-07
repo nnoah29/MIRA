@@ -6,7 +6,7 @@ mod support;
 use std::time::Duration;
 
 use mira_host::notifier::{Texts, run_notifier};
-use support::notifier_probe::{deliver, synced_daemon, wait_for};
+use support::notifier_probe::{deliver, deliver_seen, synced_daemon, wait_for};
 use support::notifier_sink::probes;
 
 const WINDOW: Duration = Duration::from_millis(100);
@@ -97,4 +97,25 @@ async fn closing_the_engine_ends_the_notifier() {
             .await
             .is_ok()
     );
+}
+
+/// Un message déjà lu n'est pas notifié ; le suivant, non lu, l'est : le circuit fonctionne.
+#[tokio::test(flavor = "multi_thread")]
+async fn an_already_read_message_is_not_notified() {
+    let (daemon, mut client, _account) = synced_daemon().await;
+    let (sink, clock) = probes(12);
+    let host = daemon.daemon.context().host.clone();
+    tokio::spawn(run_notifier(
+        host,
+        sink.clone(),
+        clock,
+        Texts::for_locale("fr"),
+        WINDOW,
+    ));
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    deliver_seen(&daemon, &mut client, "Déjà lu").await;
+    assert!(!wait_for(&sink, 1, Duration::from_secs(3)).await);
+    deliver(&daemon, &mut client, "Pas encore lu").await;
+    assert!(wait_for(&sink, 1, ARRIVAL).await);
+    assert_eq!(sink.shown()[0].body, "Pas encore lu");
 }

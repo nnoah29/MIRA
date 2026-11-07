@@ -1,6 +1,6 @@
 //! Faut-il notifier cette arrivée ? Réglages, verdict du moteur, sourdine, présence et heures calmes.
 
-use mira_assembly::mira_vocabulary::{AccountId, EngineSettings, QuietHours};
+use mira_assembly::mira_vocabulary::{AccountId, EngineSettings, MailboxRole, QuietHours};
 
 /// Verdict pour une arrivée.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,4 +40,9 @@ pub fn decide(
     } else {
         Decision::Show
     }
+}
+
+/// Dit si un message mérite une notification : non lu et arrivé en réception (ni Envoyés, ni Corbeille, ni Indésirables…).
+pub fn worth_notifying(role: MailboxRole, seen: bool) -> bool {
+    role == MailboxRole::Inbox && !seen
 }

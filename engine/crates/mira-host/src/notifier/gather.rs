@@ -1,12 +1,15 @@
 //! Lectures du notifieur dans le moteur : réglages, en-tête du message et adresse du compte, jamais le corps.
 
 use mira_assembly::api::{
-    AccountRequest, MessageRequest, Request, Response, SettingsRequest, SettingsResponse,
+    AccountRequest, MailboxRequest, MessageRequest, Request, Response, SettingsRequest,
+    SettingsResponse,
 };
-use mira_assembly::mira_vocabulary::{AccountId, EngineSettings, MessageSummary};
+use mira_assembly::mira_vocabulary::{
+    AccountId, EngineSettings, MailboxId, MailboxRole, MessageSummary,
+};
 
-use super::Arrival;
 use super::pending::Pending;
+use super::{Arrival, worth_notifying};
 use crate::Host;
 
 /// Exécute une requête sans garder le moteur : il reste libre de se fermer entre deux lectures.
@@ -43,6 +46,17 @@ fn sender_of(summary: &MessageSummary) -> String {
         .unwrap_or_default()
 }
 
+/// Rôle de la boîte où le message est arrivé (`None` si elle ne se lit plus).
+async fn role_of(host: &Host, account: &AccountId, mailbox: &MailboxId) -> Option<MailboxRole> {
+    let request = Request::Mailbox(MailboxRequest::ListMailboxes {
+        account: account.clone(),
+    });
+    let Response::Mailboxes(boxes) = call(host, request).await? else {
+        return None;
+    };
+    boxes.iter().find(|b| &b.id == mailbox).map(|b| b.role)
+}
+
 /// En-tête d'une arrivée ; rien si le message ou le compte ne se lisent plus.
 pub(super) async fn arrival(host: &Host, pending: &Pending) -> Option<Arrival> {
     let request = Request::Message(MessageRequest::GetMessage {
@@ -51,6 +65,10 @@ pub(super) async fn arrival(host: &Host, pending: &Pending) -> Option<Arrival> {
     let Response::Message(summary) = call(host, request).await? else {
         return None;
     };
+    let role = role_of(host, &pending.account, &pending.mailbox).await?;
+    if !worth_notifying(role, summary.flags.seen) {
+        return None;
+    }
     Some(Arrival {
         account: pending.account.as_str().to_string(),
         address: address_of(host, &pending.account).await?,

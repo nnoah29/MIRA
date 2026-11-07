@@ -24,6 +24,16 @@ pub async fn deliver(daemon: &MailDaemon, client: &mut TestClient, subject: &str
     start_sync(client).await;
 }
 
+/// Dépose un message déjà lu (`\\Seen`) dans la réception puis demande une synchronisation.
+pub async fn deliver_seen(daemon: &MailDaemon, client: &mut TestClient, subject: &str) {
+    let raw = mail_samples::raw_mail(subject, "Corps du message.");
+    daemon
+        .imap
+        .state()
+        .deliver(USER, "INBOX", &raw, &["\\Seen"]);
+    start_sync(client).await;
+}
+
 /// Attend, au plus `wait`, que le récepteur ait reçu au moins `count` notifications.
 pub async fn wait_for(sink: &CollectingSink, count: usize, wait: Duration) -> bool {
     let deadline = tokio::time::Instant::now() + wait;

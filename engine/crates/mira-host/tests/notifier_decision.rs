@@ -1,8 +1,9 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 //! Décision de notifier : réglages, verdict du moteur, compte en sourdine et présence de l'app.
 
+use mira_assembly::mira_vocabulary::MailboxRole;
 use mira_assembly::mira_vocabulary::{AccountId, EngineSettings};
-use mira_host::notifier::{Decision, decide};
+use mira_host::notifier::{Decision, decide, worth_notifying};
 
 /// Réglages par défaut modifiés par `change`.
 fn settings(change: impl FnOnce(&mut EngineSettings)) -> EngineSettings {
@@ -45,4 +46,22 @@ fn a_focused_app_blocks_unless_when_focused_is_set() {
     assert_eq!(decide(&default, false, &account, true, 12), Decision::Skip);
     let always = settings(|s| s.notifications.when_focused = true);
     assert_eq!(decide(&always, false, &account, true, 12), Decision::Show);
+}
+
+/// Seul un message non lu de la réception mérite une notification.
+#[test]
+fn only_unread_inbox_messages_are_worth_a_notification() {
+    assert!(worth_notifying(MailboxRole::Inbox, false));
+    assert!(!worth_notifying(MailboxRole::Inbox, true));
+    for role in [
+        MailboxRole::Sent,
+        MailboxRole::Drafts,
+        MailboxRole::Trash,
+        MailboxRole::Junk,
+        MailboxRole::Archive,
+        MailboxRole::All,
+        MailboxRole::Other,
+    ] {
+        assert!(!worth_notifying(role, false), "{role:?}");
+    }
 }

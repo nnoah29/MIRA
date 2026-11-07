@@ -276,3 +276,5 @@ Limites, avec leur décision :
 ## Windows (phase 5a, moteur embarqué)
 
 Sous Windows l'app charge `mira_bridge.dll` (à côté de `mira.exe`) et n'utilise pas de démon. Le profil se trouve sous `%LOCALAPPDATA%\mira\profiles` (`ProfileEnvironment::from_lookup`), les secrets dans le Gestionnaire d'identifiants (`keyring`), les droits 0600/0700 ne sont posés que sous Unix. Le workflow `.github/workflows/windows.yml` compile le moteur, le pont et l'app ; rien n'a été exécuté sous Windows. Le démon Windows (TCP loopback, démarrage à la session, notifications, zone de notification) reste à faire (5b).
+
+Identifiants OAuth sous Windows : comme sous Linux, ils sont chiffrés dans le moteur à la compilation (`MIRA_OAUTH_CONFIG`). `packaging/windows/build.ps1` lit par défaut `%APPDATA%\mira\config.toml`, qui sert aussi de fichier de repli à l'exécution (`oauth_config_path_from_lookup`). Un binaire compilé sans ce fichier ne peut pas connecter Google ni Microsoft chez les utilisateurs. La fenêtre Windows n'a plus de barre de titre (`WS_CAPTION` retiré) mais reste redimensionnable.

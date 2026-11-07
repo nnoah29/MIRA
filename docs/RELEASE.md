@@ -8,6 +8,12 @@ dépôt. Une release doit toujours pouvoir être reconstruite à partir de son t
 > Ne publiez jamais avec des modifications locales. Ne forcez jamais un tag
 > déjà public : une erreur se corrige par une nouvelle version.
 
+## 0. Release automatique (GitHub Actions)
+
+`.github/workflows/release.yml` s'exécute à chaque push sur `main`. Il ne fait rien sauf si l'historique poussé contient un commit dont le titre est exactement de la forme `chore(release): version X.Y.Z` (c'est le commit de l'étape 1, fusionné par la PR `dev` → `main`). Dans ce cas, dans l'ordre : contrôle de cohérence (`tools/check-release-version` : versions, build Android croissant, notes `docs/release-notes/vX.Y.Z.md` en anglais, tag inexistant, secret présent), `make check-all`, pose du tag annoté `vX.Y.Z`, construction en parallèle (Linux : deb, rpm, tar.gz, AppImage ; Android : 2 APK ; Windows : zip), `SHA256SUMS` + `install.sh`, puis **brouillon** de release GitHub. La publication reste manuelle (étape 6, vérifications). AUR (étape 7) et les essais sur machine propre (étape 5) restent manuels.
+
+Prérequis une fois : secret de dépôt `MIRA_OAUTH_CONFIG_TOML` (contenu du `config.toml` de production). Avant la PR, ajouter `docs/release-notes/vX.Y.Z.md` au commit de release. `ci.yml` vérifie les PR vers `dev` et `main`.
+
 ## 1. Préparer la release sur `dev`
 
 Choisir la version selon Semantic Versioning : majeure pour une incompatibilité,
@@ -40,6 +46,7 @@ Mettre à jour la version dans un commit de release sur `dev` :
 | `packaging/arch/PKGBUILD` | `pkgver=$VERSION` |
 | `packaging/snap/snapcraft.yaml` | `version` et le nom d'archive source |
 | `packaging/flatpak/io.github.nnoah29.Mira.yml` | le nom d'archive source |
+| `docs/release-notes/vX.Y.Z.md` | notes de la release, en anglais (requises par le workflow) |
 
 Les versions des crates Rust (`0.1.0`) sont indépendantes de la version
 produit. Ne les modifier que si un crate doit aussi être publié.

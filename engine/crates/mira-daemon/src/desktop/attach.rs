@@ -6,8 +6,14 @@ use std::time::Duration;
 use mira_host::Host;
 use mira_host::notifier::{Notification, NotificationSink, SystemClock, Texts, run_notifier};
 
-use super::{DbusNotificationSink, app_launcher, system_locale};
+use super::state_mirror::mirror_state;
+use super::{
+    DbusNotificationSink, Launch, StatusNotifierTray, TrayControl, TrayStatus, app_launcher,
+    system_locale,
+};
 use crate::report::say;
+use crate::server::ServerContext;
+use crate::shutdown;
 
 const WINDOW: Duration = Duration::from_secs(2);
 const KEYRING_NOTICE_ID: u32 = 1;
@@ -16,24 +22,36 @@ const KEYRING_NOTICE_ID: u32 = 1;
 #[derive(Debug)]
 pub struct Desktop {
     sink: Option<Arc<dyn NotificationSink>>,
+    _tray: Option<Arc<dyn TrayControl>>,
     texts: Texts,
 }
 
 impl Desktop {
     /// Intégration avec ce récepteur (ou aucun) et ces textes.
     pub fn new(sink: Option<Arc<dyn NotificationSink>>, texts: Texts) -> Self {
-        Self { sink, texts }
+        Self {
+            sink,
+            _tray: None,
+            texts,
+        }
     }
 
-    /// Se relie au bus de session ; sans bus, le démon continue sans notifications du bureau.
-    pub fn connect() -> Self {
-        let texts = Texts::for_locale(&system_locale());
-        match DbusNotificationSink::connect(app_launcher()) {
-            Ok(sink) => Self::new(Some(Arc::new(sink)), texts),
+    /// Se relie au bus de session ; sans bus ou sans hôte de zone de notification, le démon continue sans cette partie.
+    pub async fn connect(ctx: &Arc<ServerContext>) -> Self {
+        let locale = system_locale();
+        let texts = Texts::for_locale(&locale);
+        let sink = match DbusNotificationSink::connect(app_launcher()) {
+            Ok(sink) => Some(Arc::new(sink) as Arc<dyn NotificationSink>),
             Err(_) => {
                 say("notifications du bureau indisponibles");
-                Self::new(None, texts)
+                None
             }
+        };
+        let tray = start_tray(ctx, locale).await;
+        Self {
+            sink,
+            _tray: tray,
+            texts,
         }
     }
 
@@ -61,4 +79,22 @@ impl Desktop {
             WINDOW,
         ));
     }
+}
+
+/// Démarre l'icône et la relie à l'état du serveur ; « Quitter » arrête le démon proprement.
+async fn start_tray(ctx: &Arc<ServerContext>, locale: String) -> Option<Arc<dyn TrayControl>> {
+    let runtime = tokio::runtime::Handle::current();
+    let stop = ctx.clone();
+    let quit: Launch = Arc::new(move || {
+        runtime.spawn(shutdown::run(stop.clone()));
+    });
+    let started =
+        StatusNotifierTray::start(app_launcher(), quit, locale, TrayStatus::Starting).await;
+    let Ok(tray) = started else {
+        say("icône de zone de notification indisponible");
+        return None;
+    };
+    let tray: Arc<dyn TrayControl> = Arc::new(tray);
+    mirror_state(ctx, tray.clone());
+    Some(tray)
 }

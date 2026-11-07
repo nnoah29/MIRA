@@ -28,6 +28,7 @@ toml.workspace = true
 ring.workspace = true
 thiserror.workspace = true
 zbus = "5"
+ksni = { version = "0.3", default-features = false, features = ["async-io"] }
 clap.workspace = true
 
 [dev-dependencies]

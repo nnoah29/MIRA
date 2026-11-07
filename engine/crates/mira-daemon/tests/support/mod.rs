@@ -16,6 +16,7 @@ pub mod dbus_probe;
 pub mod engine_config;
 pub mod event_helpers;
 pub mod fake_notification_server;
+pub mod fake_watcher;
 pub mod locked_store;
 pub mod mail_daemon;
 pub mod notifier_probe;
@@ -23,6 +24,8 @@ pub mod notifier_sink;
 pub mod private_bus;
 pub mod process;
 pub mod process_args;
+pub mod process_env;
+pub mod tray_probe;
 pub mod unlock_harness;
 
 #[allow(clippy::duplicate_mod)]

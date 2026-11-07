@@ -4,6 +4,7 @@ mod accept;
 mod clients;
 mod closing;
 mod context;
+mod state_watch;
 
 pub use accept::serve;
 pub use clients::{ClientGuard, Clients};

@@ -26,7 +26,7 @@ pub struct ServerContext {
     pub shutdown_wait: Duration,
     pub clients: Clients,
     pub retry_unlock: Notify,
-    state: watch::Sender<HostState>,
+    pub(super) state: watch::Sender<HostState>,
     closing: watch::Sender<bool>,
     outcome: OnceCell<String>,
 }

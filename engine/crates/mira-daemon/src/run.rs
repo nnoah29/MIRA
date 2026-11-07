@@ -30,7 +30,7 @@ pub async fn run(config: DaemonConfig) -> ExitCode {
         Ok(tasks) => tasks,
         Err(code) => return code,
     };
-    let desktop = Desktop::connect();
+    let desktop = Desktop::connect(&ctx).await;
     let outcome = serve_until_stopped(&ctx, setup.engine, config.idle_grace(), &desktop).await;
     ctx.begin_shutdown();
     for task in tasks {

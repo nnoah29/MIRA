@@ -9,7 +9,7 @@ fn the_app_next_to_the_daemon_is_preferred() {
     let dir = tempfile::tempdir().unwrap();
     let app = dir.path().join("mira");
     std::fs::write(&app, b"#!/bin/sh\n").unwrap();
-    let (program, arguments) = launch_plan(Some(dir.path()));
+    let (program, arguments) = launch_plan(Some(dir.path()), None);
     assert_eq!(program, app.to_string_lossy());
     assert!(arguments.is_empty());
 }
@@ -22,8 +22,8 @@ fn without_a_neighbour_the_system_launcher_is_used() {
         "gtk-launch".to_string(),
         vec!["io.github.nnoah29.Mira".to_string()],
     );
-    assert_eq!(launch_plan(Some(dir.path())), expected);
-    assert_eq!(launch_plan(None), expected);
+    assert_eq!(launch_plan(Some(dir.path()), None), expected);
+    assert_eq!(launch_plan(None, None), expected);
 }
 
 /// La première variable non vide l'emporte ; aucune donne une langue vide.
@@ -35,4 +35,16 @@ fn the_first_non_empty_variable_wins() {
     );
     assert_eq!(pick_locale(None, None, Some("de_DE")), "de_DE");
     assert_eq!(pick_locale(None, None, None), "");
+}
+
+/// `MIRA_APP_BIN` l'emporte s'il désigne un fichier ; sinon il est ignoré.
+#[test]
+fn an_explicit_app_wins_only_when_it_exists() {
+    let dir = tempfile::tempdir().unwrap();
+    let app = dir.path().join("autre");
+    std::fs::write(&app, b"#!/bin/sh\n").unwrap();
+    let plan = launch_plan(Some(dir.path()), Some(&app));
+    assert_eq!(plan.0, app.to_string_lossy());
+    let missing = dir.path().join("absent");
+    assert_eq!(launch_plan(None, Some(&missing)).0, "gtk-launch");
 }

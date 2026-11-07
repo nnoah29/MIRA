@@ -49,12 +49,10 @@ Future<void> main() async {
     engineError: opening.error,
     webDemo: kIsWeb,
   );
-  if (opening.showsNotifications) {
-    final display = PluginNotifications();
-    unawaited(store.useNotifications(display));
-    final stream = opening.notifications;
-    if (stream != null) NotificationFeed(stream, display).start();
-  }
+  final display = PluginNotifications();
+  unawaited(store.useNotifications(display));
+  final stream = opening.notifications;
+  if (stream != null) NotificationFeed(stream, display).start();
   AppLifecycleListener(
     onStateChange: (state) =>
         store.appFocused = state == AppLifecycleState.resumed,
@@ -67,18 +65,12 @@ Future<
   ({
     MailSource? source,
     String? error,
-    bool showsNotifications,
     Stream<Map<String, dynamic>>? notifications,
   })
 >
 openEngineSource(SharedPreferences prefs) async {
   if (kIsWeb || Platform.environment['MIRA_DEMO'] == '1') {
-    return (
-      source: null,
-      error: null,
-      showsNotifications: true,
-      notifications: null,
-    );
+    return (source: null, error: null, notifications: null);
   }
   try {
     final android = runsOnAndroid;
@@ -100,7 +92,6 @@ openEngineSource(SharedPreferences prefs) async {
     return (
       source: source,
       error: null,
-      showsNotifications: appShowsNotifications(opened.used),
       notifications: _embeddedNotifications(opened.client, opened.used),
     );
   } catch (e) {
@@ -108,12 +99,7 @@ openEngineSource(SharedPreferences prefs) async {
     stderr.writeln(
       'MIRA : moteur indisponible, données de démonstration ($reason)',
     ); // i18n:ignore
-    return (
-      source: null,
-      error: reason,
-      showsNotifications: true,
-      notifications: null,
-    );
+    return (source: null, error: reason, notifications: null);
   }
 }
 

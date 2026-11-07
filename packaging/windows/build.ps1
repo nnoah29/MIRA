@@ -9,6 +9,8 @@ if (-not $env:MIRA_OAUTH_CONFIG) {
 }
 if ($env:MIRA_OAUTH_CONFIG) { Write-Host "Identifiants OAuth intégrés (chiffrés) depuis $env:MIRA_OAUTH_CONFIG" }
 else { Write-Warning 'Aucun identifiant OAuth intégré : créer %APPDATA%\mira\config.toml ou définir MIRA_OAUTH_CONFIG.' }
+# Visual Studio 2026 refuse les en-têtes <experimental/coroutine> du plugin webview_all_windows sans ce drapeau.
+if ($env:CL -notmatch '_SILENCE_EXPERIMENTAL_COROUTINE') { $env:CL = "$env:CL /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS" }
 Push-Location "$root\bridge"; cargo build --release; Pop-Location
 Push-Location "$root\app"; flutter pub get; flutter build windows --release; Pop-Location
 Write-Host "Terminé : $root\app\build\windows\x64\runner\Release\mira.exe"

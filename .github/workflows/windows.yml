@@ -22,6 +22,8 @@ jobs:
           channel: stable
       - name: Application Windows
         working-directory: app
+        env:
+          CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
         run: |
           flutter pub get
           flutter build windows --release

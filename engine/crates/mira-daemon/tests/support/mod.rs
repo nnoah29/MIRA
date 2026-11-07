@@ -16,6 +16,8 @@ pub mod engine_config;
 pub mod event_helpers;
 pub mod locked_store;
 pub mod mail_daemon;
+pub mod notifier_probe;
+pub mod notifier_sink;
 pub mod process;
 pub mod process_args;
 pub mod unlock_harness;

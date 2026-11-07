@@ -15,7 +15,7 @@ pub use composition::build_registry;
 pub use engine_config::{production_config, production_config_with_oauth};
 pub use mira_core::registry::{ProviderRegistry, resolve_account_provider};
 pub use mira_core::{
-    accounts, ai, api, auth, capabilities, fetching, html, mailboxes, operations, ports, profile,
-    reading, registry, storage, sync,
+    accounts, ai, api, auth, capabilities, events, fetching, html, mailboxes, operations, ports,
+    profile, reading, registry, storage, sync,
 };
 pub use mira_vocabulary;

@@ -42,6 +42,12 @@ abstract interface class PresenceClient {
   Future<void> setPresence(bool focused);
 }
 
+/// Moteur embarqué qui décide lui-même des notifications et les envoie à l'app, qui se contente de les afficher.
+abstract interface class NotificationStreamClient {
+  /// Notifications décidées par le moteur (`id`, `title`, `body`, `sound`, `message`), dans la langue `locale` ; fermer le flux arrête le notifieur.
+  Stream<Map<String, dynamic>> notifications(String locale);
+}
+
 /// Ouvre l'enveloppe `{ok, data | error}` ; lève [EngineException] si `ok` est faux.
 Map<String, dynamic> openEnvelope(String json) =>
     openEnvelopeMap(jsonDecode(json) as Map<String, dynamic>);

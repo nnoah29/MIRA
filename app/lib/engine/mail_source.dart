@@ -117,13 +117,6 @@ abstract class MailSource {
   /// Signale chaque changement des comptes (ajout, modification, suppression, état) côté moteur.
   Stream<void> get accountEvents;
 
-  /// Verdict des règles sur un message arrivé : `true` muet (aucune notification),
-  /// `false` à annoncer, `null` pas encore connu.
-  bool? arrivalVerdict(String messageRef);
-
-  /// Oublie les verdicts de ces messages, une fois l'annonce décidée.
-  void forgetVerdicts(Iterable<String> messageRefs);
-
   /// Contenu d'une pièce jointe du moteur (`null` : illisible ou sans identifiant).
   Future<Uint8List?> attachmentBytes(Attachment a);
 

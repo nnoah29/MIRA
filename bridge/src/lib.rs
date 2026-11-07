@@ -5,6 +5,7 @@ pub mod api;
 pub mod chat_feed;
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 mod frb_generated;
+pub mod notifications;
 pub mod original_html;
 pub mod runtime;
 pub mod session;

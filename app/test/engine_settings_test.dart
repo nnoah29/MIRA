@@ -117,7 +117,7 @@ void main() {
     store.setNotify('notifyQuiet', '22-7');
     await settle();
     expect(fake.engineQuiet, {'from': 22, 'to': 7});
-    expect(store.notifySettings.isQuiet(23), isTrue);
+    expect(store.notifySettings.quiet, (22, 7));
     expect(prefs.getString('notifyQuiet'), isNull);
     store.setNotify('notifyQuiet', '');
     await settle();

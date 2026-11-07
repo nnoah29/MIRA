@@ -1,6 +1,7 @@
 //! Traitement d'un lot d'arrivées : décision pour chacune, lecture des en-têtes, composition par compte, remise au récepteur.
 
 use std::collections::BTreeMap;
+use std::ops::Deref;
 use std::sync::Arc;
 
 use mira_assembly::mira_vocabulary::EngineSettings;
@@ -9,15 +10,20 @@ use super::pending::Pending;
 use super::{Arrival, Decision, LocalClock, NotificationSink, Texts, compose, decide, gather};
 use crate::Host;
 
+/// Référence partageable vers un hôte : `Arc<Host>` (démon) ou `&'static Host` (pont).
+pub trait HostRef: Deref<Target = Host> + Send + Sync + 'static {}
+
+impl<T: Deref<Target = Host> + Send + Sync + 'static> HostRef for T {}
+
 /// Ce qu'il faut pour notifier : l'hôte à lire, le récepteur, l'horloge locale et les textes.
-pub(super) struct Notifier {
-    pub host: Arc<Host>,
+pub(super) struct Notifier<H: HostRef> {
+    pub host: H,
     pub sink: Arc<dyn NotificationSink>,
     pub clock: Arc<dyn LocalClock>,
     pub texts: Texts,
 }
 
-impl Notifier {
+impl<H: HostRef> Notifier<H> {
     /// Notifie le lot : réglages relus à ce moment, arrivées retenues regroupées par compte.
     pub(super) async fn flush(&self, batch: Vec<Pending>) {
         let Some(settings) = gather::settings(&self.host).await else {

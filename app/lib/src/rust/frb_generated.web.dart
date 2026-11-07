@@ -7,6 +7,7 @@
 // ignore_for_file: argument_type_not_assignable
 
 import 'api/engine.dart';
+import 'api/notifications.dart';
 import 'api/presence.dart';
 
 import 'dart:async';

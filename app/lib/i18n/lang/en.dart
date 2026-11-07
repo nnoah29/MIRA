@@ -147,7 +147,6 @@ const Map<String, String> enStrings = {
   'Notifications indisponibles sur ce système':
       'Notifications are not available on this system',
   'Les notifications fonctionnent.': 'Notifications are working.',
-  '{0} nouveaux messages': '{0} new messages',
   'MIRA': 'MIRA',
   'Retirer le filtre': 'Remove filter',
   'Afficher seulement': 'Show only',
@@ -676,8 +675,7 @@ const Map<String, String> enStrings = {
   'Dans la barre latérale': 'In the sidebar',
   'Masquer de la Réception': 'Hide from the Inbox',
   'Garder MIRA actif en arrière-plan ?': 'Keep MIRA running in the background?',
-  'MIRA peut rester actif discrètement quand sa fenêtre est fermée, pour continuer la synchronisation et afficher vos notifications. Vous pourrez changer ce choix dans les réglages.':
-      'MIRA can keep running quietly when its window is closed, to keep syncing and show your notifications. You can change this in the settings.',
+  'MIRA peut rester actif discrètement quand sa fenêtre est fermée, pour continuer la synchronisation et afficher vos notifications. Vous pourrez changer ce choix dans les réglages.': 'MIRA can keep running quietly when its window is closed, to keep syncing and show your notifications. You can change this in the settings.',
   'Garder MIRA actif en arrière-plan': 'Keep MIRA running in the background',
   'Les notifications et la synchronisation continuent fenêtre fermée.':
       'Notifications and syncing carry on with the window closed.',
@@ -1363,10 +1361,8 @@ const Map<String, String> enStrings = {
   'Requête trop volumineuse': 'Request too large',
   'La variable MIRA_DAEMON_BIN désigne un fichier introuvable':
       'The MIRA_DAEMON_BIN variable points to a file that does not exist',
-  'Le trousseau du système est verrouillé : déverrouillez-le puis relancez MIRA, le moteur en arrière-plan reprendra seul':
-      'The system keyring is locked: unlock it, then restart MIRA; the background engine will resume by itself',
-  'Le moteur en arrière-plan est trop ancien pour cette version de MIRA et n’a pas pu être redémarré : relancez votre session ou redémarrez-le (systemctl --user restart mira-daemon)':
-      'The background engine is too old for this version of MIRA and could not be restarted: log in again or restart it (systemctl --user restart mira-daemon)',
+  'Le trousseau du système est verrouillé : déverrouillez-le puis relancez MIRA, le moteur en arrière-plan reprendra seul': 'The system keyring is locked: unlock it, then restart MIRA; the background engine will resume by itself',
+  'Le moteur en arrière-plan est trop ancien pour cette version de MIRA et n’a pas pu être redémarré : relancez votre session ou redémarrez-le (systemctl --user restart mira-daemon)': 'The background engine is too old for this version of MIRA and could not be restarted: log in again or restart it (systemctl --user restart mira-daemon)',
   'Un autre moteur en arrière-plan utilise déjà ce profil':
       'Another background engine already uses this profile',
   'La configuration du moteur en arrière-plan est invalide':

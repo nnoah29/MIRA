@@ -10,11 +10,14 @@ import 'package:flutter_test/flutter_test.dart';
 }
 
 void main() {
-  test('le favicon est assez grand pour être net (pas le 16 px de Flutter)', () {
-    final (width, height) = pngSize('web/favicon.png');
-    expect(width, greaterThanOrEqualTo(32));
-    expect(width, height);
-  });
+  test(
+    'le favicon est assez grand pour être net (pas le 16 px de Flutter)',
+    () {
+      final (width, height) = pngSize('web/favicon.png');
+      expect(width, greaterThanOrEqualTo(32));
+      expect(width, height);
+    },
+  );
 
   test('les icônes de la PWA ont la taille annoncée par le manifeste', () {
     for (final size in [192, 512]) {

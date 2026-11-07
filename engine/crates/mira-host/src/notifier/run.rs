@@ -7,10 +7,9 @@ use mira_assembly::events::EventSubscription;
 use mira_assembly::mira_vocabulary::EventFilter;
 use tokio::time::{Instant, timeout_at};
 
-use super::flush::Notifier;
+use super::flush::{HostRef, Notifier};
 use super::pending::Pending;
 use super::{LocalClock, NotificationSink, Texts};
-use crate::Host;
 use crate::events_feed::latest_seq;
 
 /// Prochaine arrivée annoncée, ou rien quand le moteur se ferme.
@@ -36,8 +35,8 @@ async fn gather_window(
 }
 
 /// Écoute les événements du moteur à partir de maintenant et remet les notifications au récepteur, jusqu'à la fermeture du moteur.
-pub async fn run_notifier(
-    host: Arc<Host>,
+pub async fn run_notifier<H: HostRef>(
+    host: H,
     sink: Arc<dyn NotificationSink>,
     clock: Arc<dyn LocalClock>,
     texts: Texts,

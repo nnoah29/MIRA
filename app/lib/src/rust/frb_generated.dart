@@ -4,6 +4,7 @@
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
 import 'api/engine.dart';
+import 'api/notifications.dart';
 import 'api/presence.dart';
 
 import 'dart:async';
@@ -68,7 +69,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => 172514572;
+  int get rustContentHash => -2079737161;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -99,6 +100,10 @@ abstract class RustLibApi extends BaseApi {
   void crateApiPresenceSetPresence({required bool focused});
 
   Stream<String> crateApiEngineWatchEvents({BigInt? after});
+
+  Stream<String> crateApiNotificationsWatchNotifications({
+    required String locale,
+  });
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -347,6 +352,44 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     debugName: "watch_events",
     argNames: ["after", "sink"],
   );
+
+  @override
+  Stream<String> crateApiNotificationsWatchNotifications({
+    required String locale,
+  }) {
+    final sink = RustStreamSink<String>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_String(locale, serializer);
+            sse_encode_StreamSink_String_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 9,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: null,
+          ),
+          constMeta: kCrateApiNotificationsWatchNotificationsConstMeta,
+          argValues: [locale, sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiNotificationsWatchNotificationsConstMeta =>
+      const TaskConstMeta(
+        debugName: "watch_notifications",
+        argNames: ["locale", "sink"],
+      );
 
   @protected
   AnyhowException dco_decode_AnyhowException(dynamic raw) {

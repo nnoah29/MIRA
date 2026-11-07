@@ -32,7 +32,6 @@ import '../ui/body_renderer.dart';
 import '../theme/wall_source.dart';
 import '../theme/wall_theme.dart';
 import '../theme/app_theme.dart';
-import 'arrival_gate.dart';
 import 'assistant.dart';
 import 'chat_context.dart';
 import 'chat_controller.dart';
@@ -1384,9 +1383,6 @@ class MailStore extends ChangeNotifier {
 
   final Set<String> _reloading = {}, _reloadAgain = {};
 
-  /// Nouveaux fils en attente du verdict des règles avant leur notification.
-  final ArrivalGate _arrivals = ArrivalGate();
-
   Future<void> _reloadOnce(String id) async {
     final src = source;
     final acc = accounts.where((a) => a.id == id).firstOrNull;
@@ -1397,16 +1393,6 @@ class MailStore extends ChangeNotifier {
       _applySnoozes(fresh);
       localLabels.apply(fresh);
       _keepLocalState(id, fresh);
-      final now = DateTime.now().millisecondsSinceEpoch;
-      _arrivals.hold(_boxes[id], newArrivals(_boxes[id], fresh, now), now);
-      final ready = _arrivals.release(
-        id,
-        fresh,
-        src.arrivalVerdict,
-        src.forgetVerdicts,
-        now,
-      );
-      if (ready.isNotEmpty) unawaited(_announce(acc, ready));
       if (_signature(fresh) == _signature(_boxes[id] ?? const [])) return;
       _boxes[id] = fresh;
       _rememberContacts();
@@ -2589,45 +2575,16 @@ class MailStore extends ChangeNotifier {
     }
   }
 
-  /// Ouvre un message depuis sa notification : compte, Réception, puis le message.
-  void openNotified(String id) {
-    final account = id.split('/').first;
-    if (!unified && account != activeId) switchAccount(account);
+  /// Ouvre un message depuis sa notification (identifiant du message du moteur) : compte, Réception, puis le fil.
+  void openNotified(String ref) {
+    final mail = _boxes.values
+        .expand((list) => list)
+        .where((m) => m.msgs.any((x) => x.ref == ref))
+        .firstOrNull;
+    if (mail == null) return;
+    if (!unified && mail.account != activeId) switchAccount(mail.account);
     if (folder != 'inbox' || label != null) selectFolder('inbox');
-    if (byId(id) != null) openMail(id);
-  }
-
-  /// Annonce les nouveaux messages d'un compte, selon les réglages ; plus de trois : une seule notification.
-  Future<void> _announce(Account acc, List<Mail> arrived) async {
-    final n = notifications;
-    final cfg = notifySettings;
-    if (n == null || arrived.isEmpty || !cfg.enabled) return;
-    if (cfg.muted.contains(acc.id)) return;
-    if (appFocused && !cfg.whenFocused) return;
-    if (cfg.isQuiet(DateTime.now().hour)) return;
-    try {
-      if (arrived.length > 3) {
-        await n.show(
-          acc.id.hashCode & 0x7fffffff,
-          t('{0} nouveaux messages', [arrived.length]),
-          acc.email,
-          payload: arrived.first.id,
-          sound: cfg.sound,
-        );
-        return;
-      }
-      for (final m in arrived) {
-        await n.show(
-          m.id.hashCode & 0x7fffffff,
-          cfg.preview ? shown(m.from) : t('Nouveau message'),
-          cfg.preview ? m.subject : acc.email,
-          payload: m.id,
-          sound: cfg.sound,
-        );
-      }
-    } catch (_) {
-      /* service de notifications indisponible : rien à afficher */
-    }
+    if (byId(mail.id) != null) openMail(mail.id);
   }
 
   static const _notifyKeys = {

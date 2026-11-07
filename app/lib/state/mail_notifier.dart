@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../data/models.dart';
 import '../engine/engine_settings_admin.dart';
 
 /// Heures calmes écrites `de-à` en heures pleines ; `null` : jamais.
@@ -54,32 +53,6 @@ class NotifySettings {
     mute ? next.add(account) : next.remove(account);
     prefs.setString('notifyMuted', jsonEncode(next.toList()..sort()));
   }
-
-  /// Vrai si l'heure `hour` tombe dans les heures calmes (plage pouvant passer minuit).
-  bool isQuiet(int hour) {
-    final q = quiet;
-    if (q == null) return false;
-    final (from, to) = q;
-    return from <= to ? hour >= from && hour < to : hour >= from || hour < to;
-  }
-}
-
-/// Messages arrivés en réception depuis la lecture précédente : non lus, récents, inconnus avant.
-List<Mail> newArrivals(List<Mail>? before, List<Mail> fresh, int nowMs) {
-  if (before == null || before.isEmpty) return const [];
-  final known = {
-    for (final m in before)
-      for (final x in m.msgs) ?x.ref,
-  };
-  const day = 24 * 3600 * 1000;
-  return [
-    for (final m in fresh)
-      if (m.folder == 'inbox' &&
-          m.unread &&
-          nowMs - m.date < day &&
-          m.msgs.any((x) => x.ref != null && !known.contains(x.ref)))
-        m,
-  ];
 }
 
 /// Affichage des notifications par le système (remplaçable dans les tests).

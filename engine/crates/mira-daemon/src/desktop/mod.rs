@@ -10,6 +10,7 @@ mod state_mirror;
 mod tray;
 
 pub use attach::Desktop;
+pub use hints::body_text;
 pub use launch_app::{Launch, app_launcher, launch_plan};
 pub use locale::{pick_locale, system_locale};
 pub use sink::{DbusNotificationSink, DesktopError};

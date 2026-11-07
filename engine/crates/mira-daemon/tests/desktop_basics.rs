@@ -1,7 +1,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 //! Choix de la commande qui relance l'app et de la langue du système.
 
-use mira_daemon::desktop::{launch_plan, pick_locale};
+use mira_daemon::desktop::{body_text, launch_plan, pick_locale};
 
 /// Le binaire `mira` posé à côté du démon est préféré.
 #[test]
@@ -47,4 +47,12 @@ fn an_explicit_app_wins_only_when_it_exists() {
     assert_eq!(plan.0, app.to_string_lossy());
     let missing = dir.path().join("absent");
     assert_eq!(launch_plan(None, Some(&missing)).0, "gtk-launch");
+}
+
+/// Le corps est borné à 400 caractères et échappé seulement quand le service interprète le balisage.
+#[test]
+fn the_body_is_bounded_and_escaped_only_for_markup_services() {
+    assert_eq!(body_text("a<b", true), "a&lt;b");
+    assert_eq!(body_text("a<b", false), "a<b");
+    assert_eq!(body_text(&"é".repeat(1000), false).chars().count(), 400);
 }

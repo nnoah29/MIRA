@@ -24,6 +24,9 @@ pub trait Notifications {
         expire_timeout: i32,
     ) -> zbus::Result<u32>;
 
+    /// Capacités du service (par exemple `body-markup`).
+    fn get_capabilities(&self) -> zbus::Result<Vec<String>>;
+
     /// Signal émis quand l'utilisateur choisit une action d'une notification.
     #[zbus(signal)]
     fn action_invoked(&self, id: u32, action_key: String) -> zbus::Result<()>;

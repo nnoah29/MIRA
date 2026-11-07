@@ -20,6 +20,7 @@ pub struct Seen {
 pub struct FakeNotifications {
     seen: Arc<Mutex<Vec<Seen>>>,
     next: AtomicU32,
+    capabilities: Vec<String>,
 }
 
 #[zbus::interface(name = "org.freedesktop.Notifications")]
@@ -53,7 +54,7 @@ impl FakeNotifications {
 
     /// Capacités annoncées.
     fn get_capabilities(&self) -> Vec<String> {
-        vec!["actions".into(), "body".into()]
+        self.capabilities.clone()
     }
 
     /// Identité du faux service.
@@ -65,12 +66,21 @@ impl FakeNotifications {
     fn close_notification(&self, _id: u32) {}
 }
 
-/// Démarre le faux service sur ce bus ; rend la connexion (à garder) et la liste des notifications reçues.
+/// Démarre le faux service sans balisage dans le corps ; rend la connexion (à garder) et la liste des notifications reçues.
 pub async fn serve(address: &str) -> (zbus::Connection, Arc<Mutex<Vec<Seen>>>) {
+    serve_with(address, &["actions", "body"]).await
+}
+
+/// Démarre le faux service annonçant ces capacités (par exemple `body-markup`).
+pub async fn serve_with(
+    address: &str,
+    capabilities: &[&str],
+) -> (zbus::Connection, Arc<Mutex<Vec<Seen>>>) {
     let seen = Arc::new(Mutex::new(Vec::new()));
     let object = FakeNotifications {
         seen: seen.clone(),
         next: AtomicU32::new(1),
+        capabilities: capabilities.iter().map(|c| c.to_string()).collect(),
     };
     let connection = zbus::connection::Builder::address(address)
         .unwrap()
@@ -82,18 +92,4 @@ pub async fn serve(address: &str) -> (zbus::Connection, Arc<Mutex<Vec<Seen>>>) {
         .await
         .unwrap();
     (connection, seen)
-}
-
-/// Simule un clic sur l'action `key` de la notification `id`.
-pub async fn click(connection: &zbus::Connection, id: u32, key: &str) {
-    connection
-        .emit_signal(
-            None::<&str>,
-            "/org/freedesktop/Notifications",
-            "org.freedesktop.Notifications",
-            "ActionInvoked",
-            &(id, key),
-        )
-        .await
-        .unwrap();
 }

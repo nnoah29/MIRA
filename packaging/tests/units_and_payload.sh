@@ -22,6 +22,7 @@ unit="$tmp/root/usr/lib/systemd/user/mira-daemon.service"
 grep -qx 'ExecStart=/usr/lib/mira-mail/mira-daemon' "$unit" || fail "ExecStart ne vise pas le démon installé"
 grep -qx 'Restart=on-failure' "$unit" || fail "Restart=on-failure manquant"
 grep -qx 'WantedBy=default.target' "$unit" || fail "WantedBy=default.target manquant"
+grep -qx 'KillMode=process' "$unit" || fail "KillMode=process manquant : l'app lancée par le démon doit lui survivre"
 if grep -q '@' "$unit"; then fail "motif @…@ non remplacé dans l'unité"; fi
 
 other="$tmp/other"

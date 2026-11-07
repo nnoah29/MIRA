@@ -19,6 +19,7 @@ pub mod fake_notification_server;
 pub mod fake_watcher;
 pub mod locked_store;
 pub mod mail_daemon;
+pub mod notification_click;
 pub mod notifier_probe;
 pub mod notifier_sink;
 pub mod private_bus;

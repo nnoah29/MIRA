@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 use mira_host::notifier::{Notification, NotificationSink};
 
 use super::Launch;
-use super::hints::{action_label, hints_for};
+use super::hints::{action_label, body_text, hints_for};
 use super::locale::system_locale;
 use super::proxy::NotificationsProxyBlocking;
 
@@ -25,6 +25,7 @@ pub enum DesktopError {
 pub struct DbusNotificationSink {
     proxy: NotificationsProxyBlocking<'static>,
     owned: Arc<Mutex<HashSet<u32>>>,
+    markup: bool,
 }
 
 impl DbusNotificationSink {
@@ -57,7 +58,14 @@ impl DbusNotificationSink {
                 }
             }
         });
-        Ok(Self { proxy, owned })
+        let markup = proxy
+            .get_capabilities()
+            .is_ok_and(|caps| caps.iter().any(|cap| cap == "body-markup"));
+        Ok(Self {
+            proxy,
+            owned,
+            markup,
+        })
     }
 }
 
@@ -66,6 +74,7 @@ impl NotificationSink for DbusNotificationSink {
     fn show(&self, notification: Notification) {
         let proxy = self.proxy.clone();
         let owned = self.owned.clone();
+        let markup = self.markup;
         std::thread::spawn(move || {
             let label = action_label(&system_locale());
             let sent = proxy.notify(
@@ -73,7 +82,7 @@ impl NotificationSink for DbusNotificationSink {
                 0,
                 APP_ICON,
                 &notification.title,
-                &notification.body,
+                &body_text(&notification.body, markup),
                 &["default", label],
                 hints_for(notification.sound),
                 -1,

@@ -9,7 +9,8 @@ use std::time::Duration;
 use mira_daemon::desktop::DbusNotificationSink;
 use mira_host::notifier::NotificationSink;
 use support::dbus_probe::{counting, sample, until};
-use support::fake_notification_server::{click, serve};
+use support::fake_notification_server::{serve, serve_with};
+use support::notification_click::click;
 use support::private_bus::PrivateBus;
 
 /// Le texte, l'action « Ouvrir » et le son arrivent au service de notifications.
@@ -74,4 +75,36 @@ async fn a_missing_notification_service_is_silent() {
     let sink = DbusNotificationSink::connect_to(&bus.address, launch).unwrap();
     sink.show(sample(true));
     tokio::time::sleep(Duration::from_millis(300)).await;
+}
+
+/// Un service qui interprète le balisage reçoit un corps échappé : l'objet d'un mail n'y fabrique pas de lien.
+#[tokio::test(flavor = "multi_thread")]
+async fn markup_in_the_body_is_escaped_when_the_service_renders_it() {
+    let bus = PrivateBus::start();
+    let (_connection, seen) = serve_with(&bus.address, &["actions", "body", "body-markup"]).await;
+    let (_count, launch) = counting();
+    let sink = DbusNotificationSink::connect_to(&bus.address, launch).unwrap();
+    let mut hostile = sample(true);
+    hostile.body = "Facture <a href=\"http://x\">ici</a> & co".into();
+    sink.show(hostile);
+    assert!(until(|| !seen.lock().unwrap().is_empty()).await);
+    let body = seen.lock().unwrap()[0].body.clone();
+    assert_eq!(
+        body,
+        "Facture &lt;a href=\"http://x\"&gt;ici&lt;/a&gt; &amp; co"
+    );
+}
+
+/// Un service sans balisage reçoit le texte tel quel, sans entités qui s'afficheraient en clair.
+#[tokio::test(flavor = "multi_thread")]
+async fn the_body_stays_plain_when_the_service_has_no_markup() {
+    let bus = PrivateBus::start();
+    let (_connection, seen) = serve(&bus.address).await;
+    let (_count, launch) = counting();
+    let sink = DbusNotificationSink::connect_to(&bus.address, launch).unwrap();
+    let mut plain = sample(true);
+    plain.body = "Re: a < b & c".into();
+    sink.show(plain);
+    assert!(until(|| !seen.lock().unwrap().is_empty()).await);
+    assert_eq!(seen.lock().unwrap()[0].body, "Re: a < b & c");
 }

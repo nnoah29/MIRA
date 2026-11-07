@@ -6,6 +6,7 @@ After=graphical-session.target
 [Service]
 Type=simple
 ExecStart=@DAEMON@
+KillMode=process
 Restart=on-failure
 RestartSec=5
 

@@ -69,7 +69,7 @@ abstract class SystemNotifications {
   });
 }
 
-/// Notifications du bureau (D-Bus sous Linux) et d'Android.
+/// Notifications du bureau (D-Bus sous Linux, centre de notifications Windows) et d'Android.
 class PluginNotifications implements SystemNotifications {
   final _plugin = FlutterLocalNotificationsPlugin();
 
@@ -82,6 +82,11 @@ class PluginNotifications implements SystemNotifications {
           defaultIcon: AssetsLinuxIcon('assets/icon/mira.png'),
         ),
         android: const AndroidInitializationSettings('@mipmap/ic_launcher'),
+        windows: const WindowsInitializationSettings(
+          appName: 'MIRA',
+          appUserModelId: 'io.github.nnoah29.Mira',
+          guid: '6f2b1c9e-3a7d-4e58-9b0a-4d1f7c52e8a3',
+        ),
       ),
       onDidReceiveNotificationResponse: (r) {
         final p = r.payload;

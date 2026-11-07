@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mira/engine/remote/byte_channel.dart';
@@ -253,4 +255,41 @@ void main() {
     );
     await connection.close();
   });
+
+  test(
+    'a_burst_of_ends_followed_by_a_close_raises_no_uncaught_error',
+    () async {
+      final uncaught = <Object>[];
+      await runZonedGuarded(() async {
+        final (channel, daemon) = FakeDaemon.pair();
+        final connection = await open(channel);
+        final ids = [for (var i = 0; i < 5; i++) connection.nextId()];
+        final listeners = [
+          for (final id in ids)
+            connection
+                .openStream(openEventsFrame(id, credit: 8))
+                .listen((_) {}, onError: (_) {}),
+        ];
+        for (final id in ids) {
+          daemon.push({
+            'type': 'end',
+            'id': id,
+            'reason': {'type': 'finished'},
+          });
+          daemon.push({
+            'type': 'event',
+            'id': id,
+            'event': {'seq': 1},
+          });
+        }
+        await daemon.close();
+        await connection.closed;
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        for (final l in listeners) {
+          await l.cancel();
+        }
+      }, (error, _) => uncaught.add(error));
+      expect(uncaught, isEmpty);
+    },
+  );
 }

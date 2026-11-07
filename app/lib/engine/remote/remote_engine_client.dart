@@ -8,6 +8,8 @@ import 'connection.dart';
 import 'endpoint.dart';
 import 'event_stream.dart';
 import 'frame_builders.dart';
+import 'frames.dart';
+import 'host_errors.dart';
 import 'host_state.dart';
 
 /// Client du moteur par le démon : le même contrat JSON que le pont FFI, porté par le protocole de trames.
@@ -29,11 +31,12 @@ class RemoteEngineClient implements EngineClient, ChatStreamingClient {
     Duration pingInterval = const Duration(seconds: 15),
     Duration helloTimeout = const Duration(seconds: 5),
     Duration eventBackoff = const Duration(milliseconds: 500),
+    Future<String> Function()? tokenProvider,
   }) async {
     final connect = channelFactory ?? endpoint.connect;
     Future<RemoteConnection> open() async => RemoteConnection.open(
       await connect(),
-      token: endpoint.token,
+      token: await (tokenProvider?.call() ?? Future.value(endpoint.token)),
       clientId: clientId,
       clientName: clientName,
       pingInterval: pingInterval,
@@ -56,11 +59,12 @@ class RemoteEngineClient implements EngineClient, ChatStreamingClient {
     final RemoteConnection fresh;
     try {
       fresh = await _open();
+    } on HandshakeRefused catch (refusal) {
+      throw refusalError(refusal);
+    } on EngineException {
+      rethrow;
     } on Object {
-      throw EngineException.local(
-        'transport.unavailable',
-        t('Moteur en arrière-plan injoignable'),
-      );
+      throw unavailableError();
     }
     if (_detached) {
       await fresh.close();
@@ -89,6 +93,11 @@ class RemoteEngineClient implements EngineClient, ChatStreamingClient {
       return await connection.request(frame(connection.nextId()));
     } on ConnectionLost {
       throw lostError();
+    } on ProtocolException {
+      throw EngineException.local(
+        'transport.request_too_large',
+        t('Requête trop volumineuse'),
+      );
     }
   }
 
@@ -106,8 +115,33 @@ class RemoteEngineClient implements EngineClient, ChatStreamingClient {
   }
 
   @override
-  Stream<Map<String, dynamic>> events({int? after}) =>
-      EventPump(live, after: after, backoff: _eventBackoff).stream;
+  Stream<Map<String, dynamic>> events({int? after}) => EventPump(
+    live,
+    after: after,
+    backoff: _eventBackoff,
+    baseline: after == null ? latestEventSeq : null,
+  ).stream;
+
+  /// Numéro du dernier événement du journal (0 si vide), lu par pages : point de départ d'un flux sans `after`.
+  Future<int> latestEventSeq() async {
+    int? cursor;
+    while (true) {
+      final page = await call(
+        req('event', 'get_events', {
+          'filter': {
+            'accounts': <String>[],
+            'categories': <String>[],
+            'after': cursor,
+          },
+          'limit': 500,
+        }),
+      );
+      final events = (page['data'] as List).cast<Map<String, dynamic>>();
+      if (events.isEmpty) return cursor ?? 0;
+      cursor = events.last['seq'] as int;
+      if (events.length < 500) return cursor;
+    }
+  }
 
   @override
   Stream<Map<String, dynamic>> chatStream(Map<String, dynamic> start) =>

@@ -52,6 +52,7 @@ class DaemonLauncher {
     List<String>? binaryCandidates,
     Map<String, String>? env,
   }) : _start = start ?? Process.start,
+       _env = env ?? Platform.environment,
        _candidates =
            binaryCandidates ??
            defaultBinaryCandidates(
@@ -60,6 +61,7 @@ class DaemonLauncher {
            );
 
   final ProcessStarter _start;
+  final Map<String, String> _env;
   final List<String> _candidates;
 
   /// Premier exécutable existant parmi les candidats, ou `null`.
@@ -70,8 +72,20 @@ class DaemonLauncher {
     return null;
   }
 
+  /// Refuse une variable `MIRA_DAEMON_BIN` qui désigne un fichier absent : un choix explicite ne s'ignore pas en silence.
+  void verifyExplicitBinary() {
+    final explicit = _env['MIRA_DAEMON_BIN'];
+    if (explicit == null || explicit.isEmpty) return;
+    if (File(explicit).existsSync()) return;
+    throw EngineException.local(
+      'transport.daemon_bin_invalid',
+      t('La variable MIRA_DAEMON_BIN désigne un fichier introuvable'),
+    );
+  }
+
   /// Lance `mira-daemon --profile <profil> [--home <dossier>]` en mode détaché.
   Future<void> start({required String profile, String? home}) async {
+    verifyExplicitBinary();
     final binary = findBinary();
     if (binary == null) {
       throw EngineException.local(

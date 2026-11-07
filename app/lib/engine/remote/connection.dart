@@ -107,9 +107,11 @@ class RemoteConnection {
     if (_closed.isCompleted) {
       return Future.error(const ConnectionLost('closed'));
     }
+    final id = frame['id'] as int;
     final completer = Completer<Map<String, dynamic>>();
-    _requests[frame['id'] as int] = completer;
-    send(frame);
+    final bytes = encodeFrame(frame);
+    _requests[id] = completer;
+    _channel.send(bytes);
     return completer.future;
   }
 
@@ -121,8 +123,9 @@ class RemoteConnection {
       controller.close();
       return controller.stream;
     }
+    final bytes = encodeFrame(openFrame);
     _streams[openFrame['id'] as int] = controller;
-    send(openFrame);
+    _channel.send(bytes);
     return controller.stream;
   }
 
@@ -144,6 +147,7 @@ class RemoteConnection {
   }
 
   void _onBytes(List<int> bytes) {
+    if (_closed.isCompleted) return;
     try {
       for (final frame in _decoder.add(bytes)) {
         _silentTicks = 0;
@@ -188,15 +192,17 @@ class RemoteConnection {
     _closed.complete();
     _keepAlive?.cancel();
     if (!_hello.isCompleted) _hello.completeError(why);
-    for (final pending in _requests.values) {
+    final pendings = List.of(_requests.values);
+    _requests.clear();
+    for (final pending in pendings) {
       pending.completeError(why);
     }
-    _requests.clear();
-    for (final stream in _streams.values) {
+    final streams = List.of(_streams.values);
+    _streams.clear();
+    for (final stream in streams) {
       stream.addError(why);
       await stream.close();
     }
-    _streams.clear();
     await _channel.close();
   }
 }

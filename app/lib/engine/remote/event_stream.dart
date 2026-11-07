@@ -13,12 +13,14 @@ class EventPump {
     this._live, {
     int? after,
     Duration backoff = const Duration(milliseconds: 500),
+    this._baseline,
   }) : _lastSeq = after,
        _initialBackoff = backoff,
        _backoff = backoff {
     _controller = StreamController<Map<String, dynamic>>(
       onListen: () => unawaited(_run()),
       onCancel: _stop,
+      onResume: _giveBackOwed,
     );
   }
 
@@ -28,7 +30,9 @@ class EventPump {
   static const Duration maxBackoff = Duration(seconds: 5);
 
   final Future<RemoteConnection> Function() _live;
+  final Future<int> Function()? _baseline;
   final Duration _initialBackoff;
+  int _owed = 0;
   Duration _backoff;
   late final StreamController<Map<String, dynamic>> _controller;
   int? _lastSeq;
@@ -41,6 +45,7 @@ class EventPump {
   Stream<Map<String, dynamic>> get stream => _controller.stream;
 
   Future<void> _run() async {
+    await _learnBaseline();
     while (!_stopped) {
       var next = _Next.afterBackoff;
       try {
@@ -57,6 +62,17 @@ class EventPump {
         return;
       }
       if (next == _Next.afterBackoff) await _wait();
+    }
+  }
+
+  /// Sans point de départ, note la fin actuelle du journal : une coupure avant le premier événement ne perd alors rien.
+  Future<void> _learnBaseline() async {
+    final baseline = _baseline;
+    if (_lastSeq != null || baseline == null) return;
+    try {
+      _lastSeq = await baseline();
+    } on Object {
+      _lastSeq = null;
     }
   }
 
@@ -102,25 +118,35 @@ class EventPump {
     void Function(_Next) finish,
   ) {
     if (frame['type'] == 'event') {
-      _deliver(connection, id, frame['event'] as Map<String, dynamic>);
+      _deliver(connection, id, frame['event']);
     } else if (frame['type'] == 'end') {
       finish(_onEnd(frame['reason'] as Map<String, dynamic>));
     }
   }
 
-  void _deliver(
-    RemoteConnection connection,
-    int id,
-    Map<String, dynamic> event,
-  ) {
-    final seq = event['seq'];
-    if (seq is int) _lastSeq = seq;
-    _backoff = _initialBackoff;
-    if (!_controller.isClosed) _controller.add(event);
-    if (++_sinceRefill >= refill) {
-      _sinceRefill = 0;
+  void _deliver(RemoteConnection connection, int id, Object? event) {
+    if (event is Map<String, dynamic>) {
+      final seq = event['seq'];
+      if (seq is int) _lastSeq = seq;
+      _backoff = _initialBackoff;
+      if (!_controller.isClosed) _controller.add(event);
+    }
+    if (++_sinceRefill < refill) return;
+    _sinceRefill = 0;
+    if (_controller.isPaused) {
+      _owed += refill;
+    } else {
       connection.send(creditFrame(id, refill));
     }
+  }
+
+  /// Rend les crédits retenus pendant la pause de l'abonné.
+  void _giveBackOwed() {
+    final id = _streamId;
+    if (_owed == 0 || id == null) return;
+    final owed = _owed;
+    _owed = 0;
+    _connection?.send(creditFrame(id, owed));
   }
 
   _Next _onEnd(Map<String, dynamic> reason) {

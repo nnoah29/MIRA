@@ -217,4 +217,73 @@ void main() {
       await expectLater(attached(rig), throwsA(anything));
     },
   );
+
+  test(
+    'a_request_too_large_to_encode_fails_cleanly_and_the_client_stays_usable',
+    () async {
+      final rig = DaemonRig();
+      final client = await attached(rig);
+      final huge = {'blob': 'x' * (17 * 1024 * 1024)};
+      await expectLater(
+        client.call(huge),
+        throwsA(
+          isA<EngineException>().having(
+            (e) => e.code,
+            'code',
+            'transport.request_too_large',
+          ),
+        ),
+      );
+      final next = client.call(req('a', 'a'));
+      await answerNext(rig, {'type': 'ok'});
+      expect(await next, {'type': 'ok'});
+      await client.close();
+    },
+  );
+
+  test('reconnection_rereads_the_token_so_a_restarted_daemon_with_a_new_token_is_reached', () async {
+    final rig = DaemonRig(token: 'old');
+    var current = 'old';
+    final client = await RemoteEngineClient.attach(
+      rig.endpoint,
+      clientId: 'c1',
+      channelFactory: rig.factory,
+      tokenProvider: () async => current,
+    );
+    await rig.daemon.close();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    rig.token = 'new';
+    current = 'new';
+    final future = client.call(req('a', 'a'));
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await answerNext(rig, {'n': 1});
+    expect(await future, {'n': 1});
+    await client.close();
+  });
+
+  test(
+    'a_refusal_after_a_restart_is_reported_precisely_not_as_unreachable',
+    () async {
+      final rig = DaemonRig(token: 'old');
+      final client = await RemoteEngineClient.attach(
+        rig.endpoint,
+        clientId: 'c1',
+        channelFactory: rig.factory,
+        tokenProvider: () async => 'old',
+      );
+      await rig.daemon.close();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      rig.token = 'rotated';
+      await expectLater(
+        client.call(req('a', 'a')),
+        throwsA(
+          isA<EngineException>().having(
+            (e) => e.code,
+            'code',
+            'host.auth_refused',
+          ),
+        ),
+      );
+    },
+  );
 }

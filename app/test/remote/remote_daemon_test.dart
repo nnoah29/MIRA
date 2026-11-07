@@ -28,26 +28,42 @@ String? daemonBinary() {
 
 /// Un vrai démon sur un profil jetable, lancé sans `--socket` ni `--token-file` et sans `XDG_RUNTIME_DIR`.
 class RunningDaemon {
-  RunningDaemon(this.dir, this.process);
+  RunningDaemon(this.dir, this.process, {this.runtimeDir});
 
   final Directory dir;
   final Process process;
 
+  /// Dossier d'exécution (`XDG_RUNTIME_DIR`) donné au démon, s'il y en a un.
+  final String? runtimeDir;
+
   String get home => '${dir.path}/home';
 
   /// Chemins que le client calcule pour ce démon.
-  DaemonPaths get paths =>
-      resolveDaemonPaths(profile: 'default', env: const {}, home: home);
+  DaemonPaths get paths => resolveDaemonPaths(
+    profile: 'default',
+    env: {'XDG_RUNTIME_DIR': ?runtimeDir},
+    home: home,
+  );
 
   /// Démarre le binaire et attend sa ligne « prêt ».
-  static Future<RunningDaemon> start(String binary) async {
+  static Future<RunningDaemon> start(
+    String binary, {
+    bool withRuntimeDir = false,
+  }) async {
     final dir = Directory.systemTemp.createTempSync('mira-dart-daemon');
     final key = File('${dir.path}/secrets.key')
       ..writeAsBytesSync(List.filled(32, 7));
     Process.runSync('chmod', ['600', key.path]);
+    String? runtime;
+    if (withRuntimeDir) {
+      runtime = '${dir.path}/xdg';
+      Directory(runtime).createSync();
+      Process.runSync('chmod', ['700', runtime]);
+    }
     final environment = Map<String, String>.of(Platform.environment)
       ..remove('XDG_RUNTIME_DIR')
       ..remove('MIRA_HOME');
+    if (runtime != null) environment['XDG_RUNTIME_DIR'] = runtime;
     final process = await Process.start(
       binary,
       ['--home', '${dir.path}/home', '--secrets-key-file', key.path],
@@ -65,7 +81,7 @@ class RunningDaemon {
         });
     process.stderr.drain<void>();
     await ready.future.timeout(const Duration(seconds: 60));
-    return RunningDaemon(dir, process);
+    return RunningDaemon(dir, process, runtimeDir: runtime);
   }
 
   /// S'attache comme le fera l'app.
@@ -137,24 +153,71 @@ void main() {
     final actor = await daemon.attach();
     final seen = Completer<Map<String, dynamic>>();
     final sub = watcher.events().listen((event) {
-      if (jsonEncode(event).contains('local_labels_changed') &&
-          !seen.isCompleted) {
-        seen.complete(event);
-      }
+      final live = jsonEncode(event).contains('local_labels_changed');
+      if (live && !seen.isCompleted) seen.complete(event);
     });
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-    await actor.call(
-      req('local_label', 'create_local_label', {
-        'name': 'Événement',
-        'idempotency_key': 'dart-event',
-      }),
-    );
+    // Aucune attente fixe : on provoque des changements jusqu'à voir l'un d'eux arriver.
+    for (var i = 0; i < 100 && !seen.isCompleted; i++) {
+      await actor.call(
+        req('local_label', 'create_local_label', {
+          'name': 'Événement $i',
+          'idempotency_key': 'dart-event-$i',
+        }),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
     final event = await seen.future.timeout(const Duration(seconds: 10));
     expect(event['seq'], isA<int>());
     await sub.cancel();
     await watcher.close();
     await actor.close();
   }, skip: skip);
+
+  test(
+    'the_journal_baseline_replays_nothing_but_misses_nothing_after_a_drop',
+    () async {
+      final actor = await daemon.attach();
+      await actor.call(
+        req('local_label', 'create_local_label', {
+          'name': 'Avant',
+          'idempotency_key': 'dart-baseline-before',
+        }),
+      );
+      final watcher = await daemon.attach();
+      final seen = <Map<String, dynamic>>[];
+      final sub = watcher.events().listen(seen.add);
+      await actor.call(
+        req('local_label', 'create_local_label', {
+          'name': 'Après',
+          'idempotency_key': 'dart-baseline-after',
+        }),
+      );
+      for (var i = 0; i < 100 && seen.isEmpty; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+      expect(seen, isNotEmpty);
+      expect(jsonEncode(seen), isNot(contains('dart-baseline-before')));
+      await sub.cancel();
+      await watcher.close();
+      await actor.close();
+    },
+    skip: skip,
+  );
+
+  test(
+    'dart_and_rust_agree_on_the_default_paths_with_XDG_RUNTIME_DIR',
+    () async {
+      final own = await RunningDaemon.start(binary!, withRuntimeDir: true);
+      expect(own.paths.socket, contains('/xdg/mira-daemon/default.sock'));
+      expect(File(own.paths.socket).existsSync(), isTrue);
+      final client = await own.attach();
+      final info = await client.call(req('engine', 'get_contract_info'));
+      expect(info['type'], 'contract_info');
+      await client.close();
+      await own.dispose();
+    },
+    skip: skip,
+  );
 
   test('closing_the_client_leaves_the_daemon_running', () async {
     final client = await daemon.attach();
@@ -177,13 +240,7 @@ void main() {
     final deps = EngineOpeningDeps(
       env: const {},
       isLinuxDesktop: true,
-      attachDaemon: (paths) async => RemoteEngineClient.attach(
-        DaemonEndpoint(
-          unixSocket: paths.socket,
-          token: await readDaemonToken(paths.token),
-        ),
-        clientId: 'dart-test',
-      ),
+      attachDaemon: (paths) => attachDaemonAt(paths, 'dart-test'),
       launchDaemon: (profile, home) async => false,
       openEmbedded: () async =>
           throw StateError('le moteur embarqué ne doit pas servir'),

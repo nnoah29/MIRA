@@ -21,6 +21,13 @@ Stream<Map<String, dynamic>> remoteChatStream(
   var cancelled = false;
   var id = 0;
   var sinceRefill = 0;
+  var owed = 0;
+
+  void giveBackOwed() {
+    if (owed == 0 || id == 0) return;
+    connection?.send(creditFrame(id, owed));
+    owed = 0;
+  }
 
   void fail(Object error) {
     if (!controller.isClosed) controller.addError(error);
@@ -30,10 +37,15 @@ Stream<Map<String, dynamic>> remoteChatStream(
   void onFrame(Map<String, dynamic> frame) {
     if (cancelled) return;
     if (frame['type'] == 'chat_delta') {
-      controller.add(frame['line'] as Map<String, dynamic>);
+      final line = frame['line'];
+      if (line is Map<String, dynamic>) controller.add(line);
       if (++sinceRefill >= chatRefill) {
         sinceRefill = 0;
-        connection?.send(creditFrame(id, chatRefill));
+        if (controller.isPaused) {
+          owed += chatRefill;
+        } else {
+          connection?.send(creditFrame(id, chatRefill));
+        }
       }
     } else if (frame['type'] == 'end') {
       final reason = frame['reason'] as Map<String, dynamic>;
@@ -71,6 +83,7 @@ Stream<Map<String, dynamic>> remoteChatStream(
 
   controller = StreamController<Map<String, dynamic>>(
     onListen: () => unawaited(open()),
+    onResume: giveBackOwed,
     onCancel: () async {
       cancelled = true;
       if (id != 0) connection?.send(cancelFrame(id));

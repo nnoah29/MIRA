@@ -202,4 +202,45 @@ void main() {
     await sub.cancel();
     await client.close();
   });
+
+  test(
+    'a_chat_delta_without_an_object_is_skipped_and_the_stream_goes_on',
+    () async {
+      final rig = DaemonRig();
+      final client = await attached(rig);
+      final lines = <Map<String, dynamic>>[];
+      final sub = client.chatStream({}).listen(lines.add);
+      final open = await rig.daemon.next('open_chat');
+      rig.daemon.push({'type': 'chat_delta', 'id': open['id'], 'line': null});
+      rig.daemon.push({
+        'type': 'chat_delta',
+        'id': open['id'],
+        'line': {'n': 1},
+      });
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(lines, [
+        {'n': 1},
+      ]);
+      await sub.cancel();
+      await client.close();
+    },
+  );
+
+  test('chat_credits_are_withheld_while_the_subscriber_is_paused_and_returned_on_resume', () async {
+    final rig = DaemonRig();
+    final client = await attached(rig);
+    final lines = <Map<String, dynamic>>[];
+    final sub = client.chatStream({}).listen(lines.add);
+    final open = await rig.daemon.next('open_chat');
+    sub.pause();
+    final fed = feed(rig.daemon, open['id'] as int, 300, credits: 64);
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+    expect(rig.daemon.received.where((f) => f['type'] == 'credit'), isEmpty);
+    sub.resume();
+    await fed.timeout(const Duration(seconds: 5));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(lines, hasLength(300));
+    await sub.cancel();
+    await client.close();
+  }, timeout: const Timeout(Duration(seconds: 10)));
 }

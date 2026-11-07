@@ -30,6 +30,9 @@ class FakeDaemon {
   /// Faux : ne répond plus aux `ping`.
   bool autoPong = true;
 
+  /// Numéros du journal d'événements que le faux démon sert aux appels `get_events`.
+  final List<int> journal = [];
+
   /// Vrai quand le client a fermé son côté.
   bool closedByClient = false;
 
@@ -50,7 +53,7 @@ class FakeDaemon {
     for (final frame in _decoder.add(bytes)) {
       received.add(frame);
       _answer(frame);
-      _deliver(frame);
+      if (!_isJournalCall(frame)) _deliver(frame);
     }
   }
 
@@ -63,8 +66,30 @@ class FakeDaemon {
     _waiters.removeAt(index).$2.complete(frame);
   }
 
+  bool _isJournalCall(Map<String, dynamic> frame) {
+    if (frame['type'] != 'call') return false;
+    final request = frame['request'];
+    return request is Map && request['domain'] == 'event';
+  }
+
+  void _answerJournal(Map<String, dynamic> frame) {
+    final request = (frame['request'] as Map)['request'] as Map;
+    final filter = request['filter'] as Map;
+    final after = filter['after'] as int? ?? 0;
+    final limit = request['limit'] as int;
+    final page = [
+      for (final seq in journal.where((s) => s > after).take(limit))
+        {'seq': seq},
+    ];
+    reply(frame['id'] as int, {
+      'ok': true,
+      'data': {'type': 'events', 'data': page},
+    });
+  }
+
   void _answer(Map<String, dynamic> frame) {
     if (mute) return;
+    if (_isJournalCall(frame)) _answerJournal(frame);
     switch (frame['type']) {
       case 'hello':
         push(_helloReply(frame));

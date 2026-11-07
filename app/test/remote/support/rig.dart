@@ -10,7 +10,7 @@ import 'fake_daemon.dart';
 class DaemonRig {
   DaemonRig({this.token = 'tok', this.hostState = 'ready'});
 
-  final String token;
+  String token;
   String hostState;
   final List<FakeDaemon> daemons = [];
 

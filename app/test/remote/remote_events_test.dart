@@ -59,7 +59,7 @@ void main() {
     final sub = client.events().listen(received.add);
     final open = await rig.daemon.next('open_events');
     expect(open['credit'], 256);
-    expect(open['after'], isNull);
+    expect(open['after'], 0, reason: 'journal vide : repart de 0');
     rig.daemon.push({
       'type': 'event',
       'id': open['id'],
@@ -278,4 +278,95 @@ void main() {
     );
     await client.close();
   });
+
+  test(
+    'an_event_frame_without_an_object_is_skipped_and_the_stream_goes_on',
+    () async {
+      final rig = DaemonRig();
+      final client = await attached(rig);
+      final received = <Map<String, dynamic>>[];
+      final sub = client.events().listen(received.add);
+      final open = await rig.daemon.next('open_events');
+      rig.daemon.push({'type': 'event', 'id': open['id'], 'event': null});
+      rig.daemon.push({
+        'type': 'event',
+        'id': open['id'],
+        'event': {'seq': 1},
+      });
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(received, [
+        {'seq': 1},
+      ]);
+      await sub.cancel();
+      await client.close();
+    },
+  );
+
+  test('credits_are_withheld_while_the_subscriber_is_paused_and_returned_on_resume', () async {
+    final rig = DaemonRig();
+    final client = await attached(rig);
+    final received = <Map<String, dynamic>>[];
+    final sub = client.events().listen(received.add);
+    final open = await rig.daemon.next('open_events');
+    sub.pause();
+    final fed = feed(
+      rig.daemon,
+      open['id'] as int,
+      from: 1,
+      to: 1000,
+      credits: 256,
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+    expect(rig.daemon.received.where((f) => f['type'] == 'credit'), isEmpty);
+    sub.resume();
+    await fed.timeout(const Duration(seconds: 5));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(seqs(received), [for (var i = 1; i <= 1000; i++) i]);
+    await sub.cancel();
+    await client.close();
+  }, timeout: const Timeout(Duration(seconds: 10)));
+
+  test(
+    'without_after_the_stream_starts_from_the_current_end_of_the_journal',
+    () async {
+      final rig = DaemonRig();
+      final client = await attached(rig);
+      final sub = client.events().listen((_) {});
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(rig.daemons.single.journal, isEmpty);
+      await sub.cancel();
+      final seeded = DaemonRig();
+      final other = await attached(seeded);
+      seeded.daemon.journal.addAll([for (var i = 1; i <= 700; i++) i]);
+      final sub2 = other.events().listen((_) {});
+      final open = await seeded.daemon.next('open_events');
+      expect(open['after'], 700, reason: 'le journal est lu par pages de 500');
+      await sub2.cancel();
+      await client.close();
+      await other.close();
+    },
+  );
+
+  test(
+    'events_missed_during_a_drop_before_the_first_event_are_replayed_from_zero',
+    () async {
+      final rig = DaemonRig();
+      final client = await attached(rig);
+      final sub = client.events().listen((_) {});
+      final first = await rig.daemon.next('open_events');
+      expect(first['after'], 0);
+      await rig.daemon.close();
+      while (rig.daemons.length < 2) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+      final second = await rig.daemon.next('open_events');
+      expect(
+        second['after'],
+        0,
+        reason: 'reprise depuis 0 : rien n\'est perdu',
+      );
+      await sub.cancel();
+      await client.close();
+    },
+  );
 }

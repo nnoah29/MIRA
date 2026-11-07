@@ -21,12 +21,22 @@ Future<String> readDaemonToken(String path) async {
       t('Le jeton du moteur est lisible par d’autres utilisateurs'),
     );
   }
-  final text = (await File(path).readAsString()).trim();
+  final String text;
+  try {
+    text = (await File(path).readAsString()).trim();
+  } on FileSystemException {
+    throw _unreadable();
+  } on FormatException {
+    throw _unreadable();
+  }
   if (!_hex64.hasMatch(text)) {
-    throw EngineException.local(
-      'transport.token_invalid',
-      t('Jeton du moteur en arrière-plan illisible'),
-    );
+    throw _unreadable();
   }
   return text;
 }
+
+/// Jeton impossible à lire ou mal formé : jamais le chemin ni le contenu dans le message.
+EngineException _unreadable() => EngineException.local(
+  'transport.token_invalid',
+  t('Jeton du moteur en arrière-plan illisible'),
+);

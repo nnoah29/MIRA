@@ -56,4 +56,18 @@ void main() {
       isNot(contains('SECRET-CONTENT')),
     );
   }, testOn: 'linux');
+
+  test(
+    'an_unreadable_file_raises_token_invalid_not_a_raw_file_system_error',
+    () async {
+      final file = tokenFile(dir, _good, '600');
+      Process.runSync('chmod', ['000', file.path]);
+      await expectLater(
+        readDaemonToken(file.path),
+        throwsA(failsWith('transport.token_invalid')),
+      );
+      Process.runSync('chmod', ['600', file.path]);
+    },
+    testOn: 'linux',
+  );
 }

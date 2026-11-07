@@ -11,6 +11,7 @@ import 'daemon_launcher.dart';
 import 'daemon_paths.dart';
 import 'daemon_token.dart';
 import 'endpoint.dart';
+import 'host_errors.dart';
 import 'host_state.dart';
 import 'remote_engine_client.dart';
 
@@ -85,9 +86,10 @@ class EngineOpeningDeps {
       env: Platform.environment,
       isLinuxDesktop: runsOnLinux,
       openEmbedded: openEmbedded,
-      attachDaemon: (paths) => _attachReal(paths, clientId),
+      attachDaemon: (paths) => attachDaemonAt(paths, clientId),
       launchDaemon: (profile, home) async {
         final launcher = DaemonLauncher();
+        launcher.verifyExplicitBinary();
         if (launcher.findBinary() == null) return false;
         await launcher.start(profile: profile, home: home);
         return true;
@@ -96,7 +98,9 @@ class EngineOpeningDeps {
   }
 }
 
-Future<RemoteEngineClient> _attachReal(
+/// S'attache au démon de ces chemins : [DaemonAbsent] sans socket ou si la socket est périmée ;
+/// le jeton est relu à chaque (re)connexion, le démon ayant pu redémarrer avec un autre.
+Future<RemoteEngineClient> attachDaemonAt(
   DaemonPaths paths,
   String clientId,
 ) async {
@@ -106,6 +110,7 @@ Future<RemoteEngineClient> _attachReal(
     return await RemoteEngineClient.attach(
       DaemonEndpoint(unixSocket: paths.socket, token: token),
       clientId: clientId,
+      tokenProvider: () => readDaemonToken(paths.token),
     );
   } on SocketException {
     throw const DaemonAbsent();
@@ -135,28 +140,6 @@ const Duration _poll = Duration(milliseconds: 250);
 const Duration _launchWait = Duration(seconds: 20);
 const Duration _startingWait = Duration(seconds: 30);
 
-EngineException _unavailable() => EngineException.local(
-  'transport.unavailable',
-  t('Moteur en arrière-plan injoignable'),
-);
-
-/// Refus de poignée de main : jamais de repli, un message lisible.
-EngineException _refused(HandshakeRefused refusal) => switch (refusal.reason) {
-  'auth' => EngineException.local(
-    'host.auth_refused',
-    t('Accès refusé par le moteur en arrière-plan'),
-  ),
-  'protocol_version' || 'contract_version' => _updateRequired(),
-  _ => _unavailable(),
-};
-
-EngineException _updateRequired() => EngineException.local(
-  'host.update_required',
-  t(
-    'Le moteur en arrière-plan n’est pas compatible avec cette version de MIRA : arrêtez-le (pkill mira-daemon) puis relancez MIRA',
-  ),
-);
-
 /// Une tentative d'attache ; `null` si aucun démon ne répond.
 Future<RemoteEngineClient?> _attachOnce(
   EngineOpeningDeps deps,
@@ -171,7 +154,7 @@ Future<RemoteEngineClient?> _attachOnce(
   } on ConnectionLost {
     return null;
   } on HandshakeRefused catch (refusal) {
-    throw _refused(refusal);
+    throw refusalError(refusal);
   }
 }
 
@@ -197,10 +180,10 @@ Future<RemoteEngineClient?> _attachReady(
         );
       case HostState.updateRequired:
         await client.close();
-        throw _updateRequired();
+        throw updateRequiredError();
       case HostState.starting:
         await client.close();
-        if (deps.clock() - started >= _startingWait) throw _unavailable();
+        if (deps.clock() - started >= _startingWait) throw unavailableError();
         await deps.pause(_poll);
     }
   }
@@ -253,6 +236,6 @@ Future<({EngineClient client, EngineMode used})> openEngineClient({
     if (mode == EngineMode.daemon || !launchFailure) rethrow;
   }
   if (client != null) return (client: client, used: EngineMode.daemon);
-  if (mode == EngineMode.daemon) throw _unavailable();
+  if (mode == EngineMode.daemon) throw unavailableError();
   return embedded();
 }

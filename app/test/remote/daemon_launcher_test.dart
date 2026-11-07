@@ -155,4 +155,44 @@ void main() {
       );
     },
   );
+
+  test(
+    'an_explicit_binary_that_does_not_exist_is_an_error_not_silently_ignored',
+    () async {
+      final good = fakeBinary(dir, 'mira-daemon');
+      final launcher = DaemonLauncher(
+        env: {'MIRA_DAEMON_BIN': '${dir.path}/nope'},
+        binaryCandidates: [good],
+      );
+      expect(
+        launcher.verifyExplicitBinary,
+        throwsA(
+          isA<EngineException>().having(
+            (e) => e.code,
+            'code',
+            'transport.daemon_bin_invalid',
+          ),
+        ),
+      );
+      await expectLater(
+        launcher.start(profile: 'default'),
+        throwsA(
+          isA<EngineException>().having(
+            (e) => e.code,
+            'code',
+            'transport.daemon_bin_invalid',
+          ),
+        ),
+      );
+      final fine = DaemonLauncher(
+        env: {'MIRA_DAEMON_BIN': good},
+        binaryCandidates: [good],
+      );
+      fine.verifyExplicitBinary();
+      DaemonLauncher(
+        env: const {},
+        binaryCandidates: [good],
+      ).verifyExplicitBinary();
+    },
+  );
 }

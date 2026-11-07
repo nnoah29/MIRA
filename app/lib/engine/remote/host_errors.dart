@@ -17,14 +17,12 @@ EngineException updateRequiredError() => EngineException.local(
 );
 
 /// Le démon lancé par l'app s'est arrêté avant d'être prêt ; le code dit pourquoi.
-EngineException daemonExitedError(int code) => EngineException.local(
-  'transport.daemon_exited',
-  switch (code) {
-    3 => t('Un autre moteur en arrière-plan utilise déjà ce profil'),
-    2 => t('La configuration du moteur en arrière-plan est invalide'),
-    _ => t('Le moteur en arrière-plan s’est arrêté au démarrage'),
-  },
-);
+EngineException daemonExitedError(int code) =>
+    EngineException.local('transport.daemon_exited', switch (code) {
+      3 => t('Un autre moteur en arrière-plan utilise déjà ce profil'),
+      2 => t('La configuration du moteur en arrière-plan est invalide'),
+      _ => t('Le moteur en arrière-plan s’est arrêté au démarrage'),
+    });
 
 /// Refus de poignée de main : un message précis, jamais le jeton.
 EngineException refusalError(HandshakeRefused refusal) =>

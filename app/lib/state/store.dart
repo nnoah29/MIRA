@@ -2127,7 +2127,15 @@ class MailStore extends ChangeNotifier {
       final merged = _withLegacy(current);
       if (!merged.sameAs(current)) await admin.write(merged);
       _adopt(merged);
-      for (final k in const ['poll', 'notifyMuted', 'notifyQuiet']) {
+      for (final k in const [
+        'poll',
+        'notifyMuted',
+        'notifyQuiet',
+        'notify',
+        'notifyPreview',
+        'notifySound',
+        'notifyFocused',
+      ]) {
         await prefs.remove(k);
       }
       notifyListeners();
@@ -2146,6 +2154,26 @@ class MailStore extends ChangeNotifier {
           ? legacy.muted
           : current.mutedAccounts,
       quietHours: current.quietHours ?? legacy.quiet,
+      notifications: _legacyNotifications(current.notifications, legacy),
+    );
+  }
+
+  /// Réglages de notification du moteur, ou ceux des anciennes préférences tant que le moteur a encore les défauts.
+  NotificationPrefs _legacyNotifications(
+    NotificationPrefs current,
+    NotifySettings legacy,
+  ) {
+    const keys = ['notify', 'notifyPreview', 'notifySound', 'notifyFocused'];
+    final fromPrefs = keys.any(prefs.containsKey);
+    final untouched =
+        current.toJson().toString() ==
+        const NotificationPrefs().toJson().toString();
+    if (!fromPrefs || !untouched) return current;
+    return NotificationPrefs(
+      enabled: legacy.enabled,
+      preview: legacy.preview,
+      sound: legacy.sound,
+      whenFocused: legacy.whenFocused,
     );
   }
 
@@ -2502,7 +2530,17 @@ class MailStore extends ChangeNotifier {
 
   set appFocused(bool focused) {
     _focused = focused;
+    unawaited(_reportPresence(focused));
     focused ? _wakeUi() : _armSleep();
+  }
+
+  /// Déclare le focus au moteur ; un moteur injoignable ne gêne pas l'interface.
+  Future<void> _reportPresence(bool focused) async {
+    try {
+      await source?.reportPresence(focused);
+    } catch (_) {
+      /* présence non déclarée : le moteur notifiera */
+    }
   }
 
   /// Minutes passées sans le focus avant d'hiberner l'interface (0 : jamais).
@@ -2591,11 +2629,29 @@ class MailStore extends ChangeNotifier {
     }
   }
 
+  static const _notifyKeys = {
+    'notify': 0,
+    'notifyPreview': 1,
+    'notifySound': 2,
+    'notifyFocused': 3,
+  };
+
   /// Change un réglage de notification et redessine.
   void setNotify(String key, String value) {
     final current = engineSettings;
     if (key == 'notifyQuiet' && current != null) {
       return _writeEngineSettings(current.withQuiet(parseQuiet(value)));
+    }
+    if (current != null && _notifyKeys.containsKey(key)) {
+      final on = value == '1';
+      final prefsNow = current.notifications;
+      final changed = switch (key) {
+        'notify' => prefsNow.with_(enabled: on),
+        'notifyPreview' => prefsNow.with_(preview: on),
+        'notifySound' => prefsNow.with_(sound: on),
+        _ => prefsNow.with_(whenFocused: on),
+      };
+      return _writeEngineSettings(current.withNotifications(changed));
     }
     prefs.setString(key, value);
     notifyListeners();

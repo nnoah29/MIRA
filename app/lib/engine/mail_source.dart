@@ -99,6 +99,9 @@ abstract class MailSource {
   /// Signale chaque changement des réglages du moteur.
   Stream<void> get engineSettingsChanges;
 
+  /// Déclare au moteur si la fenêtre de l'app est au premier plan (sans effet en démonstration).
+  Future<void> reportPresence(bool focused);
+
   /// Modèles de messages portés par le moteur (`null` : démonstration).
   TemplateAdmin? get templateAdmin;
 

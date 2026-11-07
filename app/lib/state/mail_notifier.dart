@@ -23,10 +23,12 @@ class NotifySettings {
   bool _flag(String k, bool byDefault) =>
       (prefs.getString(k) ?? (byDefault ? '1' : '0')) == '1';
 
-  bool get enabled => _flag('notify', true);
-  bool get preview => _flag('notifyPreview', true);
-  bool get sound => _flag('notifySound', true);
-  bool get whenFocused => _flag('notifyFocused', false);
+  bool get enabled => engine?.notifications.enabled ?? _flag('notify', true);
+  bool get preview =>
+      engine?.notifications.preview ?? _flag('notifyPreview', true);
+  bool get sound => engine?.notifications.sound ?? _flag('notifySound', true);
+  bool get whenFocused =>
+      engine?.notifications.whenFocused ?? _flag('notifyFocused', false);
 
   /// Heures calmes `(début, fin)` en heures pleines ; `null` : jamais.
   (int, int)? get quiet => engine != null

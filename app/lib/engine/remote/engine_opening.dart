@@ -225,6 +225,9 @@ Future<RemoteEngineClient?> _launchAndAttach(
   return null;
 }
 
+/// Vrai si l'app affiche elle-même les notifications : seulement avec le moteur embarqué, le démon décide et affiche les siennes.
+bool appShowsNotifications(EngineMode used) => used == EngineMode.embedded;
+
 /// Ouvre le moteur selon la politique : embarqué hors Linux de bureau, sinon démon vivant, démon lancé, puis embarqué.
 /// Les états `keyring_locked` et `update_required` et un jeton refusé ne déclenchent jamais le repli.
 Future<({EngineClient client, EngineMode used})> openEngineClient({

@@ -105,41 +105,38 @@ void main() {
     expect(launcher.findBinary(), isNull);
   });
 
-  test(
-    'start_runs_the_binary_on_demand_with_profile_home_and_exit_when_idle_and_never_the_token',
-    () async {
-      final binary = fakeBinary(dir, 'mira-daemon');
-      String? exe;
-      List<String>? args;
-      ProcessStartMode? started;
-      final process = FakeProcess();
-      final launcher = DaemonLauncher(
-        binaryCandidates: [binary],
-        start: (e, a, {mode = ProcessStartMode.normal, environment}) async {
-          exe = e;
-          args = a;
-          started = mode;
-          return process;
-        },
-      );
-      final launched = await launcher.start(
-        profile: 'default',
-        home: '/data/mira',
-      );
-      expect(exe, binary);
-      expect(started, ProcessStartMode.inheritStdio);
-      expect(args, [
-        '--profile',
-        'default',
-        '--home',
-        '/data/mira',
-        '--exit-when-idle',
-      ]);
-      expect(args!.join(' '), isNot(contains('token')));
-      process.exit(3);
-      expect(await launched.exitCode, 3);
-    },
-  );
+  test('start_runs_the_binary_on_demand_with_profile_home_and_exit_when_idle_and_never_the_token', () async {
+    final binary = fakeBinary(dir, 'mira-daemon');
+    String? exe;
+    List<String>? args;
+    ProcessStartMode? started;
+    final process = FakeProcess();
+    final launcher = DaemonLauncher(
+      binaryCandidates: [binary],
+      start: (e, a, {mode = ProcessStartMode.normal, environment}) async {
+        exe = e;
+        args = a;
+        started = mode;
+        return process;
+      },
+    );
+    final launched = await launcher.start(
+      profile: 'default',
+      home: '/data/mira',
+    );
+    expect(exe, binary);
+    expect(started, ProcessStartMode.inheritStdio);
+    expect(args, [
+      '--profile',
+      'default',
+      '--home',
+      '/data/mira',
+      '--exit-when-idle',
+    ]);
+    expect(args!.join(' '), isNot(contains('token')));
+    process.exit(3);
+    expect(await launched.exitCode, 3);
+  });
 
   test('start_fails_with_a_clear_error_when_no_binary_exists', () async {
     final launcher = DaemonLauncher(binaryCandidates: ['${dir.path}/nope']);

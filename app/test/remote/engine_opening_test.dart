@@ -303,4 +303,9 @@ void main() {
     expect(parseEngineMode('daemon'), EngineMode.daemon);
     expect(parseEngineMode('nimporte'), EngineMode.auto);
   });
+
+  test('the_app_shows_notifications_only_with_the_embedded_engine', () {
+    expect(appShowsNotifications(EngineMode.embedded), isTrue);
+    expect(appShowsNotifications(EngineMode.daemon), isFalse);
+  });
 }

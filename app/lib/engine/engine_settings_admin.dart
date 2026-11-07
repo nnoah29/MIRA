@@ -2,15 +2,59 @@ import 'dart:convert';
 
 import 'engine_client.dart';
 
-/// Réglages que le moteur applique lui-même : relevé, comptes en sourdine, heures calmes.
+/// Réglages des notifications portés par le moteur (mêmes défauts que le moteur).
+class NotificationPrefs {
+  final bool enabled;
+  final bool preview;
+  final bool sound;
+  final bool whenFocused;
+  const NotificationPrefs({
+    this.enabled = true,
+    this.preview = true,
+    this.sound = true,
+    this.whenFocused = false,
+  });
+
+  factory NotificationPrefs.fromJson(Map<String, dynamic>? j) =>
+      NotificationPrefs(
+        enabled: j?['enabled'] as bool? ?? true,
+        preview: j?['preview'] as bool? ?? true,
+        sound: j?['sound'] as bool? ?? true,
+        whenFocused: j?['when_focused'] as bool? ?? false,
+      );
+
+  Map<String, dynamic> toJson() => {
+    'enabled': enabled,
+    'preview': preview,
+    'sound': sound,
+    'when_focused': whenFocused,
+  };
+
+  /// Copie avec le champ donné changé.
+  NotificationPrefs with_({
+    bool? enabled,
+    bool? preview,
+    bool? sound,
+    bool? whenFocused,
+  }) => NotificationPrefs(
+    enabled: enabled ?? this.enabled,
+    preview: preview ?? this.preview,
+    sound: sound ?? this.sound,
+    whenFocused: whenFocused ?? this.whenFocused,
+  );
+}
+
+/// Réglages que le moteur applique lui-même : relevé, comptes en sourdine, heures calmes, notifications.
 class EngineSettings {
   final int? pollSecs;
   final Set<String> mutedAccounts;
   final (int, int)? quietHours;
+  final NotificationPrefs notifications;
   const EngineSettings({
     this.pollSecs,
     this.mutedAccounts = const {},
     this.quietHours,
+    this.notifications = const NotificationPrefs(),
   });
 
   factory EngineSettings.fromJson(Map<String, dynamic> j) {
@@ -23,6 +67,9 @@ class EngineSettings {
       quietHours: quiet == null
           ? null
           : ((quiet['from'] as num).toInt(), (quiet['to'] as num).toInt()),
+      notifications: NotificationPrefs.fromJson(
+        (j['notifications'] as Map?)?.cast<String, dynamic>(),
+      ),
     );
   }
 
@@ -32,6 +79,7 @@ class EngineSettings {
     'quiet_hours': quietHours == null
         ? null
         : {'from': quietHours!.$1, 'to': quietHours!.$2},
+    'notifications': notifications.toJson(),
   };
 
   /// Mêmes réglages que `other` ?
@@ -42,18 +90,28 @@ class EngineSettings {
     pollSecs: secs,
     mutedAccounts: mutedAccounts,
     quietHours: quietHours,
+    notifications: notifications,
   );
 
   EngineSettings withMuted(Set<String> accounts) => EngineSettings(
     pollSecs: pollSecs,
     mutedAccounts: accounts,
     quietHours: quietHours,
+    notifications: notifications,
   );
 
   EngineSettings withQuiet((int, int)? hours) => EngineSettings(
     pollSecs: pollSecs,
     mutedAccounts: mutedAccounts,
     quietHours: hours,
+    notifications: notifications,
+  );
+
+  EngineSettings withNotifications(NotificationPrefs next) => EngineSettings(
+    pollSecs: pollSecs,
+    mutedAccounts: mutedAccounts,
+    quietHours: quietHours,
+    notifications: next,
   );
 }
 

@@ -13,7 +13,21 @@ import 'package:mira/state/mail_notifier.dart';
 import 'package:mira/state/store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class FakeEngine implements EngineClient {
+class FakeEngine implements EngineClient, PresenceClient {
+  /// Réglages de notification du moteur factice (défauts du moteur).
+  Map<String, dynamic> engineNotifications = {
+    'enabled': true,
+    'preview': true,
+    'sound': true,
+    'when_focused': false,
+  };
+
+  /// Focus déclaré par l'app, dans l'ordre.
+  final presenceCalls = <bool>[];
+
+  @override
+  Future<void> setPresence(bool focused) async => presenceCalls.add(focused);
+
   final calls = <String>[];
   final queueAsked = <Map<String, dynamic>>[];
   final filteredAsked = <Map<String, dynamic>>[];
@@ -61,6 +75,7 @@ class FakeEngine implements EngineClient {
         'poll_secs': enginePoll,
         'muted_accounts': engineMuted,
         'quiet_hours': engineQuiet,
+        'notifications': engineNotifications,
       },
     },
   };
@@ -537,6 +552,8 @@ class FakeEngine implements EngineClient {
         enginePoll = given['poll_secs'] as int?;
         engineMuted = [...(given['muted_accounts'] as List).cast<String>()];
         engineQuiet = (given['quiet_hours'] as Map?)?.cast<String, dynamic>();
+        engineNotifications = (given['notifications'] as Map)
+            .cast<String, dynamic>();
         if (_settingsAnswer().toString() != before) {
           feed.add({
             'kind': {

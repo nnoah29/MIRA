@@ -47,7 +47,9 @@ Future<void> main() async {
     engineError: opening.error,
     webDemo: kIsWeb,
   );
-  unawaited(store.useNotifications(PluginNotifications()));
+  if (opening.showsNotifications) {
+    unawaited(store.useNotifications(PluginNotifications()));
+  }
   AppLifecycleListener(
     onStateChange: (state) =>
         store.appFocused = state == AppLifecycleState.resumed,
@@ -56,11 +58,10 @@ Future<void> main() async {
 }
 
 /// Ouvre le moteur Rust ; `MIRA_DEMO=1` donne la démonstration, une erreur d'ouverture aussi, avec sa raison.
-Future<({MailSource? source, String? error})> openEngineSource(
-  SharedPreferences prefs,
-) async {
+Future<({MailSource? source, String? error, bool showsNotifications})>
+openEngineSource(SharedPreferences prefs) async {
   if (kIsWeb || Platform.environment['MIRA_DEMO'] == '1') {
-    return (source: null, error: null);
+    return (source: null, error: null, showsNotifications: true);
   }
   try {
     final android = runsOnAndroid;
@@ -79,13 +80,17 @@ Future<({MailSource? source, String? error})> openEngineSource(
       opened.client,
       folderMap: decodeFolderMap(prefs.getString('folderMap')),
     );
-    return (source: source, error: null);
+    return (
+      source: source,
+      error: null,
+      showsNotifications: appShowsNotifications(opened.used),
+    );
   } catch (e) {
     final reason = engineFailureText(e);
     stderr.writeln(
       'MIRA : moteur indisponible, données de démonstration ($reason)',
     ); // i18n:ignore
-    return (source: null, error: reason);
+    return (source: null, error: reason, showsNotifications: true);
   }
 }
 

@@ -36,6 +36,12 @@ abstract interface class ChatStreamingClient {
   Stream<Map<String, dynamic>> chatStream(Map<String, dynamic> start);
 }
 
+/// Moteur à qui l'app déclare le focus de sa fenêtre (le démon et le moteur embarqué en tiennent compte pour notifier).
+abstract interface class PresenceClient {
+  /// Déclare si la fenêtre de l'app est au premier plan.
+  Future<void> setPresence(bool focused);
+}
+
 /// Ouvre l'enveloppe `{ok, data | error}` ; lève [EngineException] si `ok` est faux.
 Map<String, dynamic> openEnvelope(String json) =>
     openEnvelopeMap(jsonDecode(json) as Map<String, dynamic>);

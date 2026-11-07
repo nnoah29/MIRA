@@ -3,8 +3,10 @@ import 'dart:io';
 import 'remote_engine_client.dart';
 
 /// Lance une commande ; remplaçable dans les tests.
-typedef CommandRunner =
-    Future<ProcessResult> Function(String executable, List<String> arguments);
+typedef CommandRunner = Future<ProcessResult> Function(
+  String executable,
+  List<String> arguments,
+);
 
 /// Redémarre un démon périmé : par `systemd --user` s'il est géré par l'unité, sinon en lui demandant de s'arrêter.
 class DaemonRestarter {

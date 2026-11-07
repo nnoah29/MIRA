@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../engine/remote/resident.dart';
 import '../i18n/i18n.dart';
 import '../theme/app_theme.dart';
+import 'account_form_widgets.dart';
 
 /// Interrupteur « Garder MIRA actif en arrière-plan » des réglages ; absent si l'unité n'est pas installée.
 class ResidentRow extends StatefulWidget {
@@ -51,17 +52,43 @@ class _ResidentRowState extends State<ResidentRow> {
   Widget build(BuildContext context) {
     if (!_available) return const SizedBox.shrink();
     final p = context.pal;
-    return SwitchListTile(
-      value: _enabled,
-      onChanged: _toggle,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-      title: Text(
-        t('Garder MIRA actif en arrière-plan'),
-        style: Fonts.sans(size: 15, w: FontWeight.w500, color: p.text),
-      ),
-      subtitle: Text(
-        t('Les notifications et la synchronisation continuent fenêtre fermée.'),
-        style: Fonts.sans(size: 13.5, color: p.dim),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        runSpacing: 12,
+        spacing: 24,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  t('Garder MIRA actif en arrière-plan'),
+                  style: Fonts.sans(
+                    size: 15,
+                    w: FontWeight.w500,
+                    color: p.text,
+                  ),
+                ),
+                Text(
+                  t(
+                    'Les notifications et la synchronisation continuent fenêtre fermée.',
+                  ),
+                  style: Fonts.sans(size: 13.5, color: p.dim),
+                ),
+              ],
+            ),
+          ),
+          Segments<String>(
+            keyPrefix: 'resident',
+            options: [('1', t('Activé')), ('0', t('Désactivé'))],
+            value: _enabled ? '1' : '0',
+            onChanged: (v) => _toggle(v == '1'),
+          ),
+        ],
       ),
     );
   }

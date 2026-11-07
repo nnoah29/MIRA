@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mira/engine/remote/resident.dart';
 import 'package:mira/theme/app_theme.dart';
+import 'package:mira/ui/account_form_widgets.dart';
 import 'package:mira/ui/resident_row.dart';
 
 /// Contrôleur factice : disponibilité et état réglables, changements comptés.
@@ -33,18 +34,24 @@ void main() {
   testWidgets('the_row_is_hidden_without_the_unit', (tester) async {
     await tester.pumpWidget(host(FakeResident(available: false)));
     await tester.pumpAndSettle();
-    expect(find.byType(SwitchListTile), findsNothing);
+    expect(find.byType(Segments<String>), findsNothing);
   });
 
-  testWidgets('the_switch_shows_and_changes_the_unit_state', (tester) async {
+  testWidgets('the_choice_shows_and_changes_the_unit_state', (tester) async {
     final resident = FakeResident(available: true, enabled: true);
     await tester.pumpWidget(host(resident));
     await tester.pumpAndSettle();
-    final tile = find.byType(SwitchListTile);
-    expect(tester.widget<SwitchListTile>(tile).value, isTrue);
-    await tester.tap(tile);
+    expect(find.byType(Segments<String>), findsOneWidget);
+    expect(
+      tester.widget<Segments<String>>(find.byType(Segments<String>)).value,
+      '1',
+    );
+    await tester.tap(find.byKey(const ValueKey('resident-0')));
     await tester.pumpAndSettle();
     expect(resident.changes, [false]);
-    expect(tester.widget<SwitchListTile>(tile).value, isFalse);
+    expect(
+      tester.widget<Segments<String>>(find.byType(Segments<String>)).value,
+      '0',
+    );
   });
 }

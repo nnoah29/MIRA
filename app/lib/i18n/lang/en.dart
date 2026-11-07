@@ -675,6 +675,12 @@ const Map<String, String> enStrings = {
   'Descendre': 'Move down',
   'Dans la barre latérale': 'In the sidebar',
   'Masquer de la Réception': 'Hide from the Inbox',
+  'Garder MIRA actif en arrière-plan ?': 'Keep MIRA running in the background?',
+  'MIRA peut rester actif discrètement quand sa fenêtre est fermée, pour continuer la synchronisation et afficher vos notifications. Vous pourrez changer ce choix dans les réglages.':
+      'MIRA can keep running quietly when its window is closed, to keep syncing and show your notifications. You can change this in the settings.',
+  'Garder MIRA actif en arrière-plan': 'Keep MIRA running in the background',
+  'Les notifications et la synchronisation continuent fenêtre fermée.':
+      'Notifications and syncing carry on with the window closed.',
   'Oui': 'Yes',
   'Non': 'No',
   'Retirer la condition': 'Remove the condition',

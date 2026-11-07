@@ -272,3 +272,7 @@ Limites, avec leur décision :
 - Événements : sept variantes jamais émises (§5). Pas de `RateLimited` bien que le refus `server.rate_limited` existe.
 - Production : `production_config` construit un `OAuthClientConfig` **vide** (aucun `client_id` par provider) : `mira account add-oauth` est refusé hors configuration injectée. Les valeurs des providers (serveurs, adresses OAuth, plafonds) viennent du §6.7 et n'ont pas été vérifiées en ligne (`docs/SOURCES.md` est vide). Aucun test ne réussit une poignée de main TLS ni STARTTLS : le testkit parle en clair (AG-03, AG-10).
 - Réglages D-11 et optimisation D-24 : non implémentés.
+
+## Windows (phase 5a, moteur embarqué)
+
+Sous Windows l'app charge `mira_bridge.dll` (à côté de `mira.exe`) et n'utilise pas de démon. Le profil se trouve sous `%LOCALAPPDATA%\mira\profiles` (`ProfileEnvironment::from_lookup`), les secrets dans le Gestionnaire d'identifiants (`keyring`), les droits 0600/0700 ne sont posés que sous Unix. Le workflow `.github/workflows/windows.yml` compile le moteur, le pont et l'app ; rien n'a été exécuté sous Windows. Le démon Windows (TCP loopback, démarrage à la session, notifications, zone de notification) reste à faire (5b).

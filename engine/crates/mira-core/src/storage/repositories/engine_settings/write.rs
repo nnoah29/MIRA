@@ -1,9 +1,9 @@
 //! Écriture des réglages du moteur.
 
-use mira_vocabulary::{EngineSettings, MiraError};
+use mira_vocabulary::{EngineSettings, MiraError, NotificationSettings};
 use rusqlite::params;
 
-use super::read::{MUTED_ACCOUNTS, POLL_SECS, QUIET_HOURS};
+use super::read::{MUTED_ACCOUNTS, NOTIFICATIONS, POLL_SECS, QUIET_HOURS};
 use crate::storage::Tx;
 use crate::storage::errors::storage_error;
 
@@ -20,7 +20,9 @@ impl Tx<'_> {
         };
         self.put_engine_setting(POLL_SECS, poll.as_deref())?;
         self.put_engine_setting(MUTED_ACCOUNTS, muted.as_deref())?;
-        self.put_engine_setting(QUIET_HOURS, quiet.as_deref())
+        self.put_engine_setting(QUIET_HOURS, quiet.as_deref())?;
+        let notifications = notifications_text(settings)?;
+        self.put_engine_setting(NOTIFICATIONS, notifications.as_deref())
     }
 
     /// Écrit la valeur d'un réglage, ou supprime sa ligne s'il n'en a pas
@@ -45,6 +47,16 @@ impl Tx<'_> {
             .map_err(storage_error)?;
         Ok(())
     }
+}
+
+/// Réglages de notification en JSON, ou rien tant qu'ils valent les défauts (la ligne est alors supprimée)
+fn notifications_text(settings: &EngineSettings) -> Result<Option<String>, MiraError> {
+    if settings.notifications == NotificationSettings::default() {
+        return Ok(None);
+    }
+    serde_json::to_string(&settings.notifications)
+        .map(Some)
+        .map_err(json_error)
 }
 
 /// Erreur interne d'écriture JSON des comptes en sourdine

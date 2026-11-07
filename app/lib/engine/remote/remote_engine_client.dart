@@ -24,6 +24,9 @@ class RemoteEngineClient
   bool _detached = false;
   bool? _presence;
 
+  /// Relance un démon à la demande quand plus aucun ne répond ; vrai s'il en tourne un (posé par la politique d'ouverture).
+  Future<bool> Function()? relaunch;
+
   /// Se connecte au démon et fait la poignée de main ; les échecs de connexion ou de refus sont remontés tels quels.
   static Future<RemoteEngineClient> attach(
     DaemonEndpoint endpoint, {
@@ -58,7 +61,7 @@ class RemoteEngineClient
   }
 
   Future<RemoteConnection> _reopen() async {
-    final RemoteConnection fresh;
+    RemoteConnection fresh;
     try {
       fresh = await _open();
     } on HandshakeRefused catch (refusal) {
@@ -66,7 +69,7 @@ class RemoteEngineClient
     } on EngineException {
       rethrow;
     } on Object {
-      throw unavailableError();
+      fresh = await _recover();
     }
     if (_detached) {
       await fresh.close();
@@ -84,6 +87,17 @@ class RemoteEngineClient
     connection
         .request(setPresenceFrame(connection.nextId(), focused))
         .then<void>((_) {}, onError: (Object _) {});
+  }
+
+  /// Démon injoignable : en relance un (s'il y a un moyen) puis se reconnecte, sinon moteur indisponible.
+  Future<RemoteConnection> _recover() async {
+    final hook = relaunch;
+    if (hook == null || _detached || !await hook()) throw unavailableError();
+    try {
+      return await _open();
+    } on Object {
+      throw unavailableError();
+    }
   }
 
   EngineException _detachedError() => EngineException.local(

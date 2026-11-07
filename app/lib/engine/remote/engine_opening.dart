@@ -252,6 +252,28 @@ Future<RemoteEngineClient?> _launchOnce(
   return null;
 }
 
+/// Relance un démon à la demande quand celui de l'app a disparu ; vrai s'il répond.
+Future<bool> _relaunch(
+  EngineOpeningDeps deps,
+  String profile,
+  String? home,
+) async {
+  try {
+    final paths = resolveDaemonPaths(
+      profile: profile,
+      env: deps.env,
+      home: home,
+    );
+    final client =
+        await _attachReady(deps, paths) ??
+        await _launchAndAttach(deps, paths, profile, home);
+    await client?.close();
+    return client != null;
+  } on Object {
+    return false;
+  }
+}
+
 /// Vrai si l'app affiche elle-même les notifications : seulement avec le moteur embarqué, le démon décide et affiche les siennes.
 bool appShowsNotifications(EngineMode used) => used == EngineMode.embedded;
 
@@ -284,7 +306,10 @@ Future<({EngineClient client, EngineMode used})> openEngineClient({
         error.code == 'transport.daemon_missing';
     if (mode == EngineMode.daemon || !launchFailure) rethrow;
   }
-  if (client != null) return (client: client, used: EngineMode.daemon);
+  if (client != null) {
+    client.relaunch = () => _relaunch(deps, profile, home);
+    return (client: client, used: EngineMode.daemon);
+  }
   if (mode == EngineMode.daemon) throw unavailableError();
   return embedded();
 }

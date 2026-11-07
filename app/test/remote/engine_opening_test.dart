@@ -270,6 +270,17 @@ void main() {
     expect(world.embedded, 0);
   });
 
+  test('the_daemon_client_can_relaunch_a_daemon_that_was_lost', () async {
+    final world = World()
+      ..alive = true
+      ..binaryExists = true;
+    final opened = await openEngineClient(deps: world.deps());
+    final client = opened.client as RemoteEngineClient;
+    world.alive = false;
+    expect(await client.relaunch!(), isTrue);
+    expect(world.launches, 1);
+  });
+
   test('a_locked_keyring_gets_retry_unlock_and_opens_once_unlocked', () async {
     final world = World()..alive = true;
     world.rig.hostState = 'keyring_locked';

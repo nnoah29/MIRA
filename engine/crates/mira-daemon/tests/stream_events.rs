@@ -51,7 +51,8 @@ async fn a_client_that_stops_reading_gets_end_lagged_and_resubscribes_with_after
     let (daemon, mut client, _home) = attached(lagging).await;
     let mut producer = TestClient::connect(&daemon).await;
     producer.hello_ok(daemon.token()).await;
-    client.open_events(7, None, 1).await;
+    let start = producer.latest_seq().await;
+    client.open_events(7, Some(start), 1).await;
     producer.make_event("premier").await;
     let first = seq_of(&client.recv().await.unwrap());
     for index in 0..8 {

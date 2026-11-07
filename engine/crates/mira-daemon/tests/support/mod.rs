@@ -14,9 +14,11 @@ pub mod daemon;
 mod daemon_access;
 pub mod engine_config;
 pub mod event_helpers;
+pub mod locked_store;
 pub mod mail_daemon;
 pub mod process;
 pub mod process_args;
+pub mod unlock_harness;
 
 #[allow(clippy::duplicate_mod)]
 #[path = "../contract/chat_fixture.rs"]

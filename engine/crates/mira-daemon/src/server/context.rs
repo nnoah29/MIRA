@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use mira_host::Host;
 use mira_protocol::{HostState, MAX_FRAME_BYTES};
-use tokio::sync::{OnceCell, Semaphore, watch};
+use tokio::sync::{Notify, OnceCell, Semaphore, watch};
 
 use super::Clients;
 use crate::token::Token;
@@ -25,6 +25,7 @@ pub struct ServerContext {
     pub pending_hello: Arc<Semaphore>,
     pub shutdown_wait: Duration,
     pub clients: Clients,
+    pub retry_unlock: Notify,
     state: watch::Sender<HostState>,
     closing: watch::Sender<bool>,
     outcome: OnceCell<String>,
@@ -43,6 +44,7 @@ impl ServerContext {
             pending_hello: Arc::new(Semaphore::new(MAX_PENDING_HELLO)),
             shutdown_wait: Duration::from_secs(5),
             clients: Clients::default(),
+            retry_unlock: Notify::new(),
             state: watch::channel(HostState::Starting).0,
             closing: watch::channel(false).0,
             outcome: OnceCell::new(),

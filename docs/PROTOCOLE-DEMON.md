@@ -27,7 +27,7 @@ Une trame est un corps **JSON** précédé de sa longueur sur **4 octets, grand-
 | `open_events` | C→S | `id`, `after` (entier ou `null`), `credit` (fenêtre initiale) |
 | `open_chat` | C→S | `id`, `request` (le `ChatStart` du contrat), `credit` |
 | `get_original_html` | C→S | `id`, `message` (identifiant du message) ; la réponse est un `result` |
-| `host_op` | C→S | `id`, `op` : `shutdown` ; la réponse est un `result` |
+| `host_op` | C→S | `id`, `op` : `shutdown` ou `retry_unlock` (protocole 1.1) ; la réponse est un `result` |
 | `event` | S→C | `id`, `event` (un événement du journal) |
 | `chat_delta` | S→C | `id`, `line` (une ligne du flux de chat : `started`, `text`, `usage`, `done`, `error`, …) |
 | `credit` | C→S | `id`, `n` (trames de plus autorisées pour ce flux) |
@@ -35,7 +35,7 @@ Une trame est un corps **JSON** précédé de sa longueur sur **4 octets, grand-
 | `end` | S→C | `id`, `reason` : `{"type":"finished"}`, `{"type":"cancelled"}`, `{"type":"lagged"}` ou `{"type":"error","code":…,"message":…}` (cette dernière raison est réservée : le démon actuel ne l'émet pas) |
 | `ping` / `pong` | C→S / S→C (le démon répond `pong` au `ping` du client, avec le même `nonce` ; il n'envoie jamais de `ping` ; un `pong` reçu du client est ignoré) | `nonce` |
 
-`auth` est un objet typé : `{"type":"local_token","token":"<64 caractères hexadécimaux>"}`. `host_state` vaut `ready`, `starting`, `keyring_locked` ou `update_required` ; le démon de la phase 2 n'annonce que `starting` (moteur en cours d'ouverture) et `ready`.
+`auth` est un objet typé : `{"type":"local_token","token":"<64 caractères hexadécimaux>"}`. `host_state` vaut `ready`, `starting`, `keyring_locked` ou `update_required` ; le démon annonce `starting` (moteur en cours d'ouverture), `ready` et `keyring_locked` (protocole 1.1 : le trousseau refuse l'accès parce qu'il est verrouillé ; le démon réessaie après 5 s, puis 10 s, 20 s… jusqu'à 60 s, et aussitôt sur `retry_unlock`, puis passe à `starting` et `ready` sans intervention). `update_required` est annoncé par la tâche suivante de la phase 4.
 
 ## 3. Poignée de main
 

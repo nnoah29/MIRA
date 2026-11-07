@@ -12,4 +12,5 @@ pub mod shutdown;
 mod signals;
 pub mod token;
 pub mod transport;
+pub mod unlock;
 pub mod wire;

@@ -31,4 +31,5 @@ pub enum HostState {
 #[serde(rename_all = "snake_case")]
 pub enum HostOp {
     Shutdown,
+    RetryUnlock,
 }

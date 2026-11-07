@@ -11,7 +11,8 @@ use serde_json::Value;
 use crate::config::DaemonConfig;
 use crate::report::{say, say_error};
 use crate::server::ServerContext;
-use crate::{idle, listen, setup, shutdown};
+use crate::unlock::UnlockBackoff;
+use crate::{idle, listen, setup, shutdown, signals, unlock};
 
 /// Fait vivre le démon jusqu'à son arrêt et rend le code de sortie.
 pub async fn run(config: DaemonConfig) -> ExitCode {
@@ -36,19 +37,42 @@ pub async fn run(config: DaemonConfig) -> ExitCode {
     outcome
 }
 
-/// Ouvre le moteur, annonce `ready`, attend l'ordre d'arrêt puis ferme proprement.
+/// Ouvre le moteur en attendant le trousseau ; faux si l'arrêt est demandé pendant l'attente.
+async fn open_engine(
+    ctx: &Arc<ServerContext>,
+    engine: mira_assembly::api::EngineConfig,
+) -> Result<bool, ExitCode> {
+    let waiting = unlock::open_when_unlocked(ctx, engine, UnlockBackoff::default());
+    let envelope = tokio::select! {
+        opened = waiting => opened,
+        _ = signals::wait_for_stop(ctx) => None,
+    };
+    let Some(envelope) = envelope else {
+        return Ok(false);
+    };
+    let opened: Value = serde_json::from_str(&envelope).unwrap_or(Value::Null);
+    if opened["ok"] == true {
+        return Ok(true);
+    }
+    Err(
+        if opened["error"]["code"] == incompatible_state::PROFILE_LOCKED.0 {
+            say_error("ce profil est déjà utilisé par un autre démon", 3)
+        } else {
+            say_error("ouverture du moteur impossible", 1)
+        },
+    )
+}
+
+/// Ouvre le moteur, annonce `ready`, attend la fin du démon puis ferme proprement.
 async fn serve_until_stopped(
     ctx: &Arc<ServerContext>,
     engine: mira_assembly::api::EngineConfig,
     idle_grace: Option<std::time::Duration>,
 ) -> ExitCode {
-    let opened: Value = serde_json::from_str(&ctx.host.open(engine)).unwrap_or(Value::Null);
-    if opened["ok"] != true {
-        return if opened["error"]["code"] == incompatible_state::PROFILE_LOCKED.0 {
-            say_error("ce profil est déjà utilisé par un autre démon", 3)
-        } else {
-            say_error("ouverture du moteur impossible", 1)
-        };
+    match open_engine(ctx, engine).await {
+        Ok(true) => {}
+        Ok(false) => return ExitCode::SUCCESS,
+        Err(code) => return code,
     }
     ctx.set_state(HostState::Ready);
     say("mira-daemon prêt");

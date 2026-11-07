@@ -21,6 +21,8 @@ Workspace Cargo `engine/` (toolchain `1.99.0` épinglée, édition 2024, resolve
 | `mira-daemon` | Démon : binaire `mira-daemon` et bibliothèque ; écouteurs (socket Unix `0600` avec uid du pair, TCP loopback), jeton local, sessions (poignée de main, appels concurrents, flux avec crédits et annulation), arrêt propre, verrou de profil | `mira-host`, `mira-protocol`, `mira-assembly`, aucun provider (A12) | 85 |
 | `mira-testkit` | Faux serveurs IMAP / SMTP / OAuth2 sur `127.0.0.1` ; boîte noire | aucun crate `mira-*` (A5) | 105 |
 
+Côté application, `app/lib/engine/remote/` est le client Dart du démon (`RemoteEngineClient`, protocole de `docs/PROTOCOLE-DEMON.md`) ; `app/lib/main.dart` choisit entre le démon et le moteur embarqué par `openEngineClient`.
+
 Sens des dépendances : pont FFI (`bridge/`, hors workspace, réduit à ses enveloppes flutter_rust_bridge) et `mira-daemon` (qui ajoute `mira-protocol`) → `mira-host` → `mira-assembly` → `mira-core` et providers → `mira-vocabulary`. Le cœur ne nomme aucun provider ; seul `mira-assembly/src/composition.rs` les connaît tous (une ligne par provider, repli `generic` en premier).
 
 Données d'un profil (`C/profile/paths.rs`) : `$MIRA_HOME/profiles/<profil>/`, sinon `$XDG_DATA_HOME/mira/profiles/<profil>/`, sinon `~/.local/share/mira/profiles/<profil>/`, droits `0700`. Contenu : `mira.sqlite3` (WAL), `engine.lock` (verrou exclusif D-27), `attachments/` (cache des pièces jointes), `tmp/`. Un nom de profil vide, `.`, `..` ou contenant `/`, `\`, NUL est refusé.

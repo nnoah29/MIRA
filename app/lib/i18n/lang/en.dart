@@ -1351,4 +1351,25 @@ const Map<String, String> enStrings = {
   'masqué': 'masked',
   'masqués': 'masked',
   '{0} → {1} jetons': '{0} → {1} tokens',
+  'Connexion au moteur en arrière-plan perdue':
+      'Lost the connection to the background engine',
+  'Moteur en arrière-plan injoignable': 'Background engine unreachable',
+  'Requête trop volumineuse': 'Request too large',
+  'La variable MIRA_DAEMON_BIN désigne un fichier introuvable':
+      'The MIRA_DAEMON_BIN variable points to a file that does not exist',
+  'Le trousseau du système est verrouillé : déverrouillez-le puis relancez MIRA':
+      'The system keyring is locked: unlock it, then restart MIRA',
+  'Le moteur en arrière-plan n’est pas compatible avec cette version de MIRA : arrêtez-le (pkill mira-daemon) puis relancez MIRA': 'The background engine is not compatible with this version of MIRA: stop it (pkill mira-daemon), then restart MIRA',
+  'Accès refusé par le moteur en arrière-plan':
+      'Access refused by the background engine',
+  'Jeton du moteur en arrière-plan introuvable':
+      'Background engine token not found',
+  'Le jeton du moteur est lisible par d’autres utilisateurs':
+      'The engine token is readable by other users',
+  'Jeton du moteur en arrière-plan illisible':
+      'Background engine token unreadable',
+  'Moteur en arrière-plan introuvable': 'Background engine not found',
+  'Impossible de démarrer le moteur en arrière-plan':
+      'Could not start the background engine',
+  'Le moteur en arrière-plan est détaché': 'The background engine is detached',
 };

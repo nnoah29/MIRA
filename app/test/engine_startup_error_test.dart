@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mira/engine/engine_client.dart';
 import 'package:mira/main.dart' show engineFailureText;
 import 'package:mira/state/store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -58,4 +59,19 @@ void main() {
     expect(engineFailureText(error), 'indisponible');
     expect(engineFailureText(StateError('boum')), contains('boum'));
   });
+
+  test(
+    'une indisponibilité de l\'hôte donne son message traduit, sans le code',
+    () {
+      final error = EngineException.local(
+        'host.keyring_locked',
+        'Le trousseau du système est verrouillé',
+      );
+      expect(
+        engineFailureText(error),
+        'Le trousseau du système est verrouillé',
+      );
+      expect(engineFailureText(error), isNot(contains('host.keyring_locked')));
+    },
+  );
 }

@@ -86,11 +86,19 @@ fn hello_err_carries_only_a_fixed_reason() {
     assert_eq!(serde_json::to_value(&frame).unwrap(), expected);
 }
 
-/// Un type inconnu, ou une raison de fin inconnue, est refusé à la lecture.
+/// Un type de trame inconnu (pair plus récent) se lit comme `Unknown`, à ignorer ; une raison de fin ou une trame sans type restent refusées.
 #[test]
-fn an_unknown_type_is_rejected() {
+fn an_unknown_type_reads_as_unknown_and_malformed_frames_are_rejected() {
     let unknown = json!({"type": "teleport", "id": 1});
-    assert!(serde_json::from_value::<Frame>(unknown).is_err());
+    assert_eq!(
+        serde_json::from_value::<Frame>(unknown).unwrap(),
+        Frame::Unknown
+    );
     let reason = json!({"type": "mystery"});
     assert!(serde_json::from_value::<EndReason>(reason).is_err());
+    assert!(serde_json::from_value::<Frame>(json!({"foo": 1})).is_err());
+    let bad_auth = json!({"type": "hello", "protocol_version": {"major": 1, "minor": 0},
+        "contract_version": {"major": 1, "minor": 6}, "client_id": "c", "client_name": "n",
+        "auth": {"type": "device_key"}});
+    assert!(serde_json::from_value::<Frame>(bad_auth).is_err());
 }

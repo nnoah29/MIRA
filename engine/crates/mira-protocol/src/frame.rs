@@ -86,4 +86,7 @@ pub enum Frame {
     Pong {
         nonce: u64,
     },
+    /// Trame d'un type que cette version ne connaît pas (pair plus récent) : à ignorer.
+    #[serde(other)]
+    Unknown,
 }

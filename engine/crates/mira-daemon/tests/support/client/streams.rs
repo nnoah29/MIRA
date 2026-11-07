@@ -25,6 +25,15 @@ impl TestClient {
         .await;
     }
 
+    /// Numéro du dernier événement du journal (0 s'il est vide), lu par le contrat.
+    pub async fn latest_seq(&mut self) -> u64 {
+        let request = json!({"domain": "event", "request": {"op": "get_events",
+            "filter": {"accounts": [], "categories": [], "after": null}, "limit": 500}});
+        let page = self.call(request).await;
+        let events = page["data"]["data"].as_array().unwrap();
+        events.last().map_or(0, |e| e["seq"].as_u64().unwrap())
+    }
+
     /// Provoque un événement `local_labels_changed` : crée un libellé local.
     pub async fn make_event(&mut self, name: &str) {
         let request = json!({"domain": "local_label", "request": {

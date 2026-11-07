@@ -34,12 +34,12 @@ fn golden_vectors_match_the_encoder() {
     assert!(mismatches.is_empty(), "\n{}", mismatches.join("\n"));
 }
 
-/// Les seize types de trame figurent tous dans les vecteurs.
+/// Les dix-sept types de trame figurent tous dans les vecteurs.
 #[test]
 fn golden_vectors_cover_every_frame_type() {
     let seen: BTreeSet<String> = vectors()
         .iter()
         .map(|v| v["frame"]["type"].as_str().unwrap().to_string())
         .collect();
-    assert_eq!(seen.len(), 16, "{seen:?}");
+    assert_eq!(seen.len(), 17, "{seen:?}");
 }

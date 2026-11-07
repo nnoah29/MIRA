@@ -1,9 +1,9 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 //! Jeu de contrat sur le chemin « pont FFI » : les scénarios sont ceux du démon, inclus tels quels.
 
+mod bridge_driver;
 #[path = "../../engine/crates/mira-daemon/tests/contract/mod.rs"]
 mod contract;
-mod bridge_driver;
 
 use bridge_driver::BridgeDriver;
 

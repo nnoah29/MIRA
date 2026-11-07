@@ -16,6 +16,28 @@ pub struct QuietHours {
     pub to: u8,
 }
 
+/// Réglages des notifications de nouveaux messages ; les défauts sont ceux de l'app avant la phase 4.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct NotificationSettings {
+    pub enabled: bool,
+    pub preview: bool,
+    pub sound: bool,
+    pub when_focused: bool,
+}
+
+impl Default for NotificationSettings {
+    /// Notifier, avec aperçu et son, sauf quand MIRA est au premier plan.
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            preview: true,
+            sound: true,
+            when_focused: false,
+        }
+    }
+}
+
 /// Réglages du moteur ; une valeur absente laisse le choix au moteur (délai du provider pour le relevé).
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct EngineSettings {
@@ -25,6 +47,8 @@ pub struct EngineSettings {
     pub muted_accounts: Vec<AccountId>,
     #[serde(default)]
     pub quiet_hours: Option<QuietHours>,
+    #[serde(default)]
+    pub notifications: NotificationSettings,
 }
 
 impl EngineSettings {
@@ -37,6 +61,7 @@ impl EngineSettings {
                 self.muted_accounts != other.muted_accounts,
             ),
             ("quiet_hours", self.quiet_hours != other.quiet_hours),
+            ("notifications", self.notifications != other.notifications),
         ];
         let differing = checks.into_iter().filter(|(_, differs)| *differs);
         differing.map(|(key, _)| key.to_string()).collect()

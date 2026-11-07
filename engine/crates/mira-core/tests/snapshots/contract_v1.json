@@ -1,5 +1,5 @@
 {
-  "contract": "1.6",
+  "contract": "1.7",
   "requests": {
     "account.add_account": {
       "domain": "account",
@@ -1211,6 +1211,12 @@
           "muted_accounts": [
             "account-1"
           ],
+          "notifications": {
+            "enabled": true,
+            "preview": false,
+            "sound": true,
+            "when_focused": true
+          },
           "poll_secs": 120,
           "quiet_hours": {
             "from": 22,
@@ -1703,7 +1709,7 @@
         ],
         "version": {
           "major": 1,
-          "minor": 6
+          "minor": 7
         }
       },
       "type": "contract_info"
@@ -2388,6 +2394,12 @@
           "muted_accounts": [
             "account-1"
           ],
+          "notifications": {
+            "enabled": true,
+            "preview": false,
+            "sound": true,
+            "when_focused": true
+          },
           "poll_secs": 120,
           "quiet_hours": {
             "from": 22,

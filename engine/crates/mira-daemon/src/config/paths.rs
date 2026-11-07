@@ -29,10 +29,10 @@ pub fn resolve_paths(
     environment: &ProfileEnvironment,
     runtime_dir: Option<&Path>,
 ) -> Result<DaemonPaths, MiraError> {
-    let root = ProfilePaths::resolve(&ProfileId::from_raw(&config.profile), environment)?.root;
+    let root = ProfilePaths::resolve(&ProfileId::from_raw(config.profile()), environment)?.root;
     let socket = match (&config.socket, runtime_dir) {
         (Some(explicit), _) => explicit.clone(),
-        (None, Some(runtime)) => runtime.join(format!("mira-daemon/{}.sock", config.profile)),
+        (None, Some(runtime)) => runtime.join(format!("mira-daemon/{}.sock", config.profile())),
         (None, None) => root.join("daemon.sock"),
     };
     let token = config

@@ -13,7 +13,12 @@ import 'host_errors.dart';
 import 'host_state.dart';
 
 /// Client du moteur par le démon : le même contrat JSON que le pont FFI, porté par le protocole de trames.
-class RemoteEngineClient implements EngineClient, ChatStreamingClient {
+class RemoteEngineClient
+    implements
+        EngineClient,
+        ChatStreamingClient,
+        PresenceClient,
+        DaemonNotificationClient {
   RemoteEngineClient._(this._open, this._connection, this._eventBackoff);
 
   final Future<RemoteConnection> Function() _open;
@@ -21,6 +26,10 @@ class RemoteEngineClient implements EngineClient, ChatStreamingClient {
   Future<RemoteConnection>? _reconnecting;
   final Duration _eventBackoff;
   bool _detached = false;
+  bool? _presence;
+
+  /// Relance un démon à la demande quand plus aucun ne répond ; vrai s'il en tourne un (posé par la politique d'ouverture).
+  Future<bool> Function()? relaunch;
 
   /// Se connecte au démon et fait la poignée de main ; les échecs de connexion ou de refus sont remontés tels quels.
   static Future<RemoteEngineClient> attach(
@@ -56,7 +65,7 @@ class RemoteEngineClient implements EngineClient, ChatStreamingClient {
   }
 
   Future<RemoteConnection> _reopen() async {
-    final RemoteConnection fresh;
+    RemoteConnection fresh;
     try {
       fresh = await _open();
     } on HandshakeRefused catch (refusal) {
@@ -64,13 +73,35 @@ class RemoteEngineClient implements EngineClient, ChatStreamingClient {
     } on EngineException {
       rethrow;
     } on Object {
-      throw unavailableError();
+      fresh = await _recover();
     }
     if (_detached) {
       await fresh.close();
       throw _detachedError();
     }
-    return _connection = fresh;
+    _connection = fresh;
+    _announcePresence(fresh);
+    return fresh;
+  }
+
+  /// Redit au démon le dernier focus connu : une connexion neuve n'a aucune présence.
+  void _announcePresence(RemoteConnection connection) {
+    final focused = _presence;
+    if (focused == null) return;
+    connection
+        .request(setPresenceFrame(connection.nextId(), focused))
+        .then<void>((_) {}, onError: (Object _) {});
+  }
+
+  /// Démon injoignable : en relance un (s'il y a un moyen) puis se reconnecte, sinon moteur indisponible.
+  Future<RemoteConnection> _recover() async {
+    final hook = relaunch;
+    if (hook == null || _detached || !await hook()) throw unavailableError();
+    try {
+      return await _open();
+    } on Object {
+      throw unavailableError();
+    }
   }
 
   EngineException _detachedError() => EngineException.local(
@@ -146,6 +177,24 @@ class RemoteEngineClient implements EngineClient, ChatStreamingClient {
   @override
   Stream<Map<String, dynamic>> chatStream(Map<String, dynamic> start) =>
       remoteChatStream(live, lostError, start);
+
+  /// Déclare au démon si la fenêtre de l'app est au premier plan (il notifie ou non en conséquence).
+  @override
+  Future<void> setPresence(bool focused) async {
+    _presence = focused;
+    await _exchange((id) => setPresenceFrame(id, focused));
+  }
+
+  /// Demande au démon d'afficher une notification d'essai.
+  @override
+  Future<void> testNotification() async {
+    await _exchange(hostOpTestNotificationFrame);
+  }
+
+  /// Demande au démon de réessayer tout de suite d'ouvrir le trousseau du système.
+  Future<void> retryUnlock() async {
+    await _exchange(hostOpRetryUnlockFrame);
+  }
 
   /// Détache le client : la connexion se ferme, le démon et son moteur continuent.
   @override

@@ -1,8 +1,8 @@
 /// Version du protocole de trames que ce client parle.
-const Map<String, int> clientProtocolVersion = {'major': 1, 'minor': 0};
+const Map<String, int> clientProtocolVersion = {'major': 1, 'minor': 1};
 
 /// Version du contrat d'API pour laquelle l'app est écrite.
-const Map<String, int> appContractVersion = {'major': 1, 'minor': 6};
+const Map<String, int> appContractVersion = {'major': 1, 'minor': 7};
 
 /// Trame `hello` : le champ `auth` porte le jeton local.
 Map<String, dynamic> helloFrame({
@@ -53,6 +53,27 @@ Map<String, dynamic> hostOpShutdownFrame(int id) => {
   'type': 'host_op',
   'id': id,
   'op': 'shutdown',
+};
+
+/// Trame `host_op` qui demande au démon de réessayer d'ouvrir le trousseau.
+Map<String, dynamic> hostOpRetryUnlockFrame(int id) => {
+  'type': 'host_op',
+  'id': id,
+  'op': 'retry_unlock',
+};
+
+/// Trame `host_op` qui demande au démon d'afficher une notification d'essai.
+Map<String, dynamic> hostOpTestNotificationFrame(int id) => {
+  'type': 'host_op',
+  'id': id,
+  'op': 'test_notification',
+};
+
+/// Trame `set_presence` : la fenêtre de l'app est (ou n'est plus) au premier plan.
+Map<String, dynamic> setPresenceFrame(int id, bool focused) => {
+  'type': 'set_presence',
+  'id': id,
+  'focused': focused,
 };
 
 /// Trame `credit` : `n` trames de plus pour le flux `id`.

@@ -32,6 +32,7 @@ fn muted_accounts_and_quiet_hours_are_reported_in_stable_order() {
         poll_secs: Some(60),
         muted_accounts: vec![AccountId::from_raw("a1")],
         quiet_hours: Some(QuietHours { from: 22, to: 7 }),
+        ..EngineSettings::default()
     };
     let keys = polling(60).changed_keys(&changed);
     assert_eq!(keys, ["muted_accounts", "quiet_hours"]);

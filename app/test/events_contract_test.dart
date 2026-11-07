@@ -16,7 +16,6 @@ const fieldsRead = <EventEffect, List<String>>{
   EventEffect.reload: ['account'],
   EventEffect.sync: ['account'],
   EventEffect.counters: ['account', 'mailbox', 'unread'],
-  EventEffect.verdict: ['message', 'silenced'],
 };
 
 void main() {

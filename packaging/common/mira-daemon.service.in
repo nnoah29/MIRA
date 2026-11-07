@@ -1,0 +1,14 @@
+[Unit]
+Description=MIRA mail engine (background sync and notifications)
+Documentation=https://github.com/nnoah29/MIRA
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=@DAEMON@
+KillMode=process
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

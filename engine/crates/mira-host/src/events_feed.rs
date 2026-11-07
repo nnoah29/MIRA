@@ -7,7 +7,7 @@ use serde_json::to_value;
 use crate::Host;
 
 /// Numéro du dernier événement déjà enregistré (`None` si le journal est vide).
-async fn latest_seq(engine: &Engine) -> Option<EventSeq> {
+pub(crate) async fn latest_seq(engine: &Engine) -> Option<EventSeq> {
     let mut cursor: Option<EventSeq> = None;
     loop {
         let filter = EventFilter {

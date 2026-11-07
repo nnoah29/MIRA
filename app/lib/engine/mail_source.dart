@@ -99,6 +99,12 @@ abstract class MailSource {
   /// Signale chaque changement des réglages du moteur.
   Stream<void> get engineSettingsChanges;
 
+  /// Demande au démon d'afficher une notification d'essai ; faux s'il n'y a pas de démon (l'app affiche alors la sienne).
+  Future<bool> requestTestNotification();
+
+  /// Déclare au moteur si la fenêtre de l'app est au premier plan (sans effet en démonstration).
+  Future<void> reportPresence(bool focused);
+
   /// Modèles de messages portés par le moteur (`null` : démonstration).
   TemplateAdmin? get templateAdmin;
 
@@ -113,13 +119,6 @@ abstract class MailSource {
 
   /// Signale chaque changement des comptes (ajout, modification, suppression, état) côté moteur.
   Stream<void> get accountEvents;
-
-  /// Verdict des règles sur un message arrivé : `true` muet (aucune notification),
-  /// `false` à annoncer, `null` pas encore connu.
-  bool? arrivalVerdict(String messageRef);
-
-  /// Oublie les verdicts de ces messages, une fois l'annonce décidée.
-  void forgetVerdicts(Iterable<String> messageRefs);
 
   /// Contenu d'une pièce jointe du moteur (`null` : illisible ou sans identifiant).
   Future<Uint8List?> attachmentBytes(Attachment a);

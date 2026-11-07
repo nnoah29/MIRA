@@ -1,13 +1,14 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../i18n/i18n.dart';
 import '../../platform_info.dart';
 import '../engine_client.dart';
 import 'connection.dart';
 import 'daemon_launcher.dart';
+import 'daemon_restart.dart';
 import 'daemon_paths.dart';
 import 'daemon_token.dart';
 import 'endpoint.dart';
@@ -49,6 +50,7 @@ class EngineOpeningDeps {
     required this.isLinuxDesktop,
     required this.attachDaemon,
     required this.launchDaemon,
+    required this.restartDaemon,
     required this.openEmbedded,
     Future<void> Function(Duration)? pause,
     Duration Function()? clock,
@@ -64,8 +66,12 @@ class EngineOpeningDeps {
   /// S'attache au démon de ces chemins ; lève [DaemonAbsent] ou [SocketException] s'il n'y en a pas.
   final Future<RemoteEngineClient> Function(DaemonPaths paths) attachDaemon;
 
-  /// Démarre le démon ; faux si aucun binaire n'est disponible.
-  final Future<bool> Function(String profile, String? home) launchDaemon;
+  /// Démarre le démon ; `null` si aucun binaire n'est disponible.
+  final Future<LaunchedDaemon?> Function(String profile, String? home)
+  launchDaemon;
+
+  /// Redémarre un démon plus ancien que l'app (unité `systemd --user`, ou arrêt puis relance).
+  final Future<void> Function(RemoteEngineClient stale) restartDaemon;
 
   /// Ouvre le moteur embarqué.
   final Future<EngineClient> Function() openEmbedded;
@@ -90,10 +96,10 @@ class EngineOpeningDeps {
       launchDaemon: (profile, home) async {
         final launcher = DaemonLauncher();
         launcher.verifyExplicitBinary();
-        if (launcher.findBinary() == null) return false;
-        await launcher.start(profile: profile, home: home);
-        return true;
+        if (launcher.findBinary() == null) return null;
+        return launcher.start(profile: profile, home: home);
       },
+      restartDaemon: DaemonRestarter().restart,
     );
   }
 }
@@ -139,6 +145,8 @@ String loadClientId(SharedPreferences prefs) {
 const Duration _poll = Duration(milliseconds: 250);
 const Duration _launchWait = Duration(seconds: 20);
 const Duration _startingWait = Duration(seconds: 30);
+const Duration _keyringWait = Duration(seconds: 20);
+const Duration _restartWait = Duration(seconds: 10);
 
 /// Une tentative d'attache ; `null` si aucun démon ne répond.
 Future<RemoteEngineClient?> _attachOnce(
@@ -159,11 +167,13 @@ Future<RemoteEngineClient?> _attachOnce(
 }
 
 /// S'attache et attend que l'hôte soit prêt ; `null` si aucun démon ne répond.
+/// Un démon périmé est redémarré une fois ; un trousseau verrouillé reçoit `retry_unlock` à chaque essai.
 Future<RemoteEngineClient?> _attachReady(
   EngineOpeningDeps deps,
   DaemonPaths paths,
 ) async {
   final started = deps.clock();
+  Duration? restartedAt;
   while (true) {
     final client = await _attachOnce(deps, paths);
     if (client == null) return null;
@@ -171,16 +181,20 @@ Future<RemoteEngineClient?> _attachReady(
       case HostState.ready || HostState.unknown:
         return client;
       case HostState.keyringLocked:
+        await client.retryUnlock();
         await client.close();
-        throw EngineException.local(
-          'host.keyring_locked',
-          t(
-            'Le trousseau du système est verrouillé : déverrouillez-le puis relancez MIRA',
-          ),
-        );
+        if (deps.clock() - started >= _keyringWait) throw keyringLockedError();
+        await deps.pause(_poll);
       case HostState.updateRequired:
-        await client.close();
-        throw updateRequiredError();
+        final since = restartedAt;
+        if (since == null) {
+          restartedAt = deps.clock();
+          await deps.restartDaemon(client);
+        } else {
+          await client.close();
+          if (deps.clock() - since >= _restartWait) throw updateRequiredError();
+        }
+        await deps.pause(_poll);
       case HostState.starting:
         await client.close();
         if (deps.clock() - started >= _startingWait) throw unavailableError();
@@ -189,22 +203,79 @@ Future<RemoteEngineClient?> _attachReady(
   }
 }
 
+/// Le démon lancé a trouvé le profil pris (code 3) : sans doute l'ancien démon, en cours d'arrêt.
+class _ProfileBusy implements Exception {
+  const _ProfileBusy();
+}
+
+const int _lockLaunches = 5;
+const Duration _lockPause = Duration(milliseconds: 500);
+
 /// Démarre le démon puis l'attend jusqu'à 20 s ; `null` sans binaire ou sans réponse.
+/// Un démon qui sort en code 3 est relancé quelques fois : l'ancien libère le profil après sa socket.
 Future<RemoteEngineClient?> _launchAndAttach(
   EngineOpeningDeps deps,
   DaemonPaths paths,
   String profile,
   String? home,
 ) async {
-  if (!await deps.launchDaemon(profile, home)) return null;
+  for (var attempt = 1; ; attempt++) {
+    try {
+      return await _launchOnce(deps, paths, profile, home);
+    } on _ProfileBusy {
+      if (attempt >= _lockLaunches) throw daemonExitedError(3);
+      await deps.pause(_lockPause);
+    }
+  }
+}
+
+/// Un lancement et son attente ; [_ProfileBusy] si le démon sort en code 3.
+Future<RemoteEngineClient?> _launchOnce(
+  EngineOpeningDeps deps,
+  DaemonPaths paths,
+  String profile,
+  String? home,
+) async {
+  final launched = await deps.launchDaemon(profile, home);
+  if (launched == null) return null;
+  int? exitCode;
+  unawaited(launched.exitCode.then((code) => exitCode = code));
   final started = deps.clock();
   while (deps.clock() - started < _launchWait) {
     final client = await _attachReady(deps, paths);
     if (client != null) return client;
+    final exited = exitCode;
+    if (exited == 3) throw const _ProfileBusy();
+    if (exited != null) throw daemonExitedError(exited);
     await deps.pause(_poll);
   }
   return null;
 }
+
+/// Relance un démon à la demande quand celui de l'app a disparu ; vrai s'il répond.
+Future<bool> _relaunch(
+  EngineOpeningDeps deps,
+  String profile,
+  String? home,
+) async {
+  try {
+    final paths = resolveDaemonPaths(
+      profile: profile,
+      env: deps.env,
+      home: home,
+    );
+    final client =
+        await _attachReady(deps, paths) ??
+        await _launchAndAttach(deps, paths, profile, home);
+    await client?.close();
+    return client != null;
+  } on Object {
+    return false;
+  }
+}
+
+/// Vrai si l'app affiche elle-même les notifications : seulement avec le moteur embarqué, le démon décide et affiche les siennes.
+bool appShowsNotifications(EngineMode used) => used == EngineMode.embedded;
 
 /// Ouvre le moteur selon la politique : embarqué hors Linux de bureau, sinon démon vivant, démon lancé, puis embarqué.
 /// Les états `keyring_locked` et `update_required` et un jeton refusé ne déclenchent jamais le repli.
@@ -235,7 +306,10 @@ Future<({EngineClient client, EngineMode used})> openEngineClient({
         error.code == 'transport.daemon_missing';
     if (mode == EngineMode.daemon || !launchFailure) rethrow;
   }
-  if (client != null) return (client: client, used: EngineMode.daemon);
+  if (client != null) {
+    client.relaunch = () => _relaunch(deps, profile, home);
+    return (client: client, used: EngineMode.daemon);
+  }
   if (mode == EngineMode.daemon) throw unavailableError();
   return embedded();
 }

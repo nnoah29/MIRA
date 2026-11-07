@@ -22,9 +22,13 @@ mira-protocol.workspace = true
 mira-host.workspace = true
 mira-assembly.workspace = true
 tokio = { workspace = true, features = ["signal"] }
+serde.workspace = true
 serde_json.workspace = true
+toml.workspace = true
 ring.workspace = true
 thiserror.workspace = true
+zbus = "5"
+ksni = { version = "0.3", default-features = false, features = ["async-io"] }
 clap.workspace = true
 
 [dev-dependencies]

@@ -108,9 +108,15 @@ async fn redirect_is_not_followed_and_key_not_resent() {
     let descriptor = descriptor(AuthScheme::XApiKey);
     let limits = fast_limits();
     let streamed = post_stream(&first.base_url(), &descriptor, &key(), &call(), &limits).await;
-    assert_eq!(streamed.err(), Some(AiError::BadResponse));
+    assert_eq!(
+        streamed.err(),
+        Some(AiError::UnexpectedStatus { status: 302 })
+    );
     let listed = get_bounded(&first.base_url(), &descriptor, &key(), "/models", &limits).await;
-    assert_eq!(listed.err(), Some(AiError::BadResponse));
+    assert_eq!(
+        listed.err(),
+        Some(AiError::UnexpectedStatus { status: 302 })
+    );
     assert_eq!(first.requests().len(), 2);
     assert!(second.requests().is_empty());
 }

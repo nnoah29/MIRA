@@ -12,6 +12,7 @@ app="$dest$prefix/lib/mira-mail"
 mkdir -p "$app" "$dest$prefix/bin"
 cp -a "$bundle/." "$app/"
 chmod 755 "$app/mira"
+[ -f "$app/mira-daemon" ] && chmod 755 "$app/mira-daemon"
 find "$app/lib" -name '*.so' -exec chmod 755 {} +
 ln -sf ../lib/mira-mail/mira "$dest$prefix/bin/mira-mail"
 
@@ -21,3 +22,7 @@ install -Dm644 "$here/io.github.nnoah29.Mira.png" "$dest$prefix/share/icons/hico
 install -Dm644 "$here/io.github.nnoah29.Mira.svg" "$dest$prefix/share/icons/hicolor/scalable/apps/io.github.nnoah29.Mira.svg"
 install -Dm644 "$here/../../LICENSE" "$dest$prefix/share/licenses/mira-mail/LICENSE"
 install -Dm644 "$here/io.github.nnoah29.Mira.metainfo.xml" "$dest$prefix/share/metainfo/io.github.nnoah29.Mira.metainfo.xml"
+
+# Moteur en arrière-plan : unité systemd --user (activée par l'application, jamais par le paquet).
+sed "s|@DAEMON@|$prefix/lib/mira-mail/mira-daemon|" "$here/mira-daemon.service.in" \
+  | install -Dm644 /dev/stdin "$dest$prefix/lib/systemd/user/mira-daemon.service"

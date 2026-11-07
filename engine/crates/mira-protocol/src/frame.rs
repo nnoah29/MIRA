@@ -61,6 +61,10 @@ pub enum Frame {
         id: u64,
         op: HostOp,
     },
+    SetPresence {
+        id: u64,
+        focused: bool,
+    },
     Event {
         id: u64,
         event: Value,

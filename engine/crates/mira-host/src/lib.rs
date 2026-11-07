@@ -8,9 +8,12 @@ pub mod events_feed;
 pub mod file_secrets;
 mod host;
 mod lifecycle;
+pub mod notifier;
 pub mod original_html;
 pub mod platform;
 pub mod polling;
+mod presence;
 mod streams;
 
 pub use host::Host;
+pub use presence::Presence;

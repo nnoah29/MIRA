@@ -17,6 +17,7 @@ tokio.workspace = true
 ring.workspace = true
 base64.workspace = true
 mail-parser.workspace = true
+chrono = { workspace = true }
 
 [dev-dependencies]
 mira-testkit.workspace = true

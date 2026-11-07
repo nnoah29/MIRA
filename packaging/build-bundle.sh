@@ -11,6 +11,9 @@ bundle="$out/bundle"
 echo "== Moteur (bibliothèque du pont, release)"
 (cd "$root/bridge" && cargo build --release)
 
+echo "== Démon (mira-daemon, release)"
+(cd "$root/engine" && cargo build --release -p mira-daemon)
+
 echo "== Application Flutter (release)"
 (cd "$root/app" && flutter build linux --release)
 
@@ -19,6 +22,8 @@ rm -rf "$bundle"
 mkdir -p "$out"
 cp -a "$root/app/build/linux/x64/release/bundle" "$bundle"
 install -m755 "$root/bridge/target/release/libmira_bridge.so" "$bundle/lib/"
+install -m755 "$root/engine/target/release/mira-daemon" "$bundle/mira-daemon"
+strip --strip-unneeded "$bundle/mira-daemon" || true
 # Pont Java d'un plugin Android : jamais chargé sous Linux, il ferait dépendre les paquets de libjvm.
 rm -f "$bundle/lib/libdartjni.so"
 strip --strip-unneeded "$bundle/lib/libmira_bridge.so" || true

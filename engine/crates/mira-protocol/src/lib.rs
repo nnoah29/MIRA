@@ -10,5 +10,5 @@ mod version;
 pub use auth::{Auth, HostOp, HostState};
 pub use codec::{CodecError, MAX_FRAME_BYTES, body_len, decode, encode};
 pub use frame::{EndReason, Frame};
-pub use handshake::{HelloRefusal, check_hello};
+pub use handshake::{HelloRefusal, check_hello, client_is_newer};
 pub use version::{PROTOCOL_VERSION, ProtocolVersion};

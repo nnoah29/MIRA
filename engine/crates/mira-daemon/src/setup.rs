@@ -9,7 +9,10 @@ use mira_assembly::sync::BackgroundSync;
 use mira_host::platform::adapt;
 use mira_host::polling::supervisor_for;
 
-use crate::config::{DaemonConfig, DaemonPaths, environment_of, read_secrets_key, resolve_paths};
+use crate::config::{
+    DaemonConfig, DaemonPaths, config_file_path, environment_of, read_file_config,
+    read_secrets_key, resolve_paths,
+};
 use crate::report::say_error;
 use crate::token::Token;
 
@@ -18,6 +21,17 @@ pub struct Setup {
     pub paths: DaemonPaths,
     pub token: Token,
     pub engine: EngineConfig,
+}
+
+/// Complète les options avec `daemon.toml` ; un fichier invalide arrête le démarrage (code 2).
+pub fn load_config(config: DaemonConfig) -> Result<DaemonConfig, ExitCode> {
+    let invalid = || say_error("configuration invalide", 2);
+    let path = match &config.config_file {
+        Some(explicit) => explicit.clone(),
+        None => config_file_path(&environment_of(&config)).map_err(|_| invalid())?,
+    };
+    let file = read_file_config(&path).map_err(|_| invalid())?;
+    Ok(config.merged_with(file))
 }
 
 /// Prépare le démarrage ; en cas d'échec, écrit un message fixe et rend le code de sortie 2.
@@ -42,7 +56,7 @@ pub fn prepare(config: &DaemonConfig) -> Result<Setup, ExitCode> {
 fn engine_config(
     config: &DaemonConfig,
 ) -> Result<EngineConfig, mira_assembly::mira_vocabulary::MiraError> {
-    let mut engine = production_config(ProfileId::from_raw(&config.profile));
+    let mut engine = production_config(ProfileId::from_raw(config.profile()));
     engine.network.background_sync = BackgroundSync::On(supervisor_for(config.poll_secs));
     let key = config
         .secrets_key_file

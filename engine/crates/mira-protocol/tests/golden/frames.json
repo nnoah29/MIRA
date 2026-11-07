@@ -120,6 +120,33 @@
   "hex": "000000297b2274797065223a22686f73745f6f70222c226964223a352c226f70223a2273687574646f776e227d"
  },
  {
+  "name": "host_op_retry_unlock",
+  "frame": {
+   "type": "host_op",
+   "id": 6,
+   "op": "retry_unlock"
+  },
+  "hex": "0000002d7b2274797065223a22686f73745f6f70222c226964223a362c226f70223a2272657472795f756e6c6f636b227d"
+ },
+ {
+  "name": "host_op_test_notification",
+  "frame": {
+   "type": "host_op",
+   "id": 9,
+   "op": "test_notification"
+  },
+  "hex": "000000327b2274797065223a22686f73745f6f70222c226964223a392c226f70223a22746573745f6e6f74696669636174696f6e227d"
+ },
+ {
+  "name": "set_presence",
+  "frame": {
+   "type": "set_presence",
+   "id": 8,
+   "focused": true
+  },
+  "hex": "0000002d7b2274797065223a227365745f70726573656e6365222c226964223a382c22666f6375736564223a747275657d"
+ },
+ {
   "name": "event",
   "frame": {
    "type": "event",

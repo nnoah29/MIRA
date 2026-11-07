@@ -117,7 +117,7 @@ void main() {
     store.setNotify('notifyQuiet', '22-7');
     await settle();
     expect(fake.engineQuiet, {'from': 22, 'to': 7});
-    expect(store.notifySettings.isQuiet(23), isTrue);
+    expect(store.notifySettings.quiet, (22, 7));
     expect(prefs.getString('notifyQuiet'), isNull);
     store.setNotify('notifyQuiet', '');
     await settle();
@@ -155,6 +155,86 @@ void main() {
     });
     await settle();
     expect(store.notifySettings.muted, {'acc1'});
+    store.dispose();
+  });
+
+  test('les réglages de notification sont portés par le moteur', () async {
+    final fake = FakeEngine()..engineSettingsOn = true;
+    final (store, prefs) = await open(fake);
+    store.setNotify('notifySound', '0');
+    store.setNotify('notifyFocused', '1');
+    await settle();
+    expect(fake.engineNotifications['sound'], isFalse);
+    expect(fake.engineNotifications['when_focused'], isTrue);
+    expect(store.notifySettings.sound, isFalse);
+    expect(store.notifySettings.whenFocused, isTrue);
+    expect(prefs.getString('notifySound'), isNull);
+    store.dispose();
+  });
+
+  test('changer le relevé garde les réglages de notification', () async {
+    final fake = FakeEngine()..engineSettingsOn = true;
+    final (store, _) = await open(fake);
+    store.setNotify('notifyPreview', '0');
+    await settle();
+    store.setSetting('poll', '60');
+    await settle();
+    expect(fake.engineNotifications['preview'], isFalse);
+    expect(fake.enginePoll, 60);
+    store.dispose();
+  });
+
+  test(
+    'les anciennes préférences de notification sont reprises une fois',
+    () async {
+      final fake = FakeEngine()..engineSettingsOn = true;
+      final (store, prefs) = await open(fake, {
+        'notify': '0',
+        'notifyPreview': '0',
+        'notifySound': '0',
+        'notifyFocused': '1',
+      });
+      expect(fake.engineNotifications, {
+        'enabled': false,
+        'preview': false,
+        'sound': false,
+        'when_focused': true,
+      });
+      for (final key in [
+        'notify',
+        'notifyPreview',
+        'notifySound',
+        'notifyFocused',
+      ]) {
+        expect(prefs.getString(key), isNull, reason: key);
+      }
+      expect(store.notifySettings.enabled, isFalse);
+      store.dispose();
+    },
+  );
+
+  test('des réglages déjà portés par le moteur ne sont pas écrasés', () async {
+    final fake = FakeEngine()
+      ..engineSettingsOn = true
+      ..engineNotifications = {
+        'enabled': true,
+        'preview': false,
+        'sound': true,
+        'when_focused': false,
+      };
+    final (store, _) = await open(fake, {'notifyPreview': '1'});
+    expect(fake.engineNotifications['preview'], isFalse);
+    expect(store.notifySettings.preview, isFalse);
+    store.dispose();
+  });
+
+  test('le focus de la fenêtre est déclaré dès l’ouverture puis à chaque changement', () async {
+    final fake = FakeEngine()..engineSettingsOn = true;
+    final (store, _) = await open(fake);
+    store.appFocused = false;
+    store.appFocused = true;
+    await settle();
+    expect(fake.presenceCalls, [true, false, true]);
     store.dispose();
   });
 }

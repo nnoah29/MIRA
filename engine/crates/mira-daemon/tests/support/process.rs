@@ -1,47 +1,21 @@
 //! Démon lancé comme vrai processus : sorties lues par un fil, signaux envoyés par la commande `kill`.
 
-use std::io::{BufRead, BufReader};
 use std::path::Path;
-use std::process::{Child, Command, ExitStatus, Stdio};
-use std::sync::mpsc::{self, Receiver, RecvTimeoutError};
+use std::process::{Child, Command, ExitStatus};
+use std::sync::mpsc::{Receiver, RecvTimeoutError};
 use std::time::{Duration, Instant};
 
 /// Processus `mira-daemon` en cours, avec les lignes qu'il écrit sur stdout et stderr.
 pub struct RunningDaemon {
-    child: Child,
-    lines: Receiver<String>,
+    pub(super) child: Child,
+    pub(super) lines: Receiver<String>,
     pub output: Vec<String>,
 }
 
 impl RunningDaemon {
     /// Lance le binaire avec ces arguments ; stdout et stderr sont relus ligne à ligne.
     pub fn spawn(args: &[&str]) -> Self {
-        let mut command = Command::new(env!("CARGO_BIN_EXE_mira-daemon"));
-        command
-            .args(args)
-            .env_remove("XDG_RUNTIME_DIR")
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
-        let mut child = command.spawn().unwrap();
-        let (sender, lines) = mpsc::channel();
-        let stdout = child.stdout.take().unwrap();
-        let stderr = child.stderr.take().unwrap();
-        for pipe in [
-            Box::new(stdout) as Box<dyn std::io::Read + Send>,
-            Box::new(stderr),
-        ] {
-            let sender = sender.clone();
-            std::thread::spawn(move || {
-                for line in BufReader::new(pipe).lines().map_while(Result::ok) {
-                    let _ = sender.send(line);
-                }
-            });
-        }
-        Self {
-            child,
-            lines,
-            output: Vec::new(),
-        }
+        Self::spawn_with_env(args, &[])
     }
 
     /// Attend la ligne `mira-daemon prêt` (jusqu'à `wait`) ; panique si le processus finit avant.

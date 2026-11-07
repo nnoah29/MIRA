@@ -65,14 +65,14 @@ async fn a_different_protocol_major_gets_hello_err_protocol_version() {
     assert_eq!(reply, refusal);
 }
 
-/// Un contrat client plus récent que le moteur reçoit `hello_err contract_version`.
+/// Un contrat client d'une autre majeure plus ancienne reçoit `hello_err contract_version`.
 #[tokio::test(flavor = "multi_thread")]
-async fn a_newer_contract_minor_gets_hello_err_contract_version() {
+async fn an_older_contract_major_gets_hello_err_contract_version() {
     let daemon = TestDaemon::start_closed().await;
     let mut client = TestClient::connect(&daemon).await;
     let contract = ContractVersion {
-        major: CONTRACT_VERSION.major,
-        minor: CONTRACT_VERSION.minor + 1,
+        major: CONTRACT_VERSION.major - 1,
+        minor: 0,
     };
     client
         .send(hello_with(daemon.token(), PROTOCOL_VERSION, contract))

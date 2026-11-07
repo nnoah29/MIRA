@@ -1,7 +1,7 @@
 //! Exemples du domaine « réglages du moteur » : lecture et remplacement.
 
 use mira_core::api::{Request, Response, SettingsRequest, SettingsResponse};
-use mira_vocabulary::{AccountId, EngineSettings, QuietHours};
+use mira_vocabulary::{AccountId, EngineSettings, NotificationSettings, QuietHours};
 
 use super::{Named, numbered};
 
@@ -11,6 +11,12 @@ fn sample() -> EngineSettings {
         poll_secs: Some(120),
         muted_accounts: vec![AccountId::from_raw("account-1")],
         quiet_hours: Some(QuietHours { from: 22, to: 7 }),
+        notifications: NotificationSettings {
+            enabled: true,
+            preview: false,
+            sound: true,
+            when_focused: true,
+        },
     }
 }
 

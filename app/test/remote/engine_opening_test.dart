@@ -1,8 +1,11 @@
 import 'dart:io';
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mira/engine/engine_client.dart';
 import 'package:mira/engine/remote/connection.dart';
+import 'package:mira/engine/remote/daemon_launcher.dart';
 import 'package:mira/engine/remote/daemon_paths.dart';
 import 'package:mira/engine/remote/engine_opening.dart';
 import 'package:mira/engine/remote/remote_engine_client.dart';
@@ -25,6 +28,12 @@ class World {
   bool launchMakesItAlive = true;
   int attaches = 0;
   int launches = 0;
+  int restarts = 0;
+  bool restartFixesIt = true;
+  final Completer<int> exited = Completer<int>();
+
+  /// Sort de chaque lancement, dans l'ordre (`null` : le démon reste en vie) ; vide : `exited`.
+  final List<int?> exitPlan = [];
   int embedded = 0;
   Duration now = Duration.zero;
   Duration attachCost = Duration.zero;
@@ -51,9 +60,16 @@ class World {
     },
     launchDaemon: (profile, home) async {
       launches++;
-      if (!binaryExists) return false;
-      alive = launchMakesItAlive;
-      return true;
+      if (!binaryExists) return null;
+      final plan = exitPlan.isEmpty ? null : exitPlan.removeAt(0);
+      alive = launchMakesItAlive && plan == null;
+      final exit = plan == null ? exited.future : Future.value(plan);
+      return LaunchedDaemon(exitCode: exit);
+    },
+    restartDaemon: (stale) async {
+      restarts++;
+      await stale.close();
+      if (restartFixesIt) rig.hostState = 'ready';
     },
     openEmbedded: () async {
       embedded++;
@@ -190,19 +206,91 @@ void main() {
     },
   );
 
+  test('update_required_restarts_the_daemon_then_attaches', () async {
+    final world = World()..alive = true;
+    world.rig.hostState = 'update_required';
+    world.readyAfter = -1;
+    final opened = await openEngineClient(deps: world.deps());
+    expect(opened.used, EngineMode.daemon);
+    expect(world.restarts, 1);
+    expect(world.embedded, 0);
+  });
+
   test(
-    'update_required_raises_a_localized_exception_and_never_falls_back',
+    'update_required_that_survives_the_restart_fails_and_never_falls_back',
     () async {
-      final world = World()..alive = true;
+      final world = World()
+        ..alive = true
+        ..restartFixesIt = false;
       world.rig.hostState = 'update_required';
       world.readyAfter = -1;
       await expectLater(
         openEngineClient(deps: world.deps()),
         throwsA(failsWith('host.update_required')),
       );
+      expect(world.restarts, 1);
+      expect(world.embedded, 0);
+      expect(world.now, lessThan(const Duration(seconds: 30)));
+    },
+  );
+
+  test('a_launched_daemon_that_exits_at_once_reports_its_code', () async {
+    final world = World()
+      ..binaryExists = true
+      ..launchMakesItAlive = false;
+    world.exited.complete(3);
+    await expectLater(
+      openEngineClient(deps: world.deps()),
+      throwsA(failsWith('transport.daemon_exited')),
+    );
+    expect(world.now, lessThan(const Duration(seconds: 5)));
+    expect(world.embedded, 0);
+  });
+
+  test(
+    'a_daemon_exiting_with_code_3_is_relaunched_until_the_old_one_is_gone',
+    () async {
+      final world = World()..binaryExists = true;
+      world.exitPlan.addAll([3, 3, null]);
+      final opened = await openEngineClient(deps: world.deps());
+      expect(opened.used, EngineMode.daemon);
+      expect(world.launches, 3);
       expect(world.embedded, 0);
     },
   );
+
+  test('code_3_that_never_goes_away_ends_in_a_clear_error', () async {
+    final world = World()..binaryExists = true;
+    world.exitPlan.addAll([3, 3, 3, 3, 3, 3, 3]);
+    await expectLater(
+      openEngineClient(deps: world.deps()),
+      throwsA(failsWith('transport.daemon_exited')),
+    );
+    expect(world.launches, 5);
+    expect(world.embedded, 0);
+  });
+
+  test('the_daemon_client_can_relaunch_a_daemon_that_was_lost', () async {
+    final world = World()
+      ..alive = true
+      ..binaryExists = true;
+    final opened = await openEngineClient(deps: world.deps());
+    final client = opened.client as RemoteEngineClient;
+    world.alive = false;
+    expect(await client.relaunch!(), isTrue);
+    expect(world.launches, 1);
+  });
+
+  test('a_locked_keyring_gets_retry_unlock_and_opens_once_unlocked', () async {
+    final world = World()..alive = true;
+    world.rig.hostState = 'keyring_locked';
+    world.readyAfter = 2;
+    final opened = await openEngineClient(deps: world.deps());
+    expect(opened.used, EngineMode.daemon);
+    final first = world.rig.daemons.first;
+    expect((await first.next('host_op'))['op'], 'retry_unlock');
+    expect(world.embedded, 0);
+  });
 
   test('a_refused_token_never_falls_back_to_embedded', () async {
     final world = World()..attachError = const HandshakeRefused('auth');
@@ -253,5 +341,10 @@ void main() {
     expect(parseEngineMode('embedded'), EngineMode.embedded);
     expect(parseEngineMode('daemon'), EngineMode.daemon);
     expect(parseEngineMode('nimporte'), EngineMode.auto);
+  });
+
+  test('the_app_shows_notifications_only_with_the_embedded_engine', () {
+    expect(appShowsNotifications(EngineMode.embedded), isTrue);
+    expect(appShowsNotifications(EngineMode.daemon), isFalse);
   });
 }

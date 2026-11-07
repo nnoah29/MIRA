@@ -5,6 +5,7 @@ import '../i18n/i18n.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import 'account_form_widgets.dart';
+import 'resident_row.dart';
 import 'widgets.dart';
 
 /// Réglages des notifications de nouveaux messages : activation, contenu, son, heures calmes, comptes.
@@ -160,6 +161,8 @@ class NotificationSettings extends StatelessWidget {
             ),
           ),
         ),
+        Divider(height: 1, color: p.lineSoft),
+        const ResidentRow(),
         Divider(height: 1, color: p.lineSoft),
         row(
           t('Essayer'),

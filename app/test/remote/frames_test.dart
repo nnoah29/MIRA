@@ -31,6 +31,16 @@ Map<String, dynamic> bigFrame(int size) => {
 };
 
 void main() {
+  test('the_presence_and_unlock_builders_match_the_shared_golden_frames', () {
+    expect(setPresenceFrame(8, true), golden('set_presence'));
+    expect(hostOpRetryUnlockFrame(6), golden('host_op_retry_unlock'));
+  });
+
+  test('the_client_speaks_protocol_1_1_and_contract_1_7', () {
+    expect(clientProtocolVersion, {'major': 1, 'minor': 1});
+    expect(appContractVersion, {'major': 1, 'minor': 7});
+  });
+
   test('dart_encodes_every_golden_frame_to_the_rust_bytes', () {
     for (final v in goldenVectors()) {
       final bytes = encodeFrame(v['frame'] as Map<String, dynamic>);
@@ -113,7 +123,15 @@ void main() {
   test('builders_produce_the_documented_fields', () {
     String s(Map<String, dynamic> m) => jsonEncode(m);
     expect(
-      s(helloFrame(clientId: 'c1', clientName: 'mira-app', token: 't')),
+      s(
+        helloFrame(
+          clientId: 'c1',
+          clientName: 'mira-app',
+          token: 't',
+          protocolVersion: {'major': 1, 'minor': 0},
+          contractVersion: {'major': 1, 'minor': 6},
+        ),
+      ),
       s(golden('hello')),
     );
     expect(

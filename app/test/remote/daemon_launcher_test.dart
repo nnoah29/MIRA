@@ -1,13 +1,22 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mira/engine/engine_client.dart';
 import 'package:mira/engine/remote/daemon_launcher.dart';
 
-/// Processus factice : seul `pid` est lu.
+/// Processus factice : `pid` et `exitCode` (jamais terminé sauf appel de [exit]) sont lus.
 class FakeProcess implements Process {
+  final Completer<int> _exit = Completer<int>();
+
+  /// Termine le processus avec ce code.
+  void exit(int code) => _exit.complete(code);
+
   @override
   int get pid => 4242;
+
+  @override
+  Future<int> get exitCode => _exit.future;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
@@ -97,26 +106,38 @@ void main() {
   });
 
   test(
-    'start_runs_the_binary_detached_with_profile_and_home_and_never_the_token',
+    'start_runs_the_binary_on_demand_with_profile_home_and_exit_when_idle_and_never_the_token',
     () async {
       final binary = fakeBinary(dir, 'mira-daemon');
       String? exe;
       List<String>? args;
       ProcessStartMode? started;
+      final process = FakeProcess();
       final launcher = DaemonLauncher(
         binaryCandidates: [binary],
         start: (e, a, {mode = ProcessStartMode.normal, environment}) async {
           exe = e;
           args = a;
           started = mode;
-          return FakeProcess();
+          return process;
         },
       );
-      await launcher.start(profile: 'default', home: '/data/mira');
+      final launched = await launcher.start(
+        profile: 'default',
+        home: '/data/mira',
+      );
       expect(exe, binary);
-      expect(started, ProcessStartMode.detached);
-      expect(args, ['--profile', 'default', '--home', '/data/mira']);
+      expect(started, ProcessStartMode.inheritStdio);
+      expect(args, [
+        '--profile',
+        'default',
+        '--home',
+        '/data/mira',
+        '--exit-when-idle',
+      ]);
       expect(args!.join(' '), isNot(contains('token')));
+      process.exit(3);
+      expect(await launched.exitCode, 3);
     },
   );
 

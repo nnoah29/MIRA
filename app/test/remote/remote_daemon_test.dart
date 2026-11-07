@@ -126,7 +126,7 @@ void main() {
       final client = await daemon.attach();
       final info = await client.call(req('engine', 'get_contract_info'));
       expect(info['type'], 'contract_info');
-      expect((info['data'] as Map)['version'], {'major': 1, 'minor': 6});
+      expect((info['data'] as Map)['version'], {'major': 1, 'minor': 7});
       await client.close();
     },
     skip: skip,
@@ -241,7 +241,8 @@ void main() {
       env: const {},
       isLinuxDesktop: true,
       attachDaemon: (paths) => attachDaemonAt(paths, 'dart-test'),
-      launchDaemon: (profile, home) async => false,
+      launchDaemon: (profile, home) async => null,
+      restartDaemon: (stale) async => stale.close(),
       openEmbedded: () async =>
           throw StateError('le moteur embarqué ne doit pas servir'),
     );

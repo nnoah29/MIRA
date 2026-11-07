@@ -35,7 +35,7 @@ void main() {
     expect(connection.hostState, HostState.starting);
     expect(connection.serverVersions['contract_version'], {
       'major': 1,
-      'minor': 6,
+      'minor': 7,
     });
     final hello = await daemon.next('hello');
     expect((hello['auth'] as Map)['token'], 'tok');
@@ -70,7 +70,7 @@ void main() {
     );
     final (c2, _) = FakeDaemon.pair();
     await expectLater(
-      open(c2, contractVersion: {'major': 1, 'minor': 7}),
+      open(c2, contractVersion: {'major': 1, 'minor': 8}),
       throwsA(
         isA<HandshakeRefused>().having(
           (e) => e.reason,

@@ -147,6 +147,16 @@ class RemoteEngineClient implements EngineClient, ChatStreamingClient {
   Stream<Map<String, dynamic>> chatStream(Map<String, dynamic> start) =>
       remoteChatStream(live, lostError, start);
 
+  /// Déclare au démon si la fenêtre de l'app est au premier plan (il notifie ou non en conséquence).
+  Future<void> setPresence(bool focused) async {
+    await _exchange((id) => setPresenceFrame(id, focused));
+  }
+
+  /// Demande au démon de réessayer tout de suite d'ouvrir le trousseau du système.
+  Future<void> retryUnlock() async {
+    await _exchange(hostOpRetryUnlockFrame);
+  }
+
   /// Détache le client : la connexion se ferme, le démon et son moteur continuent.
   @override
   Future<void> close() async {

@@ -45,7 +45,15 @@ List<String> defaultBinaryCandidates({
   ];
 }
 
-/// Démarre le démon quand aucun ne tourne : processus détaché, jamais de jeton en argument.
+/// Démon lancé par l'app : permet de savoir s'il s'arrête avant d'être prêt.
+class LaunchedDaemon {
+  const LaunchedDaemon({required this.exitCode});
+
+  /// Aboutit avec le code de sortie du processus.
+  final Future<int> exitCode;
+}
+
+/// Démarre le démon quand aucun ne tourne : à la demande (il s'arrête quand l'app est partie), jamais de jeton en argument.
 class DaemonLauncher {
   DaemonLauncher({
     ProcessStarter? start,
@@ -83,8 +91,8 @@ class DaemonLauncher {
     );
   }
 
-  /// Lance `mira-daemon --profile <profil> [--home <dossier>]` en mode détaché.
-  Future<void> start({required String profile, String? home}) async {
+  /// Lance `mira-daemon --profile <profil> [--home <dossier>] --exit-when-idle` et rend de quoi surveiller sa sortie.
+  Future<LaunchedDaemon> start({required String profile, String? home}) async {
     verifyExplicitBinary();
     final binary = findBinary();
     if (binary == null) {
@@ -94,11 +102,13 @@ class DaemonLauncher {
       );
     }
     try {
-      await _start(binary, [
+      final process = await _start(binary, [
         '--profile',
         profile,
         if (home != null) ...['--home', home],
-      ], mode: ProcessStartMode.detached);
+        '--exit-when-idle',
+      ], mode: ProcessStartMode.inheritStdio);
+      return LaunchedDaemon(exitCode: process.exitCode);
     } on ProcessException {
       throw EngineException.local(
         'transport.daemon_start_failed',

@@ -1357,9 +1357,16 @@ const Map<String, String> enStrings = {
   'Requête trop volumineuse': 'Request too large',
   'La variable MIRA_DAEMON_BIN désigne un fichier introuvable':
       'The MIRA_DAEMON_BIN variable points to a file that does not exist',
-  'Le trousseau du système est verrouillé : déverrouillez-le puis relancez MIRA':
-      'The system keyring is locked: unlock it, then restart MIRA',
-  'Le moteur en arrière-plan n’est pas compatible avec cette version de MIRA : arrêtez-le (pkill mira-daemon) puis relancez MIRA': 'The background engine is not compatible with this version of MIRA: stop it (pkill mira-daemon), then restart MIRA',
+  'Le trousseau du système est verrouillé : déverrouillez-le puis relancez MIRA, le moteur en arrière-plan reprendra seul':
+      'The system keyring is locked: unlock it, then restart MIRA; the background engine will resume by itself',
+  'Le moteur en arrière-plan est trop ancien pour cette version de MIRA et n’a pas pu être redémarré : relancez votre session ou redémarrez-le (systemctl --user restart mira-daemon)':
+      'The background engine is too old for this version of MIRA and could not be restarted: log in again or restart it (systemctl --user restart mira-daemon)',
+  'Un autre moteur en arrière-plan utilise déjà ce profil':
+      'Another background engine already uses this profile',
+  'La configuration du moteur en arrière-plan est invalide':
+      'The background engine configuration is invalid',
+  'Le moteur en arrière-plan s’est arrêté au démarrage':
+      'The background engine stopped while starting',
   'Accès refusé par le moteur en arrière-plan':
       'Access refused by the background engine',
   'Jeton du moteur en arrière-plan introuvable':

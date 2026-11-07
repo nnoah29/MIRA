@@ -40,7 +40,7 @@ class FakeDaemon {
   static (ByteChannel, FakeDaemon) pair({
     String token = 'tok',
     String hostState = 'ready',
-    int contractMinor = 6,
+    int contractMinor = 7,
     bool mute = false,
   }) {
     final (client, server) = MemoryChannel.pair();
@@ -95,6 +95,8 @@ class FakeDaemon {
         push(_helloReply(frame));
       case 'ping' when autoPong:
         push({'type': 'pong', 'nonce': frame['nonce']});
+      case 'set_presence' || 'host_op':
+        reply(frame['id'] as int, {'ok': true, 'data': null});
     }
   }
 
@@ -114,7 +116,7 @@ class FakeDaemon {
     if (refusal != null) return {'type': 'hello_err', 'reason': refusal};
     return {
       'type': 'hello_ok',
-      'protocol_version': {'major': 1, 'minor': 0},
+      'protocol_version': {'major': 1, 'minor': 1},
       'contract_version': {'major': 1, 'minor': contractMinor},
       'host_state': hostState,
     };

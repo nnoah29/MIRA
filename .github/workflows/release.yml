@@ -2,9 +2,15 @@ name: release
 # Se déclenche à chaque push sur main. Une release n'est lancée que si l'historique poussé contient
 # le commit « chore(release): version X.Y.Z » ; sinon le workflow s'arrête sans rien faire.
 # Résultat : un tag annoté vX.Y.Z et un BROUILLON de release GitHub (à publier à la main après essais).
+# Reprise : « Run workflow » avec la version d'un tag déjà posé reconstruit les artefacts depuis ce tag (sans verify ni tag).
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version dont le tag vX.Y.Z existe déjà (reprise après un échec de build)"
+        required: true
 permissions:
   contents: write
 concurrency:
@@ -23,6 +29,12 @@ jobs:
       - id: find
         name: Chercher le commit de release dans l'historique poussé
         run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ inputs.version }}"
+            git rev-parse -q --verify "refs/tags/v$version" >/dev/null || { echo "Le tag v$version n'existe pas : reprise impossible" >&2; exit 1; }
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           before="${{ github.event.before }}"
           if [[ "$before" =~ ^0+$ ]]; then range="HEAD -1"; else range="$before..HEAD"; fi
           subject="$(git log --format=%s $range | grep -E '^chore\(release\): version [0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)"
@@ -30,7 +42,7 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "Version de release détectée : '${version:-aucune}'"
       - name: Contrôles de cohérence
-        if: steps.find.outputs.version != ''
+        if: steps.find.outputs.version != '' && github.event_name == 'push'
         run: |
           v="${{ steps.find.outputs.version }}"
           if git rev-parse -q --verify "refs/tags/v$v" >/dev/null; then echo "Le tag v$v existe déjà" >&2; exit 1; fi
@@ -39,7 +51,7 @@ jobs:
           test -n "$OAUTH_SECRET" || { echo "Secret MIRA_OAUTH_CONFIG_TOML absent : une release sans identifiants OAuth est refusée" >&2; exit 1; }
   verify:
     needs: plan
-    if: needs.plan.outputs.version != ''
+    if: needs.plan.outputs.version != '' && github.event_name == 'push'
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -54,6 +66,7 @@ jobs:
         run: make check-all
   tag:
     needs: [plan, verify]
+    if: needs.plan.outputs.version != '' && github.event_name == 'push'
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -66,6 +79,7 @@ jobs:
           git push origin "v$v"
   linux:
     needs: [plan, tag]
+    if: ${{ !cancelled() && needs.plan.outputs.version != '' && (needs.tag.result == 'success' || needs.tag.result == 'skipped') }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -76,7 +90,7 @@ jobs:
         with: { channel: stable }
       - run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev libdbus-1-dev dpkg-dev rpm fakeroot
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev libsecret-1-dev libdbus-1-dev dpkg-dev rpm fakeroot
       - name: Identifiants OAuth
         run: |
           umask 077
@@ -98,6 +112,7 @@ jobs:
             packaging/out/*.tar.gz
   android:
     needs: [plan, tag]
+    if: ${{ !cancelled() && needs.plan.outputs.version != '' && (needs.tag.result == 'success' || needs.tag.result == 'skipped') }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -125,6 +140,7 @@ jobs:
         with: { name: android, path: "packaging/out/*.apk" }
   windows:
     needs: [plan, tag]
+    if: ${{ !cancelled() && needs.plan.outputs.version != '' && (needs.tag.result == 'success' || needs.tag.result == 'skipped') }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4

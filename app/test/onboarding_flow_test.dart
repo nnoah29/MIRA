@@ -12,26 +12,32 @@ import 'package:provider/provider.dart';
 
 import 'onboarding_test.dart' show open;
 
-Future<MailStore> pumpFlow(WidgetTester tester, {Size? size}) async {
+Future<MailStore> pumpFlow(
+  WidgetTester tester, {
+  Size? size,
+  MailStore? store,
+}) async {
   GoogleFonts.config.allowRuntimeFetching = false;
   await tester.runAsync(Fonts.preload);
   tester.view.physicalSize = size ?? const Size(1200, 900);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
-  final store = await tester.runAsync(open) as MailStore;
+  final used = store ?? await tester.runAsync(open) as MailStore;
   addTearDown(() => appLang = AppLang.fr);
   await tester.pumpWidget(
     ChangeNotifierProvider.value(
-      value: store,
+      value: used,
       child: MaterialApp(theme: buildTheme(true), home: const OnboardingFlow()),
     ),
   );
   await tester.pump(const Duration(milliseconds: 400));
-  return store;
+  return used;
 }
 
 Future<void> tapKey(WidgetTester tester, String key) async {
   await tester.tap(find.byKey(ValueKey(key)));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
   await tester.pump(const Duration(milliseconds: 400));
 }
 

@@ -412,6 +412,11 @@ const Map<String, String> enStrings = {
   'Thème': 'Theme',
   'Sombre': 'Dark',
   'Clair': 'Light',
+  'TON PREMIER COMPTE': 'YOUR FIRST ACCOUNT',
+  'Ajoute ta boîte mail : Gmail, Outlook, Yahoo ou n’importe quel serveur IMAP.':
+      'Add your mailbox: Gmail, Outlook, Yahoo or any IMAP server.',
+  'Comptes déjà ajoutés : {0}': 'Accounts already added: {0}',
+  'Ajouter un autre compte': 'Add another account',
   'Sombre ou clair, selon ton environnement.':
       'Dark or light, depending on your environment.',
   'Piloté par le fond d’écran (clair ou sombre selon sa luminosité).':

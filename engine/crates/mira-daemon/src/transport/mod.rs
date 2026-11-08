@@ -1,5 +1,6 @@
 //! Transports : un écouteur rend des flux d'octets bidirectionnels et dit à quel point on peut s'y fier.
 
+pub mod port_file;
 pub mod tcp;
 #[cfg(unix)]
 pub mod unix;

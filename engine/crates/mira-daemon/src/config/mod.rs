@@ -64,6 +64,11 @@ impl DaemonConfig {
             .then(|| Duration::from_secs(self.idle_grace_secs))
     }
 
+    /// Port TCP à lier : celui demandé, sinon un port libre sous Windows (seul transport local), sinon aucun.
+    pub fn effective_tcp_port(&self) -> Option<u16> {
+        self.tcp_port.or(cfg!(windows).then_some(0))
+    }
+
     /// Complète les options absentes avec les valeurs du fichier.
     pub fn merged_with(self, file: FileConfig) -> Self {
         Self {

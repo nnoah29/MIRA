@@ -1,10 +1,17 @@
 import 'dart:io';
 
 import 'daemon_restart.dart';
+import 'resident_windows.dart';
 
 /// Mode résident : le démon tourne sous l'unité `systemd --user`, fenêtre fermée comprise.
 class ResidentController {
   ResidentController({CommandRunner? run}) : _run = run ?? Process.run;
+
+  /// Contrôleur du système : la clé `Run` sous Windows, l'unité `systemd --user` ailleurs.
+  factory ResidentController.forPlatform({bool? windows}) =>
+      (windows ?? Platform.isWindows)
+      ? WindowsResidentController()
+      : ResidentController();
 
   final CommandRunner _run;
 

@@ -5,7 +5,14 @@ class DaemonPaths {
 
   /// Chemin du fichier du jeton local.
   final String token;
-  const DaemonPaths({required this.socket, required this.token});
+
+  /// Chemin du fichier où le démon publie son port TCP loopback.
+  final String port;
+  const DaemonPaths({
+    required this.socket,
+    required this.token,
+    required this.port,
+  });
 }
 
 /// Valeur d'une variable d'environnement, `null` si absente ou vide.
@@ -14,22 +21,27 @@ String? _value(Map<String, String> env, String key) {
   return value == null || value.isEmpty ? null : value;
 }
 
-/// Racine des profils comme le moteur : `MIRA_HOME` (ou `home`), `XDG_DATA_HOME`, puis `HOME`.
-String? _profilesRoot(Map<String, String> env, String? home) {
+/// Racine des profils comme le moteur : `MIRA_HOME` (ou `home`), `XDG_DATA_HOME`, puis `LOCALAPPDATA` sous Windows ou `HOME`.
+String? _profilesRoot(Map<String, String> env, String? home, bool windows) {
   final miraHome = home ?? _value(env, 'MIRA_HOME');
   if (miraHome != null) return '$miraHome/profiles';
   final xdg = _value(env, 'XDG_DATA_HOME');
   if (xdg != null) return '$xdg/mira/profiles';
+  if (windows) {
+    final local = _value(env, 'LOCALAPPDATA');
+    return local == null ? null : '$local/mira/profiles';
+  }
   final user = _value(env, 'HOME');
   return user == null ? null : '$user/.local/share/mira/profiles';
 }
 
-/// Emplacements de la socket et du jeton du démon du profil `profile`, comme `mira-daemon` les calcule.
+/// Emplacements de la socket, du jeton et du port du démon du profil `profile`, comme `mira-daemon` les calcule.
 /// `home` remplace `MIRA_HOME` (option `--home` du démon). Lève [ArgumentError] sans racine ou avec un nom de profil invalide.
 DaemonPaths resolveDaemonPaths({
   required String profile,
   required Map<String, String> env,
   String? home,
+  bool windows = false,
 }) {
   final invalid =
       profile.isEmpty ||
@@ -38,7 +50,7 @@ DaemonPaths resolveDaemonPaths({
       profile.contains('/') ||
       profile.contains(r'\');
   if (invalid) throw ArgumentError.value(profile, 'profile', 'nom invalide');
-  final root = _profilesRoot(env, home);
+  final root = _profilesRoot(env, home, windows);
   if (root == null) {
     throw ArgumentError(
       'dossier de données du profil introuvable',
@@ -51,5 +63,6 @@ DaemonPaths resolveDaemonPaths({
         ? '$profileRoot/daemon.sock'
         : '$runtime/mira-daemon/$profile.sock',
     token: '$profileRoot/daemon.token',
+    port: '$profileRoot/daemon.port',
   );
 }

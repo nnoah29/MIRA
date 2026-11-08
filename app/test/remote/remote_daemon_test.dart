@@ -239,7 +239,7 @@ void main() {
   test('openEngineClient_in_auto_mode_attaches_to_that_daemon', () async {
     final deps = EngineOpeningDeps(
       env: const {},
-      isLinuxDesktop: true,
+      canUseDaemon: true,
       attachDaemon: (paths) => attachDaemonAt(paths, 'dart-test'),
       launchDaemon: (profile, home) async => null,
       restartDaemon: (stale) async => stale.close(),

@@ -20,9 +20,9 @@ class AppRoot extends StatefulWidget {
 class _AppRootState extends State<AppRoot> {
   bool _asked = false;
 
-  /// Pose la question du mode résident une fois l'accueil passé, sous Linux de bureau seulement.
+  /// Pose la question du mode résident une fois l'accueil passé, sous Linux de bureau et Windows.
   void _askResident() {
-    if (_asked || !runsOnLinux) return;
+    if (_asked || !platformHasDaemon) return;
     _asked = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -30,7 +30,7 @@ class _AppRootState extends State<AppRoot> {
       askResidentOnce(
         context: context,
         prefs: store.prefs,
-        controller: ResidentController(),
+        controller: ResidentController.forPlatform(),
       );
     });
   }

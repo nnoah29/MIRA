@@ -1,4 +1,4 @@
-//! Chemins par défaut du démon : socket dans le dossier d'exécution, jeton sous le profil.
+//! Chemins par défaut du démon : socket dans le dossier d'exécution, jeton et port sous le profil.
 
 use std::path::{Path, PathBuf};
 
@@ -7,11 +7,12 @@ use mira_assembly::profile::{ProfileEnvironment, ProfilePaths};
 
 use super::DaemonConfig;
 
-/// Emplacements de la socket Unix et du fichier du jeton.
+/// Emplacements de la socket Unix, du fichier du jeton et du fichier du port TCP.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DaemonPaths {
     pub socket: PathBuf,
     pub token: PathBuf,
+    pub port: PathBuf,
 }
 
 /// Environnement du processus, avec le dossier de données de l'option `--home` s'il est donné.
@@ -39,5 +40,10 @@ pub fn resolve_paths(
         .token_file
         .clone()
         .unwrap_or_else(|| root.join("daemon.token"));
-    Ok(DaemonPaths { socket, token })
+    let port = root.join("daemon.port");
+    Ok(DaemonPaths {
+        socket,
+        token,
+        port,
+    })
 }

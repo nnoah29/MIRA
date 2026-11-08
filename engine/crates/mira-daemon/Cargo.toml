@@ -27,10 +27,20 @@ serde_json.workspace = true
 toml.workspace = true
 ring.workspace = true
 thiserror.workspace = true
+clap.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
 zbus = "5"
 ksni = { version = "0.3", default-features = false, features = ["async-io"] }
-clap.workspace = true
+
+[build-dependencies]
+embed-resource = "3"
 
 [dev-dependencies]
 mira-testkit.workspace = true
 tempfile.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+tauri-winrt-notification = "0.7"
+winreg = "0.56"
+tray-item = "0.10"

@@ -5,9 +5,12 @@ import '../engine_client.dart';
 
 final RegExp _hex64 = RegExp(r'^[0-9a-fA-F]{64}$');
 
-/// Lit le jeton local du démon : le fichier doit exister, n'être lisible que par son propriétaire et contenir 64 chiffres hexadécimaux.
+/// Lit le jeton local du démon : le fichier doit exister, n'être lisible que par son propriétaire (hors Windows, où le dossier de l'utilisateur est déjà privé) et contenir 64 chiffres hexadécimaux.
 /// Les erreurs ne reprennent jamais le contenu du fichier.
-Future<String> readDaemonToken(String path) async {
+Future<String> readDaemonToken(
+  String path, {
+  bool enforcePrivateMode = true,
+}) async {
   final stat = await FileStat.stat(path);
   if (stat.type == FileSystemEntityType.notFound) {
     throw EngineException.local(
@@ -15,7 +18,7 @@ Future<String> readDaemonToken(String path) async {
       t('Jeton du moteur en arrière-plan introuvable'),
     );
   }
-  if (stat.mode & 0x3F != 0) {
+  if (enforcePrivateMode && !Platform.isWindows && stat.mode & 0x3F != 0) {
     throw EngineException.local(
       'transport.token_unsafe',
       t('Le jeton du moteur est lisible par d’autres utilisateurs'),

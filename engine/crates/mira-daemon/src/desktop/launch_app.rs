@@ -4,14 +4,15 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use std::sync::Arc;
 
-const APP_ID: &str = "io.github.nnoah29.Mira";
+const APP_ID: &str = "com.toffanoah.mira";
+const APP_BIN: &str = if cfg!(windows) { "mira.exe" } else { "mira" };
 
 /// Action qui lance l'app ; remplaçable dans les tests.
 pub type Launch = Arc<dyn Fn() + Send + Sync>;
 
 /// Commande à lancer : `MIRA_APP_BIN` s'il désigne un fichier, sinon le binaire `mira` posé à côté du démon, sinon le lanceur du système.
 pub fn launch_plan(exe_dir: Option<&Path>, explicit: Option<&Path>) -> (String, Vec<String>) {
-    let neighbour = exe_dir.map(|dir| dir.join("mira"));
+    let neighbour = exe_dir.map(|dir| dir.join(APP_BIN));
     let chosen = explicit.map(Path::to_path_buf).or(neighbour);
     match chosen.filter(|path| path.is_file()) {
         Some(path) => (path.to_string_lossy().into_owned(), Vec::new()),

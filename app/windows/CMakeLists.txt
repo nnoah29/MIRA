@@ -114,3 +114,11 @@ if(EXISTS "${MIRA_BRIDGE_DLL}")
 else()
   message(WARNING "mira_bridge.dll introuvable : compiler le pont avec cargo build --release dans bridge/")
 endif()
+
+set(MIRA_DAEMON_EXE "${CMAKE_CURRENT_SOURCE_DIR}/../../engine/target/release/mira-daemon.exe")
+if(EXISTS "${MIRA_DAEMON_EXE}")
+  install(FILES "${MIRA_DAEMON_EXE}" DESTINATION "${CMAKE_INSTALL_PREFIX}"
+    COMPONENT Runtime)
+else()
+  message(WARNING "mira-daemon.exe introuvable : compiler le démon avec cargo build --release -p mira-daemon dans engine/")
+endif()

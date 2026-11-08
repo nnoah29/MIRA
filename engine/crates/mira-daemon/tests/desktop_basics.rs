@@ -20,7 +20,7 @@ fn without_a_neighbour_the_system_launcher_is_used() {
     let dir = tempfile::tempdir().unwrap();
     let expected = (
         "gtk-launch".to_string(),
-        vec!["io.github.nnoah29.Mira".to_string()],
+        vec!["com.toffanoah.mira".to_string()],
     );
     assert_eq!(launch_plan(Some(dir.path()), None), expected);
     assert_eq!(launch_plan(None, None), expected);

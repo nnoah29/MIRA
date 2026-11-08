@@ -44,7 +44,7 @@ class World {
   /// Dépendances branchées sur ce monde.
   EngineOpeningDeps deps({bool desktop = true}) => EngineOpeningDeps(
     env: const {'MIRA_HOME': '/m'},
-    isLinuxDesktop: desktop,
+    canUseDaemon: desktop,
     attachDaemon: (DaemonPaths paths) async {
       attaches++;
       now += attachCost;

@@ -1,6 +1,6 @@
 //! Emplacements des fichiers d'un profil et création du dossier avec droits restreints.
 
-use std::fs::{self, DirBuilder};
+use std::fs::DirBuilder;
 #[cfg(unix)]
 use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
 use std::path::{Path, PathBuf};
@@ -63,8 +63,8 @@ fn create_private_directory(directory: &Path) -> Result<(), MiraError> {
     builder.mode(0o700);
     let created = builder.create(directory);
     #[cfg(unix)]
-    let created =
-        created.and_then(|()| fs::set_permissions(directory, fs::Permissions::from_mode(0o700)));
+    let created = created
+        .and_then(|()| std::fs::set_permissions(directory, std::fs::Permissions::from_mode(0o700)));
     created.map_err(|error| io_error("création du dossier du profil impossible", &error))
 }
 

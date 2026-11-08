@@ -84,7 +84,7 @@ class PluginNotifications implements SystemNotifications {
         android: const AndroidInitializationSettings('@mipmap/ic_launcher'),
         windows: const WindowsInitializationSettings(
           appName: 'MIRA',
-          appUserModelId: 'io.github.nnoah29.Mira',
+          appUserModelId: 'com.toffanoah.mira',
           guid: '6f2b1c9e-3a7d-4e58-9b0a-4d1f7c52e8a3',
         ),
       ),

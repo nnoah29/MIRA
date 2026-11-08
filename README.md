@@ -4,7 +4,7 @@
 
 <h1 align="center">MIRA</h1>
 
-<p align="center"><strong>MIRA reads and sends your mail, on Linux and on Android.</strong></p>
+<p align="center"><strong>MIRA reads and sends your mail, on Linux, on Windows and on Android.</strong></p>
 
 <p align="center">Free, open source, and a bit nicer to look at than the usual mail client.</p>
 
@@ -72,7 +72,9 @@ The assistant is off until you add a connection in the settings. There is no MIR
 curl -fsSL https://github.com/nnoah29/MIRA/releases/latest/download/install.sh | bash
 ```
 
-Or take a package from the [latest release](https://github.com/nnoah29/MIRA/releases/latest): `.deb` (Debian, Ubuntu, Mint), `.rpm` (Fedora, openSUSE), AppImage (any distribution) or a `.tar.gz`.
+Or take a package from the [latest release](https://github.com/nnoah29/MIRA/releases/latest): `.deb` (Debian, Ubuntu, Mint), `.rpm` (Fedora, openSUSE) or a `.tar.gz`.
+
+**Windows 10 and later (experimental):** run `mira-mail-<version>-windows-x64-setup.exe` from the same release. It installs for your user only, without administrator rights. A portable `.zip` is also available. The installer is not signed yet, so Windows SmartScreen will warn on the first run: choose *More info* then *Run anyway*.
 
 **Android 7 and later:** download the `.apk` from the same release.
 

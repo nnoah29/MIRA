@@ -10,7 +10,7 @@ dépôt. Une release doit toujours pouvoir être reconstruite à partir de son t
 
 ## 0. Release automatique (GitHub Actions)
 
-`.github/workflows/release.yml` s'exécute à chaque push sur `main`. Il ne fait rien sauf si l'historique poussé contient un commit dont le titre est exactement de la forme `chore(release): version X.Y.Z` (c'est le commit de l'étape 1, fusionné par la PR `dev` → `main`). Dans ce cas, dans l'ordre : contrôle de cohérence (`tools/check-release-version` : versions, build Android croissant, notes `docs/release-notes/vX.Y.Z.md` en anglais, tag inexistant, secret présent), `make check-all`, pose du tag annoté `vX.Y.Z`, construction en parallèle (Linux : deb, rpm, tar.gz (pas d'AppImage) ; Android : 2 APK ; Windows : zip), `SHA256SUMS` + `install.sh`, puis **brouillon** de release GitHub. La publication reste manuelle (étape 6, vérifications). AUR (étape 7) et les essais sur machine propre (étape 5) restent manuels.
+`.github/workflows/release.yml` s'exécute à chaque push sur `main`. Il ne fait rien sauf si l'historique poussé contient un commit dont le titre est exactement de la forme `chore(release): version X.Y.Z` (c'est le commit de l'étape 1, fusionné par la PR `dev` → `main`). Dans ce cas, dans l'ordre : contrôle de cohérence (`tools/check-release-version` : versions, build Android croissant, notes `docs/release-notes/vX.Y.Z.md` en anglais, tag inexistant, secret présent), `make check-all`, pose du tag annoté `vX.Y.Z`, construction en parallèle (Linux : deb, rpm, tar.gz (pas d'AppImage) ; Android : 2 APK ; Windows : installeur `setup.exe` Inno Setup et zip portable, tous deux avec le runtime Visual C++), `SHA256SUMS` + `install.sh`, puis **brouillon** de release GitHub. La publication reste manuelle (étape 6, vérifications). AUR (étape 7) et les essais sur machine propre (étape 5) restent manuels.
 
 Prérequis une fois : secret de dépôt `MIRA_OAUTH_CONFIG_TOML` (contenu du `config.toml` de production). Avant la PR, ajouter `docs/release-notes/vX.Y.Z.md` au commit de release. `ci.yml` vérifie les PR vers `dev` et `main`.
 
@@ -42,10 +42,8 @@ Mettre à jour la version dans un commit de release sur `dev` :
 | `app/pubspec.yaml` | `version: $VERSION+$ANDROID_BUILD` |
 | `app/lib/app_info.dart` | `const appVersion = '$VERSION';` |
 | `packaging/VERSION` | `$VERSION` |
-| `packaging/common/io.github.nnoah29.Mira.metainfo.xml` | Ajouter en tête de `<releases>` : `<release version="$VERSION" date="AAAA-MM-JJ"/>` |
+| `packaging/common/com.toffanoah.mira.metainfo.xml` | Ajouter en tête de `<releases>` : `<release version="$VERSION" date="AAAA-MM-JJ"/>` |
 | `packaging/arch/PKGBUILD` | `pkgver=$VERSION` |
-| `packaging/snap/snapcraft.yaml` | `version` et le nom d'archive source |
-| `packaging/flatpak/io.github.nnoah29.Mira.yml` | le nom d'archive source |
 | `docs/release-notes/vX.Y.Z.md` | notes de la release, en anglais (requises par le workflow) |
 
 Les versions des crates Rust (`0.1.0`) sont indépendantes de la version
@@ -66,15 +64,13 @@ make check-all
 git diff --check
 git status --short
 git add app/pubspec.yaml app/lib/app_info.dart packaging/VERSION \
-  packaging/common/io.github.nnoah29.Mira.metainfo.xml \
-  packaging/arch/PKGBUILD packaging/snap/snapcraft.yaml \
-  packaging/flatpak/io.github.nnoah29.Mira.yml
+  packaging/common/com.toffanoah.mira.metainfo.xml \
+  packaging/arch/PKGBUILD
 git commit -m "chore(release): version $VERSION"
 git push origin dev
 ```
 
-Si Flatpak ou Snap est explicitement différé, ne pas inclure ses fichiers au
-commit. Les trois versions utilisateur (`pubspec`, `app_info.dart` et
+Les trois versions utilisateur (`pubspec`, `app_info.dart` et
 `packaging/VERSION`) doivent en revanche toujours être égales.
 
 ## 2. Fusionner `dev` dans `main`
@@ -286,9 +282,8 @@ git commit -m "mira-mail-bin $VERSION"
 git push
 ```
 
-Flatpak et Snap ne font pas partie de la release standard tant qu'ils ne sont
-pas construits et testés séparément : Flatpak demande un build source compatible
-Flathub et le portail de fichiers, Snap son environnement `snapcraft`.
+Flatpak et Snap sont abandonnés (novembre 2026) : ni fichiers de packaging ni
+version à maintenir pour ces formats.
 
 Après publication, vérifier `releases/latest`, le lien d'installation du
 README et une installation sans sudo. Tout correctif démarre sur `dev`.
@@ -306,3 +301,7 @@ corrective.
 - [ ] Les paquets et APK ont été installés/testés sur des environnements propres.
 - [ ] La release GitHub est publiée et *Latest*.
 - [ ] AUR et les canaux optionnels ne sont mis à jour qu'après validation.
+
+## Installeur Windows
+
+`packaging/windows/mira.iss` (Inno Setup 6) produit `mira-mail-X.Y.Z-windows-x64-setup.exe` : installation par utilisateur dans `%LOCALAPPDATA%\Programs\MIRA` sans droits administrateur, raccourci du menu Démarrer portant l'identité `com.toffanoah.mira` (nécessaire aux toasts), anglais et français. L'installeur et la désinstallation arrêtent `mira.exe` et `mira-daemon.exe` ; la désinstallation retire la valeur `MIRA` de la clé `Run` et l'identité des toasts mais **garde les données** (`%LOCALAPPDATA%\mira`). `packaging/windows/build-installer.ps1 -Version X.Y.Z` prépare le dossier (app, pont, démon, DLL Visual C++ copiées depuis Visual Studio), le zip et le setup. `windows.yml` génère l'installeur à chaque PR et lance `test-installer.ps1` : installation silencieuse, fichiers, raccourci, démarrage du démon et connexion à son port, désinstallation. Non signé : Windows affichera SmartScreen (signature à décider : SignPath Foundation, Azure Trusted Signing ou certificat).

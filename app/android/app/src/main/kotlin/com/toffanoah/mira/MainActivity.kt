@@ -1,4 +1,4 @@
-package n.noah.mira
+package com.toffanoah.mira
 
 import android.content.pm.ApplicationInfo
 import android.os.Bundle

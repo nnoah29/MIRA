@@ -158,10 +158,10 @@ jobs:
           Set-Content -Path (Join-Path $dir 'config.toml') -Value $env:OAUTH_SECRET -NoNewline
           $env:MIRA_OAUTH_CONFIG = Join-Path $dir 'config.toml'
           packaging\windows\build.ps1
-          $v = '${{ needs.plan.outputs.version }}'
-          Compress-Archive -Path app\build\windows\x64\runner\Release\* -DestinationPath "mira-mail-$v-windows-x64.zip"
+          choco install innosetup -y --no-progress
+          packaging\windows\build-installer.ps1 -Version '${{ needs.plan.outputs.version }}' -OutDir out
       - uses: actions/upload-artifact@v4
-        with: { name: windows, path: "mira-mail-*-windows-x64.zip" }
+        with: { name: windows, path: "out/mira-mail-*-windows-x64*" }
   publish:
     needs: [plan, linux, android, windows]
     runs-on: ubuntu-22.04

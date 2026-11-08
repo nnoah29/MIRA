@@ -18,7 +18,7 @@ class ResidentRow extends StatefulWidget {
 
 class _ResidentRowState extends State<ResidentRow> {
   late final ResidentController _controller =
-      widget.controller ?? ResidentController();
+      widget.controller ?? ResidentController.forPlatform();
   bool _available = false;
   bool _enabled = false;
 

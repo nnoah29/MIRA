@@ -2,7 +2,7 @@ name: windows
 on:
   workflow_dispatch:
   pull_request:
-    paths: ["engine/**", "bridge/**", "app/**", ".github/workflows/windows.yml"]
+    paths: ["engine/**", "bridge/**", "app/**", "packaging/windows/**", ".github/workflows/windows.yml"]
 jobs:
   build:
     runs-on: windows-latest
@@ -14,6 +14,11 @@ jobs:
       - name: Moteur et hôte (compilation)
         working-directory: engine
         run: cargo check -p mira-core -p mira-host
+      - name: Démon (compilation et fichier du port)
+        working-directory: engine
+        run: |
+          cargo build --release -p mira-daemon
+          cargo test -p mira-daemon --test port_file
       - name: Pont FFI (bibliothèque)
         working-directory: bridge
         run: cargo build --release
@@ -27,3 +32,9 @@ jobs:
         run: |
           flutter pub get
           flutter build windows --release
+      - name: Installeur (génération, installation, démon, désinstallation)
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          packaging\windows\build-installer.ps1 -Version 0.0.0 -OutDir out
+          packaging\windows\test-installer.ps1 -Setup (Resolve-Path out\mira-mail-0.0.0-windows-x64-setup.exe)

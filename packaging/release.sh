@@ -138,7 +138,7 @@ check_versions() {
   [ "$pub" = "$version" ] || fail "app/pubspec.yaml : version '$pub' au lieu de '$version'"
   [ "$app" = "$version" ] || fail "app/lib/app_info.dart : appVersion '$app' au lieu de '$version'"
   [ "$(at_tag packaging/VERSION | tr -d '[:space:]')" = "$version" ] || fail "packaging/VERSION différent de $version"
-  tag_matches packaging/common/io.github.nnoah29.Mira.metainfo.xml "<release version=\"$version\"" \
+  tag_matches packaging/common/com.toffanoah.mira.metainfo.xml "<release version=\"$version\"" \
     || fail "metainfo.xml : aucune <release version=\"$version\">"
   tag_matches packaging/arch/PKGBUILD "^pkgver=$version\$" || fail "PKGBUILD : pkgver différent de $version"
   [ -n "$build" ] || fail "app/pubspec.yaml : numéro de build Android absent"
@@ -296,7 +296,7 @@ verify_tarball() {
   listing="$(tar -tzf "$f")"
   expect "archive : application" contains "$listing" "$n/app/mira"
   expect "archive : moteur" contains "$listing" "$n/app/lib/libmira_bridge.so"
-  expect "archive : fiche AppStream" contains "$listing" "$n/share/io.github.nnoah29.Mira.metainfo.xml"
+  expect "archive : fiche AppStream" contains "$listing" "$n/share/com.toffanoah.mira.metainfo.xml"
 }
 
 verify_appimage() {

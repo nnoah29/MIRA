@@ -4,7 +4,7 @@ use zbus::blocking::{Connection, proxy::Builder};
 use zbus::proxy::CacheProperties;
 use zbus::zvariant::OwnedObjectPath;
 
-use crate::unlock::{KeyringProbe, NeverLocked};
+use crate::unlock::KeyringProbe;
 
 const DESTINATION: &str = "org.freedesktop.secrets";
 
@@ -62,14 +62,5 @@ impl KeyringProbe for SecretServiceProbe {
         self.connection
             .as_ref()
             .is_some_and(|connection| read_locked(connection).unwrap_or(false))
-    }
-}
-
-/// Sonde de production : le Secret Service, sauf si les secrets sont dans un fichier chiffré.
-pub fn probe_for(file_secrets: bool) -> Box<dyn KeyringProbe> {
-    if file_secrets {
-        Box::new(NeverLocked)
-    } else {
-        Box::new(SecretServiceProbe::connect())
     }
 }

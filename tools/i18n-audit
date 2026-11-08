@@ -236,8 +236,8 @@ def app_languages(root):
 def packaging_gaps(root, codes):
     """Traductions manquantes des métadonnées du paquet Linux : le texte par défaut est l'anglais."""
     base = os.path.join(root, "..", "packaging", "common")
-    desktop = open(os.path.join(base, "io.github.nnoah29.Mira.desktop"), encoding="utf-8").read()
-    meta = open(os.path.join(base, "io.github.nnoah29.Mira.metainfo.xml"), encoding="utf-8").read()
+    desktop = open(os.path.join(base, "com.toffanoah.mira.desktop"), encoding="utf-8").read()
+    meta = open(os.path.join(base, "com.toffanoah.mira.metainfo.xml"), encoding="utf-8").read()
     description = re.search(r"<description>(.*?)</description>", meta, re.S).group(1)
     default_items = len(re.findall(r"<(?:p|li)>", description))
     gaps = {}

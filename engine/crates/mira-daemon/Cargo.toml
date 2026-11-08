@@ -27,9 +27,11 @@ serde_json.workspace = true
 toml.workspace = true
 ring.workspace = true
 thiserror.workspace = true
+clap.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
 zbus = "5"
 ksni = { version = "0.3", default-features = false, features = ["async-io"] }
-clap.workspace = true
 
 [dev-dependencies]
 mira-testkit.workspace = true

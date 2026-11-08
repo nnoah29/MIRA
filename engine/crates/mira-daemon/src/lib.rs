@@ -4,8 +4,10 @@ pub mod config;
 pub mod desktop;
 pub mod idle;
 mod listen;
+mod probe;
 mod report;
 pub mod run;
+#[cfg(target_os = "linux")]
 pub mod secret_service;
 pub mod server;
 pub mod session;

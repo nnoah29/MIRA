@@ -10,8 +10,8 @@ use serde_json::Value;
 
 use crate::config::DaemonConfig;
 use crate::desktop::Desktop;
+use crate::probe::probe_for;
 use crate::report::{say, say_error};
-use crate::secret_service::probe_for;
 use crate::server::ServerContext;
 use crate::unlock::{KeyringProbe, UnlockBackoff};
 use crate::{idle, listen, setup, shutdown, signals, unlock};

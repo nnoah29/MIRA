@@ -6,10 +6,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../platform_info.dart';
 import '../engine_client.dart';
+import 'byte_channel.dart';
 import 'connection.dart';
 import 'daemon_launcher.dart';
 import 'daemon_restart.dart';
 import 'daemon_paths.dart';
+import 'daemon_port.dart';
 import 'daemon_token.dart';
 import 'endpoint.dart';
 import 'host_errors.dart';
@@ -47,7 +49,7 @@ class DaemonAbsent implements Exception {
 class EngineOpeningDeps {
   EngineOpeningDeps({
     required this.env,
-    required this.isLinuxDesktop,
+    required this.canUseDaemon,
     required this.attachDaemon,
     required this.launchDaemon,
     required this.restartDaemon,
@@ -60,8 +62,8 @@ class EngineOpeningDeps {
   /// Variables d'environnement (chemins du profil).
   final Map<String, String> env;
 
-  /// Vrai sous Linux de bureau, la seule plateforme qui peut choisir le démon.
-  final bool isLinuxDesktop;
+  /// Vrai là où le démon est un choix possible : Linux de bureau et Windows.
+  final bool canUseDaemon;
 
   /// S'attache au démon de ces chemins ; lève [DaemonAbsent] ou [SocketException] s'il n'y en a pas.
   final Future<RemoteEngineClient> Function(DaemonPaths paths) attachDaemon;
@@ -90,9 +92,10 @@ class EngineOpeningDeps {
     final clientId = loadClientId(prefs);
     return EngineOpeningDeps(
       env: Platform.environment,
-      isLinuxDesktop: runsOnLinux,
+      canUseDaemon: platformHasDaemon,
       openEmbedded: openEmbedded,
-      attachDaemon: (paths) => attachDaemonAt(paths, clientId),
+      attachDaemon: (paths) =>
+          attachDaemonAt(paths, clientId, tcp: runsOnWindows),
       launchDaemon: (profile, home) async {
         final launcher = DaemonLauncher();
         launcher.verifyExplicitBinary();
@@ -104,24 +107,34 @@ class EngineOpeningDeps {
   }
 }
 
-/// S'attache au démon de ces chemins : [DaemonAbsent] sans socket ou si la socket est périmée ;
+/// S'attache au démon de ces chemins : [DaemonAbsent] sans socket (ou sans fichier de port en TCP) ou si elle est périmée ;
 /// le jeton est relu à chaque (re)connexion, le démon ayant pu redémarrer avec un autre.
 Future<RemoteEngineClient> attachDaemonAt(
   DaemonPaths paths,
-  String clientId,
-) async {
-  if (!File(paths.socket).existsSync()) throw const DaemonAbsent();
+  String clientId, {
+  bool tcp = false,
+}) async {
+  if (tcp) {
+    await readDaemonPort(paths.port);
+  } else if (!File(paths.socket).existsSync()) {
+    throw const DaemonAbsent();
+  }
   final token = await readDaemonToken(paths.token);
   try {
     return await RemoteEngineClient.attach(
-      DaemonEndpoint(unixSocket: paths.socket, token: token),
+      DaemonEndpoint(unixSocket: tcp ? null : paths.socket, token: token),
       clientId: clientId,
       tokenProvider: () => readDaemonToken(paths.token),
+      channelFactory: tcp ? () => _connectByPortFile(paths.port) : null,
     );
   } on SocketException {
     throw const DaemonAbsent();
   }
 }
+
+/// Se connecte au port que le démon publie, relu à chaque (re)connexion : un démon relancé change de port.
+Future<ByteChannel> _connectByPortFile(String portPath) async =>
+    SocketChannel.connectTcp('127.0.0.1', await readDaemonPort(portPath));
 
 /// Horloge monotone qui démarre à l'appel.
 Duration Function() _stopwatchClock() {
@@ -263,6 +276,7 @@ Future<bool> _relaunch(
       profile: profile,
       env: deps.env,
       home: home,
+      windows: runsOnWindows,
     );
     final client =
         await _attachReady(deps, paths) ??
@@ -277,7 +291,7 @@ Future<bool> _relaunch(
 /// Vrai si l'app affiche elle-même les notifications : seulement avec le moteur embarqué, le démon décide et affiche les siennes.
 bool appShowsNotifications(EngineMode used) => used == EngineMode.embedded;
 
-/// Ouvre le moteur selon la politique : embarqué hors Linux de bureau, sinon démon vivant, démon lancé, puis embarqué.
+/// Ouvre le moteur selon la politique : embarqué hors Linux de bureau et Windows, sinon démon vivant, démon lancé, puis embarqué.
 /// Les états `keyring_locked` et `update_required` et un jeton refusé ne déclenchent jamais le repli.
 Future<({EngineClient client, EngineMode used})> openEngineClient({
   required EngineOpeningDeps deps,
@@ -287,13 +301,14 @@ Future<({EngineClient client, EngineMode used})> openEngineClient({
 }) async {
   Future<({EngineClient client, EngineMode used})> embedded() async =>
       (client: await deps.openEmbedded(), used: EngineMode.embedded);
-  if (mode == EngineMode.embedded || !deps.isLinuxDesktop) return embedded();
+  if (mode == EngineMode.embedded || !deps.canUseDaemon) return embedded();
   RemoteEngineClient? client;
   try {
     final paths = resolveDaemonPaths(
       profile: profile,
       env: deps.env,
       home: home,
+      windows: runsOnWindows,
     );
     client =
         await _attachReady(deps, paths) ??

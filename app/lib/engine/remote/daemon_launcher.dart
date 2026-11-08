@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kReleaseMode;
@@ -32,15 +33,17 @@ List<String> defaultBinaryCandidates({
   required Map<String, String> env,
   required String executableDir,
   bool releaseMode = kReleaseMode,
+  bool windows = false,
 }) {
   final root = releaseMode ? null : _repositoryRoot(executableDir);
+  final name = windows ? 'mira-daemon.exe' : 'mira-daemon';
   return [
     if ((env['MIRA_DAEMON_BIN'] ?? '').isNotEmpty) env['MIRA_DAEMON_BIN']!,
-    '$executableDir/mira-daemon',
-    '$executableDir/lib/mira-daemon',
+    '$executableDir/$name',
+    '$executableDir/lib/$name',
     if (root != null) ...[
-      '$root/engine/target/release/mira-daemon',
-      '$root/engine/target/debug/mira-daemon',
+      '$root/engine/target/release/$name',
+      '$root/engine/target/debug/$name',
     ],
   ];
 }
@@ -59,16 +62,20 @@ class DaemonLauncher {
     ProcessStarter? start,
     List<String>? binaryCandidates,
     Map<String, String>? env,
+    bool? windows,
   }) : _start = start ?? Process.start,
+       _windows = windows ?? Platform.isWindows,
        _env = env ?? Platform.environment,
        _candidates =
            binaryCandidates ??
            defaultBinaryCandidates(
              env: env ?? Platform.environment,
              executableDir: File(Platform.resolvedExecutable).parent.path,
+             windows: windows ?? Platform.isWindows,
            );
 
   final ProcessStarter _start;
+  final bool _windows;
   final Map<String, String> _env;
   final List<String> _candidates;
 
@@ -102,12 +109,22 @@ class DaemonLauncher {
       );
     }
     try {
-      final process = await _start(binary, [
-        '--profile',
-        profile,
-        if (home != null) ...['--home', home],
-        '--exit-when-idle',
-      ], mode: ProcessStartMode.inheritStdio);
+      final process = await _start(
+        binary,
+        [
+          '--profile',
+          profile,
+          if (home != null) ...['--home', home],
+          '--exit-when-idle',
+        ],
+        mode: _windows
+            ? ProcessStartMode.normal
+            : ProcessStartMode.inheritStdio,
+      );
+      if (_windows) {
+        unawaited(process.stdout.drain<void>());
+        unawaited(process.stderr.drain<void>());
+      }
       return LaunchedDaemon(exitCode: process.exitCode);
     } on ProcessException {
       throw EngineException.local(

@@ -13,6 +13,7 @@ void main() {
   DaemonPaths pathsIn(Directory d) => DaemonPaths(
     socket: '${d.path}/daemon.sock',
     token: '${d.path}/daemon.token',
+    port: '${d.path}/daemon.port',
   );
 
   test('without_a_socket_file_the_daemon_is_absent', () async {
@@ -54,7 +55,7 @@ void main() {
         openEmbedded: () async => throw StateError('non utilisé'),
       );
       expect(deps.env, Platform.environment);
-      expect(deps.isLinuxDesktop, Platform.isLinux);
+      expect(deps.canUseDaemon, Platform.isLinux || Platform.isWindows);
       expect(
         prefs.getString('engineClientId'),
         matches(RegExp(r'^[0-9a-f]{32}$')),

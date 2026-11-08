@@ -50,6 +50,19 @@ pub async fn menu_entries(connection: &zbus::Connection, service: &str) -> Vec<(
         .collect()
 }
 
+/// Entrées du menu une fois la ligne d'état passée à « À jour » (jusqu'à dix secondes) : l'icône suit l'état du démon par un message de bus asynchrone.
+pub async fn settled_entries(connection: &zbus::Connection, service: &str) -> Vec<(String, bool)> {
+    let mut entries = menu_entries(connection, service).await;
+    for _ in 0..200 {
+        if entries.get(1).is_some_and(|(label, _)| label == "À jour") {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        entries = menu_entries(connection, service).await;
+    }
+    entries
+}
+
 /// Clique sur l'entrée de menu numéro `id`.
 pub async fn click_entry(connection: &zbus::Connection, service: &str, id: i32) {
     let menu = proxy(connection, service, "/MenuBar", "com.canonical.dbusmenu").await;

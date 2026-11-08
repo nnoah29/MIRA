@@ -11,7 +11,7 @@ use support::fake_watcher::serve_watcher;
 use support::private_bus::PrivateBus;
 use support::process::RunningDaemon;
 use support::process_args::base_args;
-use support::tray_probe::{activate, click_entry, menu_entries};
+use support::tray_probe::{activate, click_entry, settled_entries};
 
 /// Script qui crée `marker` quand l'app est « lancée ».
 fn fake_app(dir: &Path, marker: &Path) -> String {
@@ -60,7 +60,7 @@ async fn the_tray_registers_shows_its_menu_and_a_left_click_launches_the_app() {
     let app = fake_app(dir.path(), &marker);
     let _daemon = spawn_on(&bus, dir.path(), &app);
     let service = registered(&items).await;
-    let entries = menu_entries(&connection, &service).await;
+    let entries = settled_entries(&connection, &service).await;
     let labels: Vec<_> = entries.iter().map(|(label, _)| label.as_str()).collect();
     assert_eq!(labels, ["Ouvrir MIRA", "À jour", "Quitter MIRA"]);
     assert_eq!(

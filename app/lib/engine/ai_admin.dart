@@ -71,6 +71,20 @@ class AiAdmin {
   Future<AiConnectionInfo> clearKey(String id) async =>
       _one(await _send('clear_ai_api_key', {'connection': id}));
 
+  /// Ouvre la connexion par navigateur : identifiant du flux et adresse à ouvrir.
+  Future<({String flow, Uri url})> startKeyLogin(String id) async {
+    final r = (await _send('start_ai_key_login', {'connection': id}) as Map);
+    return (flow: '${r['flow']}', url: Uri.parse('${r['authorize_url']}'));
+  }
+
+  /// Attend le retour du navigateur ; la clé est rangée par le moteur et la réponse ne la porte pas.
+  Future<AiConnectionInfo> completeKeyLogin(String flow) async =>
+      _one(await _send('complete_ai_key_login', {'flow': flow}));
+
+  /// Abandonne une connexion par navigateur en attente.
+  Future<void> cancelKeyLogin(String flow) =>
+      _send('cancel_ai_key_login', {'flow': flow});
+
   /// Désigne la connexion par défaut.
   Future<AiConnectionInfo> setDefault(String id) async =>
       _one(await _send('set_default_ai_connection', {'connection': id}));

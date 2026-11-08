@@ -10,13 +10,21 @@ class AiProviderInfo {
   final String name;
   final String baseUrl;
   final bool editableUrl;
-  const AiProviderInfo(this.id, this.name, this.baseUrl, this.editableUrl);
+  final bool keyLogin;
+  const AiProviderInfo(
+    this.id,
+    this.name,
+    this.baseUrl,
+    this.editableUrl, {
+    this.keyLogin = false,
+  });
 
   factory AiProviderInfo.fromJson(Map<String, dynamic> json) => AiProviderInfo(
     '${json['id']}',
     '${json['display_name']}',
     '${json['base_url']}',
     json['base_url_editable'] == true,
+    keyLogin: json['key_login'] != null,
   );
 }
 

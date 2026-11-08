@@ -21,7 +21,12 @@ class AiProviderPanel extends StatelessWidget {
 
   /// Phrase d'invitation d'un fournisseur sans connexion.
   Widget _invite(Pal p) => Text(
-    provider.editableUrl
+    provider.keyLogin
+        ? t(
+            'Pour utiliser {0}, connecte-toi avec ton compte dans le navigateur : aucune clé à recopier.',
+            [provider.name],
+          )
+        : provider.editableUrl
         ? t(
             'Un service compatible avec l’API d’OpenAI (serveur local, passerelle, autre fournisseur) : indique son adresse et ta propre clé d’API.',
           )

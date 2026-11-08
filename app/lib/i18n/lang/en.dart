@@ -567,6 +567,8 @@ const Map<String, String> enStrings = {
   '« {0} » est effacée de cet appareil.': '“{0}” is deleted from this device.',
   'Aucune clé enregistrée pour ce service d’IA':
       'No key saved for this AI service',
+  'Ce service d’IA ne propose pas la connexion par navigateur':
+      'This AI service does not offer browser sign-in',
   'Choisis d’abord un modèle d’IA': 'First choose an AI model',
   'Le texte est trop long pour le service d’IA':
       'The text is too long for the AI service',
@@ -1272,6 +1274,14 @@ const Map<String, String> enStrings = {
   'Connexion réussie.': 'Connection successful.',
   'Effacer la clé': 'Clear the key',
   'Enregistrer la clé': 'Save the key',
+  'En attente du navigateur…': 'Waiting for the browser…',
+  'Se reconnecter avec {0}': 'Sign in again with {0}',
+  'Le navigateur ne s’est pas ouvert : copie ce lien dans ton navigateur.':
+      'The browser did not open: copy this link into your browser.',
+  'Ou colle une clé d’API que tu as créée toi-même.':
+      'Or paste an API key you created yourself.',
+  'Pour utiliser {0}, connecte-toi avec ton compte dans le navigateur : aucune clé à recopier.':
+      'To use {0}, sign in with your account in the browser: no key to copy.',
   'Envoyer tes messages à {0} ?': 'Send your messages to {0}?',
   'IA': 'AI',
   'Modèles du service': 'Service models',

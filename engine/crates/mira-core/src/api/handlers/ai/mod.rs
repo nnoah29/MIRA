@@ -12,6 +12,9 @@ mod default_masking;
 mod delete_conversation;
 mod get_conversation;
 mod get_history_enabled;
+mod key_login_cancel;
+mod key_login_complete;
+mod key_login_start;
 mod list_connections;
 mod list_conversations;
 mod list_journal;
@@ -43,6 +46,9 @@ use consent::handle_acknowledge_ai_consent as acknowledge;
 use delete_conversation::handle_delete_ai_conversation as delete_conversation;
 use get_conversation::handle_get_ai_conversation as get_conversation;
 use get_history_enabled::handle_get_ai_history_enabled as get_history;
+use key_login_cancel::handle_cancel_ai_key_login as cancel_key_login;
+use key_login_complete::handle_complete_ai_key_login as complete_key_login;
+use key_login_start::handle_start_ai_key_login as start_key_login;
 use list_connections::handle_list_ai_connections as connections;
 use list_conversations::handle_list_ai_conversations as conversations;
 use list_journal::handle_list_ai_journal as journal;
@@ -69,13 +75,14 @@ pub(crate) async fn route(engine: &Engine, request: AiRequest) -> Answer {
         R::ListAiProviders => providers(engine),
         R::ListAiConnections => connections(engine),
         R::AddAiConnection { provider, label, base_url } => add(engine, &provider, &label, base_url.as_deref()),
-        R::UpdateAiConnection { connection, label, base_url, default_model } => {
-            update(engine, &connection, &label, base_url, default_model)
-        }
+        R::UpdateAiConnection { connection, label, base_url, default_model } => update(engine, &connection, &label, base_url, default_model),
         R::RemoveAiConnection { connection } => remove(engine, &connection),
         R::SetDefaultAiConnection { connection } => make_default(engine, &connection),
         R::SetAiApiKey { connection, key } => set_key(engine, &connection, key),
         R::ClearAiApiKey { connection } => clear_key(engine, &connection),
+        R::StartAiKeyLogin { connection } => start_key_login(engine, &connection).await,
+        R::CompleteAiKeyLogin { flow } => complete_key_login(engine, &flow).await,
+        R::CancelAiKeyLogin { flow } => cancel_key_login(engine, &flow),
         R::TestAiConnection { connection } => test(engine, &connection).await,
         R::ListAiModels { connection, refresh } => models(engine, &connection, refresh).await,
         R::AcknowledgeAiConsent { connection, kinds } => acknowledge(engine, &connection, &kinds),

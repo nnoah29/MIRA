@@ -63,6 +63,7 @@ pub const ALL: &[ErrorCode] = &[
     incompatible_state::MAILBOX_CHANGED,
     incompatible_state::AI_CONSENT_REQUIRED,
     incompatible_state::AI_KEY_MISSING,
+    incompatible_state::AI_KEY_LOGIN_UNSUPPORTED,
     incompatible_state::AI_MODEL_MISSING,
     incompatible_state::AI_CONTENT_NOT_ALLOWED,
     incompatible_state::AI_HISTORY_DISABLED,

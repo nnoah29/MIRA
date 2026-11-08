@@ -1,5 +1,5 @@
 {
-  "contract": "1.7",
+  "contract": "1.8",
   "requests": {
     "account.add_account": {
       "domain": "account",
@@ -194,6 +194,13 @@
         "provider": "generic"
       }
     },
+    "ai.cancel_ai_key_login": {
+      "domain": "ai",
+      "request": {
+        "flow": "flow-1",
+        "op": "cancel_ai_key_login"
+      }
+    },
     "ai.clear_ai_api_key": {
       "domain": "ai",
       "request": {
@@ -211,6 +218,13 @@
       "domain": "ai",
       "request": {
         "op": "clear_ai_journal"
+      }
+    },
+    "ai.complete_ai_key_login": {
+      "domain": "ai",
+      "request": {
+        "flow": "flow-1",
+        "op": "complete_ai_key_login"
       }
     },
     "ai.delete_ai_conversation": {
@@ -340,6 +354,13 @@
       "request": {
         "connection": "ai-1",
         "op": "set_default_ai_connection"
+      }
+    },
+    "ai.start_ai_key_login": {
+      "domain": "ai",
+      "request": {
+        "connection": "ai-1",
+        "op": "start_ai_key_login"
       }
     },
     "ai.test_ai_connection": {
@@ -1647,6 +1668,16 @@
       },
       "type": "ai"
     },
+    "ai.key_login_started": {
+      "data": {
+        "data": {
+          "authorize_url": "https://auth.example.test/auth?callback_url=http%3A%2F%2F127.0.0.1%3A40000%2Fcallback",
+          "flow": "flow-1"
+        },
+        "type": "key_login_started"
+      },
+      "type": "ai"
+    },
     "ai.models": {
       "data": {
         "data": {
@@ -1672,6 +1703,7 @@
             "display_name": "Service compatible",
             "format": "open_ai_chat",
             "id": "generic",
+            "key_login": null,
             "model_exclusions": [
               "embed"
             ],
@@ -1709,7 +1741,7 @@
         ],
         "version": {
           "major": 1,
-          "minor": 7
+          "minor": 8
         }
       },
       "type": "contract_info"

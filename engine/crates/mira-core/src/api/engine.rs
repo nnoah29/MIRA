@@ -13,6 +13,7 @@ use super::startup::{
     resume_pending_rules, start_background,
 };
 use crate::ai::chat::interrupt_running;
+use crate::ai::key_login::AiKeyLogins;
 use crate::auth::{CredentialVault, OAuthFlows};
 use crate::events::{EventBus, EventSink, EventSubscription};
 use crate::fetching::ServerSearchResults;
@@ -32,6 +33,7 @@ pub struct Engine {
     pub(crate) events: EventBus,
     pub(crate) operations: OperationRegistry,
     pub(crate) oauth_flows: OAuthFlows,
+    pub(crate) ai_key_logins: AiKeyLogins,
     pub(crate) server_searches: ServerSearchResults,
     pub(crate) account_lock: tokio::sync::Mutex<()>,
     pub(crate) replayers: ReplayerHandle,
@@ -62,6 +64,7 @@ impl Engine {
             events,
             operations,
             oauth_flows: OAuthFlows::new(),
+            ai_key_logins: AiKeyLogins::default(),
             server_searches: ServerSearchResults::default(),
             account_lock: tokio::sync::Mutex::new(()),
             replayers,

@@ -35,6 +35,15 @@ pub enum AiRequest {
     ClearAiApiKey {
         connection: AiConnectionId,
     },
+    StartAiKeyLogin {
+        connection: AiConnectionId,
+    },
+    CompleteAiKeyLogin {
+        flow: String,
+    },
+    CancelAiKeyLogin {
+        flow: String,
+    },
     TestAiConnection {
         connection: AiConnectionId,
     },

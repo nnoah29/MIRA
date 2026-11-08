@@ -29,6 +29,8 @@ const engineErrorTexts = <String, String>{
       'Ce service d’IA n’est pas autorisé à recevoir ce type de contenu',
   'incompatible_state.ai_history_disabled':
       'L’historique des conversations est désactivé',
+  'incompatible_state.ai_key_login_unsupported':
+      'Ce service d’IA ne propose pas la connexion par navigateur',
   'incompatible_state.ai_key_missing':
       'Aucune clé enregistrée pour ce service d’IA',
   'incompatible_state.ai_model_missing': 'Choisis d’abord un modèle d’IA',

@@ -13,7 +13,7 @@ pub mod vault;
 pub use client_config::OAuthClientConfig;
 pub use flow::{
     AuthorizationCode, FlowPhase, PendingFlow, authorize_until_cancelled, complete_flow,
-    start_flow, wait_for_redirect,
+    complete_key_flow, start_flow, start_key_flow, wait_for_redirect,
 };
 pub use flow_table::{FlowEntry, FlowSummary, FlowTarget, OAuthFlows};
 pub use tokens::{

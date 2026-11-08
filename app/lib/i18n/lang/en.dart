@@ -417,6 +417,11 @@ const Map<String, String> enStrings = {
       'Add your mailbox: Gmail, Outlook, Yahoo or any IMAP server.',
   'Comptes déjà ajoutés : {0}': 'Accounts already added: {0}',
   'Ajouter un autre compte': 'Add another account',
+  'ASSISTANT D’IA': 'AI ASSISTANT',
+  'Ton texte n’est envoyé qu’avec ton accord, les données sensibles sont masquées avant l’envoi. Ta clé reste sur cet appareil.': 'Your text is only sent with your consent, and sensitive data is masked before sending. Your key stays on this device.',
+  'Tu pourras brancher un service d’IA dans Réglages › IA.':
+      'You can connect an AI service later in Settings › AI.',
+  'Plus tard (Réglages › IA)': 'Later (Settings › AI)',
   'Sombre ou clair, selon ton environnement.':
       'Dark or light, depending on your environment.',
   'Piloté par le fond d’écran (clair ou sombre selon sa luminosité).':

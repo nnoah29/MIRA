@@ -33,6 +33,9 @@ clap.workspace = true
 zbus = "5"
 ksni = { version = "0.3", default-features = false, features = ["async-io"] }
 
+[build-dependencies]
+embed-resource = "3"
+
 [dev-dependencies]
 mira-testkit.workspace = true
 tempfile.workspace = true
@@ -40,3 +43,4 @@ tempfile.workspace = true
 [target.'cfg(windows)'.dependencies]
 tauri-winrt-notification = "0.7"
 winreg = "0.56"
+tray-item = "0.10"

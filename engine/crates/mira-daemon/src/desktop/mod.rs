@@ -14,11 +14,9 @@ mod locale;
 mod proxy;
 #[cfg(target_os = "linux")]
 mod sink;
-#[cfg(target_os = "linux")]
 mod state_mirror;
 #[cfg(windows)]
 mod toast;
-#[cfg(target_os = "linux")]
 mod tray;
 
 pub use attach::Desktop;
@@ -29,11 +27,11 @@ pub use launch_app::{Launch, app_launcher, launch_plan};
 pub use locale::{pick_locale, system_locale};
 #[cfg(target_os = "linux")]
 pub use sink::{DbusNotificationSink, DesktopError};
-#[cfg(target_os = "linux")]
 pub use state_mirror::mirror_state;
 #[cfg(windows)]
 pub use toast::{APP_USER_MODEL_ID, WindowsToastSink};
 #[cfg(target_os = "linux")]
-pub use tray::{
-    StatusNotifierTray, TrayControl, TrayError, TrayStatus, status_line, tray_status_of,
-};
+pub use tray::StatusNotifierTray;
+#[cfg(windows)]
+pub use tray::WindowsTray;
+pub use tray::{TrayControl, TrayError, TrayStatus, menu_labels, status_line, tray_status_of};

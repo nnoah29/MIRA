@@ -35,3 +35,12 @@ pub fn tray_status_of(state: HostState) -> TrayStatus {
         HostState::UpdateRequired => TrayStatus::UpdateRequired,
     }
 }
+
+/// Libellés « Ouvrir » et « Quitter » selon la langue.
+pub fn menu_labels(locale: &str) -> (&'static str, &'static str) {
+    if locale.starts_with("fr") {
+        ("Ouvrir MIRA", "Quitter MIRA")
+    } else {
+        ("Open MIRA", "Quit MIRA")
+    }
+}

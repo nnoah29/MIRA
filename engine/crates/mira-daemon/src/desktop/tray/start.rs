@@ -2,22 +2,10 @@
 
 use ksni::{Handle, TrayMethods};
 
+use super::control::{TrayControl, TrayError};
 use super::item::MiraTray;
 use super::status::TrayStatus;
 use crate::desktop::Launch;
-
-/// L'icône ne peut pas s'afficher (pas d'hôte de zone de notification, pas de bus).
-#[derive(Debug, thiserror::Error)]
-pub enum TrayError {
-    #[error("pas d'hôte de zone de notification")]
-    NoHost,
-}
-
-/// Ce que le démon demande à une icône : afficher son état.
-pub trait TrayControl: Send + Sync + std::fmt::Debug {
-    /// Change l'état affiché.
-    fn set_status(&self, status: TrayStatus);
-}
 
 /// Icône StatusNotifierItem en marche.
 pub struct StatusNotifierTray {

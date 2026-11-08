@@ -4,20 +4,11 @@ use ksni::MenuItem;
 use ksni::menu::StandardItem;
 
 use super::item::MiraTray;
-use super::status::status_line;
-
-/// Libellés « Ouvrir » et « Quitter » selon la langue.
-fn labels(locale: &str) -> (&'static str, &'static str) {
-    if locale.starts_with("fr") {
-        ("Ouvrir MIRA", "Quitter MIRA")
-    } else {
-        ("Open MIRA", "Quit MIRA")
-    }
-}
+use super::status::{menu_labels, status_line};
 
 /// Les trois entrées, dans l'ordre : ouvrir, état (grisée), quitter.
 pub(super) fn entries(tray: &MiraTray) -> Vec<MenuItem<MiraTray>> {
-    let (open, quit) = labels(&tray.locale);
+    let (open, quit) = menu_labels(&tray.locale);
     vec![
         StandardItem {
             label: open.to_string(),

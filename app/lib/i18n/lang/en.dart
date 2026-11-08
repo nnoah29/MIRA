@@ -422,6 +422,11 @@ const Map<String, String> enStrings = {
   'Tu pourras brancher un service d’IA dans Réglages › IA.':
       'You can connect an AI service later in Settings › AI.',
   'Plus tard (Réglages › IA)': 'Later (Settings › AI)',
+  'NOTIFICATIONS': 'NOTIFICATIONS',
+  'Choisis comment MIRA te prévient. Tout se change dans les réglages.':
+      'Choose how MIRA notifies you. Everything can be changed in Settings.',
+  'Une notification quand un message arrive.':
+      'A notification when a message arrives.',
   'Sombre ou clair, selon ton environnement.':
       'Dark or light, depending on your environment.',
   'Piloté par le fond d’écran (clair ou sombre selon sa luminosité).':

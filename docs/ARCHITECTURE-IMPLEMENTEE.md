@@ -23,7 +23,7 @@ Workspace Cargo `engine/` (toolchain `1.99.0` épinglée, édition 2024, resolve
 
 **Notifications.** Le moteur décide (`mira_host::notifier` : `decide`, `compose`, `run_notifier`, récepteur `NotificationSink`) ; le démon fournit le récepteur D-Bus. La présence (`mira_host::Presence`, trame `set_presence`) dit si un client regarde MIRA. Les réglages (`EngineSettings.notifications`, contrat 1.7) sont dans le moteur. Avec le moteur embarqué (Android, repli Linux), le pont lance le même notifieur (`bridge/src/notifications.rs`, flux `watchNotifications`) et l'app Dart (`NotificationFeed`) affiche sans appliquer de règle ; l'ancienne logique Dart (porte d'arrivée, heures calmes, regroupement) est supprimée.
 
-**Mode résident.** Unité `systemd --user` `mira-daemon.service` (paquets deb, rpm, arch, tarball) activée par l'app après une question unique au premier lancement ; sans unité (AppImage, flatpak, snap, ou réponse « non »), le démon est lancé à la demande par l'app et s'arrête 30 s après son départ.
+**Mode résident.** Unité `systemd --user` `mira-daemon.service` (paquets deb, rpm, arch, tarball) activée par l'app après une question unique au premier lancement ; sans unité (ou réponse « non »), le démon est lancé à la demande par l'app et s'arrête 30 s après son départ.
 
 Côté application, `app/lib/engine/remote/` est le client Dart du démon (`RemoteEngineClient`, protocole de `docs/PROTOCOLE-DEMON.md`) ; `app/lib/main.dart` choisit entre le démon et le moteur embarqué par `openEngineClient`.
 

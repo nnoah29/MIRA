@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Construit le bundle Linux de MIRA (app Flutter + moteur Rust) dans packaging/out/bundle,
-# point de départ commun de tous les formats (.deb, .rpm, PKGBUILD, AppImage, Flatpak, Snap).
+# point de départ commun de tous les formats (.deb, .rpm, PKGBUILD, AppImage).
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"

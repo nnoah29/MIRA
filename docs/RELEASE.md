@@ -44,8 +44,6 @@ Mettre à jour la version dans un commit de release sur `dev` :
 | `packaging/VERSION` | `$VERSION` |
 | `packaging/common/com.toffanoah.mira.metainfo.xml` | Ajouter en tête de `<releases>` : `<release version="$VERSION" date="AAAA-MM-JJ"/>` |
 | `packaging/arch/PKGBUILD` | `pkgver=$VERSION` |
-| `packaging/snap/snapcraft.yaml` | `version` et le nom d'archive source |
-| `packaging/flatpak/com.toffanoah.mira.yml` | le nom d'archive source |
 | `docs/release-notes/vX.Y.Z.md` | notes de la release, en anglais (requises par le workflow) |
 
 Les versions des crates Rust (`0.1.0`) sont indépendantes de la version
@@ -67,14 +65,12 @@ git diff --check
 git status --short
 git add app/pubspec.yaml app/lib/app_info.dart packaging/VERSION \
   packaging/common/com.toffanoah.mira.metainfo.xml \
-  packaging/arch/PKGBUILD packaging/snap/snapcraft.yaml \
-  packaging/flatpak/com.toffanoah.mira.yml
+  packaging/arch/PKGBUILD
 git commit -m "chore(release): version $VERSION"
 git push origin dev
 ```
 
-Si Flatpak ou Snap est explicitement différé, ne pas inclure ses fichiers au
-commit. Les trois versions utilisateur (`pubspec`, `app_info.dart` et
+Les trois versions utilisateur (`pubspec`, `app_info.dart` et
 `packaging/VERSION`) doivent en revanche toujours être égales.
 
 ## 2. Fusionner `dev` dans `main`
@@ -286,9 +282,8 @@ git commit -m "mira-mail-bin $VERSION"
 git push
 ```
 
-Flatpak et Snap ne font pas partie de la release standard tant qu'ils ne sont
-pas construits et testés séparément : Flatpak demande un build source compatible
-Flathub et le portail de fichiers, Snap son environnement `snapcraft`.
+Flatpak et Snap sont abandonnés (novembre 2026) : ni fichiers de packaging ni
+version à maintenir pour ces formats.
 
 Après publication, vérifier `releases/latest`, le lien d'installation du
 README et une installation sans sudo. Tout correctif démarre sur `dev`.

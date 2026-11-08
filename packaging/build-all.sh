@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Construit tous les paquets réalisables sur cette machine dans packaging/out/.
 # Formats natifs : .deb, .rpm, archive précompilée (PKGBUILD AUR). AppImage si appimagetool est disponible.
-# Flatpak et Snap : voir packaging/README.md (outils et runtimes dédiés).
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"

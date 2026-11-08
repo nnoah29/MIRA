@@ -56,7 +56,10 @@ async fn regression_parallel_server_searches_stay_within_the_connection_budget()
     )
     .await
     .unwrap();
-    assert!(peak >= 1, "le serveur n'a jamais été sollicité");
+    assert!(
+        world.fixture.imap.connection_count() >= 1,
+        "le serveur n'a jamais été sollicité"
+    );
     assert!(
         peak <= 3,
         "{peak} connexions simultanées pour un budget de 3"
@@ -91,7 +94,10 @@ async fn regression_parallel_connection_tests_stay_within_the_connection_budget(
     let peak = tokio::time::timeout(Duration::from_secs(30), peak_while(&fixture.imap, work))
         .await
         .unwrap();
-    assert!(peak >= 1, "le serveur n'a jamais été sollicité");
+    assert!(
+        fixture.imap.connection_count() >= 1,
+        "le serveur n'a jamais été sollicité"
+    );
     assert!(
         peak <= 3,
         "{peak} connexions simultanées pour un budget de 3"

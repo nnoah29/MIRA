@@ -52,7 +52,7 @@ Prérequis : SDK et NDK Android, `rustup target add aarch64-linux-android x86_64
 
 Sur Android, l'app passe au moteur son dossier privé (`getApplicationSupportDirectory`) et une clé de 32 octets. Le moteur range les mots de passe des comptes dans `secrets.bin`, chiffré en AES-256-GCM avec cette clé. La clé elle-même est tirée une fois au hasard et rangée chiffrée par une clé du Keystore Android (`MainActivity.kt`), qui ne quitte pas le matériel sécurisé. Sous Linux, rien ne change : trousseau du système et dossiers XDG.
 
-L'APK release est encore signé avec la clé de debug : il faut une clé de publication avant le Play Store. L'identifiant Android reste `n.noah.mira`.
+L'APK release est encore signé avec la clé de debug : il faut une clé de publication avant le Play Store. L'identifiant Android est `com.toffanoah.mira`, le même que sur Linux et Windows.
 
 ## Noms et identifiants
 

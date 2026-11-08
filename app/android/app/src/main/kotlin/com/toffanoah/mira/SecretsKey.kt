@@ -1,4 +1,4 @@
-package n.noah.mira
+package com.toffanoah.mira
 
 import java.security.SecureRandom
 

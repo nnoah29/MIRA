@@ -87,3 +87,17 @@ Règle de frontière : le cœur ne nomme aucun fournisseur, les providers sont p
 | `docs/MIRA-architecture-reference.md` | Architecture de référence (lecture seule) |
 | `docs/ARCHITECTURE-IMPLEMENTEE.md` | Ce qui est réellement implémenté, module par module |
 | `docs/GIT_WORKFLOW.md` | Conventions Git (lecture seule) |
+
+## Vérifier la compilation pour Windows depuis Linux
+
+Aucun compilateur C pour Windows n'est nécessaire : `zig` sert de compilateur croisé.
+
+```bash
+python3 -m venv ~/.local/share/mira-tools/venv
+~/.local/share/mira-tools/venv/bin/pip install ziglang
+cargo install cargo-zigbuild
+rustup target add x86_64-pc-windows-gnu
+PATH=$HOME/.local/share/mira-tools/venv/bin:$PATH make windows-check
+```
+
+`MIRA_SKIP_WIN_RESOURCES=1` (posé par la cible) saute l'intégration de l'icône du démon, qui demande `windres` ; la CI Windows, elle, l'intègre. Cette vérification compile seulement : rien ne s'exécute sans Windows.

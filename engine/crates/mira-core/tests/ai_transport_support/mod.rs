@@ -27,6 +27,7 @@ pub fn descriptor(auth: AuthScheme) -> AiProviderDescriptor {
         quirks: AiQuirks::default(),
         base_url_editable: false,
         supports_tools: true,
+        key_login: None,
     }
 }
 

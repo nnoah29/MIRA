@@ -23,5 +23,6 @@ pub fn descriptor() -> AiProviderDescriptor {
         },
         base_url_editable: false,
         supports_tools: true,
+        key_login: None,
     }
 }

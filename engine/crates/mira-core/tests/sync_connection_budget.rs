@@ -36,7 +36,7 @@ async fn peak_while<F: Future>(imap: &FakeImapServer, work: F) -> usize {
 #[tokio::test]
 async fn regression_parallel_server_searches_stay_within_the_connection_budget() {
     let world = start_world().await;
-    let engine = &world.fixture.engine;
+    let (engine, imap) = (&world.fixture.engine, &world.fixture.imap);
     let work = async {
         let mut started = Vec::new();
         for _ in 0..12 {
@@ -50,13 +50,10 @@ async fn regression_parallel_server_searches_stay_within_the_connection_budget()
             wait_finished(engine, operation).await;
         }
     };
-    let peak = tokio::time::timeout(
-        Duration::from_secs(30),
-        peak_while(&world.fixture.imap, work),
-    )
-    .await
-    .unwrap();
-    assert!(peak >= 1, "le serveur n'a jamais été sollicité");
+    let peak = tokio::time::timeout(Duration::from_secs(30), peak_while(imap, work))
+        .await
+        .unwrap();
+    assert!(imap.connection_count() >= 1, "serveur non sollicité");
     assert!(
         peak <= 3,
         "{peak} connexions simultanées pour un budget de 3"
@@ -91,7 +88,10 @@ async fn regression_parallel_connection_tests_stay_within_the_connection_budget(
     let peak = tokio::time::timeout(Duration::from_secs(30), peak_while(&fixture.imap, work))
         .await
         .unwrap();
-    assert!(peak >= 1, "le serveur n'a jamais été sollicité");
+    assert!(
+        fixture.imap.connection_count() >= 1,
+        "serveur non sollicité"
+    );
     assert!(
         peak <= 3,
         "{peak} connexions simultanées pour un budget de 3"

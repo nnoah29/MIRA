@@ -24,9 +24,14 @@ pub(super) fn failure_page() -> String {
     )
 }
 
+/// Modèle de page avec des sauts de ligne simples : un fichier extrait en CRLF (Windows) donnerait une autre empreinte que celle que calcule le navigateur
+fn template() -> String {
+    TEMPLATE.replace("\r\n", "\n")
+}
+
 /// Remplit le modèle avec des textes fixes ; rien n'est repris de la requête du navigateur
 fn render(title: &str, french: &str, english: &str) -> String {
-    TEMPLATE
+    template()
         .replace("{{title}}", title)
         .replace("{{fr}}", french)
         .replace("{{en}}", english)
@@ -34,7 +39,8 @@ fn render(title: &str, french: &str, english: &str) -> String {
 
 /// Politique de sécurité de la réponse : rien n'est chargé, seul le style du modèle (par son empreinte) et la police intégrée passent
 pub(super) fn policy() -> String {
-    let style = TEMPLATE
+    let template = template();
+    let style = template
         .split_once("<style>")
         .and_then(|(_, rest)| rest.split_once("</style>"))
         .map_or("", |(style, _)| style);

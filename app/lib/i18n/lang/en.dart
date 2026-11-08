@@ -1299,6 +1299,9 @@ const Map<String, String> enStrings = {
   'Appuie sur ? pour voir tous les raccourcis clavier.':
       'Press ? to see all keyboard shortcuts.',
   'Ouvrir ma boîte': 'Open my inbox',
+  'APPARENCE': 'APPEARANCE',
+  'Choisis ton thème. Tu pourras le changer dans les réglages.':
+      'Choose your theme. You can change it later in Settings.',
   'Se reconnecter avec {0}': 'Sign in again with {0}',
   'Le navigateur ne s’est pas ouvert : copie ce lien dans ton navigateur.':
       'The browser did not open: copy this link into your browser.',

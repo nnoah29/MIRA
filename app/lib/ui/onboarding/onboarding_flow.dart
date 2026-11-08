@@ -5,6 +5,7 @@ import '../../i18n/i18n.dart';
 import '../../state/store.dart';
 import 'onboarding_controller.dart';
 import 'onboarding_frame.dart';
+import 'step_appearance.dart';
 import 'step_privacy.dart';
 import 'step_ready.dart';
 import 'step_welcome.dart';
@@ -13,7 +14,7 @@ import 'step_welcome.dart';
 Widget stepPage(OnboardingStep step, OnboardingController c) => switch (step) {
   OnboardingStep.welcome => WelcomeStep(controller: c),
   OnboardingStep.privacy => PrivacyStep(controller: c),
-  OnboardingStep.appearance => const SizedBox.shrink(),
+  OnboardingStep.appearance => AppearanceStep(controller: c),
   OnboardingStep.account => const SizedBox.shrink(),
   OnboardingStep.ai => const SizedBox.shrink(),
   OnboardingStep.notifications => const SizedBox.shrink(),

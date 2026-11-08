@@ -14,6 +14,11 @@ jobs:
       - name: Moteur et hôte (compilation)
         working-directory: engine
         run: cargo check -p mira-core -p mira-host
+      - name: Démon (compilation et fichier du port)
+        working-directory: engine
+        run: |
+          cargo build --release -p mira-daemon
+          cargo test -p mira-daemon --test port_file
       - name: Pont FFI (bibliothèque)
         working-directory: bridge
         run: cargo build --release

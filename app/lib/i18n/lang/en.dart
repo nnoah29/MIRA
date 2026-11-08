@@ -1275,6 +1275,30 @@ const Map<String, String> enStrings = {
   'Effacer la clé': 'Clear the key',
   'Enregistrer la clé': 'Save the key',
   'En attente du navigateur…': 'Waiting for the browser…',
+  'TES MAILS. CHEZ TOI.': 'YOUR MAIL. YOUR MACHINE.',
+  'Un client mail moderne et soigné, libre et gratuit, sur ton appareil.':
+      'A modern, polished mail client, free and open source, on your device.',
+  'Passer': 'Skip',
+  'Suivant': 'Next',
+  'Commencer': 'Start',
+  'TA VIE PRIVÉE': 'YOUR PRIVACY',
+  'Sur ton appareil': 'On your device',
+  'Tes messages sont copiés sur ton appareil et ne passent que par ton fournisseur de courrier.': 'Your messages are copied to your device and only go through your mail provider.',
+  'Aucun serveur MIRA': 'No MIRA server',
+  'Aucune télémétrie, aucun compte à créer chez nous.':
+      'No telemetry, no account to create with us.',
+  'Images distantes bloquées': 'Remote images blocked',
+  'Les images d’un message sont bloquées par défaut : tu choisis quand les afficher.': 'Images in a message are blocked by default: you choose when to show them.',
+  'TOUT EST PRÊT': 'YOU’RE ALL SET',
+  'Le bouton Paramètres, en haut à droite : comptes, thème, notifications, règles.':
+      'The Settings button, top right: accounts, theme, notifications, rules.',
+  'Le bouton Assistant IA, en haut : il résume et rédige avec ton accord.': 'The AI assistant button, at the top: it summarizes and drafts with your consent.',
+  'Recherche': 'Search',
+  'La barre du haut cherche dans tous tes messages.':
+      'The top bar searches all your messages.',
+  'Appuie sur ? pour voir tous les raccourcis clavier.':
+      'Press ? to see all keyboard shortcuts.',
+  'Ouvrir ma boîte': 'Open my inbox',
   'Se reconnecter avec {0}': 'Sign in again with {0}',
   'Le navigateur ne s’est pas ouvert : copie ce lien dans ton navigateur.':
       'The browser did not open: copy this link into your browser.',

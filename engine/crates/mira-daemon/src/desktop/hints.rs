@@ -25,11 +25,9 @@ pub fn action_label(locale: &str) -> &'static str {
     }
 }
 
-const MAX_BODY_CHARS: usize = 400;
-
 /// Corps affiché : borné, et échappé si le service interprète le balisage (l'objet d'un mail vient de l'expéditeur).
 pub fn body_text(body: &str, markup: bool) -> String {
-    let bounded: String = body.chars().take(MAX_BODY_CHARS).collect();
+    let bounded = super::bound::bound_body(body);
     if !markup {
         return bounded;
     }

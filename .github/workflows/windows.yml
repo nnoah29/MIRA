@@ -2,7 +2,7 @@ name: windows
 on:
   workflow_dispatch:
   pull_request:
-    paths: ["engine/**", "bridge/**", "app/**", ".github/workflows/windows.yml"]
+    paths: ["engine/**", "bridge/**", "app/**", "packaging/windows/**", ".github/workflows/windows.yml"]
 jobs:
   build:
     runs-on: windows-latest
@@ -32,3 +32,9 @@ jobs:
         run: |
           flutter pub get
           flutter build windows --release
+      - name: Installeur (génération, installation, démon, désinstallation)
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          packaging\windows\build-installer.ps1 -Version 0.0.0 -OutDir out
+          packaging\windows\test-installer.ps1 -Setup (Resolve-Path out\mira-mail-0.0.0-windows-x64-setup.exe)

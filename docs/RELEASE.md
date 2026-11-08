@@ -10,7 +10,7 @@ dépôt. Une release doit toujours pouvoir être reconstruite à partir de son t
 
 ## 0. Release automatique (GitHub Actions)
 
-`.github/workflows/release.yml` s'exécute à chaque push sur `main`. Il ne fait rien sauf si l'historique poussé contient un commit dont le titre est exactement de la forme `chore(release): version X.Y.Z` (c'est le commit de l'étape 1, fusionné par la PR `dev` → `main`). Dans ce cas, dans l'ordre : contrôle de cohérence (`tools/check-release-version` : versions, build Android croissant, notes `docs/release-notes/vX.Y.Z.md` en anglais, tag inexistant, secret présent), `make check-all`, pose du tag annoté `vX.Y.Z`, construction en parallèle (Linux : deb, rpm, tar.gz (pas d'AppImage) ; Android : 2 APK ; Windows : zip), `SHA256SUMS` + `install.sh`, puis **brouillon** de release GitHub. La publication reste manuelle (étape 6, vérifications). AUR (étape 7) et les essais sur machine propre (étape 5) restent manuels.
+`.github/workflows/release.yml` s'exécute à chaque push sur `main`. Il ne fait rien sauf si l'historique poussé contient un commit dont le titre est exactement de la forme `chore(release): version X.Y.Z` (c'est le commit de l'étape 1, fusionné par la PR `dev` → `main`). Dans ce cas, dans l'ordre : contrôle de cohérence (`tools/check-release-version` : versions, build Android croissant, notes `docs/release-notes/vX.Y.Z.md` en anglais, tag inexistant, secret présent), `make check-all`, pose du tag annoté `vX.Y.Z`, construction en parallèle (Linux : deb, rpm, tar.gz (pas d'AppImage) ; Android : 2 APK ; Windows : installeur `setup.exe` Inno Setup et zip portable, tous deux avec le runtime Visual C++), `SHA256SUMS` + `install.sh`, puis **brouillon** de release GitHub. La publication reste manuelle (étape 6, vérifications). AUR (étape 7) et les essais sur machine propre (étape 5) restent manuels.
 
 Prérequis une fois : secret de dépôt `MIRA_OAUTH_CONFIG_TOML` (contenu du `config.toml` de production). Avant la PR, ajouter `docs/release-notes/vX.Y.Z.md` au commit de release. `ci.yml` vérifie les PR vers `dev` et `main`.
 
@@ -301,3 +301,7 @@ corrective.
 - [ ] Les paquets et APK ont été installés/testés sur des environnements propres.
 - [ ] La release GitHub est publiée et *Latest*.
 - [ ] AUR et les canaux optionnels ne sont mis à jour qu'après validation.
+
+## Installeur Windows
+
+`packaging/windows/mira.iss` (Inno Setup 6) produit `mira-mail-X.Y.Z-windows-x64-setup.exe` : installation par utilisateur dans `%LOCALAPPDATA%\Programs\MIRA` sans droits administrateur, raccourci du menu Démarrer portant l'identité `com.toffanoah.mira` (nécessaire aux toasts), anglais et français. L'installeur et la désinstallation arrêtent `mira.exe` et `mira-daemon.exe` ; la désinstallation retire la valeur `MIRA` de la clé `Run` et l'identité des toasts mais **garde les données** (`%LOCALAPPDATA%\mira`). `packaging/windows/build-installer.ps1 -Version X.Y.Z` prépare le dossier (app, pont, démon, DLL Visual C++ copiées depuis Visual Studio), le zip et le setup. `windows.yml` génère l'installeur à chaque PR et lance `test-installer.ps1` : installation silencieuse, fichiers, raccourci, démarrage du démon et connexion à son port, désinstallation. Non signé : Windows affichera SmartScreen (signature à décider : SignPath Foundation, Azure Trusted Signing ou certificat).

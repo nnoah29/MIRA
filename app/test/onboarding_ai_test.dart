@@ -142,4 +142,16 @@ void main() {
     expect(find.byKey(const ValueKey('onb-ai-login')), findsOneWidget);
     expect(find.byKey(const ValueKey('onb-ai-error')), findsNothing);
   });
+
+  testWidgets('ai_leaving_the_page_cancels_the_pending_login', (tester) async {
+    final (store, fake) = await aiStore(tester);
+    fake.loginGate = Completer<void>();
+    useLauncher(true, []);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    await tapKey(tester, 'onb-ai-login');
+    expect(find.byKey(const ValueKey('onb-ai-cancel')), findsOneWidget);
+    await tapKey(tester, 'onb-back');
+    expect(fake.requestsOf('cancel_ai_key_login'), hasLength(1));
+  });
 }

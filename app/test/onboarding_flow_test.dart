@@ -128,4 +128,18 @@ void main() {
     await tapKey(tester, 'onb-privacy-link');
     expect(opened, Uri.parse(privacyUrl));
   });
+
+  testWidgets('enter_moves_on_and_finishes_on_the_last_page', (tester) async {
+    final store = await pumpFlow(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.textContaining('Aucun serveur MIRA'), findsOneWidget);
+    for (var i = 0; i < 5; i++) {
+      await tapKey(tester, 'onb-next');
+    }
+    expect(find.byKey(const ValueKey('onb-finish')), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(store.welcomeOpen, isFalse);
+  });
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mira/engine/engine_mail_source.dart';
 import 'package:mira/state/store.dart';
@@ -45,6 +46,7 @@ Future<void> addYahoo(WidgetTester tester) async {
 }
 
 void main() {
+  keyboardTests();
   testWidgets('adding_an_account_moves_to_the_next_page', (tester) async {
     final store = await emptyStore(tester);
     await pumpFlow(tester, store: store);
@@ -85,5 +87,24 @@ void main() {
     await tapKey(tester, 'onb-account-add-another');
     expect(find.byKey(const ValueKey('onb-account-panel')), findsOneWidget);
     await settle(tester);
+  });
+}
+
+void keyboardTests() {
+  testWidgets('arrows_and_escape_in_a_field_keep_the_form', (tester) async {
+    final store = await emptyStore(tester);
+    await pumpFlow(tester, store: store);
+    await toAccountPage(tester);
+    await tester.tap(find.byKey(const ValueKey('provider-yahoo')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('field-name')));
+    await tester.enterText(find.byKey(const ValueKey('field-name')), 'Alice');
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.text('TON PREMIER COMPTE'), findsOneWidget);
+    expect(find.byKey(const ValueKey('field-name')), findsOneWidget);
+    expect(store.welcomeOpen, isTrue);
   });
 }

@@ -36,6 +36,9 @@ class _AiStepState extends State<AiStep> {
   @override
   void dispose() {
     _state.removeListener(_refresh);
+    for (final id in _state.logins.keys.toList()) {
+      _state.cancelLogin(id);
+    }
     _state.dispose();
     super.dispose();
   }
@@ -63,13 +66,15 @@ class _AiStepState extends State<AiStep> {
     if (mounted && done) widget.controller.next();
   }
 
-  Widget _waiting(Pal p) => Row(
+  Widget _waiting(Pal p) => Wrap(
+    spacing: 12,
+    runSpacing: 8,
+    crossAxisAlignment: WrapCrossAlignment.center,
     children: [
       Text(
         t('En attente du navigateur…'),
         style: Fonts.sans(size: 14, color: p.muted),
       ),
-      const SizedBox(width: 12),
       Btn(
         key: const ValueKey('onb-ai-cancel'),
         label: t('Annuler'),
@@ -88,11 +93,14 @@ class _AiStepState extends State<AiStep> {
     if (_state.logins.isNotEmpty) return _waiting(p);
     return Align(
       alignment: Alignment.centerLeft,
-      child: Btn(
-        key: const ValueKey('onb-ai-login'),
-        label: t('Se connecter avec {0}', [aiProviderTitle(provider)]),
-        go: true,
-        onTap: _state.busy.isNotEmpty ? null : () => _login(provider),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Btn(
+          key: const ValueKey('onb-ai-login'),
+          label: t('Se connecter avec {0}', [aiProviderTitle(provider)]),
+          go: true,
+          onTap: _state.busy.isNotEmpty ? null : () => _login(provider),
+        ),
       ),
     );
   }

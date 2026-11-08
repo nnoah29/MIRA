@@ -38,17 +38,25 @@ class _OnboardingFrameState extends State<OnboardingFrame>
     super.dispose();
   }
 
+  bool _typing() {
+    final ctx = FocusManager.instance.primaryFocus?.context;
+    if (ctx == null) return false;
+    return ctx.widget is EditableText ||
+        ctx.findAncestorWidgetOfExactType<EditableText>() != null;
+  }
+
   KeyEventResult _key(FocusNode _, KeyEvent e) {
-    if (e is! KeyDownEvent) return KeyEventResult.ignored;
-    final typing =
-        FocusManager.instance.primaryFocus?.context?.widget is EditableText;
-    if (typing) return KeyEventResult.ignored;
+    if (e is! KeyDownEvent || _typing()) return KeyEventResult.ignored;
     final c = widget.controller;
-    if (e.logicalKey == LogicalKeyboardKey.arrowRight) {
+    final key = e.logicalKey;
+    if (key == LogicalKeyboardKey.arrowRight) {
       c.next();
-    } else if (e.logicalKey == LogicalKeyboardKey.arrowLeft) {
+    } else if (key == LogicalKeyboardKey.arrowLeft) {
       c.back();
-    } else if (e.logicalKey == LogicalKeyboardKey.escape) {
+    } else if (key == LogicalKeyboardKey.enter ||
+        key == LogicalKeyboardKey.numpadEnter) {
+      c.isLast ? c.finish() : c.next();
+    } else if (key == LogicalKeyboardKey.escape) {
       c.skip();
     } else {
       return KeyEventResult.ignored;

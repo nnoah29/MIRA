@@ -11,7 +11,7 @@ use super::Launch;
 use super::bound::bound_body;
 
 /// Identité d'application des toasts, la même que celle de l'app Flutter.
-pub const APP_USER_MODEL_ID: &str = "io.github.nnoah29.Mira";
+pub const APP_USER_MODEL_ID: &str = "com.toffanoah.mira";
 
 /// Affiche les notifications par les toasts de Windows.
 pub struct WindowsToastSink {

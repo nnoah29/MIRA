@@ -11,7 +11,7 @@ use super::locale::system_locale;
 use super::proxy::NotificationsProxyBlocking;
 
 const APP_NAME: &str = "MIRA";
-const APP_ICON: &str = "io.github.nnoah29.Mira";
+const APP_ICON: &str = "com.toffanoah.mira";
 
 /// Le bus de session est inutilisable.
 #[derive(Debug, thiserror::Error)]

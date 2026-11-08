@@ -33,7 +33,7 @@ and write from a single, calm interface.
 %{_bindir}/mira-mail
 %{_prefix}/lib/mira-mail/
 %{_prefix}/lib/systemd/user/mira-daemon.service
-%{_datadir}/applications/io.github.nnoah29.Mira.desktop
-%{_datadir}/icons/hicolor/512x512/apps/io.github.nnoah29.Mira.png
-%{_datadir}/icons/hicolor/scalable/apps/io.github.nnoah29.Mira.svg
-%{_datadir}/metainfo/io.github.nnoah29.Mira.metainfo.xml
+%{_datadir}/applications/com.toffanoah.mira.desktop
+%{_datadir}/icons/hicolor/512x512/apps/com.toffanoah.mira.png
+%{_datadir}/icons/hicolor/scalable/apps/com.toffanoah.mira.svg
+%{_datadir}/metainfo/com.toffanoah.mira.metainfo.xml

@@ -42,10 +42,10 @@ Mettre à jour la version dans un commit de release sur `dev` :
 | `app/pubspec.yaml` | `version: $VERSION+$ANDROID_BUILD` |
 | `app/lib/app_info.dart` | `const appVersion = '$VERSION';` |
 | `packaging/VERSION` | `$VERSION` |
-| `packaging/common/io.github.nnoah29.Mira.metainfo.xml` | Ajouter en tête de `<releases>` : `<release version="$VERSION" date="AAAA-MM-JJ"/>` |
+| `packaging/common/com.toffanoah.mira.metainfo.xml` | Ajouter en tête de `<releases>` : `<release version="$VERSION" date="AAAA-MM-JJ"/>` |
 | `packaging/arch/PKGBUILD` | `pkgver=$VERSION` |
 | `packaging/snap/snapcraft.yaml` | `version` et le nom d'archive source |
-| `packaging/flatpak/io.github.nnoah29.Mira.yml` | le nom d'archive source |
+| `packaging/flatpak/com.toffanoah.mira.yml` | le nom d'archive source |
 | `docs/release-notes/vX.Y.Z.md` | notes de la release, en anglais (requises par le workflow) |
 
 Les versions des crates Rust (`0.1.0`) sont indépendantes de la version
@@ -66,9 +66,9 @@ make check-all
 git diff --check
 git status --short
 git add app/pubspec.yaml app/lib/app_info.dart packaging/VERSION \
-  packaging/common/io.github.nnoah29.Mira.metainfo.xml \
+  packaging/common/com.toffanoah.mira.metainfo.xml \
   packaging/arch/PKGBUILD packaging/snap/snapcraft.yaml \
-  packaging/flatpak/io.github.nnoah29.Mira.yml
+  packaging/flatpak/com.toffanoah.mira.yml
 git commit -m "chore(release): version $VERSION"
 git push origin dev
 ```

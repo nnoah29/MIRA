@@ -4,7 +4,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use std::sync::Arc;
 
-const APP_ID: &str = "io.github.nnoah29.Mira";
+const APP_ID: &str = "com.toffanoah.mira";
 const APP_BIN: &str = if cfg!(windows) { "mira.exe" } else { "mira" };
 
 /// Action qui lance l'app ; remplaçable dans les tests.

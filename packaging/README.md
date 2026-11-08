@@ -18,7 +18,7 @@ Pour une **release publiée**, utiliser `packaging/release.sh X.Y.Z` (construit 
 | PKGBUILD (Arch, Manjaro, EndeavourOS ; AUR) | `mira-mail-bin` | `arch/PKGBUILD` | `makepkg` local, lancé sur écran virtuel |
 | Archive précompilée (source du PKGBUILD) | `mira-mail-<v>-x86_64.tar.gz` | `tarball.sh` | oui |
 | AppImage | `MIRA-<v>-x86_64.AppImage` | `appimage/build.sh` | oui, lancée sur écran virtuel |
-| Flatpak | dépôt local / Flathub | `flatpak/io.github.nnoah29.Mira.yml` | non : demande `flatpak-builder` et le runtime Freedesktop 24.08 |
+| Flatpak | dépôt local / Flathub | `flatpak/com.toffanoah.mira.yml` | non : demande `flatpak-builder` et le runtime Freedesktop 24.08 |
 | Snap | `mira-mail_<v>_amd64.snap` | `cd packaging && snapcraft` | non : demande `snapcraft` |
 
 ## Installer ou mettre à jour sur sa machine
@@ -59,7 +59,7 @@ L'APK release est encore signé avec la clé de debug : il faut une clé de publ
 ## Noms et identifiants
 
 - Paquet et commande : **`mira-mail`**. Le nom `mira` est déjà pris dans Debian (assembleur de génomes qui installe `/usr/bin/mira`).
-- Identifiant d'application : **`io.github.nnoah29.Mira`** (lanceur `.desktop`, icônes, fiche AppStream, identifiant GTK). Forme exigée par Flathub pour un projet hébergé sur GitHub.
+- Identifiant d'application : **`com.toffanoah.mira`** (lanceur `.desktop`, icônes, fiche AppStream, identifiant GTK). Forme exigée par Flathub pour un projet hébergé sur GitHub.
 - Installation : `/usr/lib/mira-mail/` (application), `/usr/bin/mira-mail` (lien relatif), lanceur, icônes 512 px et SVG, fiche AppStream.
 
 ## Licence
@@ -80,7 +80,7 @@ Dépendances à l'exécution : GTK 3 et WebKitGTK 4.1 (`libwebkit2gtk-4.1`, corp
 
 ## Publier
 
-1. Mettre la version dans `app/pubspec.yaml`, puis dans `common/io.github.nnoah29.Mira.metainfo.xml` (`<release>`), `arch/PKGBUILD` (`pkgver`), `flatpak/…yml` et `snap/snapcraft.yaml` (nom de l'archive / `version`).
+1. Mettre la version dans `app/pubspec.yaml`, puis dans `common/com.toffanoah.mira.metainfo.xml` (`<release>`), `arch/PKGBUILD` (`pkgver`), `flatpak/…yml` et `snap/snapcraft.yaml` (nom de l'archive / `version`).
 2. `packaging/build-all.sh`.
 3. Release GitHub `v<version>` avec le `.deb`, le `.rpm`, l'archive `.tar.gz` (et l'AppImage).
 4. **AUR** : remplacer `sha256sums=('SKIP')` par la somme affichée par `tarball.sh`, régénérer `.SRCINFO` (`makepkg --printsrcinfo > .SRCINFO`), pousser `PKGBUILD` et `.SRCINFO` sur `ssh://aur@aur.archlinux.org/mira-mail-bin.git`.

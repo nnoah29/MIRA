@@ -11,7 +11,7 @@ expect() { grep -q -- "$2" "$root/$1" || { echo "ERREUR : $1 ne contient pas « 
 expect app/pubspec.yaml "^version: ${version}+[0-9]\+"
 expect app/lib/app_info.dart "const appVersion = '${version}';"
 expect packaging/VERSION "^${version}\$"
-expect packaging/common/io.github.nnoah29.Mira.metainfo.xml "<release version=\"${version}\""
+expect packaging/common/com.toffanoah.mira.metainfo.xml "<release version=\"${version}\""
 expect packaging/arch/PKGBUILD "^pkgver=${version}\$"
 [ -s "$root/docs/release-notes/v${version}.md" ] || { echo "ERREUR : docs/release-notes/v${version}.md absent ou vide (notes en anglais)" >&2; bad=1; }
 

@@ -6,7 +6,7 @@ use super::menu::entries;
 use super::status::TrayStatus;
 use crate::desktop::Launch;
 
-const APP_ID: &str = "io.github.nnoah29.Mira";
+const APP_ID: &str = "com.toffanoah.mira";
 
 /// Icône et ses actions : relancer l'app, quitter le démon.
 pub(super) struct MiraTray {

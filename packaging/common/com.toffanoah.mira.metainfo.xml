@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>io.github.nnoah29.Mira</id>
+  <id>com.toffanoah.mira</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
   <name>MIRA</name>
   <summary>A modern, polished mail client for Linux</summary>
   <summary xml:lang="fr">Un client mail moderne et soigné pour Linux</summary>
-  <developer id="io.github.nnoah29">
+  <developer id="com.toffanoah">
     <name>nnoah29</name>
   </developer>
   <description>
@@ -29,7 +29,7 @@
       <li xml:lang="fr">Notifications de bureau pour les nouveaux messages</li>
     </ul>
   </description>
-  <launchable type="desktop-id">io.github.nnoah29.Mira.desktop</launchable>
+  <launchable type="desktop-id">com.toffanoah.mira.desktop</launchable>
   <url type="homepage">https://github.com/nnoah29/MIRA</url>
   <url type="bugtracker">https://github.com/nnoah29/MIRA/issues</url>
   <categories>

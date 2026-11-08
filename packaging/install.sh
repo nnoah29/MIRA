@@ -8,7 +8,7 @@ repo="nnoah29/MIRA"
 data="${XDG_DATA_HOME:-$HOME/.local/share}"
 root="$data/mira-mail"
 bin="$HOME/.local/bin/mira-mail"
-desktop="$data/applications/io.github.nnoah29.Mira.desktop"
+desktop="$data/applications/com.toffanoah.mira.desktop"
 unit_dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 unit="$unit_dir/mira-daemon.service"
 icons="$data/icons/hicolor"
@@ -22,8 +22,8 @@ for arg in "$@"; do
       command -v systemctl >/dev/null && systemctl --user disable --now mira-daemon.service 2>/dev/null || true
       rm -f "$unit"
       rm -rf "$root" "$bin" "$desktop" \
-        "$icons/512x512/apps/io.github.nnoah29.Mira.png" "$icons/scalable/apps/io.github.nnoah29.Mira.svg" \
-        "$data/metainfo/io.github.nnoah29.Mira.metainfo.xml"
+        "$icons/512x512/apps/com.toffanoah.mira.png" "$icons/scalable/apps/com.toffanoah.mira.svg" \
+        "$data/metainfo/com.toffanoah.mira.metainfo.xml"
       echo "MIRA désinstallé. Vos comptes et mails restent dans ~/.local/share et ~/.config."
       exit 0 ;;
     -h|--help) sed -n '2,4p' "$0"; exit 0 ;;
@@ -89,10 +89,10 @@ ln -sfn "$version" "$root/current"
 
 mkdir -p "$(dirname "$bin")" "$data/applications" "$icons/512x512/apps" "$icons/scalable/apps" "$data/metainfo"
 ln -sfn "$root/current/app/mira" "$bin"
-sed "s|^Exec=.*|Exec=$bin|" "$root/current/share/io.github.nnoah29.Mira.desktop" > "$desktop"
-install -m644 "$root/current/share/io.github.nnoah29.Mira.png" "$icons/512x512/apps/"
-install -m644 "$root/current/share/io.github.nnoah29.Mira.svg" "$icons/scalable/apps/"
-install -m644 "$root/current/share/io.github.nnoah29.Mira.metainfo.xml" "$data/metainfo/"
+sed "s|^Exec=.*|Exec=$bin|" "$root/current/share/com.toffanoah.mira.desktop" > "$desktop"
+install -m644 "$root/current/share/com.toffanoah.mira.png" "$icons/512x512/apps/"
+install -m644 "$root/current/share/com.toffanoah.mira.svg" "$icons/scalable/apps/"
+install -m644 "$root/current/share/com.toffanoah.mira.metainfo.xml" "$data/metainfo/"
 if [ -f "$root/current/share/mira-daemon.service.in" ]; then
   mkdir -p "$unit_dir"
   sed "s|@DAEMON@|$root/current/app/mira-daemon|" "$root/current/share/mira-daemon.service.in" > "$unit"

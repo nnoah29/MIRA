@@ -16,9 +16,9 @@ fi
 rm -rf "$appdir"
 "$here/../common/install-tree.sh" "$out/bundle" "$appdir" /usr
 install -m755 "$here/AppRun" "$appdir/AppRun"
-cp "$appdir/usr/share/applications/io.github.nnoah29.Mira.desktop" "$appdir/"
-cp "$here/../common/io.github.nnoah29.Mira.png" "$appdir/io.github.nnoah29.Mira.png"
-ln -sf io.github.nnoah29.Mira.png "$appdir/.DirIcon"
+cp "$appdir/usr/share/applications/com.toffanoah.mira.desktop" "$appdir/"
+cp "$here/../common/com.toffanoah.mira.png" "$appdir/com.toffanoah.mira.png"
+ln -sf com.toffanoah.mira.png "$appdir/.DirIcon"
 
 ARCH=x86_64 "$tool" "$appdir" "$out/MIRA-$version-x86_64.AppImage"
 echo "AppImage : $out/MIRA-$version-x86_64.AppImage"

@@ -53,11 +53,16 @@ class PrivacyStep extends StatelessWidget {
             'Les images d’un message sont bloquées par défaut : tu choisis quand les afficher.',
           ),
         ),
-        Btn(
+        Hov(
           key: const ValueKey('onb-privacy-link'),
-          icon: 'link',
-          label: t('Politique de confidentialité'),
           onTap: () => openLink(Uri.parse(privacyUrl)),
+          builder: (_, h) => Text(
+            t('Politique de confidentialité'),
+            style: Fonts.sans(
+              size: 14.5,
+              color: h ? p.accent : p.muted,
+            ).copyWith(decoration: TextDecoration.underline),
+          ),
         ),
       ],
     );

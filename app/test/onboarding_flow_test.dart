@@ -16,6 +16,7 @@ Future<MailStore> pumpFlow(
   WidgetTester tester, {
   Size? size,
   MailStore? store,
+  double textScale = 1,
 }) async {
   GoogleFonts.config.allowRuntimeFetching = false;
   await tester.runAsync(Fonts.preload);
@@ -27,7 +28,15 @@ Future<MailStore> pumpFlow(
   await tester.pumpWidget(
     ChangeNotifierProvider.value(
       value: used,
-      child: MaterialApp(theme: buildTheme(true), home: const OnboardingFlow()),
+      child: MaterialApp(
+        theme: buildTheme(true),
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
+        home: const OnboardingFlow(),
+      ),
     ),
   );
   await tester.pump(const Duration(milliseconds: 400));

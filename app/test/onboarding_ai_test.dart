@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mira/engine/ai_admin.dart';
 import 'package:mira/engine/engine_mail_source.dart';
+import 'package:mira/engine/remote/resident.dart';
 import 'package:mira/state/store.dart';
 import 'package:mira/ui/ai_browser_login.dart';
+import 'package:mira/ui/onboarding/step_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ai_settings_harness.dart' show connection, provider;
@@ -13,11 +15,20 @@ import 'engine_source_test.dart' show FakeEngine;
 import 'fake_ai_engine.dart';
 import 'onboarding_flow_test.dart' show pumpFlow, tapKey;
 
+/// Contrôleur du mode résident absent : la page Notifications ne lance aucun processus.
+class NoResident extends ResidentController {
+  @override
+  Future<bool> isAvailable() async => false;
+}
+
 Future<(MailStore, FakeAiEngine)> aiStore(
   WidgetTester tester, {
   bool withLogin = true,
   List<Map<String, dynamic>> connections = const [],
 }) async {
+  final real = residentForOnboarding;
+  addTearDown(() => residentForOnboarding = real);
+  residentForOnboarding = NoResident.new;
   SharedPreferences.setMockInitialValues({});
   final prefs = await tester.runAsync(SharedPreferences.getInstance);
   final fake = FakeAiEngine()

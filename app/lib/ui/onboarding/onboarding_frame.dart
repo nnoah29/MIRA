@@ -110,35 +110,46 @@ class _OnboardingFrameState extends State<OnboardingFrame>
     );
   }
 
+  Widget _back() => widget.controller.isFirst
+      ? const SizedBox.shrink()
+      : Btn(
+          key: const ValueKey('onb-back'),
+          label: t('Retour'),
+          onTap: widget.controller.back,
+        );
+
+  Widget _next() => widget.showNext && !widget.controller.isLast
+      ? Btn(
+          key: const ValueKey('onb-next'),
+          label: widget.nextLabel ?? t('Suivant'),
+          go: true,
+          onTap: widget.controller.next,
+        )
+      : const SizedBox.shrink();
+
   Widget _bottom(Pal p) {
-    final c = widget.controller;
+    final narrow = MediaQuery.sizeOf(context).width < 560;
+    if (narrow) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _dots(p),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [_back(), _next()],
+          ),
+        ],
+      );
+    }
     return Row(
       children: [
         Expanded(
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: c.isFirst
-                ? null
-                : Btn(
-                    key: const ValueKey('onb-back'),
-                    label: t('Retour'),
-                    onTap: c.back,
-                  ),
-          ),
+          child: Align(alignment: Alignment.centerLeft, child: _back()),
         ),
         _dots(p),
         Expanded(
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: widget.showNext && !c.isLast
-                ? Btn(
-                    key: const ValueKey('onb-next'),
-                    label: widget.nextLabel ?? t('Suivant'),
-                    go: true,
-                    onTap: c.next,
-                  )
-                : null,
-          ),
+          child: Align(alignment: Alignment.centerRight, child: _next()),
         ),
       ],
     );

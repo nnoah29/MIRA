@@ -192,14 +192,6 @@ const Map<String, String> enStrings = {
   'Auto : les messages simples en widgets, les autres dans la vue web. Vue web : fidèle à un navigateur. Widgets : intégré à l’app, plus léger, moins fidèle.': 'Auto: simple messages as widgets, the others in the web view. Web view: faithful to a browser. Widgets: built into the app, lighter, less faithful.',
   'Vue web': 'Web view',
   'Widgets': 'Widgets',
-  'BIENVENUE DANS MIRA': 'WELCOME TO MIRA',
-  'Tous tes comptes au même endroit': 'All your accounts in one place',
-  'Gmail, Outlook, Yahoo ou n’importe quel serveur IMAP.':
-      'Gmail, Outlook, Yahoo or any IMAP server.',
-  'Tes messages sont copiés sur ton appareil : lis et réponds sans réseau.': 'Your messages are copied to your device: read and reply without a network.',
-  'Privé par défaut': 'Private by default',
-  'Aucun serveur MIRA, aucune télémétrie, images distantes bloquées.':
-      'No MIRA server, no telemetry, remote images blocked.',
   'Plus tard': 'Later',
   'Revoir l’accueil': 'Show the welcome again',
   'MIRA {0}': 'MIRA {0}',

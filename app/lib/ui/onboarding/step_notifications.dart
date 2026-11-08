@@ -49,6 +49,7 @@ class _NotificationsStepState extends State<NotificationsStep> {
 
   Future<void> _setResident(bool on) async {
     final resident = _resident;
+    final prefs = context.read<MailStore>().prefs;
     if (resident == null) return;
     try {
       on ? await resident.enable() : await resident.disable();
@@ -56,7 +57,7 @@ class _NotificationsStepState extends State<NotificationsStep> {
     } catch (_) {
       await _load();
     }
-    await context.read<MailStore>().prefs.setString(residentAnsweredKey, '1');
+    await prefs.setString(residentAnsweredKey, '1');
   }
 
   Widget _card(Pal p, String title, String body, Widget control, {Key? key}) =>

@@ -114,7 +114,7 @@ class _AiStepState extends State<AiStep> {
           label: session
               ? 'Continue with $name'
               : t('Se connecter avec {0}', [name]),
-          go: !session,
+          go: true,
           onTap: _state.busy.isNotEmpty ? null : () => _login(provider),
         ),
       ),

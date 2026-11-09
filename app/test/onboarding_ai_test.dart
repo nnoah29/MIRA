@@ -8,6 +8,7 @@ import 'package:mira/engine/remote/resident.dart';
 import 'package:mira/state/store.dart';
 import 'package:mira/ui/ai_browser_login.dart';
 import 'package:mira/ui/onboarding/step_notifications.dart';
+import 'package:mira/ui/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ai_settings_harness.dart' show connection, provider;
@@ -187,5 +188,16 @@ void main() {
     await tapKey(tester, 'ai-session-warning-cancel');
     expect(fake.requestsOf('add_ai_connection'), isEmpty);
     expect(fake.requestsOf('start_ai_key_login'), isEmpty);
+  });
+
+  testWidgets('chatgpt_and_openrouter_buttons_have_the_same_prominence', (
+    tester,
+  ) async {
+    final (store, _) = await aiStore(tester, withSession: true);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    Btn button(String key) => tester.widget<Btn>(find.byKey(ValueKey(key)));
+    expect(button('onb-ai-login').go, isTrue);
+    expect(button('onb-ai-chatgpt').go, isTrue);
   });
 }

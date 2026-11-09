@@ -4,10 +4,11 @@ use mira_vocabulary::error::codes::authentication;
 use mira_vocabulary::{AiSessionLogin, ErrorCategory, MiraError};
 
 use super::bundle::AiSession;
+use super::failure::exchange_failure;
 use super::grant::{Grant, expiry, has_scope, parse_grant};
 use super::id_token::validate_id_token;
 use crate::auth::flow::AuthorizationCode;
-use crate::auth::tokens::{map_token_failure, post_form};
+use crate::auth::tokens::post_form;
 use crate::ports::SecretValue;
 
 /// Ce qu'il faut pour échanger un code : client émis, redirection, vérificateur PKCE, nonce, hôte et heure
@@ -37,7 +38,8 @@ pub async fn exchange_session_code(
     ];
     let (status, body) = post_form(&login.token_url, &pairs).await?;
     if !(200..300).contains(&status) {
-        return Err(map_token_failure(status, &body));
+        let secrets = [code.expose(), exchange.verifier.expose()];
+        return Err(exchange_failure(status, &body, &secrets));
     }
     build_session(login, &parse_grant(&body)?, exchange)
 }

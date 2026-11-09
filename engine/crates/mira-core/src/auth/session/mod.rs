@@ -2,6 +2,7 @@
 
 mod bundle;
 mod exchange;
+mod failure;
 mod grant;
 mod id_token;
 mod refresh;

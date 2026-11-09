@@ -7,7 +7,6 @@ mod request;
 mod response;
 mod set;
 
-pub(crate) use failure::map_token_failure;
 pub(crate) use http::post_form;
 pub use key_request::exchange_key_code;
 pub use request::{

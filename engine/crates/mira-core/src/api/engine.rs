@@ -14,6 +14,7 @@ use super::startup::{
 };
 use crate::ai::chat::interrupt_running;
 use crate::ai::key_login::AiKeyLogins;
+use crate::ai::session::AiSessionLocks;
 use crate::auth::{CredentialVault, OAuthFlows};
 use crate::events::{EventBus, EventSink, EventSubscription};
 use crate::fetching::ServerSearchResults;
@@ -34,6 +35,7 @@ pub struct Engine {
     pub(crate) operations: OperationRegistry,
     pub(crate) oauth_flows: OAuthFlows,
     pub(crate) ai_key_logins: AiKeyLogins,
+    pub(crate) ai_session_locks: AiSessionLocks,
     pub(crate) server_searches: ServerSearchResults,
     pub(crate) account_lock: tokio::sync::Mutex<()>,
     pub(crate) replayers: ReplayerHandle,
@@ -65,6 +67,7 @@ impl Engine {
             operations,
             oauth_flows: OAuthFlows::new(),
             ai_key_logins: AiKeyLogins::default(),
+            ai_session_locks: AiSessionLocks::default(),
             server_searches: ServerSearchResults::default(),
             account_lock: tokio::sync::Mutex::new(()),
             replayers,

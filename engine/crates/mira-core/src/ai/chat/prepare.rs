@@ -37,13 +37,13 @@ pub(crate) struct ChatPlan {
 }
 
 /// Vérifie connexion, fournisseur, consentement, types de contenu, clé puis modèle, dans cet ordre, et rend le plan ; les outils ne sont annoncés que si le client les permet et que le service les supporte.
-pub(crate) fn prepare(
+pub(crate) async fn prepare(
     engine: &Engine,
     start: ChatStart,
     host: Option<Weak<Engine>>,
 ) -> Result<ChatPlan, MiraError> {
     let connection = load_connection(engine, start.connection.as_ref())?;
-    let checked = check(engine, &connection, &start)?;
+    let checked = check(engine, &connection, &start).await?;
     let enabled = start.allow_tools && checked.descriptor.supports_tools && host.is_some();
     let (kinds, parts) = context_summary(&start.request);
     let mode = start.mode;

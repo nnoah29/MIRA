@@ -42,7 +42,7 @@ impl ChatStream {
 impl Engine {
     /// Vérifie localement la demande, ouvre la ligne de journal, puis lance la génération en tâche de fond, sans outils.
     pub async fn chat_stream(&self, start: ChatStart) -> Result<ChatStream, MiraError> {
-        self.begin_chat(start, None)
+        self.begin_chat(start, None).await
     }
 
     /// Comme `chat_stream`, avec les outils en lecture seule quand `allow_tools` est vrai et que le service les supporte.
@@ -50,16 +50,16 @@ impl Engine {
         self: &Arc<Self>,
         start: ChatStart,
     ) -> Result<ChatStream, MiraError> {
-        self.begin_chat(start, Some(Arc::downgrade(self)))
+        self.begin_chat(start, Some(Arc::downgrade(self))).await
     }
 
     /// Prépare le plan, ouvre la ligne de journal et lance la tâche ; `host` donne à la tâche l'accès aux lectures.
-    fn begin_chat(
+    async fn begin_chat(
         &self,
         start: ChatStart,
         host: Option<Weak<Engine>>,
     ) -> Result<ChatStream, MiraError> {
-        let plan = prepare(self, start, host)?;
+        let plan = prepare(self, start, host).await?;
         let handle = self.operations.start(CHAT_OPERATION_KIND);
         if let Err(error) = open_row(self, &plan, handle.id()) {
             handle.complete(Err(&error));

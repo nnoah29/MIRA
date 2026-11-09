@@ -6,7 +6,8 @@ use mira_vocabulary::{
 };
 
 use super::kinds::{check_kinds, distinct_kinds};
-use crate::ai::access::{base_url_of, find_provider, is_loopback_url, key_for};
+use crate::ai::access::{base_url_of, find_provider, is_loopback_url};
+use crate::ai::session::credential_for;
 use crate::api::{ChatStart, Engine};
 use crate::ports::SecretValue;
 
@@ -20,7 +21,7 @@ pub(super) struct Checked {
 }
 
 /// Contrôle consentement, types de contenu, clé et modèle ; rend la destination résolue.
-pub(super) fn check(
+pub(super) async fn check(
     engine: &Engine,
     connection: &AiConnection,
     start: &ChatStart,
@@ -30,7 +31,7 @@ pub(super) fn check(
     check_consent(connection, &base_url)?;
     let local = is_loopback_url(&base_url).unwrap_or(false);
     check_kinds(connection, &start.request.context, local)?;
-    let key = key_for(engine, connection, &base_url)?;
+    let key = credential_for(engine, connection, &descriptor, &base_url).await?;
     let model = resolve_model(&start.request, connection)?;
     Ok(Checked {
         descriptor,

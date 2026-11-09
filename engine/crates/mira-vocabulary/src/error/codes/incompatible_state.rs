@@ -31,6 +31,9 @@ pub const SYNC_DISABLED: ErrorCode = ErrorCode("incompatible_state.sync_disabled
 pub const AI_CONSENT_REQUIRED: ErrorCode = ErrorCode("incompatible_state.ai_consent_required");
 /// La connexion d'IA n'a pas de clé enregistrée.
 pub const AI_KEY_MISSING: ErrorCode = ErrorCode("incompatible_state.ai_key_missing");
+/// Ce fournisseur d'IA ne propose pas de connexion par navigateur qui rend une clé.
+pub const AI_KEY_LOGIN_UNSUPPORTED: ErrorCode =
+    ErrorCode("incompatible_state.ai_key_login_unsupported");
 /// Aucun modèle d'IA n'est choisi pour cette connexion.
 pub const AI_MODEL_MISSING: ErrorCode = ErrorCode("incompatible_state.ai_model_missing");
 /// Le type de contenu à envoyer n'est pas autorisé pour cette connexion d'IA.

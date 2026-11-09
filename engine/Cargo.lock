@@ -1665,6 +1665,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "mira-ai-openrouter"
+version = "0.1.0"
+dependencies = [
+ "mira-vocabulary",
+]
+
+[[package]]
 name = "mira-assembly"
 version = "0.1.0"
 dependencies = [
@@ -1674,6 +1681,7 @@ dependencies = [
  "mira-ai-groq",
  "mira-ai-mistral",
  "mira-ai-openai",
+ "mira-ai-openrouter",
  "mira-core",
  "mira-provider-generic",
  "mira-provider-gmail",

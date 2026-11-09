@@ -17,6 +17,8 @@ class FakeAiEngine implements EngineClient, ChatStreamingClient {
   StreamController<Map<String, dynamic>>? live;
   bool manual = false;
   int cancelledStreams = 0;
+  Completer<void>? loginGate;
+  final loginConnections = <String, Object?>{};
   EngineException? failNext;
   EngineException? failOp;
   String? failOpName;
@@ -104,8 +106,31 @@ class FakeAiEngine implements EngineClient, ChatStreamingClient {
       'fetched_at': 1,
     }),
     'remove_ai_connection' => _removed(r['connection']),
+    'start_ai_key_login' => _loginStarted(r['connection']),
+    'cancel_ai_key_login' => _loginCancelled(r['flow']),
     _ => _wrap('done', null),
   };
+
+  Map<String, dynamic> _loginStarted(Object? id) {
+    final flow = 'flow-${_n++}';
+    loginConnections[flow] = id;
+    return _wrap('key_login_started', {
+      'flow': flow,
+      'authorize_url': 'https://openrouter.ai/auth?callback_url=x',
+    });
+  }
+
+  Map<String, dynamic> _loginCancelled(Object? flow) {
+    loginConnections.remove(flow);
+    final gate = loginGate;
+    if (gate != null && !gate.isCompleted) gate.completeError('cancelled');
+    return _wrap('done', null);
+  }
+
+  Future<Map<String, dynamic>> _loginCompleted(Map<String, dynamic> r) async {
+    await loginGate?.future;
+    return _mark(loginConnections.remove(r['flow']), 'has_key', true);
+  }
 
   Map<String, dynamic> _consent(Map<String, dynamic> r) {
     final found = _find(r['connection'])
@@ -141,6 +166,7 @@ class FakeAiEngine implements EngineClient, ChatStreamingClient {
       throw fail;
     }
     if (failOp != null && failOpName == r['op']) throw failOp!;
+    if (r['op'] == 'complete_ai_key_login') return _loginCompleted(r);
     return _answer(r);
   }
 

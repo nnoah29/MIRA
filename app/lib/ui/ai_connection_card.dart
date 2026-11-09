@@ -6,6 +6,7 @@ import '../engine/ai_models.dart';
 import '../i18n/i18n.dart';
 import '../state/ai_settings_state.dart';
 import '../theme/app_theme.dart';
+import 'ai_browser_login.dart';
 import 'ai_model_picker.dart';
 import 'ai_privacy_section.dart';
 import 'account_form_widgets.dart';
@@ -193,9 +194,11 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
     ),
   );
 
-  Widget _key(Pal p) => Column(
+  Widget _key(Pal p, AiProviderInfo? provider) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
+      if (provider != null && provider.keyLogin)
+        AiBrowserLogin(state: widget.state, connection: c, provider: provider),
       FormField2(
         fieldKey: ValueKey('ai-key-field-$id'),
         controller: keyCtl,
@@ -273,7 +276,7 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
             _address(p),
             const SizedBox(height: 16),
           ],
-          _key(p),
+          _key(p, provider),
           const SizedBox(height: 16),
           AiModelPicker(state: state, connection: c),
           const SizedBox(height: 16),

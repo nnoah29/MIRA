@@ -192,14 +192,6 @@ const Map<String, String> enStrings = {
   'Auto : les messages simples en widgets, les autres dans la vue web. Vue web : fidèle à un navigateur. Widgets : intégré à l’app, plus léger, moins fidèle.': 'Auto: simple messages as widgets, the others in the web view. Web view: faithful to a browser. Widgets: built into the app, lighter, less faithful.',
   'Vue web': 'Web view',
   'Widgets': 'Widgets',
-  'BIENVENUE DANS MIRA': 'WELCOME TO MIRA',
-  'Tous tes comptes au même endroit': 'All your accounts in one place',
-  'Gmail, Outlook, Yahoo ou n’importe quel serveur IMAP.':
-      'Gmail, Outlook, Yahoo or any IMAP server.',
-  'Tes messages sont copiés sur ton appareil : lis et réponds sans réseau.': 'Your messages are copied to your device: read and reply without a network.',
-  'Privé par défaut': 'Private by default',
-  'Aucun serveur MIRA, aucune télémétrie, images distantes bloquées.':
-      'No MIRA server, no telemetry, remote images blocked.',
   'Plus tard': 'Later',
   'Revoir l’accueil': 'Show the welcome again',
   'MIRA {0}': 'MIRA {0}',
@@ -412,6 +404,21 @@ const Map<String, String> enStrings = {
   'Thème': 'Theme',
   'Sombre': 'Dark',
   'Clair': 'Light',
+  'TON PREMIER COMPTE': 'YOUR FIRST ACCOUNT',
+  'Ajoute ta boîte mail : Gmail, Outlook, Yahoo ou n’importe quel serveur IMAP.':
+      'Add your mailbox: Gmail, Outlook, Yahoo or any IMAP server.',
+  'Comptes déjà ajoutés : {0}': 'Accounts already added: {0}',
+  'Ajouter un autre compte': 'Add another account',
+  'ASSISTANT D’IA': 'AI ASSISTANT',
+  'Ton texte n’est envoyé qu’avec ton accord, les données sensibles sont masquées avant l’envoi. Ta clé reste sur cet appareil.': 'Your text is only sent with your consent, and sensitive data is masked before sending. Your key stays on this device.',
+  'Tu pourras brancher un service d’IA dans Réglages › IA.':
+      'You can connect an AI service later in Settings › AI.',
+  'Plus tard (Réglages › IA)': 'Later (Settings › AI)',
+  'NOTIFICATIONS': 'NOTIFICATIONS',
+  'Choisis comment MIRA te prévient. Tout se change dans les réglages.':
+      'Choose how MIRA notifies you. Everything can be changed in Settings.',
+  'Une notification quand un message arrive.':
+      'A notification when a message arrives.',
   'Sombre ou clair, selon ton environnement.':
       'Dark or light, depending on your environment.',
   'Piloté par le fond d’écran (clair ou sombre selon sa luminosité).':
@@ -567,6 +574,8 @@ const Map<String, String> enStrings = {
   '« {0} » est effacée de cet appareil.': '“{0}” is deleted from this device.',
   'Aucune clé enregistrée pour ce service d’IA':
       'No key saved for this AI service',
+  'Ce service d’IA ne propose pas la connexion par navigateur':
+      'This AI service does not offer browser sign-in',
   'Choisis d’abord un modèle d’IA': 'First choose an AI model',
   'Le texte est trop long pour le service d’IA':
       'The text is too long for the AI service',
@@ -1272,6 +1281,41 @@ const Map<String, String> enStrings = {
   'Connexion réussie.': 'Connection successful.',
   'Effacer la clé': 'Clear the key',
   'Enregistrer la clé': 'Save the key',
+  'En attente du navigateur…': 'Waiting for the browser…',
+  'TES MAILS. CHEZ TOI.': 'YOUR MAIL. YOUR MACHINE.',
+  'Un client mail moderne et soigné, libre et gratuit, sur ton appareil.':
+      'A modern, polished mail client, free and open source, on your device.',
+  'Passer': 'Skip',
+  'Suivant': 'Next',
+  'Commencer': 'Start',
+  'TA VIE PRIVÉE': 'YOUR PRIVACY',
+  'Sur ton appareil': 'On your device',
+  'Tes messages sont copiés sur ton appareil et ne passent que par ton fournisseur de courrier.': 'Your messages are copied to your device and only go through your mail provider.',
+  'Aucun serveur MIRA': 'No MIRA server',
+  'Aucune télémétrie, aucun compte à créer chez nous.':
+      'No telemetry, no account to create with us.',
+  'Images distantes bloquées': 'Remote images blocked',
+  'Les images d’un message sont bloquées par défaut : tu choisis quand les afficher.': 'Images in a message are blocked by default: you choose when to show them.',
+  'TOUT EST PRÊT': 'YOU’RE ALL SET',
+  'Le bouton Paramètres, en haut à droite : comptes, thème, notifications, règles.':
+      'The Settings button, top right: accounts, theme, notifications, rules.',
+  'Le bouton Assistant IA, en haut : il résume et rédige avec ton accord.': 'The AI assistant button, at the top: it summarizes and drafts with your consent.',
+  'Recherche': 'Search',
+  'La barre du haut cherche dans tous tes messages.':
+      'The top bar searches all your messages.',
+  'Appuie sur ? pour voir tous les raccourcis clavier.':
+      'Press ? to see all keyboard shortcuts.',
+  'Ouvrir ma boîte': 'Open my inbox',
+  'APPARENCE': 'APPEARANCE',
+  'Choisis ton thème. Tu pourras le changer dans les réglages.':
+      'Choose your theme. You can change it later in Settings.',
+  'Se reconnecter avec {0}': 'Sign in again with {0}',
+  'Le navigateur ne s’est pas ouvert : copie ce lien dans ton navigateur.':
+      'The browser did not open: copy this link into your browser.',
+  'Ou colle une clé d’API que tu as créée toi-même.':
+      'Or paste an API key you created yourself.',
+  'Pour utiliser {0}, connecte-toi avec ton compte dans le navigateur : aucune clé à recopier.':
+      'To use {0}, sign in with your account in the browser: no key to copy.',
   'Envoyer tes messages à {0} ?': 'Send your messages to {0}?',
   'IA': 'AI',
   'Modèles du service': 'Service models',

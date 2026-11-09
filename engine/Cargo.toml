@@ -21,6 +21,7 @@ mira-ai-openai = { path = "crates/mira-ai-openai" }
 mira-ai-google = { path = "crates/mira-ai-google" }
 mira-ai-mistral = { path = "crates/mira-ai-mistral" }
 mira-ai-groq = { path = "crates/mira-ai-groq" }
+mira-ai-openrouter = { path = "crates/mira-ai-openrouter" }
 mira-ai-generic = { path = "crates/mira-ai-generic" }
 mira-assembly = { path = "crates/mira-assembly" }
 mira-protocol = { path = "crates/mira-protocol" }

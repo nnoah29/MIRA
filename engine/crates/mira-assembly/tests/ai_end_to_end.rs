@@ -16,15 +16,16 @@ const MODELS: &str = r#"{"data":[{"id":"model-a","created":100}]}"#;
 const PROMPT: &str = "PROMPT-CONFIDENTIEL-17";
 const REPLY: &str = "REPONSE-PRIVEE-23";
 
-/// Le registre d'assemblage et celui de la configuration de production ont les six fournisseurs dans l'ordre
+/// Le registre d'assemblage et celui de la configuration de production ont les sept fournisseurs dans l'ordre
 #[test]
-fn registry_has_the_six_providers_in_order() {
+fn registry_has_the_seven_providers_in_order() {
     let expected = [
         "anthropic",
         "openai",
         "google",
         "mistral",
         "groq",
+        "openrouter",
         "generic",
     ];
     let ids = |registry: mira_assembly::ai::AiProviderRegistry| -> Vec<String> {

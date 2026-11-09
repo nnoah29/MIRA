@@ -19,5 +19,6 @@ pub enum AiResponse {
     Conversation(AiConversation),
     ConversationMeta(AiConversationMeta),
     HistoryEnabled(bool),
+    KeyLoginStarted { flow: String, authorize_url: String },
     Done,
 }

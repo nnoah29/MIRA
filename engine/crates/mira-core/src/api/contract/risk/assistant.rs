@@ -17,6 +17,9 @@ pub(super) fn ai_risk(request: &AiRequest) -> ToolRisk {
         | AiRequest::SetDefaultAiConnection { .. }
         | AiRequest::SetAiApiKey { .. }
         | AiRequest::ClearAiApiKey { .. }
+        | AiRequest::StartAiKeyLogin { .. }
+        | AiRequest::CompleteAiKeyLogin { .. }
+        | AiRequest::CancelAiKeyLogin { .. }
         | AiRequest::TestAiConnection { .. }
         | AiRequest::ListAiModels { .. }
         | AiRequest::AcknowledgeAiConsent { .. }

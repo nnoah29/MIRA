@@ -50,6 +50,15 @@ pub struct AiProviderDescriptor {
     pub base_url_editable: bool,
     #[serde(default = "default_true")]
     pub supports_tools: bool,
+    #[serde(default)]
+    pub key_login: Option<AiKeyLogin>,
+}
+
+/// Adresses d'une connexion qui rend une clé d'API après autorisation dans le navigateur (OAuth PKCE).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AiKeyLogin {
+    pub authorize_url: String,
+    pub exchange_url: String,
 }
 
 /// Valeur par défaut d'une fiche écrite avant les outils : ils sont annoncés.

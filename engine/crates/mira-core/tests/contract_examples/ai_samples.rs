@@ -48,6 +48,7 @@ pub fn sample_provider() -> AiProviderDescriptor {
         quirks: AiQuirks::default(),
         base_url_editable: true,
         supports_tools: true,
+        key_login: None,
     }
 }
 

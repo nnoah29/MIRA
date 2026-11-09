@@ -33,3 +33,27 @@ pub(super) fn parse_tokens(body: &[u8], clock: &dyn Clock) -> Result<TokenSet, M
         expires_at,
     })
 }
+
+#[derive(Deserialize)]
+struct RawKey {
+    key: String,
+}
+
+/// Convertit la réponse de succès d'une connexion par navigateur en clé d'API, sans la copier ailleurs
+pub(super) fn parse_key(body: &[u8]) -> Result<SecretValue, MiraError> {
+    let raw: RawKey = serde_json::from_slice(body).map_err(|_| {
+        MiraError::new(
+            ErrorCategory::Server,
+            server::PROTOCOL,
+            "réponse de clé illisible",
+        )
+    })?;
+    if raw.key.trim().is_empty() {
+        return Err(MiraError::new(
+            ErrorCategory::Server,
+            server::PROTOCOL,
+            "réponse de clé vide",
+        ));
+    }
+    Ok(SecretValue::new(raw.key))
+}

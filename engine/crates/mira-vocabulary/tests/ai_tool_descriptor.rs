@@ -27,5 +27,6 @@ fn sample_descriptor() -> AiProviderDescriptor {
         quirks: AiQuirks::default(),
         base_url_editable: false,
         supports_tools: true,
+        key_login: None,
     }
 }

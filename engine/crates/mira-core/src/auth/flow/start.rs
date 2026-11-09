@@ -41,7 +41,7 @@ pub async fn start_flow(
 }
 
 /// Ouvre l'écouteur de redirection, uniquement sur l'interface de boucle locale
-async fn bind_loopback() -> Result<TcpListener, MiraError> {
+pub(super) async fn bind_loopback() -> Result<TcpListener, MiraError> {
     TcpListener::bind("127.0.0.1:0").await.map_err(|_| {
         MiraError::new(
             ErrorCategory::Network,

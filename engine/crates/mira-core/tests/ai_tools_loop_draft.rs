@@ -21,7 +21,7 @@ const EDIT: &str = r#"{"body":"Nouveau texte"}"#;
 fn announced(body: &Value, format: WireFormat) -> Vec<String> {
     let tools = body["tools"].as_array().cloned().unwrap_or_default();
     let pointer = match format {
-        WireFormat::AnthropicMessages => "/name",
+        WireFormat::AnthropicMessages | WireFormat::OpenAiResponses => "/name",
         WireFormat::OpenAiChat => "/function/name",
     };
     let name = |tool: &Value| {

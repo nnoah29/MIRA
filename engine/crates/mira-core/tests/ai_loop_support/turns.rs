@@ -23,6 +23,7 @@ pub fn tool_turn(
     match format {
         WireFormat::AnthropicMessages => anthropic_tool_turn(text, calls, usage),
         WireFormat::OpenAiChat => openai_tool_turn(text, calls, usage),
+        WireFormat::OpenAiResponses => panic!("format Responses hors de ce support"),
     }
 }
 
@@ -31,6 +32,7 @@ pub fn text_turn(format: WireFormat, text: &str, usage: Option<(u32, u32)>) -> B
     match format {
         WireFormat::AnthropicMessages => anthropic_stream(&[text], usage),
         WireFormat::OpenAiChat => openai_stream(&[text], usage),
+        WireFormat::OpenAiResponses => panic!("format Responses hors de ce support"),
     }
 }
 
@@ -78,6 +80,7 @@ pub fn tool_results(body: &Value, format: WireFormat) -> Vec<String> {
             .filter(|block| block["type"] == "tool_result")
             .map(|block| text(&block["content"]))
             .collect(),
+        WireFormat::OpenAiResponses => panic!("format Responses hors de ce support"),
     }
 }
 

@@ -71,6 +71,7 @@ pub struct AiSessionLogin {
     pub token_url: String,
     pub resource: String,
     pub scopes: Vec<String>,
+    pub required_scope: String,
     pub agent_name: String,
 }
 

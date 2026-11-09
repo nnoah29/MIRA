@@ -15,7 +15,7 @@ const HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 const MAX_BODY: usize = 1 << 20;
 
 /// Envoie un formulaire en POST et renvoie le statut HTTP et le corps de la réponse
-pub(super) async fn post_form(
+pub(crate) async fn post_form(
     token_url: &str,
     pairs: &[(&str, &str)],
 ) -> Result<(u16, Vec<u8>), MiraError> {

@@ -10,7 +10,7 @@ struct RawFailure {
 }
 
 /// Convertit une réponse HTTP d'échec : `invalid_grant` signifie jeton ou code révoqué
-pub(super) fn map_token_failure(status: u16, body: &[u8]) -> MiraError {
+pub(crate) fn map_token_failure(status: u16, body: &[u8]) -> MiraError {
     let failure: Option<RawFailure> = serde_json::from_slice(body).ok();
     let reason = failure.and_then(|raw| raw.error);
     if reason.as_deref() == Some("invalid_grant") {

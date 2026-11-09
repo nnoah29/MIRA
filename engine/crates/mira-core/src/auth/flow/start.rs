@@ -37,6 +37,8 @@ pub async fn start_flow(
         token_url: settings.token_url.clone(),
         listener: Some(listener),
         phase: FlowPhase::AwaitingRedirect,
+        nonce: None,
+        callback_path: "/callback",
     })
 }
 

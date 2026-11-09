@@ -41,6 +41,7 @@ fn session_login() -> AiSessionLogin {
         token_url: "https://auth.openai.com/api/accounts/oauth/token".to_string(),
         resource: "https://api.openai.com/v1".to_string(),
         scopes: scopes.iter().map(|scope| (*scope).to_string()).collect(),
+        required_scope: "chatgpt.tokens.use.direct".to_string(),
         agent_name: "MIRA".to_string(),
     }
 }

@@ -22,7 +22,11 @@ pub async fn wait_for_redirect(
         (FlowPhase::AwaitingRedirect, Some(listener)) => listener,
         _ => return Err(wrong_phase()),
     };
-    let served = timeout(limit, serve_until_callback(&listener, &flow.state)).await;
+    let served = timeout(
+        limit,
+        serve_until_callback(&listener, &flow.state, flow.callback_path),
+    )
+    .await;
     let result = served.unwrap_or_else(|_| {
         Err(MiraError::new(
             ErrorCategory::Network,
@@ -51,13 +55,14 @@ pub(super) fn wrong_phase() -> MiraError {
 async fn serve_until_callback(
     listener: &TcpListener,
     state: &str,
+    path: &'static str,
 ) -> Result<AuthorizationCode, MiraError> {
     let mut connections = JoinSet::new();
     loop {
         tokio::select! {
             accepted = listener.accept() => {
                 let (stream, _) = accepted.map_err(|_| listener_lost())?;
-                connections.spawn(serve_connection(stream, state.to_string()));
+                connections.spawn(serve_connection(stream, state.to_string(), path));
             }
             Some(finished) = connections.join_next() => {
                 if let Ok(Some(result)) = finished {

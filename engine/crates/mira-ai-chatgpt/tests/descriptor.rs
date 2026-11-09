@@ -33,6 +33,7 @@ fn chatgpt_descriptor_declares_the_session_login() {
     );
     assert_eq!(login.resource, "https://api.openai.com/v1");
     assert_eq!(login.agent_name, "MIRA");
+    assert_eq!(login.required_scope, "chatgpt.tokens.use.direct");
     let expected = [
         "openid",
         "profile",

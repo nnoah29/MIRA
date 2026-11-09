@@ -35,6 +35,8 @@ pub async fn start_key_flow(
         token_url: login.exchange_url.clone(),
         listener: Some(listener),
         phase: FlowPhase::AwaitingRedirect,
+        nonce: None,
+        callback_path: "/callback",
     })
 }
 

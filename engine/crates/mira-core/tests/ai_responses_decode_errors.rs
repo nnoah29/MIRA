@@ -3,7 +3,7 @@
 
 use mira_core::ai::sse::SseEvent;
 use mira_core::ai::wire::dispatch::decode_event;
-use mira_vocabulary::{AiError, ChatDelta, StopReason, WireFormat};
+use mira_vocabulary::{AiError, WireFormat};
 
 /// Décode un événement portant les données données.
 fn decode(data: &str) -> Result<Vec<ChatDelta>, AiError> {

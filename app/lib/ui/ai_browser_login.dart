@@ -8,6 +8,7 @@ import '../platform_open.dart';
 import '../state/ai_settings_state.dart';
 import '../theme/app_theme.dart';
 import 'ai_connection_card.dart';
+import 'ai_session_warning.dart';
 import 'widgets.dart';
 
 /// Ouvre l'adresse d'autorisation ; remplaçable dans les tests.
@@ -43,17 +44,27 @@ class AiBrowserLogin extends StatelessWidget {
     ],
   );
 
-  Widget _button() => Align(
+  String get _label {
+    final name = aiProviderTitle(provider);
+    if (connection.hasKey) return t('Se reconnecter avec {0}', [name]);
+    return provider.sessionLogin
+        ? 'Continue with $name'
+        : t('Se connecter avec {0}', [name]);
+  }
+
+  Future<void> _login(BuildContext context) async {
+    final ask = provider.sessionLogin && !connection.hasKey;
+    if (ask && !await confirmSessionLogin(context, provider)) return;
+    await state.loginByBrowser(_id, openLoginPage);
+  }
+
+  Widget _button(BuildContext context) => Align(
     alignment: Alignment.centerLeft,
     child: Btn(
       key: ValueKey('ai-login-$_id'),
-      label: connection.hasKey
-          ? t('Se reconnecter avec {0}', [aiProviderTitle(provider)])
-          : t('Se connecter avec {0}', [aiProviderTitle(provider)]),
+      label: _label,
       go: !connection.hasKey,
-      onTap: state.busy.contains(_id)
-          ? null
-          : () => state.loginByBrowser(_id, openLoginPage),
+      onTap: state.busy.contains(_id) ? null : () => _login(context),
     ),
   );
 
@@ -73,13 +84,15 @@ class AiBrowserLogin extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        state.logins.containsKey(_id) ? _waiting(p) : _button(),
+        state.logins.containsKey(_id) ? _waiting(p) : _button(context),
         if (link != null) _link(p, link),
-        const SizedBox(height: 14),
-        Text(
-          t('Ou colle une clé d’API que tu as créée toi-même.'),
-          style: Fonts.sans(size: 12.5, color: p.dim),
-        ),
+        if (!provider.sessionLogin) ...[
+          const SizedBox(height: 14),
+          Text(
+            t('Ou colle une clé d’API que tu as créée toi-même.'),
+            style: Fonts.sans(size: 12.5, color: p.dim),
+          ),
+        ],
       ],
     );
   }

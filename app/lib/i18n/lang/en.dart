@@ -837,6 +837,18 @@ const Map<String, String> enStrings = {
       'Enter an address (name@domain.com) or a domain (domain.com).',
   'Sans le focus depuis ce délai, MIRA libère l’affichage (corps des messages, images, caches) ; la réception, les règles et les notifications continuent.': 'After this long without focus, MIRA frees the display (message bodies, images, caches); receiving, rules and notifications keep running.',
   'Se connecter avec {0}': 'Sign in with {0}',
+  'Utiliser ton abonnement {0} dans MIRA ?':
+      'Use your {0} subscription in MIRA?',
+  'Le contenu que tu envoies à l’assistant est traité par le service, selon les conditions de ton compte. Les personnes qui t’écrivent n’ont pas consenti à cet envoi.': 'What you send to the assistant is processed by the service under your account’s terms. The people who write to you have not agreed to this.',
+  'L’usage compte dans ton abonnement, avec un plafond que tu règles côté service.': 'Usage counts against your subscription, with a cap you set on the service’s side.',
+  'Tu peux déconnecter MIRA à tout moment dans les réglages du service.':
+      'You can disconnect MIRA at any time in the service’s settings.',
+  'Cette connexion est en préversion : elle peut cesser de fonctionner.':
+      'This connection is in preview: it may stop working.',
+  'Continuer': 'Continue',
+  'Se déconnecter': 'Sign out',
+  'Pour utiliser {0}, connecte ton abonnement dans le navigateur : aucune clé à recopier.':
+      'To use {0}, connect your subscription in the browser: no key to copy.',
   'Se reconnecter': 'Reconnect',
   'Secondaire': 'Secondary',
   'Serveur {0} : hôte invalide': '{0} server: invalid host',

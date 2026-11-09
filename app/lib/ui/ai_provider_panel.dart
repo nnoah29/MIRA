@@ -21,7 +21,12 @@ class AiProviderPanel extends StatelessWidget {
 
   /// Phrase d'invitation d'un fournisseur sans connexion.
   Widget _invite(Pal p) => Text(
-    provider.keyLogin
+    provider.sessionLogin
+        ? t(
+            'Pour utiliser {0}, connecte ton abonnement dans le navigateur : aucune clé à recopier.',
+            [provider.name],
+          )
+        : provider.keyLogin
         ? t(
             'Pour utiliser {0}, connecte-toi avec ton compte dans le navigateur : aucune clé à recopier.',
             [provider.name],

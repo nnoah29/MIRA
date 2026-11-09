@@ -24,6 +24,7 @@ class NoResident extends ResidentController {
 Future<(MailStore, FakeAiEngine)> aiStore(
   WidgetTester tester, {
   bool withLogin = true,
+  bool withSession = false,
   List<Map<String, dynamic>> connections = const [],
 }) async {
   final real = residentForOnboarding;
@@ -35,6 +36,7 @@ Future<(MailStore, FakeAiEngine)> aiStore(
     ..providers.addAll([
       provider('openai', 'OpenAI'),
       provider('openrouter', 'OpenRouter', login: withLogin),
+      if (withSession) provider('chatgpt', 'ChatGPT', session: true),
     ])
     ..connections.addAll(connections);
   final src = await tester.runAsync(
@@ -153,5 +155,37 @@ void main() {
     expect(find.byKey(const ValueKey('onb-ai-cancel')), findsOneWidget);
     await tapKey(tester, 'onb-back');
     expect(fake.requestsOf('cancel_ai_key_login'), hasLength(1));
+  });
+
+  testWidgets('ai_page_offers_chatgpt_after_openrouter', (tester) async {
+    final (store, _) = await aiStore(tester, withSession: true);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    expect(find.byKey(const ValueKey('onb-ai-login')), findsOneWidget);
+    expect(find.byKey(const ValueKey('onb-ai-chatgpt')), findsOneWidget);
+  });
+
+  testWidgets('chatgpt_asks_warning_then_starts_the_flow', (tester) async {
+    final (store, fake) = await aiStore(tester, withSession: true);
+    final seen = <Uri>[];
+    useLauncher(true, seen);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    await tapKey(tester, 'onb-ai-chatgpt');
+    expect(find.byKey(const ValueKey('ai-session-warning')), findsOneWidget);
+    expect(fake.requestsOf('start_ai_key_login'), isEmpty);
+    await tapKey(tester, 'ai-session-warning-accept');
+    expect(fake.requestsOf('add_ai_connection').single['provider'], 'chatgpt');
+    expect(fake.requestsOf('start_ai_key_login'), hasLength(1));
+  });
+
+  testWidgets('chatgpt_warning_cancel_does_nothing', (tester) async {
+    final (store, fake) = await aiStore(tester, withSession: true);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    await tapKey(tester, 'onb-ai-chatgpt');
+    await tapKey(tester, 'ai-session-warning-cancel');
+    expect(fake.requestsOf('add_ai_connection'), isEmpty);
+    expect(fake.requestsOf('start_ai_key_login'), isEmpty);
   });
 }

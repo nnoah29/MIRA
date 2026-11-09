@@ -197,36 +197,61 @@ class _AiConnectionCardState extends State<AiConnectionCard> {
   Widget _key(Pal p, AiProviderInfo? provider) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      if (provider != null && provider.keyLogin)
+      if (provider != null && provider.browserLogin)
         AiBrowserLogin(state: widget.state, connection: c, provider: provider),
-      FormField2(
-        fieldKey: ValueKey('ai-key-field-$id'),
-        controller: keyCtl,
-        secret: true,
-        onSubmitted: (_) => _saveKey(),
-        label: c.hasKey ? t('Remplacer la clé d’API') : t('Clé d’API'),
-      ),
-      const SizedBox(height: 10),
-      Row(
-        children: [
-          Btn(
-            key: ValueKey('ai-key-save-$id'),
-            label: t('Enregistrer la clé'),
-            onTap: _saveKey,
-          ),
-          if (c.hasKey) ...[
-            const SizedBox(width: 8),
-            Btn(
-              key: ValueKey('ai-key-clear-$id'),
-              label: t('Effacer la clé'),
-              onTap: () => widget.state.clearKey(id),
-            ),
-            _saved(p),
-          ],
-        ],
-      ),
+      if (provider?.sessionLogin == true)
+        _sessionActions(p)
+      else
+        ..._keyForm(p),
     ],
   );
+
+  /// Champ de clé d'API, enregistrement et effacement.
+  List<Widget> _keyForm(Pal p) => [
+    FormField2(
+      fieldKey: ValueKey('ai-key-field-$id'),
+      controller: keyCtl,
+      secret: true,
+      onSubmitted: (_) => _saveKey(),
+      label: c.hasKey ? t('Remplacer la clé d’API') : t('Clé d’API'),
+    ),
+    const SizedBox(height: 10),
+    Row(
+      children: [
+        Btn(
+          key: ValueKey('ai-key-save-$id'),
+          label: t('Enregistrer la clé'),
+          onTap: _saveKey,
+        ),
+        if (c.hasKey) ...[
+          const SizedBox(width: 8),
+          Btn(
+            key: ValueKey('ai-key-clear-$id'),
+            label: t('Effacer la clé'),
+            onTap: () => widget.state.clearKey(id),
+          ),
+          _saved(p),
+        ],
+      ],
+    ),
+  ];
+
+  /// Connexion par abonnement : pas de clé à saisir, seulement se déconnecter.
+  Widget _sessionActions(Pal p) => c.hasKey
+      ? Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Row(
+            children: [
+              Btn(
+                key: ValueKey('ai-key-clear-$id'),
+                label: t('Se déconnecter'),
+                onTap: () => widget.state.clearKey(id),
+              ),
+              _saved(p),
+            ],
+          ),
+        )
+      : const SizedBox.shrink();
 
   Widget _testButton(bool busy) => Btn(
     key: ValueKey('ai-test-$id'),

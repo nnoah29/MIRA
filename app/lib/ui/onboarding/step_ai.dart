@@ -8,6 +8,7 @@ import '../../state/store.dart';
 import '../../theme/app_theme.dart';
 import '../ai_browser_login.dart';
 import '../ai_connection_card.dart';
+import '../ai_session_warning.dart';
 import '../widgets.dart';
 import 'onboarding_controller.dart';
 import 'step_layout.dart';
@@ -47,14 +48,17 @@ class _AiStepState extends State<AiStep> {
     if (mounted) setState(() {});
   }
 
-  AiProviderInfo? get _provider {
-    for (final p in _state.providers) {
-      if (p.keyLogin) return p;
-    }
-    return null;
-  }
+  /// Services qui se connectent par le navigateur : clé reçue d'abord, abonnements ensuite.
+  List<AiProviderInfo> get _providers => [
+    ..._state.providers.where((p) => p.keyLogin),
+    ..._state.providers.where((p) => p.sessionLogin),
+  ];
 
   Future<void> _login(AiProviderInfo provider) async {
+    if (provider.sessionLogin &&
+        !await confirmSessionLogin(context, provider)) {
+      return;
+    }
     if (_state.connectionsOf(provider.id).isEmpty) {
       await _state.addConnection(provider.id, label: provider.name);
     }
@@ -83,22 +87,34 @@ class _AiStepState extends State<AiStep> {
     ],
   );
 
-  Widget _actions(Pal p, AiProviderInfo? provider) {
-    if (provider == null) {
+  Widget _actions(Pal p, List<AiProviderInfo> providers) {
+    if (providers.isEmpty) {
       return Text(
         t('Tu pourras brancher un service d’IA dans Réglages › IA.'),
         style: Fonts.sans(size: 15, color: p.dim),
       );
     }
     if (_state.logins.isNotEmpty) return _waiting(p);
-    return Align(
-      alignment: Alignment.centerLeft,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [for (final provider in providers) _loginButton(provider)],
+    );
+  }
+
+  /// Bouton d'un service : « Se connecter avec … » ; « Continue with … » pour un abonnement.
+  Widget _loginButton(AiProviderInfo provider) {
+    final name = aiProviderTitle(provider);
+    final session = provider.sessionLogin;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
       child: FittedBox(
         fit: BoxFit.scaleDown,
         child: Btn(
-          key: const ValueKey('onb-ai-login'),
-          label: t('Se connecter avec {0}', [aiProviderTitle(provider)]),
-          go: true,
+          key: ValueKey(session ? 'onb-ai-${provider.id}' : 'onb-ai-login'),
+          label: session
+              ? 'Continue with $name'
+              : t('Se connecter avec {0}', [name]),
+          go: !session,
           onTap: _state.busy.isNotEmpty ? null : () => _login(provider),
         ),
       ),
@@ -142,7 +158,7 @@ class _AiStepState extends State<AiStep> {
         'Ton texte n’est envoyé qu’avec ton accord, les données sensibles sont masquées avant l’envoi. Ta clé reste sur cet appareil.',
       ),
       children: [
-        _actions(p, _provider),
+        _actions(p, _providers),
         _notes(p),
         const SizedBox(height: 20),
         Btn(

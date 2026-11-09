@@ -6,11 +6,11 @@ use mira_vocabulary::error::codes::invalid_input;
 use mira_vocabulary::{AiConnectionId, ErrorCategory, MiraError};
 use tokio::sync::Notify;
 
-use super::table::AiKeyLogins;
+use super::table::{AiKeyLogins, KeyLoginKind};
 use crate::auth::PendingFlow;
 
-/// Flux sorti de la table pour être attendu : le flux, son signal d'annulation, la connexion visée
-pub type TakenKeyLogin = (PendingFlow, Arc<Notify>, AiConnectionId);
+/// Flux sorti de la table pour être attendu : le flux, son signal d'annulation, la connexion visée, ce qu'il rend
+pub type TakenKeyLogin = (PendingFlow, Arc<Notify>, AiConnectionId, KeyLoginKind);
 
 impl AiKeyLogins {
     /// Sort le flux de l'attente ; inconnu, expiré ou déjà pris : `invalid_input.parameter`
@@ -18,7 +18,13 @@ impl AiKeyLogins {
         let mut entries = self.entries();
         let entry = entries.get_mut(flow).ok_or_else(unknown_flow)?;
         let pending = entry.pending.take().ok_or_else(unknown_flow)?;
-        Ok((pending, Arc::clone(&entry.cancel), entry.connection.clone()))
+        let cancel = Arc::clone(&entry.cancel);
+        Ok((
+            pending,
+            cancel,
+            entry.connection.clone(),
+            entry.kind.clone(),
+        ))
     }
 
     /// Annule et oublie le flux ; un flux inconnu n'est pas une erreur

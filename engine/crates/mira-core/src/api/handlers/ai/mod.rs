@@ -23,6 +23,8 @@ mod list_providers;
 mod remove_connection;
 mod rename_conversation;
 mod save_conversation;
+mod session_login_complete;
+mod session_login_start;
 mod set_allowed_content;
 mod set_default;
 mod set_history_enabled;

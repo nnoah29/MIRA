@@ -8,9 +8,10 @@ use tokio::net::{TcpListener, TcpStream};
 
 use super::http_read::request_complete;
 
-type Replies = Arc<Mutex<VecDeque<(u16, String)>>>;
+type Reply = (u16, String);
+type Replies = Arc<Mutex<(VecDeque<Reply>, Option<Reply>)>>;
 
-/// Serveur de jetons ; la dernière réponse mise en file est répétée tant qu'aucune autre n'arrive.
+/// Serveur de jetons ; la dernière réponse servie est répétée tant qu'aucune autre n'arrive.
 pub struct TokenServer {
     pub url: String,
     pub bodies: Arc<Mutex<Vec<String>>>,
@@ -23,7 +24,7 @@ impl TokenServer {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let url = format!("http://{}/oauth/token", listener.local_addr().unwrap());
         let bodies = Arc::new(Mutex::new(Vec::new()));
-        let replies: Replies = Arc::new(Mutex::new(VecDeque::new()));
+        let replies: Replies = Arc::new(Mutex::new((VecDeque::new(), None)));
         tokio::spawn(serve(listener, Arc::clone(&bodies), Arc::clone(&replies)));
         Self {
             url,
@@ -37,6 +38,7 @@ impl TokenServer {
         self.replies
             .lock()
             .unwrap()
+            .0
             .push_back((status, body.to_string()));
     }
 
@@ -79,11 +81,11 @@ async fn answer(mut stream: TcpStream, bodies: Arc<Mutex<Vec<String>>>, replies:
     let _ = stream.write_all(reply.as_bytes()).await;
 }
 
-/// Prochaine réponse ; la dernière est conservée pour les appels suivants
-fn next_reply(replies: &Replies) -> (u16, String) {
-    let mut queue = replies.lock().unwrap();
-    if queue.len() > 1 {
-        return queue.pop_front().unwrap();
+/// Prochaine réponse en file ; la dernière servie se répète quand la file est vide
+fn next_reply(replies: &Replies) -> Reply {
+    let mut state = replies.lock().unwrap();
+    if let Some(next) = state.0.pop_front() {
+        state.1 = Some(next);
     }
-    queue.front().cloned().unwrap_or((500, "{}".to_string()))
+    state.1.clone().unwrap_or((500, "{}".to_string()))
 }

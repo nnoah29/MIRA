@@ -7,6 +7,7 @@ pub mod key_login;
 pub mod masking;
 pub mod models;
 pub mod registry;
+pub(crate) mod session;
 pub mod sse;
 pub mod tools;
 pub mod transport;

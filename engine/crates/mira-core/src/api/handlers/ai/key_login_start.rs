@@ -6,6 +6,7 @@ use rand::SeedableRng;
 use rand::rngs::StdRng;
 
 use super::connection_view::read_connection;
+use super::session_login_start::start_session_login;
 use crate::ai::access::find_provider;
 use crate::api::contract::{AiResponse, Response};
 use crate::api::engine::Engine;
@@ -19,6 +20,10 @@ pub(crate) async fn handle_start_ai_key_login(
     id: &AiConnectionId,
 ) -> Result<Response, MiraError> {
     let connection = read_connection(engine, id)?;
+    let descriptor = find_provider(engine, &connection)?.descriptor();
+    if let Some(session_login) = &descriptor.session_login {
+        return start_session_login(engine, &connection, session_login).await;
+    }
     let login = key_login_of(engine, &connection)?;
     let mut rng = StdRng::from_os_rng();
     let pending = start_key_flow(&login, KEY_LABEL, &mut rng).await?;

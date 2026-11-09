@@ -4,6 +4,7 @@ use mira_vocabulary::{AiError, ChatDelta};
 use serde_json::Value;
 
 use super::responses_finish::{completed_reason, finish, incomplete_reason};
+use super::responses_tool_decode::{added_fragment, arguments_fragment};
 use crate::ai::sse::SseEvent;
 
 const LIMIT_EXCEEDED: &str = "subscription_sharing_usage_limit_exceeded";
@@ -18,6 +19,10 @@ pub fn decode_chat_event(event: &SseEvent) -> Result<Vec<ChatDelta>, AiError> {
     let chunk: Value = serde_json::from_str(data).map_err(|_| AiError::BadResponse)?;
     match chunk.get("type").and_then(Value::as_str) {
         Some("response.output_text.delta") => Ok(text_delta(&chunk).into_iter().collect()),
+        Some("response.output_item.added") => Ok(added_fragment(&chunk).into_iter().collect()),
+        Some("response.function_call_arguments.delta") => {
+            Ok(arguments_fragment(&chunk).into_iter().collect())
+        }
         Some("response.completed") => Ok(finish(&chunk, completed_reason(&chunk))),
         Some("response.incomplete") => Ok(finish(&chunk, incomplete_reason(&chunk))),
         Some("response.failed") => Err(failure(&chunk)),

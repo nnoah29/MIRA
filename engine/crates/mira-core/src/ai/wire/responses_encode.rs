@@ -1,9 +1,10 @@
 //! Encodage d'une requête de discussion au format Responses, sans en-tête d'authentification ni champ interdit.
 
-use mira_vocabulary::{AiProviderDescriptor, ChatMessage, ChatRequest, ChatRole};
+use mira_vocabulary::{AiProviderDescriptor, ChatRequest};
 use serde_json::{Map, Value, json};
 
 use super::call::HttpCall;
+use super::responses_tools::{message_items, tools_value};
 
 pub(super) const CHAT_PATH: &str = "/responses";
 
@@ -17,6 +18,9 @@ pub fn encode_chat(
     body.insert("model".to_string(), json!(model));
     body.insert("instructions".to_string(), json!(instructions(request)));
     body.insert("input".to_string(), Value::Array(input_items(request)));
+    if let Some(tools) = tools_value(&request.tools) {
+        body.insert("tools".to_string(), tools);
+    }
     body.insert("store".to_string(), json!(false));
     body.insert("stream".to_string(), json!(true));
     HttpCall {
@@ -33,22 +37,7 @@ fn instructions(request: &ChatRequest) -> &str {
 
 /// Éléments d'entrée du fil, dans l'ordre.
 fn input_items(request: &ChatRequest) -> Vec<Value> {
-    request.messages.iter().filter_map(text_item).collect()
-}
-
-/// Message de texte : l'utilisateur écrit `input_text`, l'assistant `output_text` ; les autres rôles sont écartés.
-fn text_item(message: &ChatMessage) -> Option<Value> {
-    let kind = match message.role {
-        ChatRole::User => "input_text",
-        ChatRole::Assistant => "output_text",
-        ChatRole::Tool => return None,
-    };
-    let role = if kind == "input_text" {
-        "user"
-    } else {
-        "assistant"
-    };
-    Some(json!({"role": role, "content": [{"type": kind, "text": message.text}]}))
+    request.messages.iter().flat_map(message_items).collect()
 }
 
 /// Réunit les en-têtes de contenu et ceux, statiques, de la fiche du service.

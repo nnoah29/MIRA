@@ -18,6 +18,8 @@ pub mod responses_decode;
 pub mod responses_encode;
 mod responses_finish;
 pub mod responses_models;
+mod responses_tool_decode;
+mod responses_tools;
 pub mod rfc3339;
 
 pub use call::HttpCall;

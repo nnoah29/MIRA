@@ -839,6 +839,8 @@ const Map<String, String> enStrings = {
       'Enter an address (name@domain.com) or a domain (domain.com).',
   'Sans le focus depuis ce délai, MIRA libère l’affichage (corps des messages, images, caches) ; la réception, les règles et les notifications continuent.': 'After this long without focus, MIRA frees the display (message bodies, images, caches); receiving, rules and notifications keep running.',
   'Se connecter avec {0}': 'Sign in with {0}',
+  'Avec ton abonnement {0}': 'With your {0} subscription',
+  'Avec une clé d’API': 'With an API key',
   'Utiliser ton abonnement {0} dans MIRA ?':
       'Use your {0} subscription in MIRA?',
   'Le contenu que tu envoies à l’assistant est traité par le service, selon les conditions de ton compte. Les personnes qui t’écrivent n’ont pas consenti à cet envoi.': 'What you send to the assistant is processed by the service under your account’s terms. The people who write to you have not agreed to this.',

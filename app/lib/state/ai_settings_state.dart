@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../engine/ai_admin.dart';
+import '../engine/engine_client.dart';
 import '../i18n/engine_errors.dart';
 
 /// Résultat du dernier essai d'une connexion : réussi, ou le texte traduit de l'erreur.
@@ -158,6 +159,12 @@ class AiSettingsState extends ChangeNotifier {
       try {
         await admin.completeKeyLogin(started.flow);
         await _preselectModel(id);
+      } on EngineException catch (e) {
+        if (_cancelled.remove(id)) return;
+        throw EngineException.local(
+          e.code,
+          '${engineErrorText(e)} (${e.message})',
+        );
       } on Object {
         if (!_cancelled.remove(id)) rethrow;
       } finally {

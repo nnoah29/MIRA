@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mira/engine/ai_models.dart';
+import 'package:mira/engine/ai_admin.dart';
+import 'package:mira/engine/engine_client.dart';
+import 'package:mira/state/ai_settings_state.dart';
 import 'package:mira/ui/ai_browser_login.dart';
 import 'package:mira/ui/widgets.dart';
 
@@ -22,7 +24,7 @@ Future<FakeAiEngine> pumpChatgpt(
   final real = openLoginPage;
   addTearDown(() => openLoginPage = real);
   openLoginPage = (_) async => true;
-  await tapKey(tester, 'ai-tab-chatgpt');
+  await tapKey(tester, 'ai-tab-openai');
   return engine;
 }
 
@@ -71,5 +73,39 @@ void main() {
     await tapKey(tester, 'ai-login-c1');
     expect(byKey('ai-session-warning'), findsNothing);
     expect(engine.requestsOf('start_ai_key_login'), hasLength(1));
+  });
+
+  testWidgets('chatgpt_shares_the_openai_tab', (tester) async {
+    await pumpSettings(tester, using: withChatgpt());
+    expect(byKey('ai-tab-chatgpt'), findsNothing);
+    await tapKey(tester, 'ai-tab-openai');
+    expect(byKey('ai-section-openai'), findsOneWidget);
+    expect(byKey('ai-section-chatgpt'), findsOneWidget);
+  });
+
+  testWidgets('default_chatgpt_connection_opens_the_openai_tab', (
+    tester,
+  ) async {
+    await pumpSettings(
+      tester,
+      using: withChatgpt(),
+      connections: [connection('c1', provider: 'chatgpt', isDefault: true)],
+    );
+    expect(byKey('ai-panel-openai'), findsOneWidget);
+    expect(byKey('ai-card-key-c1'), findsOneWidget);
+    expect(byKey('ai-tab-default-openai'), findsOneWidget);
+  });
+
+  test('login_failure_shows_the_engine_detail', () async {
+    final engine = withChatgpt()
+      ..connections.add(connection('c1', provider: 'chatgpt'));
+    engine.failOpName = 'complete_ai_key_login';
+    engine.failOp = const EngineException(
+      'authentication.rejected',
+      'échange refusé par le service (HTTP 400, invalid_grant)',
+    );
+    final state = AiSettingsState(AiAdmin(engine));
+    await state.loginByBrowser('c1', (_) async => true);
+    expect(state.error, contains('HTTP 400, invalid_grant'));
   });
 }

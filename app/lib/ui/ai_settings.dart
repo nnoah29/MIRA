@@ -11,6 +11,7 @@ import '../state/chat_history_state.dart';
 import '../theme/app_theme.dart';
 import 'ai_history_section.dart';
 import 'ai_journal_view.dart';
+import 'ai_provider_family.dart';
 import 'ai_provider_panel.dart';
 import 'ai_provider_tabs.dart';
 import 'rule_widgets.dart';
@@ -100,15 +101,17 @@ class _AiSettingsState extends State<AiSettings> {
 
   /// Onglets puis contenu du fournisseur choisi ; au départ, celui de la connexion par défaut.
   List<Widget> _providers() {
-    final shown = selected ??= state.initialProviderId();
+    final first = state.initialProviderId();
+    final shown = selected ??= first == null ? null : aiTabOf(first);
     if (shown == null) return const [];
-    final current = state.providers.firstWhere(
+    final tabs = aiTabProviders(state.providers);
+    final current = tabs.firstWhere(
       (p) => p.id == shown,
-      orElse: () => state.providers.first,
+      orElse: () => tabs.first,
     );
     return [
       AiProviderTabs(
-        providers: state.providers,
+        providers: tabs,
         connections: state.connections,
         selected: current.id,
         onSelect: (id) => setState(() => selected = id),
@@ -116,7 +119,7 @@ class _AiSettingsState extends State<AiSettings> {
       AiProviderPanel(
         key: ValueKey('ai-panel-${current.id}'),
         state: state,
-        provider: current,
+        providers: aiFamilyOf(state.providers, current),
       ),
     ];
   }

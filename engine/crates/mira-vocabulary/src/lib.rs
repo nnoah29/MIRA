@@ -19,7 +19,8 @@ pub use ai::content::{ContentKind, ContextPart};
 pub use ai::conversation::{AiConversation, AiConversationMeta};
 pub use ai::delta::{ChatDelta, StopReason};
 pub use ai::descriptor::{
-    AiKeyLogin, AiProviderDescriptor, AiQuirks, AuthScheme, MaxTokensField, WireFormat,
+    AiKeyLogin, AiProviderDescriptor, AiQuirks, AiSessionLogin, AuthScheme, MaxTokensField,
+    WireFormat,
 };
 pub use ai::draft::{ChatMode, DraftProposal, DraftProposalKind};
 pub use ai::error::AiError;

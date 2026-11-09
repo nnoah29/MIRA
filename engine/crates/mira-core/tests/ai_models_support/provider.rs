@@ -29,6 +29,7 @@ impl TestProvider {
             editable: true,
             supports_tools: true,
             key_login: None,
+            session_login: None,
         }
     }
 }
@@ -49,6 +50,7 @@ impl AiProvider for TestProvider {
             base_url_editable: self.editable,
             supports_tools: self.supports_tools,
             key_login: self.key_login.clone(),
+            session_login: None,
         }
     }
 }

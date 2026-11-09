@@ -18,6 +18,7 @@ pub enum AuthScheme {
 pub enum WireFormat {
     AnthropicMessages,
     OpenAiChat,
+    OpenAiResponses,
 }
 
 /// Nom du champ qui borne la longueur de la réponse.
@@ -52,6 +53,8 @@ pub struct AiProviderDescriptor {
     pub supports_tools: bool,
     #[serde(default)]
     pub key_login: Option<AiKeyLogin>,
+    #[serde(default)]
+    pub session_login: Option<AiSessionLogin>,
 }
 
 /// Adresses d'une connexion qui rend une clé d'API après autorisation dans le navigateur (OAuth PKCE).
@@ -59,6 +62,16 @@ pub struct AiProviderDescriptor {
 pub struct AiKeyLogin {
     pub authorize_url: String,
     pub exchange_url: String,
+}
+
+/// Connexion par navigateur qui rend une session de jetons renouvelables (partage de l'abonnement de l'utilisateur).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AiSessionLogin {
+    pub authorize_url: String,
+    pub token_url: String,
+    pub resource: String,
+    pub scopes: Vec<String>,
+    pub agent_name: String,
 }
 
 /// Valeur par défaut d'une fiche écrite avant les outils : ils sont annoncés.

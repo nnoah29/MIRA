@@ -1630,6 +1630,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "mira-ai-chatgpt"
+version = "0.1.0"
+dependencies = [
+ "mira-vocabulary",
+]
+
+[[package]]
 name = "mira-ai-generic"
 version = "0.1.0"
 dependencies = [
@@ -1676,6 +1683,7 @@ name = "mira-assembly"
 version = "0.1.0"
 dependencies = [
  "mira-ai-anthropic",
+ "mira-ai-chatgpt",
  "mira-ai-generic",
  "mira-ai-google",
  "mira-ai-groq",

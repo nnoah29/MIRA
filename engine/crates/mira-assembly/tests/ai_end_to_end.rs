@@ -16,9 +16,9 @@ const MODELS: &str = r#"{"data":[{"id":"model-a","created":100}]}"#;
 const PROMPT: &str = "PROMPT-CONFIDENTIEL-17";
 const REPLY: &str = "REPONSE-PRIVEE-23";
 
-/// Le registre d'assemblage et celui de la configuration de production ont les sept fournisseurs dans l'ordre
+/// Le registre d'assemblage et celui de la configuration de production ont les huit fournisseurs dans l'ordre
 #[test]
-fn registry_has_the_seven_providers_in_order() {
+fn registry_has_the_eight_providers_in_order() {
     let expected = [
         "anthropic",
         "openai",
@@ -26,6 +26,7 @@ fn registry_has_the_seven_providers_in_order() {
         "mistral",
         "groq",
         "openrouter",
+        "chatgpt",
         "generic",
     ];
     let ids = |registry: mira_assembly::ai::AiProviderRegistry| -> Vec<String> {
@@ -143,7 +144,7 @@ async fn no_secret_or_prompt_in_event_journal_after_full_flow() {
 #[test]
 fn fixed_provider_descriptors_have_https_base_urls() {
     let descriptors = build_ai_registry().list();
-    assert_eq!(descriptors.len(), 6);
+    assert_eq!(descriptors.len(), 8);
     for descriptor in &descriptors {
         if descriptor.base_url_editable {
             assert_eq!(descriptor.id.0, "generic");

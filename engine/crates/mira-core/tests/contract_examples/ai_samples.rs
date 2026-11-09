@@ -2,8 +2,8 @@
 
 use mira_vocabulary::{
     AiConnection, AiConnectionId, AiJournalEntry, AiModel, AiModelList, AiProviderDescriptor,
-    AiProviderId, AiQuirks, AiToolCount, AuthScheme, ContentKind, MaskingSettings, OperationId,
-    Timestamp, WireFormat,
+    AiProviderId, AiQuirks, AiSessionLogin, AiToolCount, AuthScheme, ContentKind, MaskingSettings,
+    OperationId, Timestamp, WireFormat,
 };
 
 /// Connexion d'exemple, avec liste de modèles gardée
@@ -49,7 +49,14 @@ pub fn sample_provider() -> AiProviderDescriptor {
         base_url_editable: true,
         supports_tools: true,
         key_login: None,
-        session_login: None,
+        session_login: Some(AiSessionLogin {
+            authorize_url: "https://auth.example.org/authorize".to_string(),
+            token_url: "https://auth.example.org/token".to_string(),
+            resource: "https://ia.example.org/v1".to_string(),
+            scopes: vec!["openid".to_string(), "offline_access".to_string()],
+            required_scope: "offline_access".to_string(),
+            agent_name: "MIRA".to_string(),
+        }),
     }
 }
 

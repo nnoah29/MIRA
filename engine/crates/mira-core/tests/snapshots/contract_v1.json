@@ -1,5 +1,5 @@
 {
-  "contract": "1.8",
+  "contract": "1.9",
   "requests": {
     "account.add_account": {
       "domain": "account",
@@ -1711,6 +1711,17 @@
             "quirks": {
               "max_tokens_field": "max_tokens"
             },
+            "session_login": {
+              "agent_name": "MIRA",
+              "authorize_url": "https://auth.example.org/authorize",
+              "required_scope": "offline_access",
+              "resource": "https://ia.example.org/v1",
+              "scopes": [
+                "openid",
+                "offline_access"
+              ],
+              "token_url": "https://auth.example.org/token"
+            },
             "static_headers": [],
             "supports_tools": true
           }
@@ -1741,7 +1752,7 @@
         ],
         "version": {
           "major": 1,
-          "minor": 8
+          "minor": 9
         }
       },
       "type": "contract_info"

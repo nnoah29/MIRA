@@ -12,7 +12,7 @@ struct RawFailure {
     error_description: Option<String>,
 }
 
-/// Convertit la réponse d'échec : 5xx passager, sinon refus qui nomme l'erreur et sa description
+/// Convertit la réponse d'échec : 5xx passager ; `invalid_grant` (code refusé, typiquement un abonnement non éligible) ; sinon refus générique ; l'erreur et sa description sont nommées
 pub(super) fn exchange_failure(status: u16, body: &[u8], secrets: &[&str]) -> MiraError {
     if status >= 500 {
         let message = format!("service d'autorisation indisponible ({status})");
@@ -28,16 +28,16 @@ pub(super) fn exchange_failure(status: u16, body: &[u8], secrets: &[&str]) -> Mi
         .and_then(|failure| failure.error_description.as_deref())
         .map(|text| clean(text, MAX_DESCRIPTION, secrets))
         .filter(|text| !text.is_empty());
+    let code = match reason.as_deref() {
+        Some("invalid_grant") => authentication::AI_SESSION_INCOMPLETE,
+        _ => authentication::REJECTED,
+    };
     let mut message = format!("échange refusé par le service (HTTP {status}");
     for part in reason.into_iter().chain(detail) {
         message.push_str(&format!(", {part}"));
     }
     message.push(')');
-    MiraError::new(
-        ErrorCategory::Authentication,
-        authentication::REJECTED,
-        message,
-    )
+    MiraError::new(ErrorCategory::Authentication, code, message)
 }
 
 /// Texte ASCII imprimable borné ; vide s'il recopie l'un des secrets

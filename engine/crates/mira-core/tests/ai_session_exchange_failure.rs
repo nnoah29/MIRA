@@ -23,12 +23,12 @@ async fn refused(status: u16, body: &str) -> mira_vocabulary::MiraError {
         .unwrap_err()
 }
 
-/// Le message nomme l'erreur OAuth et sa description, et le code d'erreur n'est pas « accès révoqué »
+/// `invalid_grant` à l'échange dit que l'abonnement n'ouvre pas l'accès, en nommant l'erreur et sa description
 #[tokio::test]
 async fn refused_exchange_reports_the_oauth_error() {
     let body = r#"{"error":"invalid_grant","error_description":"redirect_uri mismatch"}"#;
     let error = refused(400, body).await;
-    assert_eq!(error.code, "authentication.rejected");
+    assert_eq!(error.code, "authentication.ai_session_incomplete");
     assert!(error.message.contains("400"), "{}", error.message);
     assert!(error.message.contains("invalid_grant"), "{}", error.message);
     assert!(
@@ -47,4 +47,16 @@ async fn description_echoing_a_secret_is_dropped_and_5xx_stays_retryable() {
     assert!(!error.message.contains("CODE-SECRET-7"));
     let down = refused(503, "{}").await;
     assert!(down.retryable);
+}
+
+/// Une autre erreur du service reste un refus générique, avec son nom dans le message
+#[tokio::test]
+async fn other_refusals_stay_generic() {
+    let error = refused(400, r#"{"error":"invalid_request"}"#).await;
+    assert_eq!(error.code, "authentication.rejected");
+    assert!(
+        error.message.contains("invalid_request"),
+        "{}",
+        error.message
+    );
 }

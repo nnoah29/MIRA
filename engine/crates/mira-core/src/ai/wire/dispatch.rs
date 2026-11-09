@@ -4,15 +4,14 @@ use mira_vocabulary::{AiError, AiModel, AiProviderDescriptor, ChatDelta, ChatReq
 
 use super::call::HttpCall;
 use super::{anthropic_decode, anthropic_encode, anthropic_models};
-use super::{openai_decode, openai_encode, openai_models};
+use super::{openai_decode, openai_encode, openai_models, responses_encode};
 use crate::ai::sse::SseEvent;
 
 /// Encode la requête selon le format du descripteur.
 pub fn encode(request: &ChatRequest, model: &str, descriptor: &AiProviderDescriptor) -> HttpCall {
     match descriptor.format {
-        WireFormat::OpenAiChat | WireFormat::OpenAiResponses => {
-            openai_encode::encode_chat(request, model, descriptor)
-        }
+        WireFormat::OpenAiChat => openai_encode::encode_chat(request, model, descriptor),
+        WireFormat::OpenAiResponses => responses_encode::encode_chat(request, model, descriptor),
         WireFormat::AnthropicMessages => anthropic_encode::encode_chat(request, model, descriptor),
     }
 }
@@ -38,7 +37,8 @@ pub fn decode_models(format: WireFormat, body: &[u8]) -> Result<Vec<AiModel>, Ai
 /// Donne le chemin de discussion du format, relatif à l'adresse de base.
 pub fn chat_path(format: WireFormat) -> &'static str {
     match format {
-        WireFormat::OpenAiChat | WireFormat::OpenAiResponses => openai_encode::CHAT_PATH,
+        WireFormat::OpenAiChat => openai_encode::CHAT_PATH,
+        WireFormat::OpenAiResponses => responses_encode::CHAT_PATH,
         WireFormat::AnthropicMessages => anthropic_encode::CHAT_PATH,
     }
 }

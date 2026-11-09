@@ -14,6 +14,7 @@ pub mod openai_encode;
 pub mod openai_models;
 mod openai_tool_decode;
 mod openai_tools;
+pub mod responses_encode;
 pub mod rfc3339;
 
 pub use call::HttpCall;

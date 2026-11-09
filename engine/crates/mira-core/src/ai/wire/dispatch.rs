@@ -4,7 +4,8 @@ use mira_vocabulary::{AiError, AiModel, AiProviderDescriptor, ChatDelta, ChatReq
 
 use super::call::HttpCall;
 use super::{anthropic_decode, anthropic_encode, anthropic_models};
-use super::{openai_decode, openai_encode, openai_models, responses_encode};
+use super::{openai_decode, openai_encode, openai_models};
+use super::{responses_decode, responses_encode, responses_models};
 use crate::ai::sse::SseEvent;
 
 /// Encode la requête selon le format du descripteur.
@@ -19,9 +20,8 @@ pub fn encode(request: &ChatRequest, model: &str, descriptor: &AiProviderDescrip
 /// Décode un événement SSE selon le format du service.
 pub fn decode_event(format: WireFormat, event: &SseEvent) -> Result<Vec<ChatDelta>, AiError> {
     match format {
-        WireFormat::OpenAiChat | WireFormat::OpenAiResponses => {
-            openai_decode::decode_chat_event(event)
-        }
+        WireFormat::OpenAiChat => openai_decode::decode_chat_event(event),
+        WireFormat::OpenAiResponses => responses_decode::decode_chat_event(event),
         WireFormat::AnthropicMessages => anthropic_decode::decode_chat_event(event),
     }
 }
@@ -29,7 +29,8 @@ pub fn decode_event(format: WireFormat, event: &SseEvent) -> Result<Vec<ChatDelt
 /// Décode la liste des modèles selon le format du service.
 pub fn decode_models(format: WireFormat, body: &[u8]) -> Result<Vec<AiModel>, AiError> {
     match format {
-        WireFormat::OpenAiChat | WireFormat::OpenAiResponses => openai_models::decode_models(body),
+        WireFormat::OpenAiChat => openai_models::decode_models(body),
+        WireFormat::OpenAiResponses => responses_models::decode_models(body),
         WireFormat::AnthropicMessages => anthropic_models::decode_models(body),
     }
 }

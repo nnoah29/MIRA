@@ -29,7 +29,6 @@ impl TestProvider {
             editable: true,
             supports_tools: true,
             key_login: None,
-            session_login: None,
         }
     }
 }

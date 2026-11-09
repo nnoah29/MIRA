@@ -27,6 +27,21 @@ impl AiKeyLogins {
         ))
     }
 
+    /// Annule et oublie tous les flux visant cette connexion, par exemple quand elle est supprimée
+    pub fn cancel_connection(&self, connection: &AiConnectionId) {
+        let mut entries = self.entries();
+        let flows: Vec<String> = entries
+            .iter()
+            .filter(|(_, entry)| &entry.connection == connection)
+            .map(|(flow, _)| flow.clone())
+            .collect();
+        for flow in flows {
+            if let Some(entry) = entries.remove(&flow) {
+                entry.cancel.notify_one();
+            }
+        }
+    }
+
     /// Annule et oublie le flux ; un flux inconnu n'est pas une erreur
     pub fn cancel(&self, flow: &str) {
         if let Some(entry) = self.entries().remove(flow) {

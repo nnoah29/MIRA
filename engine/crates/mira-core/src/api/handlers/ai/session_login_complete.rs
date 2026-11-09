@@ -5,9 +5,10 @@ use std::time::Duration;
 use mira_vocabulary::{AiConnectionId, AiSessionLogin, MiraError};
 use tokio::sync::Notify;
 
-use super::connection_view::key_location;
+use super::connection_view::{key_location, read_connection};
 use crate::ai::session::read_session;
 use crate::api::engine::Engine;
+use crate::auth::session::AiSession;
 use crate::auth::{PendingFlow, complete_session_flow, wait_for_redirect};
 
 const REDIRECT_PATIENCE: Duration = Duration::from_secs(300);
@@ -41,8 +42,20 @@ pub(super) async fn complete_session_login(
         now,
     )
     .await?;
+    store_session(engine, wait.id, &session).await
+}
+
+/// Range la session sous le verrou de la connexion, si elle existe encore ; sinon rien ne reste au trousseau
+async fn store_session(
+    engine: &Engine,
+    id: &AiConnectionId,
+    session: &AiSession,
+) -> Result<(), MiraError> {
+    let lock = engine.ai_session_locks.of(id);
+    let _renewing = lock.lock().await;
+    read_connection(engine, id)?;
     engine
         .config
         .secrets
-        .put(&key_location(engine, wait.id), &session.to_secret())
+        .put(&key_location(engine, id), &session.to_secret())
 }

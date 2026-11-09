@@ -536,8 +536,10 @@ const Map<String, String> enStrings = {
       'Export file too large (2 MB and 500 items at most)',
   'Version du format d’export non prise en charge':
       'Export format version not supported',
-  'Clé refusée par le service d’IA : vérifie-la':
-      'Key rejected by the AI service: check it',
+  'Accès refusé par le service d’IA : vérifie ta clé ou reconnecte-toi':
+      'Access refused by the AI service: check your key or reconnect',
+  'La connexion à ton abonnement a expiré ou a été retirée : reconnecte-toi': 'The connection to your subscription has expired or was removed: reconnect',
+  'Autorisation incomplète : ton abonnement ne donne pas cet accès (formule Plus ou Pro requise pour ChatGPT)': 'Authorisation incomplete: your subscription does not give this access (ChatGPT Plus or Pro required)',
   'Autorise d’abord l’envoi de texte à ce service d’IA':
       'First allow sending text to this AI service',
   'Ce service d’IA n’est pas autorisé à recevoir ce type de contenu':
@@ -572,8 +574,8 @@ const Map<String, String> enStrings = {
   'Toutes les conversations enregistrées sont effacées de cet appareil.':
       'All saved conversations are deleted from this device.',
   '« {0} » est effacée de cet appareil.': '“{0}” is deleted from this device.',
-  'Aucune clé enregistrée pour ce service d’IA':
-      'No key saved for this AI service',
+  'Aucune clé ni connexion enregistrée pour ce service d’IA':
+      'No key or connection saved for this AI service',
   'Ce service d’IA ne propose pas la connexion par navigateur':
       'This AI service does not offer browser sign-in',
   'Choisis d’abord un modèle d’IA': 'First choose an AI model',

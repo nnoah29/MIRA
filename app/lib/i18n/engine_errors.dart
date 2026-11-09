@@ -5,7 +5,9 @@ import 'i18n.dart';
 const engineErrorTexts = <String, String>{
   // i18n:keys-begin
   'authentication.ai_key_rejected':
-      'Clé refusée par le service d’IA : vérifie-la',
+      'Accès refusé par le service d’IA : vérifie ta clé ou reconnecte-toi',
+  'authentication.ai_session_expired': 'La connexion à ton abonnement a expiré ou a été retirée : reconnecte-toi',
+  'authentication.ai_session_incomplete': 'Autorisation incomplète : ton abonnement ne donne pas cet accès (formule Plus ou Pro requise pour ChatGPT)',
   'authentication.app_password_required':
       'Ce service exige un mot de passe d’application',
   'authentication.oauth_cancelled': 'Connexion annulée',
@@ -32,7 +34,7 @@ const engineErrorTexts = <String, String>{
   'incompatible_state.ai_key_login_unsupported':
       'Ce service d’IA ne propose pas la connexion par navigateur',
   'incompatible_state.ai_key_missing':
-      'Aucune clé enregistrée pour ce service d’IA',
+      'Aucune clé ni connexion enregistrée pour ce service d’IA',
   'incompatible_state.ai_model_missing': 'Choisis d’abord un modèle d’IA',
   'incompatible_state.body_unavailable_offline':
       'Corps du message indisponible hors ligne',

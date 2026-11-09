@@ -79,9 +79,9 @@ async fn concurrent_chats_refresh_once() {
     }
 }
 
-/// Un refus permanent donne `ai_key_rejected` et laisse la session telle quelle
+/// Un refus permanent donne `ai_session_expired` et laisse la session telle quelle
 #[tokio::test]
-async fn permanent_refresh_error_is_key_rejected_and_keeps_session() {
+async fn permanent_refresh_error_is_session_expired_and_keeps_session() {
     let token = TokenServer::start().await;
     token.push(400, r#"{"error":"invalid_grant"}"#);
     let fixture = ModelsFixture::start(provider(&token)).await;
@@ -91,7 +91,7 @@ async fn permanent_refresh_error_is_key_rejected_and_keeps_session() {
         .chat_stream(chat_start(&connection, "Salut"))
         .await
         .unwrap_err();
-    assert_eq!(error.code, "authentication.ai_key_rejected");
+    assert_eq!(error.code, "authentication.ai_session_expired");
     assert_eq!(stored(&fixture).refresh_token, "RT-OLD");
     assert!(fixture.server.requests().is_empty());
 }

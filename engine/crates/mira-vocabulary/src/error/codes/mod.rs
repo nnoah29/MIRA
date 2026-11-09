@@ -81,6 +81,8 @@ pub const ALL: &[ErrorCode] = &[
     authentication::OAUTH_CANCELLED,
     authentication::OAUTH_STATE_MISMATCH,
     authentication::AI_KEY_REJECTED,
+    authentication::AI_SESSION_EXPIRED,
+    authentication::AI_SESSION_INCOMPLETE,
     server::QUOTA_EXCEEDED,
     server::MESSAGE_TOO_LARGE,
     server::RATE_LIMITED,

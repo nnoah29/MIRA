@@ -3,7 +3,7 @@
 
 mod session_support;
 
-use session_support::connect::{NOW, connect, grant};
+use session_support::connect::{NOW, connect, grant, grant_timed};
 use session_support::flow::ISSUER;
 use session_support::token_server::TokenServer;
 
@@ -45,11 +45,10 @@ async fn exchange_without_issued_client_is_rejected() {
 async fn exchange_rejects_missing_scope() {
     let server = TokenServer::start().await;
     let narrow = |nonce: &str| grant(nonce, "oaiapp_new", ISSUER, "openid profile");
-    assert!(
-        connect(&server, None, "code=C1&client_id=oaiapp_new", &narrow)
-            .await
-            .is_err()
-    );
+    let error = connect(&server, None, "code=C1&client_id=oaiapp_new", &narrow)
+        .await
+        .unwrap_err();
+    assert_eq!(error.code, "authentication.ai_session_incomplete");
 }
 
 /// Un jeton d'identité au nonce, à l'émetteur ou au public inattendu est refusé, sans copier son contenu
@@ -72,4 +71,32 @@ async fn exchange_rejects_bad_id_token() {
         let error = outcome.unwrap_err();
         assert!(!format!("{error:?}").contains("AT-1"));
     }
+}
+
+/// Une horloge locale en retard de quelques minutes n'empêche pas l'inscription ; un jeton d'identité périmé la refuse
+#[tokio::test]
+async fn exchange_tolerates_clock_skew_but_not_an_expired_id_token() {
+    let server = TokenServer::start().await;
+    let slow = |n: &str| {
+        grant_timed(
+            n,
+            "oaiapp_new",
+            ISSUER,
+            "openid scope.required",
+            (NOW + 4000, NOW + 200),
+        )
+    };
+    let skewed = connect(&server, None, "code=C1&client_id=oaiapp_new", &slow).await;
+    assert!(skewed.is_ok());
+    let old = |n: &str| {
+        grant_timed(
+            n,
+            "oaiapp_new",
+            ISSUER,
+            "openid scope.required",
+            (NOW - 1000, NOW - 4000),
+        )
+    };
+    let expired = connect(&server, None, "code=C1&client_id=oaiapp_new", &old).await;
+    assert!(expired.is_err());
 }

@@ -6,7 +6,7 @@ use mira_vocabulary::error::codes::authentication;
 use mira_vocabulary::{ErrorCategory, MiraError};
 use serde_json::Value;
 
-const CLOCK_SKEW: i64 = 5;
+const CLOCK_SKEW: i64 = 300;
 
 /// Vérifie `iss`, `aud`, `nonce`, `exp` et `iat` ; rend l'adresse de courriel si le jeton en porte une
 pub(super) fn validate_id_token(

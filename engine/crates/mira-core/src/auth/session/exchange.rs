@@ -94,7 +94,7 @@ fn origin_of(url: &str) -> String {
 fn missing_scope() -> MiraError {
     MiraError::new(
         ErrorCategory::Authentication,
-        authentication::REJECTED,
+        authentication::AI_SESSION_INCOMPLETE,
         "autorisation incomplète : accès au forfait non accordé",
     )
 }

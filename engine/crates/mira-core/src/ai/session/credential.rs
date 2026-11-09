@@ -1,9 +1,9 @@
 //! Jeton à présenter au service : la clé de la connexion, ou le jeton d'accès d'une session renouvelée au besoin.
 
-use mira_vocabulary::error::codes::incompatible_state;
+use mira_vocabulary::error::codes::{authentication, incompatible_state};
 use mira_vocabulary::{
     AiConnection, AiError, AiProviderDescriptor, AiSecretRef, AiSessionLogin, ErrorCategory,
-    MiraError,
+    MiraError, SuggestedAction,
 };
 
 use super::stored::read_session;
@@ -44,16 +44,26 @@ async fn renew(
 ) -> Result<SecretValue, MiraError> {
     let fresh = refresh_session(login, session, now)
         .await
-        .map_err(|failure| match failure {
-            SessionRefreshError::Permanent => AiError::KeyRejected,
-            SessionRefreshError::Transient => AiError::Unavailable,
-        })?;
+        .map_err(refresh_failure)?;
     let location = AiSecretRef {
         profile: engine.config.profile.clone(),
         connection: connection.id.clone(),
     };
     engine.config.secrets.put(&location, &fresh.to_secret())?;
     Ok(SecretValue::new(fresh.access_token))
+}
+
+/// Erreur d'un rafraîchissement : session perdue (reconnexion) ou service momentanément indisponible
+fn refresh_failure(failure: SessionRefreshError) -> MiraError {
+    match failure {
+        SessionRefreshError::Permanent => MiraError::new(
+            ErrorCategory::Authentication,
+            authentication::AI_SESSION_EXPIRED,
+            "la connexion à l'abonnement a expiré ou a été retirée, reconnexion nécessaire",
+        )
+        .with_action(SuggestedAction::Reauthenticate),
+        SessionRefreshError::Transient => AiError::Unavailable.into(),
+    }
 }
 
 /// Erreur d'une connexion à session sans session lisible

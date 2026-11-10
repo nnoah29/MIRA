@@ -7,6 +7,7 @@ use rand::{Rng, SeedableRng, rngs::StdRng};
 use tokio::io::AsyncWriteExt;
 
 use super::download::io_error;
+use super::file_mode::apply_mode;
 
 /// Tire 32 octets au hasard et les rend en hexadécimal (64 caractères).
 pub(super) fn new_key() -> String {
@@ -28,7 +29,6 @@ pub(super) async fn write_key_file(
         .create(true)
         .write(true)
         .truncate(true)
-        .mode(0o600)
         .open(&path)
         .await
         .map_err(|_| io_error())?;
@@ -41,8 +41,9 @@ pub(super) async fn write_key_file(
 
 /// Fixe les permissions d'un chemin.
 async fn set_mode(path: &Path, mode: u32) -> Result<(), MiraError> {
-    let permissions = std::os::unix::fs::PermissionsExt::from_mode(mode);
-    tokio::fs::set_permissions(path, permissions)
+    let owned = path.to_path_buf();
+    tokio::task::spawn_blocking(move || apply_mode(&owned, mode))
         .await
+        .map_err(|_| io_error())?
         .map_err(|_| io_error())
 }

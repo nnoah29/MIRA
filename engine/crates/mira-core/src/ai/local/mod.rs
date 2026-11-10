@@ -9,6 +9,7 @@ mod endpoint;
 mod extract;
 mod extract_check;
 mod extract_modes;
+mod file_mode;
 mod install;
 mod install_slot;
 mod key_file;
@@ -22,6 +23,7 @@ mod runtime;
 mod runtime_state;
 mod server_install;
 mod status;
+mod stop_signal;
 
 pub(crate) use connection::trim_local_connection;
 pub use download::{CancelFlag, DownloadJob, download_file};

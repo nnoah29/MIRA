@@ -24,7 +24,19 @@ impl SystemResources for LinuxResources {
 
     /// Rend l'espace utilisable par un utilisateur ordinaire sur le volume de `path`
     fn free_disk_bytes(&self, path: &Path) -> Option<u64> {
-        let stat = rustix::fs::statvfs(path).ok()?;
-        Some(stat.f_bavail.saturating_mul(stat.f_frsize))
+        disk_free(path)
     }
+}
+
+/// Espace libre du volume via `statvfs`.
+#[cfg(unix)]
+fn disk_free(path: &Path) -> Option<u64> {
+    let stat = rustix::fs::statvfs(path).ok()?;
+    Some(stat.f_bavail.saturating_mul(stat.f_frsize))
+}
+
+/// Inconnu hors Unix.
+#[cfg(not(unix))]
+fn disk_free(_path: &Path) -> Option<u64> {
+    None
 }

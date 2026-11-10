@@ -8,6 +8,8 @@ use mira_vocabulary::error::codes::server;
 use mira_vocabulary::{ErrorCategory, MiraError};
 use tokio::process::{Child, Command};
 
+use super::stop_signal::ask_to_stop;
+
 /// Lance l'exécutable sans hériter de l'environnement (seul `PATH` passe), sorties jetées.
 pub(super) fn spawn(executable: &Path, args: &[String]) -> Result<Child, MiraError> {
     let mut command = Command::new(executable);
@@ -86,13 +88,7 @@ fn exit_message(low_memory: bool) -> &'static str {
 
 /// Arrête le processus : SIGTERM, puis SIGKILL après cinq secondes ; le processus est toujours récolté.
 pub(super) async fn terminate(child: &mut Child) {
-    if let Some(pid) = child
-        .id()
-        .and_then(|id| i32::try_from(id).ok())
-        .and_then(rustix::process::Pid::from_raw)
-    {
-        let _ = rustix::process::kill_process(pid, rustix::process::Signal::TERM);
-    }
+    ask_to_stop(child);
     if tokio::time::timeout(Duration::from_secs(5), child.wait())
         .await
         .is_err()

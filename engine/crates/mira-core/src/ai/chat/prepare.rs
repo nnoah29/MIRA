@@ -9,10 +9,11 @@ use mira_vocabulary::{
     ContentKind, ErrorCategory, MaskingSettings, MiraError,
 };
 
-use super::checks::{check, context_summary};
+use super::checks::{Checked, check, context_summary};
 use super::context::render_context;
 use super::tools_plan::with_tools;
 use super::truncate::{MAX_INPUT_CHARS, request_chars, truncate_request};
+use crate::ai::local::tools_allowed;
 use crate::ai::masking::Masker;
 use crate::api::{ChatStart, Engine};
 use crate::ports::SecretValue;
@@ -44,7 +45,7 @@ pub(crate) async fn prepare(
 ) -> Result<ChatPlan, MiraError> {
     let connection = load_connection(engine, start.connection.as_ref())?;
     let checked = check(engine, &connection, &start).await?;
-    let enabled = start.allow_tools && checked.descriptor.supports_tools && host.is_some();
+    let enabled = tools_enabled(&start, &checked, host.is_some());
     let (kinds, parts) = context_summary(&start.request);
     let mode = start.mode;
     let request = with_tools(start.request, enabled, mode);
@@ -66,6 +67,11 @@ pub(crate) async fn prepare(
         request,
         masker,
     })
+}
+
+/// Dit si les outils sont annoncés : le client les permet, le modèle les supporte, un hôte les exécute.
+fn tools_enabled(start: &ChatStart, checked: &Checked, has_host: bool) -> bool {
+    start.allow_tools && has_host && tools_allowed(&checked.descriptor, &checked.model)
 }
 
 /// Rend le contexte, masque les textes envoyés (pas la consigne), puis tronque ; rend aussi la table du masquage.

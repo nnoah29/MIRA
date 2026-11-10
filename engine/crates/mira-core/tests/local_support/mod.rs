@@ -6,7 +6,7 @@ pub mod download;
 pub mod file_host;
 mod file_host_serve;
 pub mod runtime;
-mod runtime_fake;
+pub mod runtime_fake;
 
 use mira_vocabulary::{
     AiLocalModel, AiLocalRuntime, AiLocalServerBuild, AiProviderDescriptor, AiProviderId, AiQuirks,
@@ -34,7 +34,10 @@ pub fn test_model(id: &str, tier: LocalTier, tools: bool) -> AiLocalModel {
 /// Fiche de runtime de test : un modèle sans outils (`mini`) et un avec outils (`big`)
 pub fn test_runtime() -> AiLocalRuntime {
     AiLocalRuntime {
-        server: Vec::<AiLocalServerBuild>::new(),
+        server: ["linux-x86_64", "linux-aarch64"]
+            .iter()
+            .map(|p| test_build(p))
+            .collect(),
         server_args: ["--model", "{model}", "--host", "{host}", "--port", "{port}"]
             .iter()
             .map(|a| (*a).to_string())
@@ -83,4 +86,15 @@ pub fn test_model_named(fixture: &runtime::RuntimeFixture, id: &str) -> AiLocalM
         .find(|m| m.id == id)
         .unwrap()
         .clone()
+}
+
+/// Archive de test pour cette plateforme (jamais téléchargée par les tests qui posent le serveur à la main)
+pub fn test_build(platform: &str) -> AiLocalServerBuild {
+    AiLocalServerBuild {
+        platform: platform.to_string(),
+        url: "https://servers.test/server.tar.gz".to_string(),
+        sha256: "ab".repeat(32),
+        size: 1,
+        executable: "llama-server".to_string(),
+    }
 }

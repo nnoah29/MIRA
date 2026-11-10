@@ -57,6 +57,7 @@ pub fn sample_provider() -> AiProviderDescriptor {
             required_scope: "offline_access".to_string(),
             agent_name: "MIRA".to_string(),
         }),
+        local_runtime: None,
     }
 }
 

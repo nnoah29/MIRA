@@ -26,6 +26,7 @@ pub fn descriptor() -> AiProviderDescriptor {
         supports_tools: true,
         key_login: Some(key_login()),
         session_login: None,
+        local_runtime: None,
     }
 }
 

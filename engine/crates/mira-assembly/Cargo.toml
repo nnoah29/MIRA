@@ -24,6 +24,7 @@ mira-ai-mistral.workspace = true
 mira-ai-groq.workspace = true
 mira-ai-openrouter.workspace = true
 mira-ai-chatgpt.workspace = true
+mira-ai-local.workspace = true
 mira-ai-generic.workspace = true
 serde.workspace = true
 toml.workspace = true

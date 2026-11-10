@@ -17,6 +17,7 @@ pub struct TestProvider {
     pub supports_tools: bool,
     pub key_login: Option<AiKeyLogin>,
     pub session_login: Option<AiSessionLogin>,
+    pub local_runtime: Option<mira_vocabulary::AiLocalRuntime>,
 }
 
 impl TestProvider {
@@ -32,6 +33,7 @@ impl TestProvider {
             supports_tools: true,
             key_login: None,
             session_login: None,
+            local_runtime: None,
         }
     }
 }
@@ -53,6 +55,7 @@ impl AiProvider for TestProvider {
             supports_tools: self.supports_tools,
             key_login: self.key_login.clone(),
             session_login: self.session_login.clone(),
+            local_runtime: self.local_runtime.clone(),
         }
     }
 }

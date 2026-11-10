@@ -22,6 +22,15 @@ fn descriptor_without_session_login_defaults_to_none() {
     assert!(read.session_login.is_none());
 }
 
+/// Une fiche écrite avant le modèle local n'en a pas
+#[test]
+fn descriptor_without_local_runtime_defaults_to_none() {
+    let mut fiche: Value = serde_json::to_value(sample_descriptor()).unwrap();
+    fiche.as_object_mut().unwrap().remove("local_runtime");
+    let read: AiProviderDescriptor = serde_json::from_value(fiche).unwrap();
+    assert!(read.local_runtime.is_none());
+}
+
 /// Fiche d'exemple avec les outils annoncés.
 fn sample_descriptor() -> AiProviderDescriptor {
     AiProviderDescriptor {
@@ -38,5 +47,6 @@ fn sample_descriptor() -> AiProviderDescriptor {
         supports_tools: true,
         key_login: None,
         session_login: None,
+        local_runtime: None,
     }
 }

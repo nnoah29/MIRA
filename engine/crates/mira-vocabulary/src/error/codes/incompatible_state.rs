@@ -41,3 +41,8 @@ pub const AI_CONTENT_NOT_ALLOWED: ErrorCode =
     ErrorCode("incompatible_state.ai_content_not_allowed");
 /// L'historique des conversations d'IA est désactivé : rien n'est enregistré.
 pub const AI_HISTORY_DISABLED: ErrorCode = ErrorCode("incompatible_state.ai_history_disabled");
+/// Pas assez d'espace disque libre pour télécharger le modèle local.
+pub const AI_LOCAL_DISK_SPACE: ErrorCode = ErrorCode("incompatible_state.ai_local_disk_space");
+/// Le modèle local n'est pas pris en charge sur cette plateforme.
+pub const AI_LOCAL_UNSUPPORTED_PLATFORM: ErrorCode =
+    ErrorCode("incompatible_state.ai_local_unsupported_platform");

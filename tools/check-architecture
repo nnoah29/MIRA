@@ -26,7 +26,7 @@ import sys
 VOCAB_ALLOWED = {"serde", "thiserror"}
 PROTOCOL_ALLOWED = {"mira-vocabulary", "serde", "serde_json", "thiserror"}
 PROVIDER_NAMES = re.compile(r"gmail|googlemail|google|outlook|hotmail|office365|microsoft|yahoo|(?<![a-z])ymail|rocketmail|icloud", re.I)
-AI_PROVIDER_NAMES = re.compile(r"mistral|groq|openrouter|chatgpt|auth\.openai|gemini|generativelanguage|api\.anthropic|api\.openai", re.I)
+AI_PROVIDER_NAMES = re.compile(r"mistral|groq|openrouter|chatgpt|llama|huggingface|gguf|granite|ministral|auth\.openai|gemini|generativelanguage|api\.anthropic|api\.openai", re.I)
 DYNAMIC_LOADING = {"libloading", "dlopen", "dlopen2", "libc-dlopen"}
 ENCAPSULATED = {
     "rusqlite": ("storage",),

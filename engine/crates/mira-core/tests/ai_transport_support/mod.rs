@@ -29,6 +29,7 @@ pub fn descriptor(auth: AuthScheme) -> AiProviderDescriptor {
         supports_tools: true,
         key_login: None,
         session_login: None,
+        local_runtime: None,
     }
 }
 

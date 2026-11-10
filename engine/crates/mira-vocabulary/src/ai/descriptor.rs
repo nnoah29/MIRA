@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::local_runtime::AiLocalRuntime;
 use super::provider::AiProviderId;
 
 /// Façon dont la clé est présentée au service.
@@ -55,6 +56,8 @@ pub struct AiProviderDescriptor {
     pub key_login: Option<AiKeyLogin>,
     #[serde(default)]
     pub session_login: Option<AiSessionLogin>,
+    #[serde(default)]
+    pub local_runtime: Option<AiLocalRuntime>,
 }
 
 /// Adresses d'une connexion qui rend une clé d'API après autorisation dans le navigateur (OAuth PKCE).

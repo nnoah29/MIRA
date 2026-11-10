@@ -6,11 +6,13 @@ import '../engine/ai_admin.dart';
 import '../engine/ai_history_admin.dart';
 import '../i18n/i18n.dart';
 import '../state/ai_journal_state.dart';
+import '../state/ai_local_state.dart';
 import '../state/ai_settings_state.dart';
 import '../state/chat_history_state.dart';
 import '../theme/app_theme.dart';
 import 'ai_history_section.dart';
 import 'ai_journal_view.dart';
+import 'ai_local_panel.dart';
 import 'ai_provider_family.dart';
 import 'ai_provider_panel.dart';
 import 'ai_provider_tabs.dart';
@@ -41,6 +43,7 @@ class _AiSettingsState extends State<AiSettings> {
   String? selected;
   bool showJournal = false;
   late final AiJournalState journal = AiJournalState(widget.admin);
+  late final AiLocalState local = AiLocalState(widget.admin);
   late final ChatHistoryState history =
       widget.history ??
       ChatHistoryState(() => AiHistoryAdmin(widget.admin.client));
@@ -51,7 +54,9 @@ class _AiSettingsState extends State<AiSettings> {
     state.addListener(_refresh);
     journal.addListener(_refresh);
     history.addListener(_refresh);
+    local.addListener(_refresh);
     state.load();
+    local.refresh();
     history.load();
   }
 
@@ -64,7 +69,9 @@ class _AiSettingsState extends State<AiSettings> {
     state.removeListener(_refresh);
     journal.removeListener(_refresh);
     history.removeListener(_refresh);
+    local.removeListener(_refresh);
     state.dispose();
+    local.dispose();
     journal.dispose();
     if (widget.history == null) history.dispose();
     super.dispose();
@@ -104,7 +111,10 @@ class _AiSettingsState extends State<AiSettings> {
     final first = state.initialProviderId();
     final shown = selected ??= first == null ? null : aiTabOf(first);
     if (shown == null) return const [];
-    final tabs = aiTabProviders(state.providers);
+    final tabs = [
+      for (final p in aiTabProviders(state.providers))
+        if (!p.localRuntime || local.supported) p,
+    ];
     final current = tabs.firstWhere(
       (p) => p.id == shown,
       orElse: () => tabs.first,
@@ -116,11 +126,19 @@ class _AiSettingsState extends State<AiSettings> {
         selected: current.id,
         onSelect: (id) => setState(() => selected = id),
       ),
-      AiProviderPanel(
-        key: ValueKey('ai-panel-${current.id}'),
-        state: state,
-        providers: aiFamilyOf(state.providers, current),
-      ),
+      if (current.localRuntime)
+        AiLocalPanel(
+          key: ValueKey('ai-panel-${current.id}'),
+          state: local,
+          settings: state,
+          providerId: current.id,
+        )
+      else
+        AiProviderPanel(
+          key: ValueKey('ai-panel-${current.id}'),
+          state: state,
+          providers: aiFamilyOf(state.providers, current),
+        ),
     ];
   }
 

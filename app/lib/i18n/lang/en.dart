@@ -1441,4 +1441,42 @@ const Map<String, String> enStrings = {
   'Impossible de démarrer le moteur en arrière-plan':
       'Could not start the background engine',
   'Le moteur en arrière-plan est détaché': 'The background engine is detached',
+  'Assistant complet : peut chercher et lire tes mails pour t’aider.':
+      'Full assistant: can search and read your mail to help you.',
+  'Avancé': 'Advanced',
+  'Le fichier téléchargé est incomplet ou altéré : il a été supprimé, réessaie':
+      'The downloaded file is incomplete or altered: it was deleted, try again',
+  'Le modèle local met trop de temps à démarrer : réessaie ou choisis un palier plus léger': 'The local model takes too long to start: try again or pick a lighter tier',
+  'Le modèle local n’est pas pris en charge sur cet appareil':
+      'The local model is not supported on this device',
+  'Le modèle local s’est arrêté : la mémoire était peut-être insuffisante, essaie un palier plus léger': 'The local model stopped: memory may have been too low, try a lighter tier',
+  'Le modèle tourne sur ta machine : rien de ce que tu lui envoies ne quitte l’ordinateur.': 'The model runs on your machine: nothing you send it leaves the computer.',
+  'Le moteur qui fait tourner le modèle (environ 25 Mo) est téléchargé avec lui.':
+      'The engine that runs the model (about 25 MB) is downloaded with it.',
+  'Libérer la mémoire': 'Free the memory',
+  'Léger': 'Light',
+  'Mini': 'Mini',
+  'Mémoire disponible juste pour ce modèle : il peut être lent ou s’arrêter.':
+      'Available memory is tight for this model: it may be slow or stop.',
+  'Pas assez d’espace disque pour ce modèle : libère de la place puis réessaie':
+      'Not enough disk space for this model: free some space and try again',
+  'Reformule, résume et propose une réponse à un mail court. Très léger.':
+      'Rewords, summarizes and suggests a reply to a short email. Very light.',
+  'Résume, reformule et répond avec plus de justesse.':
+      'Summarizes, rewords and replies more accurately.',
+  'Taille : {0}. Licence : {1}.': 'Size: {0}. License: {1}.',
+  'Tu peux le supprimer ici à tout moment : tout l’espace est rendu.':
+      'You can delete it here at any time: all the space is returned.',
+  'Télécharger {0} ?': 'Download {0}?',
+  'Un modèle d’IA qui tourne sur ta machine : ni compte, ni clé, rien ne sort de l’ordinateur. C’est facultatif : tant que tu n’en télécharges pas un, il n’occupe ni disque ni mémoire.': 'An AI model that runs on your machine: no account, no key, nothing leaves the computer. It is optional: until you download one, it uses no disk space or memory.',
+  'Une installation du modèle local est déjà en cours':
+      'A local model installation is already in progress',
+  'Utiliser comme assistant': 'Use as assistant',
+  'Utilisé par l’assistant': 'Used by the assistant',
+  '{0} · {1} · {2} · mémoire conseillée {3} Go':
+      '{0} · {1} · {2} · recommended memory {3} GB',
+  'Modèle local (facultatif, sans compte)':
+      'Local model (optional, no account)',
+  'Le modèle local n’est pas disponible sur cet appareil.':
+      'The local model is not available on this device.',
 };

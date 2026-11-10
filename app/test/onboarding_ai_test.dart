@@ -26,6 +26,7 @@ Future<(MailStore, FakeAiEngine)> aiStore(
   WidgetTester tester, {
   bool withLogin = true,
   bool withSession = false,
+  bool withLocal = false,
   List<Map<String, dynamic>> connections = const [],
 }) async {
   final real = residentForOnboarding;
@@ -38,6 +39,7 @@ Future<(MailStore, FakeAiEngine)> aiStore(
       provider('openai', 'OpenAI'),
       provider('openrouter', 'OpenRouter', login: withLogin),
       if (withSession) provider('chatgpt', 'ChatGPT', session: true),
+      if (withLocal) provider('local', 'Modèle local', local: true),
     ])
     ..connections.addAll(connections);
   final src = await tester.runAsync(
@@ -199,5 +201,40 @@ void main() {
     Btn button(String key) => tester.widget<Btn>(find.byKey(ValueKey(key)));
     expect(button('onb-ai-login').go, isTrue);
     expect(button('onb-ai-chatgpt').go, isTrue);
+  });
+
+  testWidgets('l’option locale n’appelle rien tant qu’on ne la touche pas', (
+    tester,
+  ) async {
+    final (store, fake) = await aiStore(tester, withLocal: true);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    expect(find.byKey(const ValueKey('onb-ai-local')), findsOneWidget);
+    expect(fake.requestsOf('get_local_runtime_status'), isEmpty);
+    expect(fake.requestsOf('install_local_model'), isEmpty);
+  });
+
+  testWidgets(
+    'toucher l’option locale lit seulement l’état et montre les paliers',
+    (tester) async {
+      final (store, fake) = await aiStore(tester, withLocal: true);
+      await pumpFlow(tester, store: store);
+      await toAiPage(tester);
+      await tapKey(tester, 'onb-ai-local');
+      expect(fake.requestsOf('get_local_runtime_status'), hasLength(1));
+      expect(fake.requestsOf('install_local_model'), isEmpty);
+      for (final id in ['mini', 'light', 'big']) {
+        expect(find.byKey(ValueKey('ai-local-card-$id')), findsOneWidget);
+      }
+    },
+  );
+
+  testWidgets('sans modèle local proposé par le moteur, aucune option', (
+    tester,
+  ) async {
+    final (store, _) = await aiStore(tester);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    expect(find.byKey(const ValueKey('onb-ai-local')), findsNothing);
   });
 }

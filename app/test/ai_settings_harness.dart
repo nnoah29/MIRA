@@ -13,6 +13,7 @@ Map<String, dynamic> provider(
   bool free = false,
   bool login = false,
   bool session = false,
+  bool local = false,
 }) => {
   'id': id,
   'display_name': name,
@@ -33,6 +34,9 @@ Map<String, dynamic> provider(
           'required_scope': 'openid',
           'agent_name': 'MIRA',
         }
+      : null,
+  'local_runtime': local
+      ? {'server': [], 'models': [], 'health_path': '/health'}
       : null,
 };
 

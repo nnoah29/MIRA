@@ -135,9 +135,16 @@ class ChatController extends ChangeNotifier {
 
   Future<AiConnectionInfo?> _usable(AiAdmin ai) async {
     try {
-      _providerNames = {for (final p in await ai.providers()) p.id: p.name};
+      final providers = await ai.providers();
+      _providerNames = {for (final p in providers) p.id: p.name};
+      final local = {
+        for (final p in providers)
+          if (p.localRuntime) p.id,
+      };
       for (final c in await ai.connections()) {
-        if (c.isDefault && (c.hasKey || isLoopbackUrl(c.baseUrl))) return c;
+        final usable =
+            c.hasKey || isLoopbackUrl(c.baseUrl) || local.contains(c.provider);
+        if (c.isDefault && usable) return c;
       }
     } on Object {
       return null;

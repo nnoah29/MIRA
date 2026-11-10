@@ -3,11 +3,13 @@ import 'package:provider/provider.dart';
 
 import '../../engine/ai_models.dart';
 import '../../i18n/i18n.dart';
+import '../../state/ai_local_state.dart';
 import '../../state/ai_settings_state.dart';
 import '../../state/store.dart';
 import '../../theme/app_theme.dart';
 import '../ai_browser_login.dart';
 import '../ai_connection_card.dart';
+import '../ai_local_panel.dart';
 import '../ai_session_warning.dart';
 import '../widgets.dart';
 import 'onboarding_controller.dart';
@@ -27,6 +29,8 @@ class _AiStepState extends State<AiStep> {
     context.read<MailStore>().aiAdmin!,
   );
 
+  AiLocalState? _local;
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +45,7 @@ class _AiStepState extends State<AiStep> {
       _state.cancelLogin(id);
     }
     _state.dispose();
+    _local?.dispose();
     super.dispose();
   }
 
@@ -121,6 +126,43 @@ class _AiStepState extends State<AiStep> {
     );
   }
 
+  /// Fournisseur du modèle local, s'il est proposé par le moteur.
+  AiProviderInfo? get _localProvider =>
+      _state.providers.where((p) => p.localRuntime).firstOrNull;
+
+  /// Ouvre le choix des paliers : seule lecture de l'état, rien n'est téléchargé.
+  void _openLocal() {
+    final admin = context.read<MailStore>().aiAdmin!;
+    final local = _local ??= AiLocalState(admin)..addListener(_refresh);
+    local.refresh();
+    setState(() {});
+  }
+
+  /// Option facultative sous les services en ligne : un modèle qui tourne sur la machine.
+  Widget _localOption(Pal p, AiProviderInfo provider) {
+    final local = _local;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Btn(
+          key: const ValueKey('onb-ai-local'),
+          label: t('Modèle local (facultatif, sans compte)'),
+          onTap: local == null ? _openLocal : null,
+        ),
+        if (local != null && local.status != null && !local.supported)
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Text(
+              t('Le modèle local n’est pas disponible sur cet appareil.'),
+              style: Fonts.sans(size: 13.5, color: p.dim),
+            ),
+          ),
+        if (local != null && local.supported)
+          AiLocalPanel(state: local, settings: _state, providerId: provider.id),
+      ],
+    );
+  }
+
   Widget _notes(Pal p) {
     final link = _state.loginLinks.values.firstOrNull;
     final error = _state.error;
@@ -159,6 +201,11 @@ class _AiStepState extends State<AiStep> {
       ),
       children: [
         _actions(p, _providers),
+        if (_localProvider != null && _state.logins.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: _localOption(p, _localProvider!),
+          ),
         _notes(p),
         const SizedBox(height: 20),
         Btn(

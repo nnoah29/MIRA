@@ -11,6 +11,6 @@ pub(crate) fn handle_cancel_ai_key_login(
     engine: &Engine,
     flow: &str,
 ) -> Result<Response, MiraError> {
-    engine.ai_key_logins.cancel(flow);
+    engine.ai.key_logins.cancel(flow);
     Ok(done())
 }

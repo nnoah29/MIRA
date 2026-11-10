@@ -3,4 +3,4 @@
 mod table;
 mod take;
 
-pub use table::{AiKeyLogins, KeyLoginEntry};
+pub use table::{AiKeyLogins, KeyLoginEntry, KeyLoginKind};

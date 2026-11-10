@@ -6,6 +6,7 @@ import '../engine/ai_models.dart';
 import '../i18n/i18n.dart';
 import '../theme/app_theme.dart';
 import 'ai_connection_card.dart';
+import 'ai_provider_family.dart';
 import 'widgets.dart';
 
 /// Onglets des fournisseurs, dans l'ordre du moteur ; même style que ceux des réglages.
@@ -24,7 +25,7 @@ class AiProviderTabs extends StatelessWidget {
 
   /// Pastille d'un onglet : pleine et colorée pour la connexion par défaut, creuse pour une autre.
   Widget _dot(Pal p, AiProviderInfo provider) {
-    final mine = connections.where((c) => c.provider == provider.id);
+    final mine = connections.where((c) => aiTabOf(c.provider) == provider.id);
     if (mine.isEmpty) return const SizedBox.shrink();
     final isDefault = mine.any((c) => c.isDefault);
     final dot = Container(

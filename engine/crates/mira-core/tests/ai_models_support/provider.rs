@@ -1,7 +1,8 @@
 //! Fournisseur d'IA de test : aucun nom de fournisseur réel dans le cœur.
 
 use mira_vocabulary::{
-    AiKeyLogin, AiProvider, AiProviderDescriptor, AiProviderId, AiQuirks, AuthScheme, WireFormat,
+    AiKeyLogin, AiProvider, AiProviderDescriptor, AiProviderId, AiQuirks, AiSessionLogin,
+    AuthScheme, WireFormat,
 };
 
 /// Fournisseur de test dont l'identifiant, le format et les exclusions se règlent.
@@ -15,6 +16,8 @@ pub struct TestProvider {
     pub editable: bool,
     pub supports_tools: bool,
     pub key_login: Option<AiKeyLogin>,
+    pub session_login: Option<AiSessionLogin>,
+    pub local_runtime: Option<mira_vocabulary::AiLocalRuntime>,
 }
 
 impl TestProvider {
@@ -29,6 +32,8 @@ impl TestProvider {
             editable: true,
             supports_tools: true,
             key_login: None,
+            session_login: None,
+            local_runtime: None,
         }
     }
 }
@@ -49,6 +54,8 @@ impl AiProvider for TestProvider {
             base_url_editable: self.editable,
             supports_tools: self.supports_tools,
             key_login: self.key_login.clone(),
+            session_login: self.session_login.clone(),
+            local_runtime: self.local_runtime.clone(),
         }
     }
 }

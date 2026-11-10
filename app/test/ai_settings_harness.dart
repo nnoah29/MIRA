@@ -12,6 +12,8 @@ Map<String, dynamic> provider(
   String name, {
   bool free = false,
   bool login = false,
+  bool session = false,
+  bool local = false,
 }) => {
   'id': id,
   'display_name': name,
@@ -22,6 +24,19 @@ Map<String, dynamic> provider(
           'authorize_url': 'https://a.example/auth',
           'exchange_url': 'https://a.example/k',
         }
+      : null,
+  'session_login': session
+      ? {
+          'authorize_url': 'https://a.example/authorize',
+          'token_url': 'https://a.example/token',
+          'resource': 'https://a.example/v1',
+          'scopes': ['openid'],
+          'required_scope': 'openid',
+          'agent_name': 'MIRA',
+        }
+      : null,
+  'local_runtime': local
+      ? {'server': [], 'models': [], 'health_path': '/health'}
       : null,
 };
 

@@ -5,12 +5,14 @@ use mira_vocabulary::{AiError, AiModel, AiProviderDescriptor, ChatDelta, ChatReq
 use super::call::HttpCall;
 use super::{anthropic_decode, anthropic_encode, anthropic_models};
 use super::{openai_decode, openai_encode, openai_models};
+use super::{responses_decode, responses_encode, responses_models};
 use crate::ai::sse::SseEvent;
 
 /// Encode la requête selon le format du descripteur.
 pub fn encode(request: &ChatRequest, model: &str, descriptor: &AiProviderDescriptor) -> HttpCall {
     match descriptor.format {
         WireFormat::OpenAiChat => openai_encode::encode_chat(request, model, descriptor),
+        WireFormat::OpenAiResponses => responses_encode::encode_chat(request, model, descriptor),
         WireFormat::AnthropicMessages => anthropic_encode::encode_chat(request, model, descriptor),
     }
 }
@@ -19,6 +21,7 @@ pub fn encode(request: &ChatRequest, model: &str, descriptor: &AiProviderDescrip
 pub fn decode_event(format: WireFormat, event: &SseEvent) -> Result<Vec<ChatDelta>, AiError> {
     match format {
         WireFormat::OpenAiChat => openai_decode::decode_chat_event(event),
+        WireFormat::OpenAiResponses => responses_decode::decode_chat_event(event),
         WireFormat::AnthropicMessages => anthropic_decode::decode_chat_event(event),
     }
 }
@@ -27,6 +30,7 @@ pub fn decode_event(format: WireFormat, event: &SseEvent) -> Result<Vec<ChatDelt
 pub fn decode_models(format: WireFormat, body: &[u8]) -> Result<Vec<AiModel>, AiError> {
     match format {
         WireFormat::OpenAiChat => openai_models::decode_models(body),
+        WireFormat::OpenAiResponses => responses_models::decode_models(body),
         WireFormat::AnthropicMessages => anthropic_models::decode_models(body),
     }
 }
@@ -35,6 +39,7 @@ pub fn decode_models(format: WireFormat, body: &[u8]) -> Result<Vec<AiModel>, Ai
 pub fn chat_path(format: WireFormat) -> &'static str {
     match format {
         WireFormat::OpenAiChat => openai_encode::CHAT_PATH,
+        WireFormat::OpenAiResponses => responses_encode::CHAT_PATH,
         WireFormat::AnthropicMessages => anthropic_encode::CHAT_PATH,
     }
 }

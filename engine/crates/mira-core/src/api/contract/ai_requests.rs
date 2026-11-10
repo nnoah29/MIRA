@@ -94,6 +94,14 @@ pub enum AiRequest {
         enabled: bool,
     },
     GetAiHistoryEnabled,
+    GetLocalRuntimeStatus,
+    InstallLocalModel {
+        model_id: String,
+    },
+    RemoveLocalModel {
+        model_id: String,
+    },
+    StopLocalRuntime,
 }
 
 /// Types autorisés par un consentement sans liste : le mail ouvert, comme avant le contrat 1.2.

@@ -7,13 +7,15 @@ pub mod form;
 pub mod loopback;
 pub mod pkce;
 pub(crate) mod renewal;
+pub mod session;
 pub mod tokens;
 pub mod vault;
 
 pub use client_config::OAuthClientConfig;
 pub use flow::{
     AuthorizationCode, FlowPhase, PendingFlow, authorize_until_cancelled, complete_flow,
-    complete_key_flow, start_flow, start_key_flow, wait_for_redirect,
+    complete_key_flow, complete_session_flow, start_flow, start_key_flow, start_session_flow,
+    wait_for_redirect,
 };
 pub use flow_table::{FlowEntry, FlowSummary, FlowTarget, OAuthFlows};
 pub use tokens::{

@@ -536,8 +536,10 @@ const Map<String, String> enStrings = {
       'Export file too large (2 MB and 500 items at most)',
   'Version du format d’export non prise en charge':
       'Export format version not supported',
-  'Clé refusée par le service d’IA : vérifie-la':
-      'Key rejected by the AI service: check it',
+  'Accès refusé par le service d’IA : vérifie ta clé ou reconnecte-toi':
+      'Access refused by the AI service: check your key or reconnect',
+  'La connexion à ton abonnement a expiré ou a été retirée : reconnecte-toi': 'The connection to your subscription has expired or was removed: reconnect',
+  'Autorisation incomplète : ton abonnement ne donne pas cet accès (formule Plus ou Pro requise pour ChatGPT)': 'Authorisation incomplete: your subscription does not give this access (ChatGPT Plus or Pro required)',
   'Autorise d’abord l’envoi de texte à ce service d’IA':
       'First allow sending text to this AI service',
   'Ce service d’IA n’est pas autorisé à recevoir ce type de contenu':
@@ -572,8 +574,8 @@ const Map<String, String> enStrings = {
   'Toutes les conversations enregistrées sont effacées de cet appareil.':
       'All saved conversations are deleted from this device.',
   '« {0} » est effacée de cet appareil.': '“{0}” is deleted from this device.',
-  'Aucune clé enregistrée pour ce service d’IA':
-      'No key saved for this AI service',
+  'Aucune clé ni connexion enregistrée pour ce service d’IA':
+      'No key or connection saved for this AI service',
   'Ce service d’IA ne propose pas la connexion par navigateur':
       'This AI service does not offer browser sign-in',
   'Choisis d’abord un modèle d’IA': 'First choose an AI model',
@@ -837,6 +839,20 @@ const Map<String, String> enStrings = {
       'Enter an address (name@domain.com) or a domain (domain.com).',
   'Sans le focus depuis ce délai, MIRA libère l’affichage (corps des messages, images, caches) ; la réception, les règles et les notifications continuent.': 'After this long without focus, MIRA frees the display (message bodies, images, caches); receiving, rules and notifications keep running.',
   'Se connecter avec {0}': 'Sign in with {0}',
+  'Avec ton abonnement {0}': 'With your {0} subscription',
+  'Avec une clé d’API': 'With an API key',
+  'Utiliser ton abonnement {0} dans MIRA ?':
+      'Use your {0} subscription in MIRA?',
+  'Le contenu que tu envoies à l’assistant est traité par le service, selon les conditions de ton compte. Les personnes qui t’écrivent n’ont pas consenti à cet envoi.': 'What you send to the assistant is processed by the service under your account’s terms. The people who write to you have not agreed to this.',
+  'L’usage compte dans ton abonnement, avec un plafond que tu règles côté service.': 'Usage counts against your subscription, with a cap you set on the service’s side.',
+  'Tu peux déconnecter MIRA à tout moment dans les réglages du service.':
+      'You can disconnect MIRA at any time in the service’s settings.',
+  'Cette connexion est en préversion : elle peut cesser de fonctionner.':
+      'This connection is in preview: it may stop working.',
+  'Continuer': 'Continue',
+  'Se déconnecter': 'Sign out',
+  'Pour utiliser {0}, connecte ton abonnement dans le navigateur : aucune clé à recopier.':
+      'To use {0}, connect your subscription in the browser: no key to copy.',
   'Se reconnecter': 'Reconnect',
   'Secondaire': 'Secondary',
   'Serveur {0} : hôte invalide': '{0} server: invalid host',
@@ -1425,4 +1441,42 @@ const Map<String, String> enStrings = {
   'Impossible de démarrer le moteur en arrière-plan':
       'Could not start the background engine',
   'Le moteur en arrière-plan est détaché': 'The background engine is detached',
+  'Assistant complet : peut chercher et lire tes mails pour t’aider.':
+      'Full assistant: can search and read your mail to help you.',
+  'Avancé': 'Advanced',
+  'Le fichier téléchargé est incomplet ou altéré : il a été supprimé, réessaie':
+      'The downloaded file is incomplete or altered: it was deleted, try again',
+  'Le modèle local met trop de temps à démarrer : réessaie ou choisis un palier plus léger': 'The local model takes too long to start: try again or pick a lighter tier',
+  'Le modèle local n’est pas pris en charge sur cet appareil':
+      'The local model is not supported on this device',
+  'Le modèle local s’est arrêté : la mémoire était peut-être insuffisante, essaie un palier plus léger': 'The local model stopped: memory may have been too low, try a lighter tier',
+  'Le modèle tourne sur ta machine : rien de ce que tu lui envoies ne quitte l’ordinateur.': 'The model runs on your machine: nothing you send it leaves the computer.',
+  'Le moteur qui fait tourner le modèle (environ 25 Mo) est téléchargé avec lui.':
+      'The engine that runs the model (about 25 MB) is downloaded with it.',
+  'Libérer la mémoire': 'Free the memory',
+  'Léger': 'Light',
+  'Mini': 'Mini',
+  'Mémoire disponible juste pour ce modèle : il peut être lent ou s’arrêter.':
+      'Available memory is tight for this model: it may be slow or stop.',
+  'Pas assez d’espace disque pour ce modèle : libère de la place puis réessaie':
+      'Not enough disk space for this model: free some space and try again',
+  'Reformule, résume et propose une réponse à un mail court. Très léger.':
+      'Rewords, summarizes and suggests a reply to a short email. Very light.',
+  'Résume, reformule et répond avec plus de justesse.':
+      'Summarizes, rewords and replies more accurately.',
+  'Taille : {0}. Licence : {1}.': 'Size: {0}. License: {1}.',
+  'Tu peux le supprimer ici à tout moment : tout l’espace est rendu.':
+      'You can delete it here at any time: all the space is returned.',
+  'Télécharger {0} ?': 'Download {0}?',
+  'Un modèle d’IA qui tourne sur ta machine : ni compte, ni clé, rien ne sort de l’ordinateur. C’est facultatif : tant que tu n’en télécharges pas un, il n’occupe ni disque ni mémoire.': 'An AI model that runs on your machine: no account, no key, nothing leaves the computer. It is optional: until you download one, it uses no disk space or memory.',
+  'Une installation du modèle local est déjà en cours':
+      'A local model installation is already in progress',
+  'Utiliser comme assistant': 'Use as assistant',
+  'Utilisé par l’assistant': 'Used by the assistant',
+  '{0} · {1} · {2} · mémoire conseillée {3} Go':
+      '{0} · {1} · {2} · recommended memory {3} GB',
+  'Modèle local (facultatif, sans compte)':
+      'Local model (optional, no account)',
+  'Le modèle local n’est pas disponible sur cet appareil.':
+      'The local model is not available on this device.',
 };

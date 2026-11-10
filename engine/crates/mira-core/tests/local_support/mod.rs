@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 //! Outils des tests du modèle local : fiche de runtime de test, sans nommer de vrai fournisseur.
 
+pub mod archives;
 pub mod download;
 pub mod file_host;
 mod file_host_serve;

@@ -31,12 +31,21 @@ help: ## Affiche cette aide
 	@awk 'BEGIN{FS=":.*## "} /^[a-zA-Z0-9_-]+:.*## /{printf "  \033[1m%-16s\033[0m %s\n",$$1,$$2} /^##@/{printf "\n%s\n",substr($$0,5)}' $(MAKEFILE_LIST)
 
 ##@ Lancer
-.PHONY: run run-debug run-release demo
-run: bridge app-deps ## Lance l'application Flutter sur le moteur réel (MODE=profile|debug|release)
+.PHONY: stop-daemon run run-debug run-profile run-release demo
+stop-daemon: ## Arrête le démon mira-daemon en cours (service systemd utilisateur, puis tout processus restant)
+	@systemctl --user stop mira-daemon.service 2>/dev/null || true
+	@pkill -x mira-daemon 2>/dev/null && echo "  mira-daemon arrêté" || true
+	@for i in 1 2 3 4 5 6 7 8 9 10; do pgrep -x mira-daemon >/dev/null || exit 0; sleep 0.3; done; \
+	 echo "mira-daemon tourne encore : arrête-le à la main (pgrep -a mira-daemon)"; exit 1
+
+run: stop-daemon bridge app-deps ## Lance l'application Flutter sur le moteur réel (MODE=profile|debug|release)
 	cd $(APP) && flutter run --$(MODE) -d $(DEVICE)
 
 run-debug: ## Lance l'application en debug (hot reload, lent)
 	$(MAKE) run MODE=debug
+
+run-profile: ## Lance l'application en profile (fluidité représentative)
+	$(MAKE) run MODE=profile
 
 run-release: ## Lance l'application en release
 	$(MAKE) run MODE=release

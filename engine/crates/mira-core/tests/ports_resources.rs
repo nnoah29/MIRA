@@ -3,7 +3,7 @@
 
 use std::path::Path;
 
-use mira_core::ports::resources_linux::parse_mem_available;
+use mira_core::ports::resources_host::parse_mem_available;
 use mira_core::ports::{FixedResources, SystemResources};
 
 /// `MemAvailable` en kio est rendu en Mio

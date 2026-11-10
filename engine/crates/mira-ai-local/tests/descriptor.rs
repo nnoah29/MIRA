@@ -50,7 +50,7 @@ fn pinned_server_builds_match_spec() {
         arm.sha256,
         "9e66367e598fb0c7a196e3b6586b9c0b455fec0f5364b962a05ffd53aebc14be"
     );
-    assert_eq!(runtime.server.len(), 2);
+    assert_eq!(runtime.server.len(), 4);
 }
 
 /// Toute somme est en hexadécimal minuscule de 64 caractères et toute adresse est en HTTPS

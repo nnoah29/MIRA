@@ -8,7 +8,7 @@ use mira_vocabulary::error::codes::server;
 use mira_vocabulary::{ErrorCategory, MiraError};
 use tokio::process::{Child, Command};
 
-use super::stop_signal::ask_to_stop;
+use super::os_process::{ask_to_stop, tune_command};
 
 /// Lance l'exécutable sans hériter de l'environnement (seul `PATH` passe), sorties jetées.
 pub(super) fn spawn(executable: &Path, args: &[String]) -> Result<Child, MiraError> {
@@ -26,6 +26,7 @@ pub(super) fn spawn(executable: &Path, args: &[String]) -> Result<Child, MiraErr
     if let Some(folder) = executable.parent() {
         command.current_dir(folder);
     }
+    tune_command(&mut command);
     command
         .spawn()
         .map_err(|_| failure("le serveur local n'a pas pu être lancé"))
@@ -88,11 +89,13 @@ fn exit_message(low_memory: bool) -> &'static str {
 
 /// Arrête le processus : SIGTERM, puis SIGKILL après cinq secondes ; le processus est toujours récolté.
 pub(super) async fn terminate(child: &mut Child) {
-    ask_to_stop(child);
-    if tokio::time::timeout(Duration::from_secs(5), child.wait())
-        .await
-        .is_err()
+    let asked = ask_to_stop(child);
+    if asked
+        && tokio::time::timeout(Duration::from_secs(5), child.wait())
+            .await
+            .is_ok()
     {
-        let _ = child.kill().await;
+        return;
     }
+    let _ = child.kill().await;
 }

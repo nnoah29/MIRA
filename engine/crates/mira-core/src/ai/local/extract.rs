@@ -12,10 +12,18 @@ use super::extract_modes::normalize_modes;
 
 /// Extrait l'archive dans `dest` ; toute entrée piégée, tout dépassement de `max_bytes` annule tout.
 pub fn extract_tar_gz(archive: &Path, dest: &Path, max_bytes: u64) -> Result<(), MiraError> {
+    with_staging(dest, |stage| unpack_all(archive, stage, max_bytes))
+}
+
+/// Remplit un dossier de préparation, normalise les modes, puis le renomme en `dest` ; un échec n'en laisse rien.
+pub(super) fn with_staging(
+    dest: &Path,
+    fill: impl FnOnce(&Path) -> Result<(), MiraError>,
+) -> Result<(), MiraError> {
     let stage = staging_of(dest);
     let _ = std::fs::remove_dir_all(&stage);
     std::fs::create_dir_all(&stage).map_err(|_| corrupted())?;
-    let outcome = unpack_all(archive, &stage, max_bytes).and_then(|()| normalize_modes(&stage));
+    let outcome = fill(&stage).and_then(|()| normalize_modes(&stage));
     if let Err(error) = outcome {
         let _ = std::fs::remove_dir_all(&stage);
         return Err(error);

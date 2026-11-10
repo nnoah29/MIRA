@@ -53,7 +53,7 @@ pub fn config_with_secrets(home: &Path, secrets: Arc<MemorySecretStore>) -> Engi
         ids: Arc::new(SequentialIds::new()),
         oauth: OAuthClientConfig::default(),
         network: NetworkPolicy::default(),
-        resources: std::sync::Arc::new(mira_core::ports::LinuxResources),
+        resources: std::sync::Arc::new(mira_core::ports::HostResources),
     }
 }
 

@@ -6,7 +6,7 @@ use mira_vocabulary::error::codes::incompatible_state;
 use mira_vocabulary::{AiLocalServerBuild, ErrorCategory, MiraError};
 
 use super::download::{CancelFlag, DownloadJob, download_file};
-use super::extract::extract_tar_gz;
+use super::extract_any::{archive_suffix, extract_archive};
 use super::extract_check::corrupted;
 use super::extract_modes::find_executable;
 use crate::ports::SystemResources;
@@ -23,9 +23,16 @@ pub struct ServerInstall<'a> {
 
 /// Nom de la plateforme courante dans le descripteur, ou `None` si elle n'est pas prise en charge.
 pub fn current_platform() -> Option<&'static str> {
-    match (std::env::consts::OS, std::env::consts::ARCH) {
+    platform_of(std::env::consts::OS, std::env::consts::ARCH)
+}
+
+/// Nom de plateforme du descripteur pour un système et une architecture.
+pub fn platform_of(os: &str, arch: &str) -> Option<&'static str> {
+    match (os, arch) {
         ("linux", "x86_64") => Some("linux-x86_64"),
         ("linux", "aarch64") => Some("linux-aarch64"),
+        ("windows", "x86_64") => Some("windows-x86_64"),
+        ("windows", "aarch64") => Some("windows-aarch64"),
         _ => None,
     }
 }
@@ -58,7 +65,7 @@ pub async fn install_server(
         return Ok(found);
     }
     let mut archive = job.root.as_os_str().to_os_string();
-    archive.push(".tar.gz");
+    archive.push(archive_suffix(&job.build.url));
     let archive = PathBuf::from(archive);
     let download = DownloadJob {
         url: &job.build.url,
@@ -69,7 +76,7 @@ pub async fn install_server(
     };
     download_file(&download, progress, cancel).await?;
     let (from, to) = (archive.clone(), job.root.to_path_buf());
-    let done = tokio::task::spawn_blocking(move || extract_tar_gz(&from, &to, MAX_UNPACKED_BYTES))
+    let done = tokio::task::spawn_blocking(move || extract_archive(&from, &to, MAX_UNPACKED_BYTES))
         .await
         .map_err(|_| corrupted())?;
     let _ = tokio::fs::remove_file(&archive).await;

@@ -70,7 +70,7 @@ pub fn config_with_clock(
         ids: Arc::new(SequentialIds::new()),
         oauth: OAuthClientConfig::default(),
         network: network_to(port, smtp_port),
-        resources: std::sync::Arc::new(mira_assembly::ports::LinuxResources),
+        resources: std::sync::Arc::new(mira_assembly::ports::HostResources),
     }
 }
 

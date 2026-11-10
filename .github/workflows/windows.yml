@@ -14,6 +14,18 @@ jobs:
       - name: Moteur et hôte (compilation)
         working-directory: engine
         run: cargo check -p mira-core -p mira-host
+      - name: Serveur local (archive épinglée, somme, extraction, lancement)
+        shell: pwsh
+        run: |
+          $url = "https://github.com/ggml-org/llama.cpp/releases/download/b12224/llama-b12224-bin-win-cpu-x64.zip"
+          $sha = "d7a7a3e014a02dbfce46977f9da6d9b58196b9c83b80bcf6ef2337134103c3d6"
+          Invoke-WebRequest $url -OutFile server.zip
+          if ((Get-FileHash server.zip -Algorithm SHA256).Hash.ToLower() -ne $sha) { throw "somme de l'archive différente" }
+          Expand-Archive server.zip -DestinationPath server
+          $exe = Get-ChildItem server -Recurse -Filter llama-server.exe | Select-Object -First 1
+          if (-not $exe) { throw "llama-server.exe absent de l'archive" }
+          & $exe.FullName --version
+          if ($LASTEXITCODE -ne 0) { throw "le serveur ne se lance pas" }
       - name: Démon (compilation et fichier du port)
         working-directory: engine
         run: |

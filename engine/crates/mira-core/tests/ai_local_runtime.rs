@@ -103,7 +103,7 @@ async fn child_exit_before_ready_returns_runtime_failed() {
         .ensure_running(&fixture.context(), &model)
         .await
         .unwrap_err();
-    assert_eq!(error.code, "server.ai.local_runtime_failed");
+    assert_eq!(error.code, "server.ai_local_runtime_failed");
 }
 
 /// Après un plantage en cours d'usage, l'appel suivant relance un seul serveur

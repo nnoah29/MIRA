@@ -99,6 +99,7 @@ impl Engine {
 
     /// Ferme proprement le moteur : les synchronisations en cours ont `deadline` pour finir, puis sont interrompues ; rend `false` si le délai a été dépassé
     pub async fn shutdown_within(self, deadline: Duration) -> Result<bool, MiraError> {
+        self.ai.local_runtime.stop().await;
         let on_time = self.sync.shutdown(deadline).await;
         self.shutdown()?;
         Ok(on_time)

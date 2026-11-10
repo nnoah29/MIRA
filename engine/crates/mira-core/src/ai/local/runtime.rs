@@ -5,9 +5,10 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use mira_vocabulary::{AiLocalModel, AiLocalRuntime, MiraError};
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, Notify};
 
 use super::launch::launch;
+use super::process::failure;
 use super::runtime_state::{State, reuse, spawn_idle_monitor, stop_locked};
 use crate::ports::{SecretValue, SystemResources};
 
@@ -33,6 +34,7 @@ pub struct LocalRuntimeHandle {
 #[derive(Clone, Default)]
 pub struct LocalRuntimeManager {
     inner: Arc<Mutex<State>>,
+    cancel: Arc<Notify>,
 }
 
 impl LocalRuntimeManager {
@@ -52,7 +54,13 @@ impl LocalRuntimeManager {
             return Ok(handle);
         }
         stop_locked(&mut state).await;
-        let running = launch(ctx, model).await?;
+        let notified = self.cancel.notified();
+        tokio::pin!(notified);
+        notified.as_mut().enable();
+        let running = tokio::select! {
+            launched = launch(ctx, model) => launched?,
+            () = notified => return Err(failure("le lancement du modèle local a été interrompu")),
+        };
         let handle = running.handle();
         state.running = Some(running);
         state.generation += 1;
@@ -63,14 +71,15 @@ impl LocalRuntimeManager {
 
     /// Arrête le serveur s'il tourne ; sans effet sinon.
     pub async fn stop(&self) {
+        self.cancel.notify_waiters();
         let mut state = self.inner.lock().await;
         state.generation += 1;
         stop_locked(&mut state).await;
     }
 
-    /// Identifiant du modèle en marche, s'il y en a un et que son processus vit encore.
+    /// Identifiant du modèle en marche ; pendant un lancement il n'y en a pas encore, et l'état n'attend pas.
     pub async fn running_model(&self) -> Option<String> {
-        let mut state = self.inner.lock().await;
+        let mut state = self.inner.try_lock().ok()?;
         let running = state.running.as_mut()?;
         matches!(running.child.try_wait(), Ok(None)).then(|| running.model_id.clone())
     }

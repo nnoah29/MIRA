@@ -20,15 +20,7 @@ pub(crate) async fn handle_remove_local_model(
         .flat_map(|r| r.models.iter())
         .find(|m| m.id == model_id)
         .ok_or_else(unsupported)?;
-    if engine
-        .ai
-        .local_install
-        .current()
-        .is_some_and(|i| i.model_id == model_id)
-    {
-        return Err(busy());
-    }
-    engine.ai.local_runtime.stop().await;
+    stop_if_serving(engine, model_id).await?;
     let paths = LocalPaths::new(&engine.paths.root);
     delete_model_files(&paths.model_file(model)).await;
     let remaining = installed_ids(engine, &descriptor);
@@ -38,6 +30,17 @@ pub(crate) async fn handle_remove_local_model(
     let clock = engine.config.clock.as_ref();
     trim_local_connection(&engine.database, clock, &descriptor, model_id, &remaining)?;
     Ok(done())
+}
+
+/// Refuse tout retrait pendant une installation, et n'arrête le serveur que s'il sert ce modèle.
+async fn stop_if_serving(engine: &Engine, model_id: &str) -> Result<(), MiraError> {
+    if engine.ai.local_install.current().is_some() {
+        return Err(busy());
+    }
+    if engine.ai.local_runtime.running_model().await.as_deref() == Some(model_id) {
+        engine.ai.local_runtime.stop().await;
+    }
+    Ok(())
 }
 
 /// Supprime le fichier du modèle et son éventuel fichier partiel ; l'absence n'est pas une erreur.
@@ -57,11 +60,11 @@ fn unsupported() -> MiraError {
     )
 }
 
-/// Erreur : ce modèle est en cours d'installation.
+/// Erreur : une installation est en cours, on ne retire rien pendant ce temps.
 fn busy() -> MiraError {
     MiraError::new(
         ErrorCategory::IncompatibleState,
         incompatible_state::AI_LOCAL_BUSY,
-        "ce modèle local est en cours d'installation",
+        "une installation du modèle local est en cours",
     )
 }

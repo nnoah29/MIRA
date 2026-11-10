@@ -24,7 +24,7 @@ pub(crate) async fn credential_for(
     let Some(login) = &descriptor.session_login else {
         return key_for(engine, connection, base_url);
     };
-    let lock = engine.ai_session_locks.of(&connection.id);
+    let lock = engine.ai.session_locks.of(&connection.id);
     let _renewing = lock.lock().await;
     let session = read_session(engine, &connection.id).ok_or_else(missing)?;
     let now = engine.config.clock.now().as_millis() / 1000;

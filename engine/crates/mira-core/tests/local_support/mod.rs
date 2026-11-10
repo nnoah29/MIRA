@@ -95,6 +95,6 @@ pub fn test_build(platform: &str) -> AiLocalServerBuild {
         url: "https://servers.test/server.tar.gz".to_string(),
         sha256: "ab".repeat(32),
         size: 1,
-        executable: "llama-server".to_string(),
+        executable: "model-server".to_string(),
     }
 }

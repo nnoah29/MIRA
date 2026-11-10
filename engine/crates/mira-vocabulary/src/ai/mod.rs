@@ -11,6 +11,7 @@ pub mod draft;
 pub mod error;
 pub mod journal;
 pub mod local_runtime;
+pub mod local_status;
 pub mod masking;
 pub mod model;
 pub mod provider;

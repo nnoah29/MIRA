@@ -3,7 +3,7 @@
 
 use std::path::Path;
 
-const FAKE: &str = include_str!("fake_llama_server.py");
+const FAKE: &str = include_str!("fake_server.py");
 
 /// Écrit le faux serveur exécutable et les fichiers de modèle factices
 pub fn install_fake(dir: &Path) {
@@ -12,7 +12,7 @@ pub fn install_fake(dir: &Path) {
     std::fs::set_permissions(&exe, std::os::unix::fs::PermissionsExt::from_mode(0o755)).unwrap();
     std::fs::create_dir_all(dir.join("models")).unwrap();
     for name in ["mini.bin", "big.bin"] {
-        std::fs::write(dir.join("models").join(name), b"GGUF").unwrap();
+        std::fs::write(dir.join("models").join(name), b"MODEL").unwrap();
     }
 }
 

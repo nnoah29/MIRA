@@ -19,14 +19,14 @@ fn build_for(platform: &str, url: &str, archive: &[u8]) -> AiLocalServerBuild {
         url: url.into(),
         sha256: sha_hex(archive),
         size: archive.len() as u64,
-        executable: "llama-server".into(),
+        executable: "model-server".into(),
     }
 }
 
 /// Archive d'un serveur et de sa bibliothèque
 fn server_archive() -> Vec<u8> {
     tar_gz(&[
-        Entry::file("b/bin/llama-server", b"EXE"),
+        Entry::file("b/bin/model-server", b"EXE"),
         Entry::file("b/bin/lib.so", b"L"),
     ])
 }
@@ -48,7 +48,7 @@ async fn install_server_downloads_verifies_extracts_and_returns_the_executable()
     let exe = install_server(&job, &|_, _| {}, &no_cancel())
         .await
         .unwrap();
-    assert_eq!(exe, root.join("b/bin/llama-server"));
+    assert_eq!(exe, root.join("b/bin/model-server"));
     assert_eq!(
         std::fs::metadata(&exe).unwrap().permissions().mode() & 0o777,
         0o755

@@ -46,3 +46,5 @@ pub const AI_LOCAL_DISK_SPACE: ErrorCode = ErrorCode("incompatible_state.ai_loca
 /// Le modèle local n'est pas pris en charge sur cette plateforme.
 pub const AI_LOCAL_UNSUPPORTED_PLATFORM: ErrorCode =
     ErrorCode("incompatible_state.ai_local_unsupported_platform");
+/// Une installation de modèle local est déjà en cours.
+pub const AI_LOCAL_BUSY: ErrorCode = ErrorCode("incompatible_state.ai_local_busy");

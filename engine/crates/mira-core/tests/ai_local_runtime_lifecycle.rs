@@ -112,6 +112,6 @@ async fn low_memory_adds_a_distinct_message_to_the_failure() {
         .ensure_running(&fixture.context(), &model)
         .await
         .unwrap_err();
-    assert_eq!(error.code, "server.ai_local_runtime_failed");
+    assert_eq!(error.code, "server.ai.local_runtime_failed");
     assert!(error.message.contains("mémoire"), "{}", error.message);
 }

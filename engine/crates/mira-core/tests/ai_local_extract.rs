@@ -13,14 +13,14 @@ fn extracts_a_normal_archive() {
     let archive = write_archive(
         dir.path(),
         &[
-            Entry::file("build/bin/llama-server", b"EXE"),
+            Entry::file("build/bin/model-server", b"EXE"),
             Entry::file("build/bin/libx.so", b"LIB"),
         ],
     );
     let dest = dir.path().join("out");
     extract_tar_gz(&archive, &dest, 1_000_000).unwrap();
     assert_eq!(
-        std::fs::read(dest.join("build/bin/llama-server")).unwrap(),
+        std::fs::read(dest.join("build/bin/model-server")).unwrap(),
         b"EXE"
     );
     assert_eq!(

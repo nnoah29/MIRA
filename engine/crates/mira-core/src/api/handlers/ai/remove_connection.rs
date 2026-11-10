@@ -11,8 +11,8 @@ pub(crate) async fn handle_remove_ai_connection(
     engine: &Engine,
     id: &AiConnectionId,
 ) -> Result<Response, MiraError> {
-    engine.ai_key_logins.cancel_connection(id);
-    let lock = engine.ai_session_locks.of(id);
+    engine.ai.key_logins.cancel_connection(id);
+    let lock = engine.ai.session_locks.of(id);
     let _renewing = lock.lock().await;
     engine.config.secrets.delete(&key_location(engine, id))?;
     engine.database.write(|tx| tx.delete_ai_connection(id))?;

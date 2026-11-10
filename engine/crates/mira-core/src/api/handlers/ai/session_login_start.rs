@@ -24,7 +24,8 @@ pub(super) async fn start_session_login(
     let authorize_url = pending.authorize_url().to_string();
     let flow = engine.config.ids.next_id();
     engine
-        .ai_key_logins
+        .ai
+        .key_logins
         .register_session(flow.clone(), connection.id.clone(), pending, host_id);
     Ok(Response::Ai(AiResponse::KeyLoginStarted {
         flow,

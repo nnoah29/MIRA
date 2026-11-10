@@ -12,7 +12,7 @@ use crate::events::EventSink;
 #[derive(Debug, Clone)]
 pub struct OperationHandle {
     id: OperationId,
-    cancel: Arc<AtomicBool>,
+    pub(super) cancel: Arc<AtomicBool>,
     table: OperationTable,
     events: Arc<dyn EventSink>,
 }

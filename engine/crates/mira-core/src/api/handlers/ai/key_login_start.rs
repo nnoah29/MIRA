@@ -30,7 +30,8 @@ pub(crate) async fn handle_start_ai_key_login(
     let authorize_url = pending.authorize_url().to_string();
     let flow = engine.config.ids.next_id();
     engine
-        .ai_key_logins
+        .ai
+        .key_logins
         .register(flow.clone(), id.clone(), pending);
     Ok(Response::Ai(AiResponse::KeyLoginStarted {
         flow,

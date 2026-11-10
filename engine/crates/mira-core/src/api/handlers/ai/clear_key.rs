@@ -12,7 +12,7 @@ pub(crate) async fn handle_clear_ai_api_key(
     id: &AiConnectionId,
 ) -> Result<Response, MiraError> {
     read_connection(engine, id)?;
-    let lock = engine.ai_session_locks.of(id);
+    let lock = engine.ai.session_locks.of(id);
     let _renewing = lock.lock().await;
     engine.config.secrets.delete(&key_location(engine, id))?;
     Ok(single(read_connection(engine, id)?))

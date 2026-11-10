@@ -11,8 +11,9 @@ use reqwest::{Client, Response, StatusCode};
 use tokio::fs::OpenOptions;
 use tokio::io::AsyncWriteExt;
 
-use super::download::{CancelFlag, DownloadJob, checksum_error, io_error};
+use super::download::{CancelFlag, DownloadJob, io_error};
 use super::download_errors::{cancelled_error, connection_lost};
+use super::download_verify::mismatch;
 use crate::auth::loopback::is_loopback_host;
 
 /// Taille du fichier partiel s'il existe et n'excède pas la taille attendue ; sinon il est supprimé.
@@ -91,7 +92,7 @@ pub(super) async fn fetch_into(
         progress(done, job.size);
         if done > job.size {
             let _ = tokio::fs::remove_file(part).await;
-            return Err(checksum_error());
+            return Err(mismatch());
         }
     }
     file.flush().await.map_err(|_| io_error())?;

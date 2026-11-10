@@ -8,7 +8,7 @@ use mira_vocabulary::error::codes::{incompatible_state, local_storage};
 use mira_vocabulary::{ErrorCategory, MiraError};
 
 use super::download_transfer::{fetch_into, part_size};
-use super::download_verify::{mismatch, verify_and_install};
+use super::download_verify::verify_and_install;
 use crate::auth::loopback::require_secure_url;
 use crate::ports::SystemResources;
 
@@ -32,6 +32,9 @@ pub async fn download_file(
     cancel: &CancelFlag,
 ) -> Result<(), MiraError> {
     require_secure_url(job.url)?;
+    if already_installed(job.dest, job.size).await {
+        return Ok(());
+    }
     let part = part_path(job.dest);
     prepare_folder(job.dest).await?;
     let existing = part_size(&part, job.size).await;
@@ -40,6 +43,13 @@ pub async fn download_file(
         fetch_into(job, &part, existing, progress, cancel).await?;
     }
     verify_and_install(job, &part).await
+}
+
+/// Dit si le fichier final est déjà là à la bonne taille (sa somme a été vérifiée à l'installation).
+async fn already_installed(dest: &Path, size: u64) -> bool {
+    tokio::fs::metadata(dest)
+        .await
+        .is_ok_and(|m| m.is_file() && m.len() == size)
 }
 
 /// Chemin du fichier partiel : celui du fichier final avec `.part` ajouté.
@@ -81,9 +91,4 @@ pub(crate) fn io_error() -> MiraError {
         local_storage::IO,
         "erreur d'accès au dossier du modèle local",
     )
-}
-
-/// Rend l'erreur de somme invalide (réexport pour les autres modules du téléchargement).
-pub(crate) fn checksum_error() -> MiraError {
-    mismatch()
 }

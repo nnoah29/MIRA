@@ -27,6 +27,6 @@ pub const AI_QUOTA_EXHAUSTED: ErrorCode = ErrorCode("server.ai_quota_exhausted")
 /// Le fichier téléchargé ne correspond pas à la somme de contrôle attendue.
 pub const AI_LOCAL_CHECKSUM_MISMATCH: ErrorCode = ErrorCode("server.ai_local_checksum_mismatch");
 /// Le serveur du modèle local s'est arrêté ou n'a pas pu démarrer.
-pub const AI_LOCAL_RUNTIME_FAILED: ErrorCode = ErrorCode("server.ai_local_runtime_failed");
+pub const AI_LOCAL_RUNTIME_FAILED: ErrorCode = ErrorCode("server.ai.local_runtime_failed");
 /// Le serveur du modèle local n'est pas prêt dans le délai imparti.
 pub const AI_LOCAL_START_TIMEOUT: ErrorCode = ErrorCode("server.ai_local_start_timeout");

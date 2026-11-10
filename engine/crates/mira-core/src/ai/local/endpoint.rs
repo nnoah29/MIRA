@@ -45,7 +45,8 @@ pub(crate) async fn local_endpoint(
         resources: engine.config.resources.as_ref(),
     };
     engine
-        .ai_local_runtime
+        .ai
+        .local_runtime
         .ensure_running(&context, model)
         .await
 }
@@ -85,4 +86,13 @@ pub(crate) fn installed_models(engine: &Engine, descriptor: &AiProviderDescripto
             .collect(),
         fetched_at: engine.config.clock.now(),
     }
+}
+
+/// Identifiants des modèles dont le fichier est présent sur le disque.
+pub(crate) fn installed_ids(engine: &Engine, descriptor: &AiProviderDescriptor) -> Vec<String> {
+    installed_models(engine, descriptor)
+        .models
+        .into_iter()
+        .map(|m| m.id)
+        .collect()
 }

@@ -23,14 +23,14 @@ pub(crate) async fn handle_complete_ai_key_login(
     engine: &Engine,
     flow: &str,
 ) -> Result<Response, MiraError> {
-    let (mut pending, cancel, id, kind) = engine.ai_key_logins.begin_completion(flow)?;
+    let (mut pending, cancel, id, kind) = engine.ai.key_logins.begin_completion(flow)?;
     let result = match &kind {
         KeyLoginKind::Key => complete_key(engine, &mut pending, &cancel, &id).await,
         KeyLoginKind::Session { host_id } => {
             complete_session(engine, &mut pending, &cancel, &id, host_id).await
         }
     };
-    engine.ai_key_logins.remove(flow);
+    engine.ai.key_logins.remove(flow);
     result?;
     Ok(single(read_connection(engine, &id)?))
 }

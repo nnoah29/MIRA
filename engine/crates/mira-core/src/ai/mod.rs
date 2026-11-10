@@ -10,6 +10,7 @@ pub mod models;
 pub mod registry;
 pub(crate) mod session;
 pub mod sse;
+pub(crate) mod state;
 pub mod tools;
 pub mod transport;
 pub mod wire;

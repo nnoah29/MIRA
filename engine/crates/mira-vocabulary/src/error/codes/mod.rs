@@ -69,6 +69,7 @@ pub const ALL: &[ErrorCode] = &[
     incompatible_state::AI_HISTORY_DISABLED,
     incompatible_state::AI_LOCAL_DISK_SPACE,
     incompatible_state::AI_LOCAL_UNSUPPORTED_PLATFORM,
+    incompatible_state::AI_LOCAL_BUSY,
     network::OFFLINE,
     network::TIMEOUT,
     network::UNREACHABLE,

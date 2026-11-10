@@ -51,7 +51,7 @@ async fn store_session(
     id: &AiConnectionId,
     session: &AiSession,
 ) -> Result<(), MiraError> {
-    let lock = engine.ai_session_locks.of(id);
+    let lock = engine.ai.session_locks.of(id);
     let _renewing = lock.lock().await;
     read_connection(engine, id)?;
     engine

@@ -5,7 +5,7 @@ use mira_vocabulary::{AiConnectionId, AiProviderId, ContentKind, MaskingSettings
 
 use super::ai_samples::{sample_connection, sample_journal, sample_models, sample_provider};
 use super::{Named, numbered};
-use super::{ai_history, ai_key_login};
+use super::{ai_history, ai_key_login, ai_local, ai_op_names};
 
 /// Les opérations de gestion : fournisseurs, création, mise à jour, suppression
 fn management_requests(id: &AiConnectionId) -> Vec<AiRequest> {
@@ -55,11 +55,9 @@ fn privacy_requests(id: &AiConnectionId) -> Vec<AiRequest> {
     items
 }
 
-/// Une requête par opération de `AiRequest`
-pub fn requests() -> Vec<Named<Request>> {
-    let id = AiConnectionId::from_raw("ai-1");
-    let mut items = management_requests(&id);
-    items.extend([
+/// Les opérations de clé, d'essai, de modèles et de consentement
+fn key_and_model_requests(id: &AiConnectionId) -> Vec<AiRequest> {
+    vec![
         AiRequest::SetAiApiKey {
             connection: id.clone(),
             key: SecretInput::new("sk-exemple"),
@@ -78,8 +76,19 @@ pub fn requests() -> Vec<Named<Request>> {
             connection: id.clone(),
             kinds: vec![ContentKind::MailMessage, ContentKind::MailList],
         },
-    ]);
-    items.extend(privacy_requests(&id));
+    ]
+}
+
+/// Une requête par opération de `AiRequest`
+pub fn requests() -> Vec<Named<Request>> {
+    let id = AiConnectionId::from_raw("ai-1");
+    let mut items = management_requests(&id);
+    items.extend(key_and_model_requests(&id));
+    items.extend(
+        privacy_requests(&id)
+            .into_iter()
+            .chain(ai_local::requests()),
+    );
     let ops: Vec<&str> = items.iter().map(op_name).collect();
     numbered("ai", &ops)
         .into_iter()
@@ -102,6 +111,7 @@ pub fn responses() -> Vec<Named<Response>> {
         ("ai.models", AiResponse::Models(sample_models())),
         ("ai.journal", AiResponse::Journal(vec![sample_journal()])),
         ("ai.key_login_started", ai_key_login::response()),
+        ("ai.local_runtime", ai_local::response()),
         ("ai.done", AiResponse::Done),
     ];
     let wrap = |(name, inner): (&str, AiResponse)| (name.to_string(), Response::Ai(inner));
@@ -133,13 +143,6 @@ pub fn op_name(request: &AiRequest) -> &'static str {
         AiRequest::SetAiMasking { .. } => "set_ai_masking",
         AiRequest::ListAiJournal { .. } => "list_ai_journal",
         AiRequest::ClearAiJournal => "clear_ai_journal",
-        AiRequest::SaveAiConversation { .. } => "save_ai_conversation",
-        AiRequest::ListAiConversations { .. } => "list_ai_conversations",
-        AiRequest::GetAiConversation { .. } => "get_ai_conversation",
-        AiRequest::RenameAiConversation { .. } => "rename_ai_conversation",
-        AiRequest::DeleteAiConversation { .. } => "delete_ai_conversation",
-        AiRequest::ClearAiConversations => "clear_ai_conversations",
-        AiRequest::SetAiHistoryEnabled { .. } => "set_ai_history_enabled",
-        AiRequest::GetAiHistoryEnabled => "get_ai_history_enabled",
+        other => ai_op_names::op_name(other),
     }
 }

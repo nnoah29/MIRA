@@ -1,6 +1,7 @@
 //! Tâches longues (12.2.4) : identifiant d'opération, progression par événements, annulation coopérative.
 
 mod handle;
+mod handle_flag;
 mod registry;
 mod retention;
 mod spawn;

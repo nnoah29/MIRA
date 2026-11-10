@@ -18,7 +18,7 @@ use crate::local_support::runtime_fake::fake_args;
 use crate::local_support::{descriptor, test_runtime};
 use crate::support_api::config;
 
-const FAKE: &str = include_str!("../local_support/fake_llama_server.py");
+const FAKE: &str = include_str!("../local_support/fake_server.py");
 
 /// Fournisseur de test qui rend une fiche donnée
 #[derive(Debug)]
@@ -41,7 +41,7 @@ pub struct LocalFixture {
 }
 
 impl LocalFixture {
-    /// Ouvre le moteur, pose `llama-server` (le faux) et les fichiers des modèles `mini` et `big`
+    /// Ouvre le moteur, pose `model-server` (le faux) et les fichiers des modèles `mini` et `big`
     pub fn start(idle_stop_seconds: u64) -> Self {
         let home = tempfile::tempdir().unwrap();
         let mut config = config(home.path());
@@ -108,11 +108,11 @@ fn place_files(profile_root: &Path, sha256: &str) {
     let base = profile_root.join("local-ai");
     let server = base.join("server").join(&sha256[..12]);
     std::fs::create_dir_all(&server).unwrap();
-    let exe = server.join("llama-server");
+    let exe = server.join("model-server");
     std::fs::write(&exe, FAKE).unwrap();
     std::fs::set_permissions(&exe, std::os::unix::fs::PermissionsExt::from_mode(0o755)).unwrap();
     std::fs::create_dir_all(base.join("models")).unwrap();
     for name in ["mini.bin", "big.bin"] {
-        std::fs::write(base.join("models").join(name), b"GGUF").unwrap();
+        std::fs::write(base.join("models").join(name), b"MODEL").unwrap();
     }
 }

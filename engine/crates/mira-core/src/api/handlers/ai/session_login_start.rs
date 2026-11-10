@@ -37,6 +37,5 @@ pub(super) async fn start_session_login(
 fn new_host_id(rng: &mut StdRng) -> String {
     let mut bytes = [0_u8; 16];
     rng.fill_bytes(&mut bytes);
-    let id = uuid::Builder::from_random_bytes(bytes).into_uuid();
-    format!("urn:uuid:{id}")
+    crate::ports::ids::urn_uuid_from_random_bytes(bytes)
 }

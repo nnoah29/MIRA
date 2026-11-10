@@ -1,4 +1,4 @@
-//! Secrets longs découpés en morceaux : certains trousseaux (Windows : 2560 octets, soit 1280 caractères) refusent les jetons Microsoft.
+//! Secrets longs découpés en morceaux : certains trousseaux (Windows : 2560 octets, soit 1280 caractères) refusent les jetons longs.
 
 use mira_vocabulary::{MiraError, SecretLocation};
 

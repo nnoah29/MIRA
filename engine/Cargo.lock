@@ -1730,6 +1730,7 @@ dependencies = [
  "regex",
  "reqwest",
  "rusqlite",
+ "rustix",
  "rustls",
  "serde",
  "serde_json",

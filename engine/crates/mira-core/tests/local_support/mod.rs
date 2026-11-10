@@ -1,6 +1,10 @@
 #![allow(dead_code)]
 //! Outils des tests du modèle local : fiche de runtime de test, sans nommer de vrai fournisseur.
 
+pub mod download;
+pub mod file_host;
+mod file_host_serve;
+
 use mira_vocabulary::{
     AiLocalModel, AiLocalRuntime, AiLocalServerBuild, AiProviderDescriptor, AiProviderId, AiQuirks,
     AuthScheme, LocalTier, WireFormat,

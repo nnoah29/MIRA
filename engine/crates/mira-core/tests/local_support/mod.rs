@@ -5,6 +5,8 @@ pub mod archives;
 pub mod download;
 pub mod file_host;
 mod file_host_serve;
+pub mod runtime;
+mod runtime_fake;
 
 use mira_vocabulary::{
     AiLocalModel, AiLocalRuntime, AiLocalServerBuild, AiProviderDescriptor, AiProviderId, AiQuirks,
@@ -70,4 +72,15 @@ pub fn descriptor(
         session_login: None,
         local_runtime,
     }
+}
+
+/// Modèle de ce nom dans la fiche du faux serveur
+pub fn test_model_named(fixture: &runtime::RuntimeFixture, id: &str) -> AiLocalModel {
+    fixture
+        .runtime
+        .models
+        .iter()
+        .find(|m| m.id == id)
+        .unwrap()
+        .clone()
 }

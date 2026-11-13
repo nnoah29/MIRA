@@ -31,6 +31,9 @@ pub const SYNC_DISABLED: ErrorCode = ErrorCode("incompatible_state.sync_disabled
 pub const AI_CONSENT_REQUIRED: ErrorCode = ErrorCode("incompatible_state.ai_consent_required");
 /// La connexion d'IA n'a pas de clé enregistrée.
 pub const AI_KEY_MISSING: ErrorCode = ErrorCode("incompatible_state.ai_key_missing");
+/// Ce fournisseur d'IA ne propose pas de connexion par navigateur qui rend une clé.
+pub const AI_KEY_LOGIN_UNSUPPORTED: ErrorCode =
+    ErrorCode("incompatible_state.ai_key_login_unsupported");
 /// Aucun modèle d'IA n'est choisi pour cette connexion.
 pub const AI_MODEL_MISSING: ErrorCode = ErrorCode("incompatible_state.ai_model_missing");
 /// Le type de contenu à envoyer n'est pas autorisé pour cette connexion d'IA.
@@ -38,3 +41,10 @@ pub const AI_CONTENT_NOT_ALLOWED: ErrorCode =
     ErrorCode("incompatible_state.ai_content_not_allowed");
 /// L'historique des conversations d'IA est désactivé : rien n'est enregistré.
 pub const AI_HISTORY_DISABLED: ErrorCode = ErrorCode("incompatible_state.ai_history_disabled");
+/// Pas assez d'espace disque libre pour télécharger le modèle local.
+pub const AI_LOCAL_DISK_SPACE: ErrorCode = ErrorCode("incompatible_state.ai_local_disk_space");
+/// Le modèle local n'est pas pris en charge sur cette plateforme.
+pub const AI_LOCAL_UNSUPPORTED_PLATFORM: ErrorCode =
+    ErrorCode("incompatible_state.ai_local_unsupported_platform");
+/// Une installation de modèle local est déjà en cours.
+pub const AI_LOCAL_BUSY: ErrorCode = ErrorCode("incompatible_state.ai_local_busy");

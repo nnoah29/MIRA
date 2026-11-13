@@ -11,6 +11,7 @@ use serde_json::Value;
 const READS: &[&str] = &[
     "account.list_accounts",
     "ai.get_ai_history_enabled",
+    "ai.get_local_runtime_status",
     "ai.list_ai_connections",
     "ai.list_ai_journal",
     "ai.list_ai_providers",

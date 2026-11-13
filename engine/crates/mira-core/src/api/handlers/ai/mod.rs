@@ -12,14 +12,23 @@ mod default_masking;
 mod delete_conversation;
 mod get_conversation;
 mod get_history_enabled;
+mod key_login_cancel;
+mod key_login_complete;
+mod key_login_start;
 mod list_connections;
 mod list_conversations;
 mod list_journal;
 mod list_models;
 mod list_providers;
+mod local_install;
+mod local_remove;
+mod local_status;
+mod local_stop;
 mod remove_connection;
 mod rename_conversation;
 mod save_conversation;
+mod session_login_complete;
+mod session_login_start;
 mod set_allowed_content;
 mod set_default;
 mod set_history_enabled;
@@ -43,11 +52,18 @@ use consent::handle_acknowledge_ai_consent as acknowledge;
 use delete_conversation::handle_delete_ai_conversation as delete_conversation;
 use get_conversation::handle_get_ai_conversation as get_conversation;
 use get_history_enabled::handle_get_ai_history_enabled as get_history;
+use key_login_cancel::handle_cancel_ai_key_login as cancel_key_login;
+use key_login_complete::handle_complete_ai_key_login as complete_key_login;
+use key_login_start::handle_start_ai_key_login as start_key_login;
 use list_connections::handle_list_ai_connections as connections;
 use list_conversations::handle_list_ai_conversations as conversations;
 use list_journal::handle_list_ai_journal as journal;
 use list_models::handle_list_ai_models as models;
 use list_providers::handle_list_ai_providers as providers;
+use local_install::handle_install_local_model as install_local;
+use local_remove::handle_remove_local_model as remove_local;
+use local_status::handle_get_local_runtime_status as local_status;
+use local_stop::handle_stop_local_runtime as stop_local;
 use remove_connection::handle_remove_ai_connection as remove;
 use rename_conversation::handle_rename_ai_conversation as rename_conversation;
 use save_conversation::handle_save_ai_conversation as save_conversation;
@@ -69,13 +85,12 @@ pub(crate) async fn route(engine: &Engine, request: AiRequest) -> Answer {
         R::ListAiProviders => providers(engine),
         R::ListAiConnections => connections(engine),
         R::AddAiConnection { provider, label, base_url } => add(engine, &provider, &label, base_url.as_deref()),
-        R::UpdateAiConnection { connection, label, base_url, default_model } => {
-            update(engine, &connection, &label, base_url, default_model)
-        }
-        R::RemoveAiConnection { connection } => remove(engine, &connection),
+        R::UpdateAiConnection { connection, label, base_url, default_model } => update(engine, &connection, &label, base_url, default_model),
+        R::RemoveAiConnection { connection } => remove(engine, &connection).await,
         R::SetDefaultAiConnection { connection } => make_default(engine, &connection),
         R::SetAiApiKey { connection, key } => set_key(engine, &connection, key),
-        R::ClearAiApiKey { connection } => clear_key(engine, &connection),
+        R::ClearAiApiKey { connection } => clear_key(engine, &connection).await,
+        r @ (R::StartAiKeyLogin { .. } | R::CompleteAiKeyLogin { .. } | R::CancelAiKeyLogin { .. }) => route_login(engine, r).await,
         R::TestAiConnection { connection } => test(engine, &connection).await,
         R::ListAiModels { connection, refresh } => models(engine, &connection, refresh).await,
         R::AcknowledgeAiConsent { connection, kinds } => acknowledge(engine, &connection, &kinds),
@@ -91,5 +106,38 @@ pub(crate) async fn route(engine: &Engine, request: AiRequest) -> Answer {
         R::ClearAiConversations => clear_conversations(engine),
         R::SetAiHistoryEnabled { enabled } => set_history(engine, enabled),
         R::GetAiHistoryEnabled => get_history(engine),
+        r @ (R::GetLocalRuntimeStatus | R::InstallLocalModel { .. } | R::RemoveLocalModel { .. } | R::StopLocalRuntime) => route_local(engine, r).await,
     }
+}
+
+/// Route les trois requêtes de connexion par navigateur
+#[rustfmt::skip]
+async fn route_login(engine: &Engine, request: AiRequest) -> Answer {
+    match request {
+        R::StartAiKeyLogin { connection } => start_key_login(engine, &connection).await,
+        R::CompleteAiKeyLogin { flow } => complete_key_login(engine, &flow).await,
+        R::CancelAiKeyLogin { flow } => cancel_key_login(engine, &flow),
+        _ => Err(unexpected()),
+    }
+}
+
+/// Route les quatre requêtes du modèle local
+#[rustfmt::skip]
+async fn route_local(engine: &Engine, request: AiRequest) -> Answer {
+    match request {
+        R::GetLocalRuntimeStatus => local_status(engine).await,
+        R::InstallLocalModel { model_id } => install_local(engine, &model_id),
+        R::RemoveLocalModel { model_id } => remove_local(engine, &model_id).await,
+        R::StopLocalRuntime => stop_local(engine).await,
+        _ => Err(unexpected()),
+    }
+}
+
+/// Requête arrivée au mauvais sous-routeur : ne peut pas se produire
+fn unexpected() -> MiraError {
+    MiraError::new(
+        mira_vocabulary::ErrorCategory::Internal,
+        mira_vocabulary::error::codes::internal::BUG,
+        "requête d'IA routée au mauvais sous-routeur",
+    )
 }

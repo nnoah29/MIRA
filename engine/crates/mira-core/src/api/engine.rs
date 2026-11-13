@@ -13,6 +13,7 @@ use super::startup::{
     resume_pending_rules, start_background,
 };
 use crate::ai::chat::interrupt_running;
+use crate::ai::state::AiState;
 use crate::auth::{CredentialVault, OAuthFlows};
 use crate::events::{EventBus, EventSink, EventSubscription};
 use crate::fetching::ServerSearchResults;
@@ -32,6 +33,7 @@ pub struct Engine {
     pub(crate) events: EventBus,
     pub(crate) operations: OperationRegistry,
     pub(crate) oauth_flows: OAuthFlows,
+    pub(crate) ai: AiState,
     pub(crate) server_searches: ServerSearchResults,
     pub(crate) account_lock: tokio::sync::Mutex<()>,
     pub(crate) replayers: ReplayerHandle,
@@ -62,6 +64,7 @@ impl Engine {
             events,
             operations,
             oauth_flows: OAuthFlows::new(),
+            ai: AiState::default(),
             server_searches: ServerSearchResults::default(),
             account_lock: tokio::sync::Mutex::new(()),
             replayers,
@@ -96,6 +99,7 @@ impl Engine {
 
     /// Ferme proprement le moteur : les synchronisations en cours ont `deadline` pour finir, puis sont interrompues ; rend `false` si le délai a été dépassé
     pub async fn shutdown_within(self, deadline: Duration) -> Result<bool, MiraError> {
+        self.ai.local_runtime.stop().await;
         let on_time = self.sync.shutdown(deadline).await;
         self.shutdown()?;
         Ok(on_time)

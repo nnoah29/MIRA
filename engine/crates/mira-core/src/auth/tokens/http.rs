@@ -15,7 +15,7 @@ const HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 const MAX_BODY: usize = 1 << 20;
 
 /// Envoie un formulaire en POST et renvoie le statut HTTP et le corps de la réponse
-pub(super) async fn post_form(
+pub(crate) async fn post_form(
     token_url: &str,
     pairs: &[(&str, &str)],
 ) -> Result<(u16, Vec<u8>), MiraError> {
@@ -25,6 +25,25 @@ pub(super) async fn post_form(
         .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
         .header(ACCEPT, "application/json")
         .body(build_query(pairs))
+        .send()
+        .await
+        .map_err(|error| map_http_error(&error))?;
+    let status = response.status().as_u16();
+    let body = read_bounded_body(response).await?;
+    Ok((status, body))
+}
+
+/// Envoie un corps JSON en POST et renvoie le statut HTTP et le corps de la réponse
+pub(super) async fn post_json(
+    url: &str,
+    body: &serde_json::Value,
+) -> Result<(u16, Vec<u8>), MiraError> {
+    require_secure_url(url)?;
+    let response = http_client(url)?
+        .post(url)
+        .header(CONTENT_TYPE, "application/json")
+        .header(ACCEPT, "application/json")
+        .body(body.to_string())
         .send()
         .await
         .map_err(|error| map_http_error(&error))?;

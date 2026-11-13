@@ -6,7 +6,8 @@ import '../i18n/i18n.dart';
 import '../theme/app_theme.dart';
 import 'widgets.dart';
 
-const String _answered = 'residentAnswered';
+/// Clé de la préférence qui retient que la question du mode résident a reçu une réponse.
+const String residentAnsweredKey = 'residentAnswered';
 
 /// Pose une seule fois la question « Garder MIRA actif en arrière-plan ? » ; sans unité installée, ne demande rien.
 Future<void> askResidentOnce({
@@ -14,7 +15,7 @@ Future<void> askResidentOnce({
   required SharedPreferences prefs,
   required ResidentController controller,
 }) async {
-  if (prefs.getString(_answered) == '1') return;
+  if (prefs.getString(residentAnsweredKey) == '1') return;
   if (!await controller.isAvailable() || !context.mounted) return;
   final yes = await showDialog<bool>(
     context: context,
@@ -71,6 +72,6 @@ Future<void> askResidentOnce({
       );
     },
   );
-  await prefs.setString(_answered, '1');
+  await prefs.setString(residentAnsweredKey, '1');
   if (yes == true) await controller.enable();
 }

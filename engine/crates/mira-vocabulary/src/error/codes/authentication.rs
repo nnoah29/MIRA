@@ -16,3 +16,7 @@ pub const OAUTH_CANCELLED: ErrorCode = ErrorCode("authentication.oauth_cancelled
 pub const OAUTH_STATE_MISMATCH: ErrorCode = ErrorCode("authentication.oauth_state_mismatch");
 /// Clé refusée par le service d'IA.
 pub const AI_KEY_REJECTED: ErrorCode = ErrorCode("authentication.ai_key_rejected");
+/// Session d'abonnement expirée ou retirée côté service : reconnexion nécessaire.
+pub const AI_SESSION_EXPIRED: ErrorCode = ErrorCode("authentication.ai_session_expired");
+/// Autorisation d'abonnement incomplète : accès au forfait non accordé (plan non éligible, portée refusée).
+pub const AI_SESSION_INCOMPLETE: ErrorCode = ErrorCode("authentication.ai_session_incomplete");

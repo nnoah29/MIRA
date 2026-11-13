@@ -5,7 +5,9 @@ use std::sync::Arc;
 use mira_core::accounts::NetworkPolicy;
 use mira_core::api::EngineConfig;
 use mira_core::auth::OAuthClientConfig;
-use mira_core::ports::{KeyringSecretStore, SystemClock, UuidV7Ids};
+use mira_core::ports::{
+    ChunkedSecretStore, HostResources, KeyringSecretStore, SystemClock, UuidV7Ids,
+};
 use mira_core::profile::ProfileEnvironment;
 use mira_core::sync::{BackgroundSync, SupervisorConfig};
 use mira_vocabulary::ProfileId;
@@ -26,7 +28,7 @@ pub fn production_config_with_oauth(profile: ProfileId, oauth: OAuthClientConfig
         environment: ProfileEnvironment::from_process(),
         registry: build_registry(),
         ai_registry: build_ai_registry(),
-        secrets: Arc::new(KeyringSecretStore),
+        secrets: Arc::new(ChunkedSecretStore::new(KeyringSecretStore, 800)),
         clock: Arc::new(SystemClock),
         ids: Arc::new(UuidV7Ids),
         oauth,
@@ -34,5 +36,6 @@ pub fn production_config_with_oauth(profile: ProfileId, oauth: OAuthClientConfig
             background_sync: BackgroundSync::On(SupervisorConfig::default()),
             ..NetworkPolicy::default()
         },
+        resources: Arc::new(HostResources),
     }
 }

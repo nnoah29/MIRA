@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart' show LaunchMode, launchUrl;
 import '../data/models.dart';
 import '../i18n/i18n.dart';
 import '../platform_info.dart';
+import '../platform_open.dart';
 import '../state/image_policy.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
@@ -37,6 +38,7 @@ Future<bool> openLink(String url) async {
   if (runsOnAndroid || kIsWeb) {
     return launchUrl(uri, mode: LaunchMode.externalApplication);
   }
+  if (runsOnWindows) return openExternal(uri);
   if (!runsOnLinux) return false;
   await Process.run('xdg-open', [url]);
   return true;

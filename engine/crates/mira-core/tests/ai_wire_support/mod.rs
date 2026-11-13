@@ -21,6 +21,9 @@ pub fn descriptor(field: MaxTokensField) -> AiProviderDescriptor {
         },
         base_url_editable: false,
         supports_tools: true,
+        key_login: None,
+        session_login: None,
+        local_runtime: None,
     }
 }
 

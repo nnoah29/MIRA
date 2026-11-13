@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:mira/engine/engine_client.dart';
 
 import 'fake_ai_history.dart';
+import 'fake_ai_local.dart';
 
 /// Moteur factice du domaine `ai` : garde les requêtes, tient les connexions en mémoire, rejoue des flux de chat.
 class FakeAiEngine implements EngineClient, ChatStreamingClient {
   final history = FakeAiHistory();
+  final local = FakeAiLocal();
   final calls = <Map<String, dynamic>>[];
   final chatStarts = <Map<String, dynamic>>[];
   final providers = <Map<String, dynamic>>[];
@@ -17,6 +19,8 @@ class FakeAiEngine implements EngineClient, ChatStreamingClient {
   StreamController<Map<String, dynamic>>? live;
   bool manual = false;
   int cancelledStreams = 0;
+  Completer<void>? loginGate;
+  final loginConnections = <String, Object?>{};
   EngineException? failNext;
   EngineException? failOp;
   String? failOpName;
@@ -80,7 +84,7 @@ class FakeAiEngine implements EngineClient, ChatStreamingClient {
   }
 
   Map<String, dynamic> _answer(Map<String, dynamic> r) =>
-      history.answer(r) ?? _answerAi(r);
+      history.answer(r) ?? local.answer(r) ?? _answerAi(r);
 
   Map<String, dynamic> _answerAi(Map<String, dynamic> r) => switch (r['op']) {
     'list_ai_providers' => _wrap('providers', [...providers]),
@@ -104,8 +108,31 @@ class FakeAiEngine implements EngineClient, ChatStreamingClient {
       'fetched_at': 1,
     }),
     'remove_ai_connection' => _removed(r['connection']),
+    'start_ai_key_login' => _loginStarted(r['connection']),
+    'cancel_ai_key_login' => _loginCancelled(r['flow']),
     _ => _wrap('done', null),
   };
+
+  Map<String, dynamic> _loginStarted(Object? id) {
+    final flow = 'flow-${_n++}';
+    loginConnections[flow] = id;
+    return _wrap('key_login_started', {
+      'flow': flow,
+      'authorize_url': 'https://openrouter.ai/auth?callback_url=x',
+    });
+  }
+
+  Map<String, dynamic> _loginCancelled(Object? flow) {
+    loginConnections.remove(flow);
+    final gate = loginGate;
+    if (gate != null && !gate.isCompleted) gate.completeError('cancelled');
+    return _wrap('done', null);
+  }
+
+  Future<Map<String, dynamic>> _loginCompleted(Map<String, dynamic> r) async {
+    await loginGate?.future;
+    return _mark(loginConnections.remove(r['flow']), 'has_key', true);
+  }
 
   Map<String, dynamic> _consent(Map<String, dynamic> r) {
     final found = _find(r['connection'])
@@ -141,6 +168,7 @@ class FakeAiEngine implements EngineClient, ChatStreamingClient {
       throw fail;
     }
     if (failOp != null && failOpName == r['op']) throw failOp!;
+    if (r['op'] == 'complete_ai_key_login') return _loginCompleted(r);
     return _answer(r);
   }
 

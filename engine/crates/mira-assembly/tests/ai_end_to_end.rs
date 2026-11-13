@@ -16,15 +16,18 @@ const MODELS: &str = r#"{"data":[{"id":"model-a","created":100}]}"#;
 const PROMPT: &str = "PROMPT-CONFIDENTIEL-17";
 const REPLY: &str = "REPONSE-PRIVEE-23";
 
-/// Le registre d'assemblage et celui de la configuration de production ont les six fournisseurs dans l'ordre
+/// Le registre d'assemblage et celui de la configuration de production ont les neuf fournisseurs dans l'ordre
 #[test]
-fn registry_has_the_six_providers_in_order() {
+fn registry_has_the_nine_providers_in_order() {
     let expected = [
         "anthropic",
         "openai",
         "google",
         "mistral",
         "groq",
+        "openrouter",
+        "chatgpt",
+        "local",
         "generic",
     ];
     let ids = |registry: mira_assembly::ai::AiProviderRegistry| -> Vec<String> {
@@ -138,15 +141,17 @@ async fn no_secret_or_prompt_in_event_journal_after_full_flow() {
     }
 }
 
-/// Les fournisseurs à adresse fixe pointent tous vers du HTTPS ; seul le service compatible a une adresse libre
+/// Les fournisseurs à adresse fixe pointent vers du HTTPS (le modèle local, vers la boucle locale) ; seul le service compatible a une adresse libre
 #[test]
 fn fixed_provider_descriptors_have_https_base_urls() {
     let descriptors = build_ai_registry().list();
-    assert_eq!(descriptors.len(), 6);
+    assert_eq!(descriptors.len(), 9);
     for descriptor in &descriptors {
         if descriptor.base_url_editable {
             assert_eq!(descriptor.id.0, "generic");
             assert!(descriptor.base_url.is_empty());
+        } else if descriptor.local_runtime.is_some() {
+            assert_eq!(descriptor.base_url, "http://127.0.0.1");
         } else {
             assert!(
                 descriptor.base_url.starts_with("https://"),

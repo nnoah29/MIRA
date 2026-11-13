@@ -1,8 +1,7 @@
 import 'dart:io';
 
-import 'package:url_launcher/url_launcher.dart';
-
 import '../data/models.dart';
+import '../platform_open.dart';
 
 /// Désabonnement d'une liste de diffusion : appel direct, page web ou message, selon ce que l'expéditeur annonce.
 class Unsubscriber {
@@ -10,7 +9,7 @@ class Unsubscriber {
   Future<bool> Function(Uri url) postOneClick = _post;
 
   /// Ouvre une page dans le navigateur.
-  Future<bool> Function(Uri url) openPage = launchUrl;
+  Future<bool> Function(Uri url) openPage = openExternal;
 
   /// Dernier moyen annoncé par ces messages (`null` : aucun).
   static Unsub? of(Iterable<Msg> msgs) {

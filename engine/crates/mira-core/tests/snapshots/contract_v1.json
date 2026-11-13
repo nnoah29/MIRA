@@ -1,5 +1,5 @@
 {
-  "contract": "1.7",
+  "contract": "1.10",
   "requests": {
     "account.add_account": {
       "domain": "account",
@@ -194,6 +194,13 @@
         "provider": "generic"
       }
     },
+    "ai.cancel_ai_key_login": {
+      "domain": "ai",
+      "request": {
+        "flow": "flow-1",
+        "op": "cancel_ai_key_login"
+      }
+    },
     "ai.clear_ai_api_key": {
       "domain": "ai",
       "request": {
@@ -211,6 +218,13 @@
       "domain": "ai",
       "request": {
         "op": "clear_ai_journal"
+      }
+    },
+    "ai.complete_ai_key_login": {
+      "domain": "ai",
+      "request": {
+        "flow": "flow-1",
+        "op": "complete_ai_key_login"
       }
     },
     "ai.delete_ai_conversation": {
@@ -231,6 +245,19 @@
       "domain": "ai",
       "request": {
         "op": "get_ai_history_enabled"
+      }
+    },
+    "ai.get_local_runtime_status": {
+      "domain": "ai",
+      "request": {
+        "op": "get_local_runtime_status"
+      }
+    },
+    "ai.install_local_model": {
+      "domain": "ai",
+      "request": {
+        "model_id": "tiny-model",
+        "op": "install_local_model"
       }
     },
     "ai.list_ai_connections": {
@@ -274,6 +301,13 @@
       "request": {
         "connection": "ai-1",
         "op": "remove_ai_connection"
+      }
+    },
+    "ai.remove_local_model": {
+      "domain": "ai",
+      "request": {
+        "model_id": "tiny-model",
+        "op": "remove_local_model"
       }
     },
     "ai.rename_ai_conversation": {
@@ -340,6 +374,19 @@
       "request": {
         "connection": "ai-1",
         "op": "set_default_ai_connection"
+      }
+    },
+    "ai.start_ai_key_login": {
+      "domain": "ai",
+      "request": {
+        "connection": "ai-1",
+        "op": "start_ai_key_login"
+      }
+    },
+    "ai.stop_local_runtime": {
+      "domain": "ai",
+      "request": {
+        "op": "stop_local_runtime"
       }
     },
     "ai.test_ai_connection": {
@@ -1647,6 +1694,45 @@
       },
       "type": "ai"
     },
+    "ai.key_login_started": {
+      "data": {
+        "data": {
+          "authorize_url": "https://auth.example.test/auth?callback_url=http%3A%2F%2F127.0.0.1%3A40000%2Fcallback",
+          "flow": "flow-1"
+        },
+        "type": "key_login_started"
+      },
+      "type": "ai"
+    },
+    "ai.local_runtime": {
+      "data": {
+        "data": {
+          "installing": {
+            "model_id": "tiny-model",
+            "operation": "op-1"
+          },
+          "memory_available_mib": 2048,
+          "models": [
+            {
+              "display_name": "Tiny model",
+              "id": "tiny-model",
+              "installed": false,
+              "license": "Apache-2.0",
+              "memory_warning": true,
+              "ram_recommended_mib": 3500,
+              "size": 2147023008,
+              "supports_tools": false,
+              "tier": "light"
+            }
+          ],
+          "running_model": null,
+          "server_installed": false,
+          "supported": true
+        },
+        "type": "local_runtime"
+      },
+      "type": "ai"
+    },
     "ai.models": {
       "data": {
         "data": {
@@ -1672,12 +1758,25 @@
             "display_name": "Service compatible",
             "format": "open_ai_chat",
             "id": "generic",
+            "key_login": null,
+            "local_runtime": null,
             "model_exclusions": [
               "embed"
             ],
             "models_path": "/models",
             "quirks": {
               "max_tokens_field": "max_tokens"
+            },
+            "session_login": {
+              "agent_name": "MIRA",
+              "authorize_url": "https://auth.example.org/authorize",
+              "required_scope": "offline_access",
+              "resource": "https://ia.example.org/v1",
+              "scopes": [
+                "openid",
+                "offline_access"
+              ],
+              "token_url": "https://auth.example.org/token"
             },
             "static_headers": [],
             "supports_tools": true
@@ -1709,7 +1808,7 @@
         ],
         "version": {
           "major": 1,
-          "minor": 7
+          "minor": 10
         }
       },
       "type": "contract_info"

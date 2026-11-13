@@ -182,6 +182,21 @@ void main() {
     expect(chat.demo, isTrue);
   });
 
+  test('a_local_model_connection_is_usable_without_key_or_address', () async {
+    engine.providers.add({
+      'id': 'local',
+      'display_name': 'Modèle local',
+      'base_url': 'http://127.0.0.1',
+      'base_url_editable': false,
+      'local_runtime': {'models': []},
+    });
+    engine.connections
+      ..clear()
+      ..add({...connection(hasKey: false), 'provider': 'local'});
+    await chat.refresh();
+    expect(chat.demo, isFalse);
+  });
+
   test('consent_required_sets_needsConsent_then_resend_works', () async {
     engine.connections
       ..clear()

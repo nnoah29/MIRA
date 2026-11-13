@@ -10,13 +10,30 @@ class AiProviderInfo {
   final String name;
   final String baseUrl;
   final bool editableUrl;
-  const AiProviderInfo(this.id, this.name, this.baseUrl, this.editableUrl);
+  final bool keyLogin;
+  final bool sessionLogin;
+  final bool localRuntime;
+  const AiProviderInfo(
+    this.id,
+    this.name,
+    this.baseUrl,
+    this.editableUrl, {
+    this.keyLogin = false,
+    this.sessionLogin = false,
+    this.localRuntime = false,
+  });
+
+  /// Dit si la connexion se fait par le navigateur : clé reçue une fois, ou session de l'abonné.
+  bool get browserLogin => keyLogin || sessionLogin;
 
   factory AiProviderInfo.fromJson(Map<String, dynamic> json) => AiProviderInfo(
     '${json['id']}',
     '${json['display_name']}',
     '${json['base_url']}',
     json['base_url_editable'] == true,
+    keyLogin: json['key_login'] != null,
+    sessionLogin: json['session_login'] != null,
+    localRuntime: json['local_runtime'] != null,
   );
 }
 

@@ -192,14 +192,6 @@ const Map<String, String> enStrings = {
   'Auto : les messages simples en widgets, les autres dans la vue web. Vue web : fidèle à un navigateur. Widgets : intégré à l’app, plus léger, moins fidèle.': 'Auto: simple messages as widgets, the others in the web view. Web view: faithful to a browser. Widgets: built into the app, lighter, less faithful.',
   'Vue web': 'Web view',
   'Widgets': 'Widgets',
-  'BIENVENUE DANS MIRA': 'WELCOME TO MIRA',
-  'Tous tes comptes au même endroit': 'All your accounts in one place',
-  'Gmail, Outlook, Yahoo ou n’importe quel serveur IMAP.':
-      'Gmail, Outlook, Yahoo or any IMAP server.',
-  'Tes messages sont copiés sur ton appareil : lis et réponds sans réseau.': 'Your messages are copied to your device: read and reply without a network.',
-  'Privé par défaut': 'Private by default',
-  'Aucun serveur MIRA, aucune télémétrie, images distantes bloquées.':
-      'No MIRA server, no telemetry, remote images blocked.',
   'Plus tard': 'Later',
   'Revoir l’accueil': 'Show the welcome again',
   'MIRA {0}': 'MIRA {0}',
@@ -412,6 +404,21 @@ const Map<String, String> enStrings = {
   'Thème': 'Theme',
   'Sombre': 'Dark',
   'Clair': 'Light',
+  'TON PREMIER COMPTE': 'YOUR FIRST ACCOUNT',
+  'Ajoute ta boîte mail : Gmail, Outlook, Yahoo ou n’importe quel serveur IMAP.':
+      'Add your mailbox: Gmail, Outlook, Yahoo or any IMAP server.',
+  'Comptes déjà ajoutés : {0}': 'Accounts already added: {0}',
+  'Ajouter un autre compte': 'Add another account',
+  'ASSISTANT D’IA': 'AI ASSISTANT',
+  'Ton texte n’est envoyé qu’avec ton accord, les données sensibles sont masquées avant l’envoi. Ta clé reste sur cet appareil.': 'Your text is only sent with your consent, and sensitive data is masked before sending. Your key stays on this device.',
+  'Tu pourras brancher un service d’IA dans Réglages › IA.':
+      'You can connect an AI service later in Settings › AI.',
+  'Plus tard (Réglages › IA)': 'Later (Settings › AI)',
+  'NOTIFICATIONS': 'NOTIFICATIONS',
+  'Choisis comment MIRA te prévient. Tout se change dans les réglages.':
+      'Choose how MIRA notifies you. Everything can be changed in Settings.',
+  'Une notification quand un message arrive.':
+      'A notification when a message arrives.',
   'Sombre ou clair, selon ton environnement.':
       'Dark or light, depending on your environment.',
   'Piloté par le fond d’écran (clair ou sombre selon sa luminosité).':
@@ -529,8 +536,10 @@ const Map<String, String> enStrings = {
       'Export file too large (2 MB and 500 items at most)',
   'Version du format d’export non prise en charge':
       'Export format version not supported',
-  'Clé refusée par le service d’IA : vérifie-la':
-      'Key rejected by the AI service: check it',
+  'Accès refusé par le service d’IA : vérifie ta clé ou reconnecte-toi':
+      'Access refused by the AI service: check your key or reconnect',
+  'La connexion à ton abonnement a expiré ou a été retirée : reconnecte-toi': 'The connection to your subscription has expired or was removed: reconnect',
+  'Autorisation incomplète : ton abonnement ne donne pas cet accès (formule Plus ou Pro requise pour ChatGPT)': 'Authorisation incomplete: your subscription does not give this access (ChatGPT Plus or Pro required)',
   'Autorise d’abord l’envoi de texte à ce service d’IA':
       'First allow sending text to this AI service',
   'Ce service d’IA n’est pas autorisé à recevoir ce type de contenu':
@@ -565,8 +574,10 @@ const Map<String, String> enStrings = {
   'Toutes les conversations enregistrées sont effacées de cet appareil.':
       'All saved conversations are deleted from this device.',
   '« {0} » est effacée de cet appareil.': '“{0}” is deleted from this device.',
-  'Aucune clé enregistrée pour ce service d’IA':
-      'No key saved for this AI service',
+  'Aucune clé ni connexion enregistrée pour ce service d’IA':
+      'No key or connection saved for this AI service',
+  'Ce service d’IA ne propose pas la connexion par navigateur':
+      'This AI service does not offer browser sign-in',
   'Choisis d’abord un modèle d’IA': 'First choose an AI model',
   'Le texte est trop long pour le service d’IA':
       'The text is too long for the AI service',
@@ -828,6 +839,20 @@ const Map<String, String> enStrings = {
       'Enter an address (name@domain.com) or a domain (domain.com).',
   'Sans le focus depuis ce délai, MIRA libère l’affichage (corps des messages, images, caches) ; la réception, les règles et les notifications continuent.': 'After this long without focus, MIRA frees the display (message bodies, images, caches); receiving, rules and notifications keep running.',
   'Se connecter avec {0}': 'Sign in with {0}',
+  'Avec ton abonnement {0}': 'With your {0} subscription',
+  'Avec une clé d’API': 'With an API key',
+  'Utiliser ton abonnement {0} dans MIRA ?':
+      'Use your {0} subscription in MIRA?',
+  'Le contenu que tu envoies à l’assistant est traité par le service, selon les conditions de ton compte. Les personnes qui t’écrivent n’ont pas consenti à cet envoi.': 'What you send to the assistant is processed by the service under your account’s terms. The people who write to you have not agreed to this.',
+  'L’usage compte dans ton abonnement, avec un plafond que tu règles côté service.': 'Usage counts against your subscription, with a cap you set on the service’s side.',
+  'Tu peux déconnecter MIRA à tout moment dans les réglages du service.':
+      'You can disconnect MIRA at any time in the service’s settings.',
+  'Cette connexion est en préversion : elle peut cesser de fonctionner.':
+      'This connection is in preview: it may stop working.',
+  'Continuer': 'Continue',
+  'Se déconnecter': 'Sign out',
+  'Pour utiliser {0}, connecte ton abonnement dans le navigateur : aucune clé à recopier.':
+      'To use {0}, connect your subscription in the browser: no key to copy.',
   'Se reconnecter': 'Reconnect',
   'Secondaire': 'Secondary',
   'Serveur {0} : hôte invalide': '{0} server: invalid host',
@@ -1272,6 +1297,41 @@ const Map<String, String> enStrings = {
   'Connexion réussie.': 'Connection successful.',
   'Effacer la clé': 'Clear the key',
   'Enregistrer la clé': 'Save the key',
+  'En attente du navigateur…': 'Waiting for the browser…',
+  'TES MAILS. CHEZ TOI.': 'YOUR MAIL. YOUR MACHINE.',
+  'Un client mail moderne et soigné, libre et gratuit, sur ton appareil.':
+      'A modern, polished mail client, free and open source, on your device.',
+  'Passer': 'Skip',
+  'Suivant': 'Next',
+  'Commencer': 'Start',
+  'TA VIE PRIVÉE': 'YOUR PRIVACY',
+  'Sur ton appareil': 'On your device',
+  'Tes messages sont copiés sur ton appareil et ne passent que par ton fournisseur de courrier.': 'Your messages are copied to your device and only go through your mail provider.',
+  'Aucun serveur MIRA': 'No MIRA server',
+  'Aucune télémétrie, aucun compte à créer chez nous.':
+      'No telemetry, no account to create with us.',
+  'Images distantes bloquées': 'Remote images blocked',
+  'Les images d’un message sont bloquées par défaut : tu choisis quand les afficher.': 'Images in a message are blocked by default: you choose when to show them.',
+  'TOUT EST PRÊT': 'YOU’RE ALL SET',
+  'Le bouton Paramètres, en haut à droite : comptes, thème, notifications, règles.':
+      'The Settings button, top right: accounts, theme, notifications, rules.',
+  'Le bouton Assistant IA, en haut : il résume et rédige avec ton accord.': 'The AI assistant button, at the top: it summarizes and drafts with your consent.',
+  'Recherche': 'Search',
+  'La barre du haut cherche dans tous tes messages.':
+      'The top bar searches all your messages.',
+  'Appuie sur ? pour voir tous les raccourcis clavier.':
+      'Press ? to see all keyboard shortcuts.',
+  'Ouvrir ma boîte': 'Open my inbox',
+  'APPARENCE': 'APPEARANCE',
+  'Choisis ton thème. Tu pourras le changer dans les réglages.':
+      'Choose your theme. You can change it later in Settings.',
+  'Se reconnecter avec {0}': 'Sign in again with {0}',
+  'Le navigateur ne s’est pas ouvert : copie ce lien dans ton navigateur.':
+      'The browser did not open: copy this link into your browser.',
+  'Ou colle une clé d’API que tu as créée toi-même.':
+      'Or paste an API key you created yourself.',
+  'Pour utiliser {0}, connecte-toi avec ton compte dans le navigateur : aucune clé à recopier.':
+      'To use {0}, sign in with your account in the browser: no key to copy.',
   'Envoyer tes messages à {0} ?': 'Send your messages to {0}?',
   'IA': 'AI',
   'Modèles du service': 'Service models',
@@ -1381,4 +1441,42 @@ const Map<String, String> enStrings = {
   'Impossible de démarrer le moteur en arrière-plan':
       'Could not start the background engine',
   'Le moteur en arrière-plan est détaché': 'The background engine is detached',
+  'Assistant complet : peut chercher et lire tes mails pour t’aider.':
+      'Full assistant: can search and read your mail to help you.',
+  'Avancé': 'Advanced',
+  'Le fichier téléchargé est incomplet ou altéré : il a été supprimé, réessaie':
+      'The downloaded file is incomplete or altered: it was deleted, try again',
+  'Le modèle local met trop de temps à démarrer : réessaie ou choisis un palier plus léger': 'The local model takes too long to start: try again or pick a lighter tier',
+  'Le modèle local n’est pas pris en charge sur cet appareil':
+      'The local model is not supported on this device',
+  'Le modèle local s’est arrêté : la mémoire était peut-être insuffisante, essaie un palier plus léger': 'The local model stopped: memory may have been too low, try a lighter tier',
+  'Le modèle tourne sur ta machine : rien de ce que tu lui envoies ne quitte l’ordinateur.': 'The model runs on your machine: nothing you send it leaves the computer.',
+  'Le moteur qui fait tourner le modèle (environ 25 Mo) est téléchargé avec lui.':
+      'The engine that runs the model (about 25 MB) is downloaded with it.',
+  'Libérer la mémoire': 'Free the memory',
+  'Léger': 'Light',
+  'Mini': 'Mini',
+  'Mémoire disponible juste pour ce modèle : il peut être lent ou s’arrêter.':
+      'Available memory is tight for this model: it may be slow or stop.',
+  'Pas assez d’espace disque pour ce modèle : libère de la place puis réessaie':
+      'Not enough disk space for this model: free some space and try again',
+  'Reformule, résume et propose une réponse à un mail court. Très léger.':
+      'Rewords, summarizes and suggests a reply to a short email. Very light.',
+  'Résume, reformule et répond avec plus de justesse.':
+      'Summarizes, rewords and replies more accurately.',
+  'Taille : {0}. Licence : {1}.': 'Size: {0}. License: {1}.',
+  'Tu peux le supprimer ici à tout moment : tout l’espace est rendu.':
+      'You can delete it here at any time: all the space is returned.',
+  'Télécharger {0} ?': 'Download {0}?',
+  'Un modèle d’IA qui tourne sur ta machine : ni compte, ni clé, rien ne sort de l’ordinateur. C’est facultatif : tant que tu n’en télécharges pas un, il n’occupe ni disque ni mémoire.': 'An AI model that runs on your machine: no account, no key, nothing leaves the computer. It is optional: until you download one, it uses no disk space or memory.',
+  'Une installation du modèle local est déjà en cours':
+      'A local model installation is already in progress',
+  'Utiliser comme assistant': 'Use as assistant',
+  'Utilisé par l’assistant': 'Used by the assistant',
+  '{0} · {1} · {2} · mémoire conseillée {3} Go':
+      '{0} · {1} · {2} · recommended memory {3} GB',
+  'Modèle local (facultatif, sans compte)':
+      'Local model (optional, no account)',
+  'Le modèle local n’est pas disponible sur cet appareil.':
+      'The local model is not available on this device.',
 };

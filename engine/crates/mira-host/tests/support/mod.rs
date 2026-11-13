@@ -33,5 +33,6 @@ pub fn config(home: &Path, profile: &str) -> EngineConfig {
         ids: Arc::new(SequentialIds::new()),
         oauth: OAuthClientConfig::default(),
         network,
+        resources: Arc::new(mira_assembly::ports::HostResources),
     }
 }

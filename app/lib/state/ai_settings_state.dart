@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../engine/ai_admin.dart';
+import '../engine/engine_client.dart';
 import '../i18n/engine_errors.dart';
 
 /// Résultat du dernier essai d'une connexion : réussi, ou le texte traduit de l'erreur.
@@ -20,6 +21,9 @@ class AiSettingsState extends ChangeNotifier {
   final Set<String> saving = {};
   final Map<String, String> saveErrors = {};
   final Map<String, AiTestOutcome> tests = {};
+  final Map<String, String> logins = {};
+  final Map<String, Uri> loginLinks = {};
+  final Set<String> _cancelled = {};
   final Map<String, List<AiModelInfo>> fetched = {};
   String? error;
   bool loaded = false;
@@ -143,6 +147,44 @@ class AiSettingsState extends ChangeNotifier {
     await admin.setKey(id, key.trim());
     await _preselectModel(id);
   });
+
+  /// Connecte par le navigateur : le moteur rend une clé qu'il range lui-même ; [open] montre l'adresse d'autorisation, qui reste à copier si le navigateur ne s'ouvre pas.
+  Future<void> loginByBrowser(String id, Future<bool> Function(Uri) open) {
+    if (logins.containsKey(id)) return Future.value();
+    return _act(id, () async {
+      final started = await admin.startKeyLogin(id);
+      logins[id] = started.flow;
+      if (!await open(started.url)) loginLinks[id] = started.url;
+      _changed();
+      try {
+        await admin.completeKeyLogin(started.flow);
+        await _preselectModel(id);
+      } on EngineException catch (e) {
+        if (_cancelled.remove(id)) return;
+        throw EngineException.local(
+          e.code,
+          '${engineErrorText(e)} (${e.message})',
+        );
+      } on Object {
+        if (!_cancelled.remove(id)) rethrow;
+      } finally {
+        logins.remove(id);
+        loginLinks.remove(id);
+      }
+    });
+  }
+
+  /// Abandonne la connexion par navigateur en attente, sans erreur à l'écran.
+  Future<void> cancelLogin(String id) async {
+    final flow = logins[id];
+    if (flow == null) return;
+    _cancelled.add(id);
+    try {
+      await admin.cancelKeyLogin(flow);
+    } on Object {
+      _cancelled.remove(id);
+    }
+  }
 
   /// Efface la clé d'une connexion.
   Future<void> clearKey(String id) => _act(id, () async => admin.clearKey(id));

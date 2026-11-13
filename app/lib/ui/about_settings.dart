@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../app_info.dart';
 import '../i18n/i18n.dart';
+import '../platform_open.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import 'widgets.dart';
 
 /// Ouvre une adresse dans le navigateur ; remplacée dans les tests.
-Future<bool> Function(Uri url) openLink = launchUrl;
+Future<bool> Function(Uri url) openLink = openExternal;
 
 /// Onglet « À propos » : l'application, sa politique de confidentialité et son auteur.
 class AboutSettings extends StatelessWidget {

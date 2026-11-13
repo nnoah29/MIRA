@@ -1,0 +1,240 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mira/engine/ai_admin.dart';
+import 'package:mira/engine/engine_mail_source.dart';
+import 'package:mira/engine/remote/resident.dart';
+import 'package:mira/state/store.dart';
+import 'package:mira/ui/ai_browser_login.dart';
+import 'package:mira/ui/onboarding/step_notifications.dart';
+import 'package:mira/ui/widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'ai_settings_harness.dart' show connection, provider;
+import 'engine_source_test.dart' show FakeEngine;
+import 'fake_ai_engine.dart';
+import 'onboarding_flow_test.dart' show pumpFlow, tapKey;
+
+/// Contrôleur du mode résident absent : la page Notifications ne lance aucun processus.
+class NoResident extends ResidentController {
+  @override
+  Future<bool> isAvailable() async => false;
+}
+
+Future<(MailStore, FakeAiEngine)> aiStore(
+  WidgetTester tester, {
+  bool withLogin = true,
+  bool withSession = false,
+  bool withLocal = false,
+  List<Map<String, dynamic>> connections = const [],
+}) async {
+  final real = residentForOnboarding;
+  addTearDown(() => residentForOnboarding = real);
+  residentForOnboarding = NoResident.new;
+  SharedPreferences.setMockInitialValues({});
+  final prefs = await tester.runAsync(SharedPreferences.getInstance);
+  final fake = FakeAiEngine()
+    ..providers.addAll([
+      provider('openai', 'OpenAI'),
+      provider('openrouter', 'OpenRouter', login: withLogin),
+      if (withSession) provider('chatgpt', 'ChatGPT', session: true),
+      if (withLocal) provider('local', 'Modèle local', local: true),
+    ])
+    ..connections.addAll(connections);
+  final src = await tester.runAsync(
+    () => EngineMailSource.load(FakeEngine()..noAccounts = true),
+  );
+  final store = MailStore(prefs!, source: src, aiAdminOverride: AiAdmin(fake));
+  return (store, fake);
+}
+
+Future<void> toAiPage(WidgetTester tester) async {
+  for (var i = 0; i < 4; i++) {
+    await tapKey(tester, 'onb-next');
+  }
+}
+
+void useLauncher(bool opens, List<Uri> seen) {
+  final real = openLoginPage;
+  addTearDown(() => openLoginPage = real);
+  openLoginPage = (u) async {
+    seen.add(u);
+    return opens;
+  };
+}
+
+void main() {
+  testWidgets('ai_page_explains_privacy_and_offers_openrouter', (tester) async {
+    final (store, _) = await aiStore(tester);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    expect(find.byKey(const ValueKey('onb-ai-login')), findsOneWidget);
+    expect(
+      find.textContaining('Ta clé reste sur cet appareil'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('ai_login_creates_connection_and_starts_browser_flow', (
+    tester,
+  ) async {
+    final (store, fake) = await aiStore(tester);
+    final seen = <Uri>[];
+    useLauncher(true, seen);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    await tapKey(tester, 'onb-ai-login');
+    expect(fake.requestsOf('add_ai_connection'), hasLength(1));
+    expect(fake.requestsOf('start_ai_key_login'), hasLength(1));
+    expect(seen.single.host, 'openrouter.ai');
+    expect(find.byKey(const ValueKey('onb-ai-login')), findsNothing);
+  });
+
+  testWidgets('ai_existing_connection_is_reused', (tester) async {
+    final (store, fake) = await aiStore(
+      tester,
+      connections: [connection('c1', provider: 'openrouter')],
+    );
+    useLauncher(true, []);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    await tapKey(tester, 'onb-ai-login');
+    expect(fake.requestsOf('add_ai_connection'), isEmpty);
+    expect(fake.requestsOf('start_ai_key_login').single['connection'], 'c1');
+  });
+
+  testWidgets('ai_link_remains_when_browser_does_not_open', (tester) async {
+    final (store, fake) = await aiStore(tester);
+    fake.loginGate = Completer<void>();
+    useLauncher(false, []);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    await tapKey(tester, 'onb-ai-login');
+    expect(find.byKey(const ValueKey('onb-ai-link')), findsOneWidget);
+    fake.loginGate!.complete();
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('ai_later_moves_on_without_connection', (tester) async {
+    final (store, fake) = await aiStore(tester);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    await tapKey(tester, 'onb-ai-later');
+    expect(fake.requestsOf('add_ai_connection'), isEmpty);
+    expect(find.byKey(const ValueKey('onb-ai-login')), findsNothing);
+  });
+
+  testWidgets('ai_without_key_login_provider_points_to_settings', (
+    tester,
+  ) async {
+    final (store, _) = await aiStore(tester, withLogin: false);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    expect(find.byKey(const ValueKey('onb-ai-login')), findsNothing);
+    expect(find.textContaining('Réglages › IA'), findsWidgets);
+  });
+
+  testWidgets('ai_cancel_stops_waiting_quietly', (tester) async {
+    final (store, fake) = await aiStore(tester);
+    fake.loginGate = Completer<void>();
+    useLauncher(true, []);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    await tapKey(tester, 'onb-ai-login');
+    expect(find.byKey(const ValueKey('onb-ai-cancel')), findsOneWidget);
+    await tapKey(tester, 'onb-ai-cancel');
+    expect(find.byKey(const ValueKey('onb-ai-login')), findsOneWidget);
+    expect(find.byKey(const ValueKey('onb-ai-error')), findsNothing);
+  });
+
+  testWidgets('ai_leaving_the_page_cancels_the_pending_login', (tester) async {
+    final (store, fake) = await aiStore(tester);
+    fake.loginGate = Completer<void>();
+    useLauncher(true, []);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    await tapKey(tester, 'onb-ai-login');
+    expect(find.byKey(const ValueKey('onb-ai-cancel')), findsOneWidget);
+    await tapKey(tester, 'onb-back');
+    expect(fake.requestsOf('cancel_ai_key_login'), hasLength(1));
+  });
+
+  testWidgets('ai_page_offers_chatgpt_after_openrouter', (tester) async {
+    final (store, _) = await aiStore(tester, withSession: true);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    expect(find.byKey(const ValueKey('onb-ai-login')), findsOneWidget);
+    expect(find.byKey(const ValueKey('onb-ai-chatgpt')), findsOneWidget);
+  });
+
+  testWidgets('chatgpt_asks_warning_then_starts_the_flow', (tester) async {
+    final (store, fake) = await aiStore(tester, withSession: true);
+    final seen = <Uri>[];
+    useLauncher(true, seen);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    await tapKey(tester, 'onb-ai-chatgpt');
+    expect(find.byKey(const ValueKey('ai-session-warning')), findsOneWidget);
+    expect(fake.requestsOf('start_ai_key_login'), isEmpty);
+    await tapKey(tester, 'ai-session-warning-accept');
+    expect(fake.requestsOf('add_ai_connection').single['provider'], 'chatgpt');
+    expect(fake.requestsOf('start_ai_key_login'), hasLength(1));
+  });
+
+  testWidgets('chatgpt_warning_cancel_does_nothing', (tester) async {
+    final (store, fake) = await aiStore(tester, withSession: true);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    await tapKey(tester, 'onb-ai-chatgpt');
+    await tapKey(tester, 'ai-session-warning-cancel');
+    expect(fake.requestsOf('add_ai_connection'), isEmpty);
+    expect(fake.requestsOf('start_ai_key_login'), isEmpty);
+  });
+
+  testWidgets('chatgpt_and_openrouter_buttons_have_the_same_prominence', (
+    tester,
+  ) async {
+    final (store, _) = await aiStore(tester, withSession: true);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    Btn button(String key) => tester.widget<Btn>(find.byKey(ValueKey(key)));
+    expect(button('onb-ai-login').go, isTrue);
+    expect(button('onb-ai-chatgpt').go, isTrue);
+  });
+
+  testWidgets('l’option locale n’appelle rien tant qu’on ne la touche pas', (
+    tester,
+  ) async {
+    final (store, fake) = await aiStore(tester, withLocal: true);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    expect(find.byKey(const ValueKey('onb-ai-local')), findsOneWidget);
+    expect(fake.requestsOf('get_local_runtime_status'), isEmpty);
+    expect(fake.requestsOf('install_local_model'), isEmpty);
+  });
+
+  testWidgets(
+    'toucher l’option locale lit seulement l’état et montre les paliers',
+    (tester) async {
+      final (store, fake) = await aiStore(tester, withLocal: true);
+      await pumpFlow(tester, store: store);
+      await toAiPage(tester);
+      await tapKey(tester, 'onb-ai-local');
+      expect(fake.requestsOf('get_local_runtime_status'), hasLength(1));
+      expect(fake.requestsOf('install_local_model'), isEmpty);
+      for (final id in ['mini', 'light', 'big']) {
+        expect(find.byKey(ValueKey('ai-local-card-$id')), findsOneWidget);
+      }
+    },
+  );
+
+  testWidgets('sans modèle local proposé par le moteur, aucune option', (
+    tester,
+  ) async {
+    final (store, _) = await aiStore(tester);
+    await pumpFlow(tester, store: store);
+    await toAiPage(tester);
+    expect(find.byKey(const ValueKey('onb-ai-local')), findsNothing);
+  });
+}

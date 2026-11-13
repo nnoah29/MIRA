@@ -7,6 +7,7 @@ pub mod file_host;
 mod file_host_serve;
 pub mod runtime;
 pub mod runtime_fake;
+pub mod zip_archives;
 
 use mira_vocabulary::{
     AiLocalModel, AiLocalRuntime, AiLocalServerBuild, AiProviderDescriptor, AiProviderId, AiQuirks,

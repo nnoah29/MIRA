@@ -17,7 +17,7 @@ pub(super) fn corrupted() -> MiraError {
 }
 
 /// Refuse un chemin absolu ou contenant `..` ; seuls les composants ordinaires et `.` passent.
-fn check_relative(path: &Path) -> Result<(), MiraError> {
+pub(super) fn check_relative(path: &Path) -> Result<(), MiraError> {
     let clean = path
         .components()
         .all(|c| matches!(c, Component::Normal(_) | Component::CurDir));

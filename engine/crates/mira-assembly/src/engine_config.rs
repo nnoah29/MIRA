@@ -6,7 +6,7 @@ use mira_core::accounts::NetworkPolicy;
 use mira_core::api::EngineConfig;
 use mira_core::auth::OAuthClientConfig;
 use mira_core::ports::{
-    ChunkedSecretStore, KeyringSecretStore, LinuxResources, SystemClock, UuidV7Ids,
+    ChunkedSecretStore, HostResources, KeyringSecretStore, SystemClock, UuidV7Ids,
 };
 use mira_core::profile::ProfileEnvironment;
 use mira_core::sync::{BackgroundSync, SupervisorConfig};
@@ -36,6 +36,6 @@ pub fn production_config_with_oauth(profile: ProfileId, oauth: OAuthClientConfig
             background_sync: BackgroundSync::On(SupervisorConfig::default()),
             ..NetworkPolicy::default()
         },
-        resources: Arc::new(LinuxResources),
+        resources: Arc::new(HostResources),
     }
 }

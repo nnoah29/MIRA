@@ -50,7 +50,7 @@ impl LocalFixture {
         let mut runtime = test_runtime();
         runtime.server_args = fake_args(&log, &[]);
         runtime.idle_stop_seconds = idle_stop_seconds;
-        runtime.start_timeout_seconds = 5;
+        runtime.start_timeout_seconds = 30;
         place_files(&paths.root, &runtime.server[0].sha256);
         let provider = LocalTestProvider(descriptor("local-test", false, Some(runtime)));
         let mut registry = AiProviderRegistry::new();

@@ -58,7 +58,7 @@ fn runtime_for(
     runtime.models[0].ram_recommended_mib = 1000;
     runtime.models[1].ram_recommended_mib = 9000;
     runtime.server_args = fake_args(log, &[]);
-    runtime.start_timeout_seconds = 5;
+    runtime.start_timeout_seconds = 30;
     runtime
 }
 

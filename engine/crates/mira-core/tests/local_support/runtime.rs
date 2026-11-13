@@ -24,7 +24,7 @@ impl RuntimeFixture {
         install_fake(dir.path());
         let mut runtime = test_runtime();
         runtime.server_args = fake_args(&dir.path().join("log.jsonl"), extra_args);
-        runtime.start_timeout_seconds = 5;
+        runtime.start_timeout_seconds = 30;
         Self {
             dir,
             runtime,

@@ -17,6 +17,14 @@ use support_ai_memory_loop::{enable_with_one_memory, one_vector, run_turns};
 
 const REMEMBER_ARGS: &str = r#"{"text":"Je signe « Noah »","kind":"preference"}"#;
 
+const REMEMBER_ORDER: [&str; 5] = [
+    "called:remember",
+    "memory",
+    "finished:ok",
+    "text",
+    "done:end_turn",
+];
+
 /// Retenir : la proposition arrive entre l'annonce et la fin, et rien n'est écrit
 #[tokio::test]
 async fn remember_proposal_arrives_in_order_and_writes_nothing() {
@@ -29,14 +37,7 @@ async fn remember_proposal_arrives_in_order_and_writes_nothing() {
             text_turn(format, "Je te propose de le retenir.", None),
         ];
         let deltas = run_turns(&f, turns, "retiens ma signature").await;
-        let expected = [
-            "called:remember",
-            "memory",
-            "finished:ok",
-            "text",
-            "done:end_turn",
-        ];
-        assert_eq!(shape(&deltas), expected, "{format:?}");
+        assert_eq!(shape(&deltas), REMEMBER_ORDER, "{format:?}");
         let ChatDelta::MemoryProposed { id, proposal } = &deltas[1] else {
             panic!("proposition attendue")
         };

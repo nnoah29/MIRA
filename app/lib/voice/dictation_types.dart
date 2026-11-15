@@ -78,7 +78,8 @@ abstract interface class SpeechRecognizer {
   /// Transmet des échantillons audio.
   void feed(Float32List samples);
 
-  /// Vide la fin de la parole, émet le dernier texte définitif et libère les ressources.
+  /// Vide la fin de la parole, émet le dernier texte définitif et libère les ressources ;
+  /// le futur se termine une fois ce texte livré aux abonnés de [events].
   Future<void> stop();
 }
 

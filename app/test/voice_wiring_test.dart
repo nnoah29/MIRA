@@ -103,7 +103,7 @@ void main() {
     await tester.runAsync(voice.dispose);
   });
 
-  testWidgets('réglages : la section de dictée est dans l’onglet Messagerie', (
+  testWidgets('réglages : la dictée a son propre onglet Voix, pas Messagerie', (
     tester,
   ) async {
     final voice = await FakeVoice.create();
@@ -113,15 +113,21 @@ void main() {
     expect(find.byKey(const ValueKey('voice-settings')), findsNothing);
     await tester.tap(find.text('MESSAGERIE'));
     await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byKey(const ValueKey('voice-settings')), findsNothing);
+    await tester.tap(find.text('VOIX'));
+    await tester.pump(const Duration(milliseconds: 100));
     expect(find.byKey(const ValueKey('voice-settings')), findsOneWidget);
     await teardown(tester, store);
     await tester.runAsync(voice.dispose);
   });
 
-  testWidgets('réglages sans dictée : aucune section', (tester) async {
+  testWidgets('réglages sans dictée : ni onglet Voix ni section', (
+    tester,
+  ) async {
     final store = await pumpApp(tester);
     await tester.tap(find.text('PARAMÈTRES').first);
     await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('VOIX'), findsNothing);
     await tester.tap(find.text('MESSAGERIE'));
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.byKey(const ValueKey('voice-settings')), findsNothing);

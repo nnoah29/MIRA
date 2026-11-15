@@ -23,7 +23,7 @@ micro (record) ─▶ Pcm16Decoder ─▶ SherpaRecognizer (isolate, sherpa-onnx
 | `voice_model_catalog.dart`, `voice_model_store.dart`, `voice_model_archive.dart` | modèles pinnés (SHA-256), téléchargement vérifié, extraction, suppression |
 | `voice_preferences.dart`, `voice_services.dart` | langue mémorisée, assemblage et accès par le contexte |
 
-Interface : `ui/mic_button.dart` (chat et composeur), `ui/voice_settings.dart` (onglet Messagerie),
+Interface : `ui/mic_button.dart` (chat et composeur), `ui/voice_settings.dart` (onglet Voix),
 `ui/voice_model_dialog.dart` (confirmation du téléchargement). Sans `VoiceScope`, aucun bouton n'apparaît.
 
 ## Vie privée
@@ -81,7 +81,7 @@ Un modèle Kroko supplémentaire : une valeur dans `DictationLanguage`, une entr
 
 ## Protocole manuel (Windows, Android)
 
-1. Installer, ouvrir Réglages › Messagerie › Dictée vocale, télécharger le modèle français puis l'anglais.
+1. Installer, ouvrir Réglages › Voix, télécharger le modèle français puis l'anglais.
 2. Ouvrir un brouillon, toucher le micro, dire : « Bonjour Marie, je vous confirme notre rendez-vous de jeudi
    à quatorze heures. » Les mots doivent apparaître en direct, avec ponctuation.
 3. Retoucher le micro : la dictée s'arrête, le texte reste. Fermer le brouillon en dictant : plus d'écriture.

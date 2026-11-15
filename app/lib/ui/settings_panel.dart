@@ -36,7 +36,7 @@ List<(String, String)> get accentPresets => <(String, String)>[
   (t('Jaune'), 'e5b100'),
 ];
 
-List<String> _tabs(bool engine) => [
+List<String> _tabs(bool engine, bool voice) => [
   t('Apparence'),
   t('Messagerie'),
   t('Notifications'),
@@ -47,6 +47,7 @@ List<String> _tabs(bool engine) => [
   if (engine) t('Modèles'),
   if (engine) t('IA'),
   if (engine) t('Stockage'),
+  if (voice) t('Voix'),
   t('À propos'),
 ];
 
@@ -222,10 +223,13 @@ class _SettingsPanelState extends State<SettingsPanel> {
       ),
     );
 
+    final hasVoice = voiceServicesOf(context) != null;
     if (s.wantsAddAccount && s.source != null) tab = 3;
-    final aboutTab = _tabs(s.source != null).length - 1;
+    final aboutTab = _tabs(s.source != null, hasVoice).length - 1;
     Widget contentFor(int index) => index == aboutTab
         ? box([const AboutSettings()])
+        : hasVoice && index == aboutTab - 1
+        ? box([const VoiceSettings()])
         : switch (index) {
             0 => box([
               srow(
@@ -455,10 +459,6 @@ class _SettingsPanelState extends State<SettingsPanel> {
                   ],
                 ),
               ),
-              if (voiceServicesOf(context) != null) ...[
-                Divider(height: 1, color: p.lineSoft),
-                const VoiceSettings(),
-              ],
             ]),
             2 => box([const NotificationSettings()]),
             4 => box([const ContactsSettings()]),
@@ -539,7 +539,11 @@ class _SettingsPanelState extends State<SettingsPanel> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                for (var i = 0; i < _tabs(s.source != null).length; i++)
+                for (
+                  var i = 0;
+                  i < _tabs(s.source != null, hasVoice).length;
+                  i++
+                )
                   KeyedSubtree(
                     key: _tabKeys.putIfAbsent(i, GlobalKey.new),
                     child: Hov(
@@ -560,7 +564,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                             ),
                           ),
                           child: Mono(
-                            _tabs(s.source != null)[i],
+                            _tabs(s.source != null, hasVoice)[i],
                             ls: .14,
                             color: on ? p.accent : (h ? p.text : p.muted),
                             height: null,
@@ -575,7 +579,11 @@ class _SettingsPanelState extends State<SettingsPanel> {
         ),
         Expanded(
           child: w <= 760
-              ? _pagedContent(_tabs(s.source != null).length, hp, contentFor)
+              ? _pagedContent(
+                  _tabs(s.source != null, hasVoice).length,
+                  hp,
+                  contentFor,
+                )
               : ScrollArea(
                   padding: EdgeInsets.fromLTRB(hp, 0, hp, 40),
                   child: FadeSlideIn(

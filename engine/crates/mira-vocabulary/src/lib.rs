@@ -18,6 +18,7 @@ pub use ai::chat::{ChatMessage, ChatRequest, ChatRole, ToolSpec};
 pub use ai::connection::{AiConnection, AiConnectionKind};
 pub use ai::content::{ContentKind, ContextPart};
 pub use ai::conversation::{AiConversation, AiConversationMeta};
+pub use ai::memory::{MemoryHit, MemoryKind, MemoryRecord, MemorySource};
 pub use ai::delta::{ChatDelta, StopReason};
 pub use ai::descriptor::{
     AiKeyLogin, AiProviderDescriptor, AiQuirks, AiSessionLogin, AuthScheme, MaxTokensField,

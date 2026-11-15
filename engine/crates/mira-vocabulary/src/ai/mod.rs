@@ -14,6 +14,7 @@ pub mod journal;
 pub mod local_runtime;
 pub mod local_status;
 pub mod masking;
+pub mod memory;
 pub mod model;
 pub mod provider;
 pub mod tool;

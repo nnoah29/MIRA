@@ -47,6 +47,7 @@ pub fn shape(deltas: &[ChatDelta]) -> Vec<String> {
         ChatDelta::ToolFinished { state, .. } => format!("finished:{state:?}").to_lowercase(),
         ChatDelta::DraftProposed { .. } => "proposed".to_string(),
         ChatDelta::ActionProposed { .. } => "action".to_string(),
+        ChatDelta::MailCardsShown { .. } => "cards".to_string(),
         ChatDelta::Done { reason } => format!("done:{}", reason_name(reason)),
     };
     deltas.iter().map(label).collect()

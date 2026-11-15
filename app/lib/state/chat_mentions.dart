@@ -7,15 +7,28 @@ class Mentions {
   const Mentions(this.text, this.ids);
 }
 
-final _marker = RegExp(r'[ \t]*\[mail:([^\]\s]+)\]');
-final _partial = RegExp(r'[ \t]*\[(m(a(i(l(:[^\]\s]*)?)?)?)?)?$');
+final _marker = RegExp(r'[ \t]*\[mail:([^\]\n]*)\]', caseSensitive: false);
+final _partial = RegExp(
+  r'[ \t]*\[(m(a(i(l(:[^\]\n]*)?)?)?)?)?$',
+  caseSensitive: false,
+);
+final _separator = RegExp(r'[,;\s]+');
+final _idPrefix = RegExp(r'^id=', caseSensitive: false);
+
+/// Identifiants d'un repère : séparés par virgule ou espace, sans le préfixe `id=` que les outils affichent.
+List<String> _idsOf(String inside) => [
+  for (final piece in inside.split(_separator))
+    if (piece.replaceFirst(_idPrefix, '').isNotEmpty)
+      piece.replaceFirst(_idPrefix, ''),
+];
 
 /// Retire de [raw] les repères complets, et un repère commencé à la fin (flux en cours) ; rend les identifiants cités.
 Mentions readMentions(String raw) {
   final ids = <String>[];
   final text = raw.replaceAllMapped(_marker, (m) {
-    final id = m.group(1)!;
-    if (!ids.contains(id)) ids.add(id);
+    for (final id in _idsOf(m.group(1)!)) {
+      if (!ids.contains(id)) ids.add(id);
+    }
     return '';
   });
   return Mentions(text.replaceFirst(_partial, ''), ids);

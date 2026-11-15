@@ -50,6 +50,7 @@ pub const ALL: &[ErrorCode] = &[
     not_found::AI_CONNECTION,
     not_found::AI_PROVIDER,
     not_found::AI_CONVERSATION,
+    not_found::AI_MEMORY,
     incompatible_state::SYSTEM_MAILBOX,
     incompatible_state::ACCOUNT_DELETING,
     incompatible_state::PROFILE_LOCKED,

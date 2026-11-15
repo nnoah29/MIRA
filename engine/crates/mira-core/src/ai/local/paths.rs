@@ -7,7 +7,7 @@ use mira_vocabulary::{AiLocalModel, AiLocalServerBuild};
 /// Dossier `local-ai` d'un profil et ses sous-dossiers.
 #[derive(Debug, Clone)]
 pub struct LocalPaths {
-    root: PathBuf,
+    pub(super) root: PathBuf,
 }
 
 impl LocalPaths {
@@ -37,11 +37,6 @@ impl LocalPaths {
     /// Fichier d'un modèle installé
     pub fn model_file(&self, model: &AiLocalModel) -> PathBuf {
         self.models_dir().join(&model.file_name)
-    }
-
-    /// Fichier du modèle d'embeddings de la mémoire, sous `embeddings/`
-    pub fn embedding_file(&self, model: &AiLocalModel) -> PathBuf {
-        self.root.join("embeddings").join(&model.file_name)
     }
 
     /// Dossier de la clé du lancement en cours

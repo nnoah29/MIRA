@@ -47,4 +47,18 @@ impl Tx<'_> {
             .map_err(storage_error)?;
         rows.collect::<Result<Vec<_>, _>>().map_err(storage_error)
     }
+
+    /// Rend au plus `limit` souvenirs périmés, les plus anciens d'abord, pour les réindexer
+    pub fn stale_ai_memories(&self, limit: u32) -> Result<Vec<MemoryRecord>, MiraError> {
+        let mut statement = self
+            .sql()
+            .prepare(&format!(
+                "SELECT {COLUMNS} FROM ai_memories WHERE stale = 1 ORDER BY created_at, rowid LIMIT ?1"
+            ))
+            .map_err(storage_error)?;
+        let rows = statement
+            .query_map([limit], record_from_row)
+            .map_err(storage_error)?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(storage_error)
+    }
 }

@@ -5,6 +5,7 @@ mod download;
 mod download_errors;
 mod download_transfer;
 mod download_verify;
+mod embedding_paths;
 mod endpoint;
 mod extract;
 mod extract_any;

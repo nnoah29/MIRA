@@ -32,6 +32,8 @@ pub const ALL: &[ErrorCode] = &[
     invalid_input::AI_CONVERSATION_TITLE,
     invalid_input::AI_CONVERSATION_TOO_LARGE,
     invalid_input::AI_CONVERSATION_PAYLOAD,
+    invalid_input::AI_MEMORY_TEXT,
+    invalid_input::AI_MEMORY_SENSITIVE,
     not_found::ACCOUNT,
     not_found::MESSAGE,
     not_found::MAILBOX,

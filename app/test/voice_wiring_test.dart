@@ -4,7 +4,6 @@ import 'package:mira/voice/dictation_types.dart';
 
 import 'ai_panel_harness.dart';
 import 'composer_wiring_test.dart' show pumpComposer;
-import 'fake_ai_engine.dart';
 import 'voice_fakes.dart';
 
 Finder get mic => find.byKey(const ValueKey('voice-mic-button'));

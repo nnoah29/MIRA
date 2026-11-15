@@ -454,7 +454,7 @@ class _AssistantPanelState extends State<AssistantPanel> {
                         MicButton(
                           target: input,
                           onProblem: (problem) =>
-                              reportVoiceProblem(s, problem),
+                              reportVoiceProblem(context, problem),
                         ),
                         const SizedBox(width: 8),
                       ],

@@ -20,6 +20,7 @@ class ModelServer {
   late final HttpServer _server;
   late Uint8List archive;
   ServeMode mode = ServeMode.normal;
+  int requests = 0;
   final Completer<void> release = Completer<void>();
   final Completer<void> halfway = Completer<void>();
 
@@ -74,6 +75,7 @@ class ModelServer {
   }
 
   Future<void> _serve(HttpRequest request) async {
+    requests++;
     if (mode == ServeMode.normal) return _serveAll(request.response);
     return _serveHalf(request.response);
   }

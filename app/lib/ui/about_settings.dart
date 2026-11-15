@@ -98,6 +98,17 @@ class AboutSettings extends StatelessWidget {
         ),
         _section(
           context,
+          t('Dictée vocale'),
+          t(
+            'La dictée utilise les modèles de reconnaissance Kroko de Banafo (modèles communautaires sous licence CC-BY-SA, selon l’éditeur) et le moteur sherpa-onnx (Apache-2.0). Ils sont téléchargés à ta demande, jamais inclus dans MIRA.',
+          ),
+          [
+            _Link('Kroko ASR', 'https://huggingface.co/Banafo/Kroko-ASR'),
+            _Link('sherpa-onnx', 'https://github.com/k2-fsa/sherpa-onnx'),
+          ],
+        ),
+        _section(
+          context,
           t('Auteur'),
           t('MIRA est conçu et développé par Noah TOFFA (@nnoah29).'),
           [_Link(t('Site de l’auteur'), authorUrl)],

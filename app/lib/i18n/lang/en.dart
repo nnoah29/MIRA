@@ -1487,4 +1487,15 @@ const Map<String, String> enStrings = {
       'Microphone access denied: allow it in the system settings',
   'Micro introuvable ou indisponible': 'Microphone not found or unavailable',
   'La dictée a rencontré une erreur': 'Dictation ran into an error',
+  'Dictée vocale': 'Voice dictation',
+  'Dicte tes messages et tes demandes à l’IA. La reconnaissance tourne sur ta machine : ta voix ne part jamais sur Internet.': 'Dictate your messages and your requests to the AI. Recognition runs on your machine: your voice never goes over the Internet.',
+  'Langue de dictée': 'Dictation language',
+  'Installé': 'Installed',
+  'Les noms propres rares et les mots d’une autre langue peuvent être mal reconnus.':
+      'Rare proper names and words from another language may be misrecognised.',
+  'Télécharger le modèle de dictée {0} ?': 'Download the {0} dictation model?',
+  'Taille : {0}. Source : {1}.': 'Size: {0}. Source: {1}.',
+  'Seul ce téléchargement passe par Internet : ta voix et le texte dicté ne quittent jamais l’ordinateur.': 'Only this download goes over the Internet: your voice and the dictated text never leave the computer.',
+  'Tu peux le supprimer dans les réglages à tout moment : tout l’espace est rendu.': 'You can delete it in the settings at any time: all the space is given back.',
+  'La dictée utilise les modèles de reconnaissance Kroko de Banafo (modèles communautaires sous licence CC-BY-SA, selon l’éditeur) et le moteur sherpa-onnx (Apache-2.0). Ils sont téléchargés à ta demande, jamais inclus dans MIRA.': 'Dictation uses the Kroko speech recognition models by Banafo (community models under the CC-BY-SA licence, according to the publisher) and the sherpa-onnx engine (Apache-2.0). They are downloaded at your request and never bundled with MIRA.',
 };

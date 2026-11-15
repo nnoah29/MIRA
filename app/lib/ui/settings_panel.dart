@@ -5,6 +5,7 @@ import '../data/models.dart';
 import '../data/rule_models.dart';
 import '../state/local_labels.dart';
 import '../state/store.dart';
+import '../voice/voice_services.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
 import '../theme/wall_source.dart';
@@ -19,6 +20,7 @@ import 'templates_settings.dart';
 import 'maintenance_settings.dart';
 import 'notification_settings.dart';
 import 'rules_settings.dart';
+import 'voice_settings.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
 
@@ -453,6 +455,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
                   ],
                 ),
               ),
+              if (voiceServicesOf(context) != null) ...[
+                Divider(height: 1, color: p.lineSoft),
+                const VoiceSettings(),
+              ],
             ]),
             2 => box([const NotificationSettings()]),
             4 => box([const ContactsSettings()]),

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:mira/voice/dictation_controller.dart';
 import 'package:mira/voice/dictation_types.dart';
+import 'package:mira/voice/voice_model_catalog.dart';
 import 'package:mira/voice/voice_model_store.dart';
 import 'package:mira/voice/voice_preferences.dart';
 import 'package:mira/voice/voice_services.dart';
@@ -94,13 +95,16 @@ class FakeVoice {
   final Directory root;
 
   /// Construit les faux services sur un dossier temporaire ; le dossier est supprimé par [dispose].
-  static Future<FakeVoice> create({Set<DictationLanguage>? installed}) async {
+  static Future<FakeVoice> create({
+    Set<DictationLanguage>? installed,
+    List<VoiceModelEntry>? catalog,
+  }) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final audio = FakeAudioSource();
     final recognizer = FakeRecognizer();
     final root = Directory.systemTemp.createTempSync('voice-ui');
-    final store = VoiceModelStore(root: root);
+    final store = VoiceModelStore(root: root, catalog: catalog);
     final services = VoiceServices(
       dictation: DictationController(
         audio: audio,

@@ -587,7 +587,7 @@ class _ComposerState extends State<Composer> {
                 const SizedBox(width: 10),
                 MicButton(
                   target: c.body,
-                  onProblem: (problem) => reportVoiceProblem(s, problem),
+                  onProblem: (problem) => reportVoiceProblem(context, problem),
                 ),
               ],
               if (aiOn) ...[

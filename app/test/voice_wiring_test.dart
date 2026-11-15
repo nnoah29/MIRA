@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mira/ui/step_animator.dart';
 import 'package:mira/voice/dictation_types.dart';
 
 import 'ai_panel_harness.dart';
+import 'app_test.dart' show pumpApp, teardown;
 import 'composer_wiring_test.dart' show pumpComposer;
 import 'voice_fakes.dart';
 
 Finder get mic => find.byKey(const ValueKey('voice-mic-button'));
 
 void main() {
+  setUpAll(() => StepAnimator.frameCap = null);
+
   testWidgets('chat sans services de dictée : pas de micro', (tester) async {
     final store = await pumpPanel(tester, withDefaultConnection());
     expect(mic, findsNothing);
@@ -76,5 +80,51 @@ void main() {
     final (store, _) = await pumpComposer(tester);
     expect(mic, findsNothing);
     store.dispose();
+  });
+
+  testWidgets('modèle absent : le micro du chat propose le téléchargement', (
+    tester,
+  ) async {
+    final voice = await FakeVoice.create(installed: {});
+    final store = await pumpPanel(
+      tester,
+      withDefaultConnection(),
+      voice: voice.services,
+    );
+    await tester.tap(mic);
+    for (var i = 0; i < 6; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 10)),
+      );
+      await tester.pump();
+    }
+    expect(find.byKey(const ValueKey('voice-confirm')), findsOneWidget);
+    await close(tester, store);
+    await tester.runAsync(voice.dispose);
+  });
+
+  testWidgets('réglages : la section de dictée est dans l’onglet Messagerie', (
+    tester,
+  ) async {
+    final voice = await FakeVoice.create();
+    final store = await pumpApp(tester, voice: voice.services);
+    await tester.tap(find.text('PARAMÈTRES').first);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byKey(const ValueKey('voice-settings')), findsNothing);
+    await tester.tap(find.text('MESSAGERIE'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byKey(const ValueKey('voice-settings')), findsOneWidget);
+    await teardown(tester, store);
+    await tester.runAsync(voice.dispose);
+  });
+
+  testWidgets('réglages sans dictée : aucune section', (tester) async {
+    final store = await pumpApp(tester);
+    await tester.tap(find.text('PARAMÈTRES').first);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.text('MESSAGERIE'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byKey(const ValueKey('voice-settings')), findsNothing);
+    await teardown(tester, store);
   });
 }

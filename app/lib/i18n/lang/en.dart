@@ -187,6 +187,7 @@ const Map<String, String> enStrings = {
   'Supprimer ce contact': 'Delete this contact',
   'Contact supprimé': 'Contact deleted',
   'Stockage': 'Storage',
+  'Voix': 'Voice',
   'À propos': 'About',
   'Affichage du HTML': 'HTML display',
   'Auto : les messages simples en widgets, les autres dans la vue web. Vue web : fidèle à un navigateur. Widgets : intégré à l’app, plus léger, moins fidèle.': 'Auto: simple messages as widgets, the others in the web view. Web view: faithful to a browser. Widgets: built into the app, lighter, less faithful.',

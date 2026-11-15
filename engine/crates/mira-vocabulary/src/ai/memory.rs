@@ -38,3 +38,21 @@ pub struct MemoryHit {
     pub record: MemoryRecord,
     pub score: f32,
 }
+
+/// Résultat de recherche pour l'API : le score en millièmes, entre -1000 et 1000, sans flottant dans le contrat.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MemoryMatch {
+    pub record: MemoryRecord,
+    pub score_permille: i32,
+}
+
+impl From<MemoryHit> for MemoryMatch {
+    /// Arrondit le score vers zéro en millièmes, borné à la plage de la similarité cosinus
+    fn from(hit: MemoryHit) -> Self {
+        let clamped = hit.score.clamp(-1.0, 1.0);
+        Self {
+            record: hit.record,
+            score_permille: (clamped * 1000.0) as i32,
+        }
+    }
+}

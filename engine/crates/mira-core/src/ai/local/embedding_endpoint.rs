@@ -68,3 +68,13 @@ pub(crate) fn embedding_install_target(
     let paths = LocalPaths::new(&engine.paths.root);
     Ok((embedding.model.clone(), build.clone(), paths))
 }
+
+/// Dit si le modèle d'embeddings décrit par la fiche est installé ; sans fiche d'embeddings : non
+pub(crate) fn embedding_installed(engine: &Engine) -> bool {
+    let Some(descriptor) = local_descriptor(engine) else {
+        return false;
+    };
+    let embedding = descriptor.local_runtime.and_then(|r| r.embedding);
+    let paths = LocalPaths::new(&engine.paths.root);
+    embedding.is_some_and(|e| is_embedding_installed(&paths, &e.model))
+}

@@ -1,6 +1,8 @@
 //! Requêtes du domaine « assistant d'IA » : connexions, clés, modèles, consentement, confidentialité, journal, conversations.
 
-use mira_vocabulary::{AiConnectionId, AiProviderId, ContentKind, MaskingSettings};
+use mira_vocabulary::{
+    AiConnectionId, AiProviderId, ContentKind, MaskingSettings, MemoryKind, MemorySettings,
+};
 use serde::{Deserialize, Serialize};
 
 use super::secret_input::SecretInput;
@@ -103,6 +105,31 @@ pub enum AiRequest {
     },
     StopLocalRuntime,
     InstallMemoryModel,
+    GetMemoryStatus,
+    SetMemorySettings {
+        settings: MemorySettings,
+    },
+    ListMemories {
+        limit: u32,
+        after: Option<String>,
+    },
+    SearchMemories {
+        query: String,
+        limit: u32,
+    },
+    RememberMemory {
+        text: String,
+        kind: MemoryKind,
+    },
+    UpdateMemory {
+        id: String,
+        text: String,
+    },
+    ForgetMemory {
+        id: String,
+    },
+    ForgetAllMemories,
+    ReindexMemories,
 }
 
 /// Types autorisés par un consentement sans liste : le mail ouvert, comme avant le contrat 1.2.

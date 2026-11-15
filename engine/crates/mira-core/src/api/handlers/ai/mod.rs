@@ -25,7 +25,10 @@ mod local_remove;
 mod local_status;
 mod local_stop;
 mod memory_install;
+mod memory_read;
 mod memory_route;
+mod memory_settings;
+mod memory_write;
 mod remove_connection;
 mod rename_conversation;
 mod save_conversation;
@@ -110,7 +113,7 @@ pub(crate) async fn route(engine: &Engine, request: AiRequest) -> Answer {
         R::SetAiHistoryEnabled { enabled } => set_history(engine, enabled),
         R::GetAiHistoryEnabled => get_history(engine),
         r @ (R::GetLocalRuntimeStatus | R::InstallLocalModel { .. } | R::RemoveLocalModel { .. } | R::StopLocalRuntime) => route_local(engine, r).await,
-        r @ R::InstallMemoryModel => route_memory(engine, r).await,
+        r @ (R::InstallMemoryModel | R::GetMemoryStatus | R::SetMemorySettings { .. } | R::ListMemories { .. } | R::SearchMemories { .. } | R::RememberMemory { .. } | R::UpdateMemory { .. } | R::ForgetMemory { .. } | R::ForgetAllMemories | R::ReindexMemories) => route_memory(engine, r).await,
     }
 }
 

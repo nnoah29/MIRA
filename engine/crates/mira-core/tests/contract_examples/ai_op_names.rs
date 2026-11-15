@@ -17,6 +17,16 @@ pub fn op_name(request: &AiRequest) -> &'static str {
         AiRequest::InstallLocalModel { .. } => "install_local_model",
         AiRequest::RemoveLocalModel { .. } => "remove_local_model",
         AiRequest::StopLocalRuntime => "stop_local_runtime",
+        AiRequest::InstallMemoryModel => "install_memory_model",
+        AiRequest::GetMemoryStatus => "get_memory_status",
+        AiRequest::SetMemorySettings { .. } => "set_memory_settings",
+        AiRequest::ListMemories { .. } => "list_memories",
+        AiRequest::SearchMemories { .. } => "search_memories",
+        AiRequest::RememberMemory { .. } => "remember_memory",
+        AiRequest::UpdateMemory { .. } => "update_memory",
+        AiRequest::ForgetMemory { .. } => "forget_memory",
+        AiRequest::ForgetAllMemories => "forget_all_memories",
+        AiRequest::ReindexMemories => "reindex_memories",
         _ => "unknown",
     }
 }

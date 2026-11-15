@@ -31,7 +31,7 @@ pub use ai::local_runtime::{
 };
 pub use ai::local_status::{LocalInstallInfo, LocalModelStatus, LocalRuntimeStatus};
 pub use ai::masking::{MaskingMode, MaskingSettings, SensitiveCategory};
-pub use ai::memory::{MemoryHit, MemoryKind, MemoryRecord, MemorySource};
+pub use ai::memory::{MemoryHit, MemoryKind, MemoryMatch, MemoryRecord, MemorySource};
 pub use ai::memory_proposal::{MemoryProposal, MemoryProposalAction};
 pub use ai::memory_settings::{MemoryEmbedder, MemorySettings, MemoryStatus};
 pub use ai::model::{AiModel, AiModelList};

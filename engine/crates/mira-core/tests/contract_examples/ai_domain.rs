@@ -5,7 +5,7 @@ use mira_vocabulary::{AiConnectionId, AiProviderId, ContentKind, MaskingSettings
 
 use super::ai_samples::{sample_connection, sample_journal, sample_models, sample_provider};
 use super::{Named, numbered};
-use super::{ai_history, ai_key_login, ai_local, ai_op_names};
+use super::{ai_history, ai_key_login, ai_local, ai_memory, ai_op_names};
 
 /// Les opérations de gestion : fournisseurs, création, mise à jour, suppression
 fn management_requests(id: &AiConnectionId) -> Vec<AiRequest> {
@@ -87,7 +87,8 @@ pub fn requests() -> Vec<Named<Request>> {
     items.extend(
         privacy_requests(&id)
             .into_iter()
-            .chain(ai_local::requests()),
+            .chain(ai_local::requests())
+            .chain(ai_memory::requests()),
     );
     let ops: Vec<&str> = items.iter().map(op_name).collect();
     numbered("ai", &ops)
@@ -117,6 +118,7 @@ pub fn responses() -> Vec<Named<Response>> {
     let wrap = |(name, inner): (&str, AiResponse)| (name.to_string(), Response::Ai(inner));
     items
         .into_iter()
+        .chain(ai_memory::responses())
         .map(wrap)
         .chain(ai_history::responses())
         .collect()

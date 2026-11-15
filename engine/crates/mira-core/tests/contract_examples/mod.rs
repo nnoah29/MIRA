@@ -7,6 +7,7 @@ pub mod ai_domain;
 pub mod ai_history;
 pub mod ai_key_login;
 pub mod ai_local;
+pub mod ai_memory;
 pub mod ai_op_names;
 pub mod ai_samples;
 pub mod compose;

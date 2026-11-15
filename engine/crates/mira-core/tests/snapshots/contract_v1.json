@@ -1,5 +1,5 @@
 {
-  "contract": "1.10",
+  "contract": "1.11",
   "requests": {
     "account.add_account": {
       "domain": "account",
@@ -234,6 +234,19 @@
         "op": "delete_ai_conversation"
       }
     },
+    "ai.forget_all_memories": {
+      "domain": "ai",
+      "request": {
+        "op": "forget_all_memories"
+      }
+    },
+    "ai.forget_memory": {
+      "domain": "ai",
+      "request": {
+        "id": "mem-1",
+        "op": "forget_memory"
+      }
+    },
     "ai.get_ai_conversation": {
       "domain": "ai",
       "request": {
@@ -253,11 +266,23 @@
         "op": "get_local_runtime_status"
       }
     },
+    "ai.get_memory_status": {
+      "domain": "ai",
+      "request": {
+        "op": "get_memory_status"
+      }
+    },
     "ai.install_local_model": {
       "domain": "ai",
       "request": {
         "model_id": "tiny-model",
         "op": "install_local_model"
+      }
+    },
+    "ai.install_memory_model": {
+      "domain": "ai",
+      "request": {
+        "op": "install_memory_model"
       }
     },
     "ai.list_ai_connections": {
@@ -296,6 +321,28 @@
         "op": "list_ai_providers"
       }
     },
+    "ai.list_memories": {
+      "domain": "ai",
+      "request": {
+        "after": "mem-1",
+        "limit": 50,
+        "op": "list_memories"
+      }
+    },
+    "ai.reindex_memories": {
+      "domain": "ai",
+      "request": {
+        "op": "reindex_memories"
+      }
+    },
+    "ai.remember_memory": {
+      "domain": "ai",
+      "request": {
+        "kind": "preference",
+        "op": "remember_memory",
+        "text": "Je signe mes mails « Noah »."
+      }
+    },
     "ai.remove_ai_connection": {
       "domain": "ai",
       "request": {
@@ -326,6 +373,14 @@
         "payload": "{\"messages\":[]}",
         "payload_version": 1,
         "title": "Où en est la facture ?"
+      }
+    },
+    "ai.search_memories": {
+      "domain": "ai",
+      "request": {
+        "limit": 5,
+        "op": "search_memories",
+        "query": "comment je signe"
       }
     },
     "ai.set_ai_allowed_content": {
@@ -376,6 +431,18 @@
         "op": "set_default_ai_connection"
       }
     },
+    "ai.set_memory_settings": {
+      "domain": "ai",
+      "request": {
+        "op": "set_memory_settings",
+        "settings": {
+          "embedder": {
+            "kind": "local"
+          },
+          "enabled": true
+        }
+      }
+    },
     "ai.start_ai_key_login": {
       "domain": "ai",
       "request": {
@@ -404,6 +471,14 @@
         "default_model": "model-a",
         "label": "Mon service",
         "op": "update_ai_connection"
+      }
+    },
+    "ai.update_memory": {
+      "domain": "ai",
+      "request": {
+        "id": "mem-1",
+        "op": "update_memory",
+        "text": "Je signe « Noah T. »."
       }
     },
     "auth.cancel_oauth": {
@@ -1733,6 +1808,89 @@
       },
       "type": "ai"
     },
+    "ai.memories": {
+      "data": {
+        "data": [
+          {
+            "created_at": 1700000000000,
+            "id": "mem-1",
+            "kind": "preference",
+            "model_id": "embedding-model-1",
+            "source": "user",
+            "text": "Je signe mes mails « Noah »."
+          }
+        ],
+        "type": "memories"
+      },
+      "type": "ai"
+    },
+    "ai.memory": {
+      "data": {
+        "data": {
+          "created_at": 1700000000000,
+          "id": "mem-1",
+          "kind": "preference",
+          "model_id": "embedding-model-1",
+          "source": "user",
+          "text": "Je signe mes mails « Noah »."
+        },
+        "type": "memory"
+      },
+      "type": "ai"
+    },
+    "ai.memory_forgotten": {
+      "data": {
+        "data": 12,
+        "type": "memory_forgotten"
+      },
+      "type": "ai"
+    },
+    "ai.memory_matches": {
+      "data": {
+        "data": [
+          {
+            "record": {
+              "created_at": 1700000000000,
+              "id": "mem-1",
+              "kind": "preference",
+              "model_id": "embedding-model-1",
+              "source": "user",
+              "text": "Je signe mes mails « Noah »."
+            },
+            "score_permille": 874
+          }
+        ],
+        "type": "memory_matches"
+      },
+      "type": "ai"
+    },
+    "ai.memory_reindexed": {
+      "data": {
+        "data": {
+          "done": 2,
+          "failed": 0
+        },
+        "type": "memory_reindexed"
+      },
+      "type": "ai"
+    },
+    "ai.memory_status": {
+      "data": {
+        "data": {
+          "count": 12,
+          "model_installed": true,
+          "settings": {
+            "embedder": {
+              "kind": "local"
+            },
+            "enabled": false
+          },
+          "stale": 2
+        },
+        "type": "memory_status"
+      },
+      "type": "ai"
+    },
     "ai.models": {
       "data": {
         "data": {
@@ -1808,7 +1966,7 @@
         ],
         "version": {
           "major": 1,
-          "minor": 10
+          "minor": 11
         }
       },
       "type": "contract_info"

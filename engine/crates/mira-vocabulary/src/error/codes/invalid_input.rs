@@ -50,3 +50,5 @@ pub const AI_CONVERSATION_PAYLOAD: ErrorCode = ErrorCode("invalid_input.ai_conve
 pub const AI_MEMORY_TEXT: ErrorCode = ErrorCode("invalid_input.ai_memory_text");
 /// Texte de souvenir qui contient un secret ou une donnée bancaire.
 pub const AI_MEMORY_SENSITIVE: ErrorCode = ErrorCode("invalid_input.ai_memory_sensitive");
+/// Nom de modèle d'embeddings vide pour la mémoire en mode fournisseur.
+pub const AI_MEMORY_MODEL: ErrorCode = ErrorCode("invalid_input.ai_memory_model");

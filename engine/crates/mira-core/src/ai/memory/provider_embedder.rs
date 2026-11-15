@@ -5,6 +5,7 @@ use mira_vocabulary::{
     AiConnection, AiConnectionId, AiError, ContentKind, ErrorCategory, MiraError,
 };
 
+use super::current_model::qualified_model_id;
 use super::http_embedder::HttpEmbedder;
 use crate::ai::access::{base_url_of, find_provider, is_loopback_url};
 use crate::ai::session::credential_for;
@@ -40,7 +41,7 @@ pub(crate) async fn provider_embedder(
     let base_url = base_url_of(&connection, &descriptor);
     check_sending(&connection, &base_url)?;
     let key = credential_for(engine, &connection, &descriptor, &base_url).await?;
-    let qualified = format!("{}:{model}", connection.provider.0);
+    let qualified = qualified_model_id(&connection.provider, model);
     let embedder = HttpEmbedder::new(&base_url, key, qualified, TransportLimits::default());
     Ok(embedder.with_path("/embeddings"))
 }

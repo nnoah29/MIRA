@@ -5,6 +5,7 @@ use std::sync::Arc;
 use mira_vocabulary::{MemoryKind, MemoryRecord, MemorySource, MiraError};
 
 use super::embedder::Embedder;
+use super::forgetting::{forget_everything, forget_one};
 use super::guard::checked_text;
 use super::vectors::encode_vector;
 use crate::ports::{Clock, IdGenerator};
@@ -60,15 +61,12 @@ impl MemoryStore {
 
     /// Oublie un souvenir ; inconnu : `not_found.ai_memory`
     pub async fn forget(&self, id: &str) -> Result<(), MiraError> {
-        self.db.write(|tx| tx.delete_ai_memory(id))?;
-        self.db.erase_traces()
+        forget_one(&self.db, id)
     }
 
     /// Oublie tout et rend le nombre de souvenirs effacés
     pub async fn forget_all(&self) -> Result<u64, MiraError> {
-        let removed = self.db.write(|tx| tx.delete_all_ai_memories())?;
-        self.db.erase_traces()?;
-        Ok(removed)
+        forget_everything(&self.db)
     }
 }
 

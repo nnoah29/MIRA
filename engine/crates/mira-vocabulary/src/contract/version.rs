@@ -12,7 +12,7 @@ pub struct ContractVersion {
 /// Version du contrat implémentée par ce moteur.
 pub const CONTRACT_VERSION: ContractVersion = ContractVersion {
     major: 1,
-    minor: 10,
+    minor: 11,
 };
 
 impl ContractVersion {

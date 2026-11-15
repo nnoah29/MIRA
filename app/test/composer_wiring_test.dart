@@ -6,6 +6,7 @@ import 'package:mira/engine/engine_mail_source.dart';
 import 'package:mira/state/store.dart';
 import 'package:mira/theme/app_theme.dart';
 import 'package:mira/ui/composer.dart';
+import 'package:mira/voice/voice_services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -35,7 +36,10 @@ class RoutedEngine implements EngineClient {
   Future<void> close() => base.close();
 }
 
-Future<(MailStore, RoutedEngine)> pumpComposer(WidgetTester tester) async {
+Future<(MailStore, RoutedEngine)> pumpComposer(
+  WidgetTester tester, {
+  VoiceServices? voice,
+}) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   final engine = RoutedEngine();
@@ -54,14 +58,15 @@ Future<(MailStore, RoutedEngine)> pumpComposer(WidgetTester tester) async {
   store.openCompose(const ComposeInit(mode: 'new', text: ''));
   await tester.binding.setSurfaceSize(const Size(1200, 900));
   addTearDown(() => tester.binding.setSurfaceSize(null));
-  await tester.pumpWidget(
-    ChangeNotifierProvider.value(
-      value: store,
-      child: MaterialApp(
-        theme: buildTheme(false),
-        home: Scaffold(body: Composer(store.c!)),
-      ),
+  final page = ChangeNotifierProvider.value(
+    value: store,
+    child: MaterialApp(
+      theme: buildTheme(false),
+      home: Scaffold(body: Composer(store.c!)),
     ),
+  );
+  await tester.pumpWidget(
+    voice == null ? page : VoiceScope(services: voice, child: page),
   );
   await tester.pumpAndSettle();
   return (store, engine);

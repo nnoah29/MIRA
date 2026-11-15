@@ -9,6 +9,7 @@ import 'package:mira/main.dart';
 import 'package:mira/state/store.dart';
 import 'package:mira/theme/app_theme.dart';
 import 'package:mira/ui/step_animator.dart';
+import 'package:mira/voice/voice_services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,6 +17,7 @@ Future<MailStore> pumpApp(
   WidgetTester tester, {
   Size size = const Size(1500, 950),
   Map<String, Object> prefs = const {},
+  VoiceServices? voice,
 }) async {
   GoogleFonts.config.allowRuntimeFetching = false;
   SharedPreferences.setMockInitialValues(prefs);
@@ -25,8 +27,12 @@ Future<MailStore> pumpApp(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   final store = MailStore(await SharedPreferences.getInstance());
+  final app = ChangeNotifierProvider.value(
+    value: store,
+    child: const MiraApp(),
+  );
   await tester.pumpWidget(
-    ChangeNotifierProvider.value(value: store, child: const MiraApp()),
+    voice == null ? app : VoiceScope(services: voice, child: app),
   );
   await tester.pump(const Duration(milliseconds: 100));
   return store;

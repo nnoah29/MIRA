@@ -25,6 +25,7 @@ import 'state/mail_notifier.dart';
 import 'state/store.dart';
 import 'theme/app_theme.dart';
 import 'ui/app_root.dart';
+import 'voice/voice_services.dart';
 
 const _forceW = int.fromEnvironment('KM_W');
 const _forceH = int.fromEnvironment('KM_H', defaultValue: 800);
@@ -57,7 +58,12 @@ Future<void> main() async {
     onStateChange: (state) =>
         store.appFocused = state == AppLifecycleState.resumed,
   );
-  runApp(ChangeNotifierProvider.value(value: store, child: const MiraApp()));
+  final voice = await openVoiceServices(prefs, uiLocale: appLang.code);
+  final app = ChangeNotifierProvider.value(
+    value: store,
+    child: const MiraApp(),
+  );
+  runApp(voice == null ? app : VoiceScope(services: voice, child: app));
 }
 
 /// Ouvre le moteur Rust ; `MIRA_DEMO=1` donne la démonstration, une erreur d'ouverture aussi, avec sa raison.

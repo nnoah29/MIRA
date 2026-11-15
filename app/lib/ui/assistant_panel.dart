@@ -5,6 +5,9 @@ import 'package:provider/provider.dart';
 import '../data/models.dart';
 import '../state/assistant.dart';
 import '../state/store.dart';
+import '../voice/voice_services.dart';
+import 'mic_button.dart';
+import 'voice_problem.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
 import 'ai_consent_dialog.dart';
@@ -57,6 +60,7 @@ class _AssistantPanelState extends State<AssistantPanel> {
   Future<void> _send(MailStore s, [String? q]) async {
     final t = q ?? input.text;
     if (t.trim().isEmpty || s.busy) return;
+    voiceServicesOf(context)?.dictation.release(input);
     input.clear();
     await s.sendChat(t);
     if (!mounted) return;
@@ -449,6 +453,14 @@ class _AssistantPanelState extends State<AssistantPanel> {
                         height: null,
                       ),
                       const Spacer(),
+                      if (voiceServicesOf(context) != null) ...[
+                        MicButton(
+                          target: input,
+                          onProblem: (problem) =>
+                              reportVoiceProblem(context, problem),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       if (s.busy)
                         Btn(
                           key: const ValueKey('chat-stop'),

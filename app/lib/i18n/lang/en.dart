@@ -1479,4 +1479,12 @@ const Map<String, String> enStrings = {
       'Local model (optional, no account)',
   'Le modèle local n’est pas disponible sur cet appareil.':
       'The local model is not available on this device.',
+  'Dicter': 'Dictate',
+  'Arrêter la dictée': 'Stop dictation',
+  'Modèle de dictée absent : installez-le dans Réglages › Dictée vocale':
+      'Dictation model missing: install it in Settings › Voice dictation',
+  'Accès au micro refusé : autorisez-le dans les réglages du système':
+      'Microphone access denied: allow it in the system settings',
+  'Micro introuvable ou indisponible': 'Microphone not found or unavailable',
+  'La dictée a rencontré une erreur': 'Dictation ran into an error',
 };

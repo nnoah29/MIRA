@@ -5,7 +5,7 @@ import 'dart:typed_data';
 
 /// Langues dictables ; chacune a son propre modèle de reconnaissance.
 enum DictationLanguage {
-  fr('fr', 'Français'),
+  fr('fr', 'Français'), // i18n:ignore
   en('en', 'English');
 
   const DictationLanguage(this.code, this.label);

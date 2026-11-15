@@ -1,7 +1,13 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:mira/voice/dictation_controller.dart';
 import 'package:mira/voice/dictation_types.dart';
+import 'package:mira/voice/voice_model_store.dart';
+import 'package:mira/voice/voice_preferences.dart';
+import 'package:mira/voice/voice_services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Micro factice : on y pousse des échantillons à la main.
 class FakeAudioSource implements AudioSource {
@@ -76,4 +82,40 @@ class FakeModels implements ModelAvailability {
 
   @override
   bool isInstalled(DictationLanguage language) => installed.contains(language);
+}
+
+/// Services de dictée complets avec des faux, prêts à être fournis à l'interface.
+class FakeVoice {
+  FakeVoice._(this.audio, this.recognizer, this.services, this.root);
+
+  final FakeAudioSource audio;
+  final FakeRecognizer recognizer;
+  final VoiceServices services;
+  final Directory root;
+
+  /// Construit les faux services sur un dossier temporaire ; le dossier est supprimé par [dispose].
+  static Future<FakeVoice> create({Set<DictationLanguage>? installed}) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final audio = FakeAudioSource();
+    final recognizer = FakeRecognizer();
+    final root = Directory.systemTemp.createTempSync('voice-ui');
+    final store = VoiceModelStore(root: root);
+    final services = VoiceServices(
+      dictation: DictationController(
+        audio: audio,
+        recognizer: recognizer,
+        models: FakeModels(installed),
+      ),
+      models: store,
+      preferences: VoicePreferences(prefs),
+    );
+    return FakeVoice._(audio, recognizer, services, root);
+  }
+
+  /// Arrête la dictée et supprime le dossier temporaire.
+  Future<void> dispose() async {
+    await services.dictation.stop();
+    root.deleteSync(recursive: true);
+  }
 }

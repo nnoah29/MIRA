@@ -120,7 +120,7 @@ class VoiceModelStore extends ChangeNotifier implements ModelAvailability {
     await root.create(recursive: true);
     await _fetch(e, run);
     if (await fileSha256(_part(e)) != e.sha256) {
-      throw const FormatException('empreinte SHA-256 différente');
+      throw const FormatException('sha256 mismatch');
     }
     await extractModelFiles(_part(e).path, _tmp(e).path, e.files);
     final target = Directory('${root.path}/${e.folder}');
@@ -135,7 +135,7 @@ class VoiceModelStore extends ChangeNotifier implements ModelAvailability {
       ..connectionTimeout = const Duration(seconds: 20);
     final response = await (await client.getUrl(e.url)).close();
     if (response.statusCode != 200) {
-      throw HttpException('réponse ${response.statusCode}');
+      throw HttpException('http status ${response.statusCode}');
     }
     final sink = _part(e).openWrite();
     var received = 0;
@@ -150,7 +150,7 @@ class VoiceModelStore extends ChangeNotifier implements ModelAvailability {
       client.close();
     }
     if (received != e.archiveBytes) {
-      throw const FormatException('taille inattendue');
+      throw const FormatException('unexpected size');
     }
   }
 

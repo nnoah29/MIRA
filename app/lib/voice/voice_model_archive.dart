@@ -30,5 +30,5 @@ void _extract(String archivePath, String outDir, List<String> files) {
     found.add(name);
   }
   final missing = files.where((f) => !found.contains(f)).toList();
-  if (missing.isNotEmpty) throw FormatException('fichiers absents : $missing');
+  if (missing.isNotEmpty) throw FormatException('missing files: $missing');
 }

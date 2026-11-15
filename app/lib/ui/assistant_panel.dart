@@ -493,7 +493,7 @@ class _Bubble extends StatelessWidget {
   /// Messages consultés par les outils que le magasin connaît ; les autres identifiants sont ignorés.
   List<Mail> _known(MailStore s, ChatMsg msg) => [
     for (final id in msg.sources)
-      if (s.byId(id) != null) s.byId(id)!,
+      if (s.mailOfCited(id) != null) s.mailOfCited(id)!,
   ];
 
   @override
@@ -583,7 +583,7 @@ class _Bubble extends StatelessWidget {
                   msg.done &&
                   (msg.refs ?? const []).isEmpty &&
                   _known(s, msg).isNotEmpty)
-                ChatSources(_known(s, msg).take(5).toList()),
+                ChatSources(_known(s, msg)),
               if (!me && msg.done && msg.draft != null) ...[
                 Container(
                   width: double.infinity,
@@ -658,7 +658,8 @@ class _Bubble extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       for (final id in msg.refs!)
-                        if (s.byId(id) != null) MailRef(s.byId(id)!),
+                        if (s.mailOfCited(id) != null)
+                          MailRef(s.mailOfCited(id)!),
                     ],
                   ),
                 ),

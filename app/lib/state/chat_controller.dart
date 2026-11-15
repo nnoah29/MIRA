@@ -47,6 +47,9 @@ class _Run {
   _Run(this.reply);
 }
 
+/// Sans source de messages branchée : aucun message cité n'est chargé.
+Future<void> _noCited(Iterable<String> ids) async {}
+
 /// Sans historique branché : rien n'est enregistré.
 ChatHistoryState? _noHistory() => null;
 
@@ -58,6 +61,7 @@ class ChatController extends ChangeNotifier {
     required this.demoAnswer,
     required this.after,
     this.history = _noHistory,
+    this.loadCited = _noCited,
   }) {
     chat = [welcome()];
   }
@@ -67,6 +71,7 @@ class ChatController extends ChangeNotifier {
   final Answer Function(String question) demoAnswer;
   final Timer Function(int ms, VoidCallback run) after;
   final ChatHistoryState? Function() history;
+  final Future<void> Function(Iterable<String> ids) loadCited;
 
   late List<ChatMsg> chat;
   bool busy = false;
@@ -341,6 +346,7 @@ class ChatController extends ChangeNotifier {
     busy = false;
     _run = null;
     _saving = _save();
+    unawaited(loadCited(reply.sources));
     if (!run.cancelPending) unawaited(run.sub?.cancel());
     if (!run.finished.isCompleted) run.finished.complete();
     notifyListeners();

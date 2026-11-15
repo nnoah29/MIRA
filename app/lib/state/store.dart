@@ -189,6 +189,7 @@ class MailStore extends ChangeNotifier {
     welcome: _welcome,
     demoAnswer: (q) => answerTo(this, q),
     after: _after,
+    loadCited: loadCited,
   )..addListener(notifyListeners);
 
   MailStore(
@@ -476,10 +477,46 @@ class MailStore extends ChangeNotifier {
     for (final m in mails) {
       if (m.id == id) return m;
     }
-    for (final m in [..._hits, ..._deep]) {
+    for (final m in [..._hits, ..._deep, ..._cited]) {
       if (m.id == id) return m;
     }
     return null;
+  }
+
+  List<Mail> _cited = const [];
+
+  /// Conversation d'un message cité : l'assistant donne l'identifiant du message du moteur, pas celui de la conversation.
+  Mail? mailOfCited(String id) {
+    final known = byId(id);
+    if (known != null) return known;
+    final lists = [
+      ..._boxes.values.expand((l) => l),
+      ..._hits,
+      ..._deep,
+      ..._cited,
+    ];
+    for (final m in lists) {
+      if (m.msgs.any((x) => x.ref == id)) return m;
+    }
+    return null;
+  }
+
+  /// Charge du moteur les messages cités par l'assistant que les listes déjà chargées ne contiennent pas.
+  Future<void> loadCited(Iterable<String> ids) async {
+    final src = source;
+    if (src == null) return;
+    final fetched = <Mail>[];
+    for (final id in ids.where((id) => mailOfCited(id) == null)) {
+      try {
+        final m = await src.messageById(id);
+        if (m != null) fetched.add(m);
+      } catch (_) {
+        continue;
+      }
+    }
+    if (fetched.isEmpty) return;
+    _cited = [..._cited, ...fetched];
+    notifyListeners();
   }
 
   // ---- messages plus anciens ----

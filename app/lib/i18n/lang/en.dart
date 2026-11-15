@@ -1377,6 +1377,7 @@ const Map<String, String> enStrings = {
   'erreur': 'error',
   'Autoriser…': 'Allow…',
   'Sources': 'Sources',
+  'Voir les {0} autres': 'Show the other {0}',
   'Listes de messages': 'Message lists',
   'Boîtes et comptes consultés': 'Mailboxes and accounts consulted',
   'les listes de messages': 'message lists',

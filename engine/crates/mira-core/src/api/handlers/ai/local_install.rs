@@ -31,7 +31,7 @@ pub(crate) fn handle_install_local_model(
 }
 
 /// Erreur : une installation est déjà en cours.
-fn busy() -> MiraError {
+pub(super) fn busy() -> MiraError {
     MiraError::new(
         ErrorCategory::IncompatibleState,
         incompatible_state::AI_LOCAL_BUSY,

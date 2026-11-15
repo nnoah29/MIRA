@@ -102,6 +102,7 @@ pub enum AiRequest {
         model_id: String,
     },
     StopLocalRuntime,
+    InstallMemoryModel,
 }
 
 /// Types autorisés par un consentement sans liste : le mail ouvert, comme avant le contrat 1.2.

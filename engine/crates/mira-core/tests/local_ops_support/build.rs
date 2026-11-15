@@ -7,14 +7,16 @@ use mira_core::ai::AiProviderRegistry;
 use mira_core::api::Engine;
 use mira_core::ports::FixedResources;
 use mira_core::profile::ProfilePaths;
-use mira_vocabulary::{AiLocalRuntime, AiProvider, AiProviderDescriptor, CONTRACT_VERSION};
+use mira_vocabulary::{
+    AiLocalEmbedding, AiLocalRuntime, AiProvider, AiProviderDescriptor, CONTRACT_VERSION,
+};
 
 use super::OpsFixture;
 use crate::local_support::archives::{Entry, tar_gz};
 use crate::local_support::download::{content, sha_hex};
 use crate::local_support::file_host::FileHost;
 use crate::local_support::runtime_fake::fake_args;
-use crate::local_support::{descriptor, test_build, test_runtime};
+use crate::local_support::{descriptor, test_build, test_embedding, test_runtime};
 use crate::support_api::config;
 
 const FAKE: &str = include_str!("../local_support/fake_server.py");
@@ -62,6 +64,15 @@ fn runtime_for(
     runtime
 }
 
+/// Modèle d'embeddings de test servi par ce faux hébergeur : même contenu que le petit modèle
+fn embedding_from(host: &FileHost, body: &[u8]) -> AiLocalEmbedding {
+    let mut embedding = test_embedding();
+    embedding.model.url = host.url();
+    embedding.model.sha256 = sha_hex(body);
+    embedding.model.size = body.len() as u64;
+    embedding
+}
+
 /// Démarre les hébergeurs et le moteur
 pub(super) async fn build(memory_mib: Option<u64>, platforms: &[&str]) -> OpsFixture {
     let archive = tar_gz(&[Entry::file("bin/model-server", FAKE.as_bytes())]);
@@ -72,7 +83,8 @@ pub(super) async fn build(memory_mib: Option<u64>, platforms: &[&str]) -> OpsFix
     let home = tempfile::tempdir().unwrap();
     let log = home.path().join("log.jsonl");
     let hosts = [&server_host, &mini_host, &big_host];
-    let runtime = runtime_for(hosts, &archive, [&mini, &big], platforms, &log);
+    let mut runtime = runtime_for(hosts, &archive, [&mini, &big], platforms, &log);
+    runtime.embedding = Some(embedding_from(&mini_host, &mini));
     let (engine, root) = open_engine(home.path(), runtime, memory_mib);
     OpsFixture {
         home,

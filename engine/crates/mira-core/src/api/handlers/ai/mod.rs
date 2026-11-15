@@ -24,6 +24,8 @@ mod local_install;
 mod local_remove;
 mod local_status;
 mod local_stop;
+mod memory_install;
+mod memory_route;
 mod remove_connection;
 mod rename_conversation;
 mod save_conversation;
@@ -64,6 +66,7 @@ use local_install::handle_install_local_model as install_local;
 use local_remove::handle_remove_local_model as remove_local;
 use local_status::handle_get_local_runtime_status as local_status;
 use local_stop::handle_stop_local_runtime as stop_local;
+use memory_route::route_memory;
 use remove_connection::handle_remove_ai_connection as remove;
 use rename_conversation::handle_rename_ai_conversation as rename_conversation;
 use save_conversation::handle_save_ai_conversation as save_conversation;
@@ -107,6 +110,7 @@ pub(crate) async fn route(engine: &Engine, request: AiRequest) -> Answer {
         R::SetAiHistoryEnabled { enabled } => set_history(engine, enabled),
         R::GetAiHistoryEnabled => get_history(engine),
         r @ (R::GetLocalRuntimeStatus | R::InstallLocalModel { .. } | R::RemoveLocalModel { .. } | R::StopLocalRuntime) => route_local(engine, r).await,
+        r @ R::InstallMemoryModel => route_memory(engine, r).await,
     }
 }
 

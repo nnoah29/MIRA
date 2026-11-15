@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:mira/engine/engine_client.dart';
 
+import 'fake_ai_about.dart';
 import 'fake_ai_history.dart';
 import 'fake_ai_memory.dart';
 import 'fake_ai_local.dart';
@@ -11,6 +12,7 @@ class FakeAiEngine implements EngineClient, ChatStreamingClient {
   final history = FakeAiHistory();
   final local = FakeAiLocal();
   final memory = FakeAiMemory();
+  final about = FakeAiAbout();
   final calls = <Map<String, dynamic>>[];
   final chatStarts = <Map<String, dynamic>>[];
   final providers = <Map<String, dynamic>>[];
@@ -86,7 +88,11 @@ class FakeAiEngine implements EngineClient, ChatStreamingClient {
   }
 
   Map<String, dynamic> _answer(Map<String, dynamic> r) =>
-      history.answer(r) ?? local.answer(r) ?? memory.answer(r) ?? _answerAi(r);
+      history.answer(r) ??
+      local.answer(r) ??
+      memory.answer(r) ??
+      about.answer(r) ??
+      _answerAi(r);
 
   Map<String, dynamic> _answerAi(Map<String, dynamic> r) => switch (r['op']) {
     'list_ai_providers' => _wrap('providers', [...providers]),

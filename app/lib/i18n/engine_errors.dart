@@ -58,6 +58,8 @@ const engineErrorTexts = <String, String>{
       'Opération interdite sur une boîte système',
   'internal.bug': 'Erreur interne de MIRA',
   'invalid_input.address': 'Adresse e-mail invalide',
+  'invalid_input.ai_about_text':
+      'Le texte est trop long (1 000 caractères au plus)',
   'invalid_input.ai_conversation_payload': 'Conversation illisible',
   'invalid_input.ai_conversation_title': 'Le titre de la conversation est vide ou trop long (80 caractères au plus)',
   'invalid_input.ai_conversation_too_large':

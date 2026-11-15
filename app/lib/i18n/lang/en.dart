@@ -1381,6 +1381,16 @@ const Map<String, String> enStrings = {
   'Lecture d’un fil': 'Reading a thread',
   'Boîtes consultées': 'Mailboxes consulted',
   'Cartes de messages': 'Message cards',
+  'Le texte est trop long (1 000 caractères au plus)':
+      'The text is too long (1,000 characters at most)',
+  'Ce que tu dois savoir de moi': 'What you should know about me',
+  'Écris ici ce que l’assistant doit toujours savoir de toi : ton métier, comment tu signes, tes projets, ce qu’il doit éviter.': 'Write here what the assistant should always know about you: your job, how you sign, your projects, what it should avoid.',
+  'Je suis médecin à Cotonou. Je signe toujours « Noah ».':
+      'I’m a doctor in Cotonou. I always sign “Noah”.',
+  'Ce texte est envoyé au service d’IA que tu utilises, à chaque discussion. Avec le modèle local, rien ne sort de ton ordinateur.': 'This text is sent to the AI service you use, in every conversation. With the local model, nothing leaves your computer.',
+  'Enregistré': 'Saved',
+  'À PROPOS DE TOI': 'ABOUT YOU',
+  'Facultatif : dis à l’assistant ce qu’il doit toujours savoir de toi. Tu pourras le modifier plus tard dans Paramètres, onglet Mémoire.': 'Optional: tell the assistant what it should always know about you. You can change it later in Settings, Memory tab.',
   'Mémoire': 'Memory',
   'Activée': 'On',
   'Désactivée': 'Off',

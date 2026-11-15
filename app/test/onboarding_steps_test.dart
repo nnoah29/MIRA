@@ -72,7 +72,7 @@ void notificationTests() {
   testWidgets('notifications_card_toggles_setting', (tester) async {
     useResident(StepResident(available: false));
     final store = await pumpFlow(tester);
-    await goTo(tester, 5);
+    await goTo(tester, 6);
     final before = store.notifySettings.enabled;
     await tapKey(tester, 'notify-${before ? '0' : '1'}');
     expect(store.notifySettings.enabled, !before);
@@ -81,7 +81,7 @@ void notificationTests() {
   testWidgets('resident_card_hidden_when_unavailable', (tester) async {
     useResident(StepResident(available: false));
     await pumpFlow(tester);
-    await goTo(tester, 5);
+    await goTo(tester, 6);
     expect(find.byKey(const ValueKey('onb-resident')), findsNothing);
   });
 
@@ -89,7 +89,7 @@ void notificationTests() {
     final fake = StepResident();
     useResident(fake);
     final store = await pumpFlow(tester);
-    await goTo(tester, 5);
+    await goTo(tester, 6);
     expect(find.byKey(const ValueKey('onb-resident')), findsOneWidget);
     await tapKey(tester, 'resident-1');
     expect(fake.enables, 1);

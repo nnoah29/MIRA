@@ -21,7 +21,7 @@ class AvailableResident extends ResidentController {
 
 Future<void> walkAllPages(WidgetTester tester) async {
   expect(tester.takeException(), isNull);
-  for (var i = 0; i < 6; i++) {
+  for (var i = 0; i < 7; i++) {
     await tapKey(tester, 'onb-next');
     expect(tester.takeException(), isNull, reason: 'page ${i + 2}');
   }

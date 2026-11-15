@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 
 import '../engine/ai_admin.dart';
 import '../i18n/i18n.dart';
+import '../state/about_me_state.dart';
 import '../state/ai_memory_state.dart';
 import '../theme/app_theme.dart';
+import 'about_me_section.dart';
 import 'ai_memory_section.dart';
 
 /// Page de la mémoire : réglages, installation du modèle et souvenirs ; les connexions servent au mode « fournisseur ».
@@ -19,12 +21,14 @@ class MemorySettings extends StatefulWidget {
 
 class _MemorySettingsState extends State<MemorySettings> {
   late final AiMemoryState memory = AiMemoryState(widget.admin);
+  late final AboutMeState about = AboutMeState(widget.admin);
   List<AiConnectionInfo> connections = const [];
 
   @override
   void initState() {
     super.initState();
     memory.load();
+    about.load();
     _loadConnections();
   }
 
@@ -41,6 +45,7 @@ class _MemorySettingsState extends State<MemorySettings> {
   @override
   void dispose() {
     memory.dispose();
+    about.dispose();
     super.dispose();
   }
 
@@ -56,6 +61,7 @@ class _MemorySettingsState extends State<MemorySettings> {
             t('Mémoire'),
             style: Fonts.sans(size: 15, w: FontWeight.w500, color: p.text),
           ),
+          AboutMeSection(state: about),
           AiMemorySection(state: memory, connections: connections),
         ],
       ),

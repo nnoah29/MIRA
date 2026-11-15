@@ -7,17 +7,19 @@ enum OnboardingStep {
   appearance,
   account,
   ai,
+  about,
   notifications,
   ready,
 }
 
-/// Étapes à montrer : toutes, sans l'IA ou sans les notifications quand elles ne s'appliquent pas.
+/// Étapes à montrer : toutes, sans l'IA et « À propos de toi » (qui en dépend) ou sans les notifications quand elles ne s'appliquent pas.
 List<OnboardingStep> onboardingSteps({
   required bool ai,
   required bool notifications,
 }) => [
   for (final s in OnboardingStep.values)
     if ((s != OnboardingStep.ai || ai) &&
+        (s != OnboardingStep.about || ai) &&
         (s != OnboardingStep.notifications || notifications))
       s,
 ];

@@ -106,7 +106,7 @@ void main() {
 
   testWidgets('ready_page_finishes_without_account_form', (tester) async {
     final store = await pumpFlow(tester);
-    for (var i = 0; i < 6; i++) {
+    for (var i = 0; i < 7; i++) {
       await tapKey(tester, 'onb-next');
     }
     expect(find.byKey(const ValueKey('onb-finish')), findsOneWidget);
@@ -134,7 +134,7 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.textContaining('Aucun serveur MIRA'), findsOneWidget);
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < 6; i++) {
       await tapKey(tester, 'onb-next');
     }
     expect(find.byKey(const ValueKey('onb-finish')), findsOneWidget);

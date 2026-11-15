@@ -90,6 +90,11 @@ async fn announce_end(
         let proposed = ChatDelta::ActionProposed { id, proposal };
         guard.send(proposed).await.map_err(Ending::from)?;
     }
+    if let Some(cards) = finished.cards {
+        let id = call.id.clone();
+        let shown = ChatDelta::MailCardsShown { id, cards };
+        guard.send(shown).await.map_err(Ending::from)?;
+    }
     let end = ChatDelta::ToolFinished {
         id: call.id.clone(),
         state: finished.state,

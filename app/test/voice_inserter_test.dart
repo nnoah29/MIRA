@@ -116,4 +116,27 @@ void main() {
     expect(c.text, 'Bonjour je vous écris. ');
     expect(c.flags.length, c.text.length);
   });
+
+  test('une sélection faite pendant la dictée n’est jamais remplacée', () {
+    final c = field('Texte important. ');
+    final ins = DictationInserter(c);
+    ins.showPartial('je');
+    c.selection = const TextSelection(baseOffset: 0, extentOffset: 15);
+    ins.showPartial('vous');
+    expect(c.text, contains('Texte important'));
+    expect(c.text, contains('vous'));
+  });
+
+  test('après une frappe puis une fin de phrase sans mot nouveau, la phrase suivante est entière', () {
+    final c = field('A ');
+    final ins = DictationInserter(c);
+    ins.showPartial('Merci');
+    c.value = const TextEditingValue(
+      text: 'A MerciX',
+      selection: TextSelection.collapsed(offset: 8),
+    );
+    ins.commit('Merci');
+    ins.showPartial('Merci pour votre retour');
+    expect(c.text, contains('Merci pour votre retour'));
+  });
 }

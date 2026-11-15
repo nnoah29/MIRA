@@ -40,12 +40,25 @@ class VoiceScope extends InheritedWidget {
 VoiceServices? voiceServicesOf(BuildContext context) =>
     context.dependOnInheritedWidgetOfExactType<VoiceScope>()?.services;
 
-/// Assemble les vrais services (micro, sherpa-onnx, modèles dans le dossier de l'app) ; null dans un navigateur.
+/// Assemble les vrais services (micro, sherpa-onnx, modèles dans le dossier de l'app) ; null dans un navigateur
+/// ou si quoi que ce soit échoue : la dictée n'est alors pas proposée, le reste de l'app démarre.
 Future<VoiceServices?> openVoiceServices(
   SharedPreferences prefs, {
   required String uiLocale,
 }) async {
   if (kIsWeb) return null;
+  try {
+    return await _assemble(prefs, uiLocale);
+  } on Object {
+    return null;
+  }
+}
+
+/// Construit les services sur le dossier de support de l'app.
+Future<VoiceServices> _assemble(
+  SharedPreferences prefs,
+  String uiLocale,
+) async {
   final support = await getApplicationSupportDirectory();
   final store = VoiceModelStore(
     root: Directory('${support.path}/voice-models'),

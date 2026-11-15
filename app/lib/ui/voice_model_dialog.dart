@@ -1,12 +1,11 @@
 //! Confirmation avant de télécharger un modèle de dictée : taille, source, ce qui est envoyé, comment le retirer.
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../i18n/i18n.dart';
 import '../theme/app_theme.dart';
 import '../voice/voice_model_catalog.dart';
+import '../voice/voice_model_store.dart';
 import '../voice/voice_services.dart';
 import 'ai_local_text.dart';
 import 'widgets.dart';
@@ -38,17 +37,40 @@ Future<bool> confirmVoiceModelInstall(
   return accepted == true;
 }
 
-/// Propose le téléchargement du modèle de la langue active et le lance si l'utilisateur confirme.
+/// Affiche un message à l'utilisateur ; `err` pour une erreur.
+typedef VoiceNotify = void Function(String message, {bool err});
+
+/// Propose le téléchargement du modèle de la langue active, le lance si l'utilisateur confirme et annonce son issue.
 Future<void> offerVoiceModelInstall(
   BuildContext context,
-  VoiceServices services,
-) async {
+  VoiceServices services, {
+  required VoiceNotify notify,
+}) async {
   final language = services.dictation.language;
-  final entry = services.models.catalog.firstWhere(
-    (e) => e.language == language,
-  );
+  final store = services.models;
+  final running = store.statusOf(language);
+  if (running is VoiceModelDownloading) {
+    notify(
+      t('Téléchargement du modèle de dictée en cours : {0} %', [
+        (running.progress * 100).round(),
+      ]),
+    );
+    return;
+  }
+  final entry = store.catalog.firstWhere((e) => e.language == language);
   if (!await confirmVoiceModelInstall(context, entry)) return;
-  unawaited(services.models.install(language));
+  notify(
+    t(
+      'Téléchargement du modèle de dictée lancé : tu peux continuer, suivi dans Réglages › Messagerie',
+    ),
+  );
+  await store.install(language);
+  final done = store.statusOf(language);
+  if (done is VoiceModelInstalled) {
+    notify(t('Modèle de dictée prêt : touche le micro pour dicter'));
+  } else if (done is VoiceModelFailed) {
+    notify(t('Téléchargement du modèle de dictée impossible'), err: true);
+  }
 }
 
 Widget _point(Pal p, String text) => Padding(

@@ -26,9 +26,14 @@ String voiceProblemText(DictationProblem problem) => switch (problem) {
 /// Réagit à un échec de dictée : modèle absent, on propose de le télécharger ; sinon on en donne la raison.
 void reportVoiceProblem(BuildContext context, DictationProblem problem) {
   final services = voiceServicesOf(context);
+  final store = context.read<MailStore>();
   if (problem == DictationProblem.modelMissing && services != null) {
-    offerVoiceModelInstall(context, services);
+    offerVoiceModelInstall(
+      context,
+      services,
+      notify: (message, {bool err = false}) => store.toast(message, err: err),
+    );
     return;
   }
-  context.read<MailStore>().toast(voiceProblemText(problem), err: true);
+  store.toast(voiceProblemText(problem), err: true);
 }

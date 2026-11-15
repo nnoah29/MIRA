@@ -58,6 +58,7 @@ class _AssistantPanelState extends State<AssistantPanel> {
   Future<void> _send(MailStore s, [String? q]) async {
     final t = q ?? input.text;
     if (t.trim().isEmpty || s.busy) return;
+    voiceServicesOf(context)?.dictation.release(input);
     input.clear();
     await s.sendChat(t);
     if (!mounted) return;

@@ -119,10 +119,13 @@ class VoiceModelStore extends ChangeNotifier implements ModelAvailability {
     final e = _entry(l);
     await root.create(recursive: true);
     await _fetch(e, run);
+    _stillWanted(run);
     if (await fileSha256(_part(e)) != e.sha256) {
       throw const FormatException('sha256 mismatch');
     }
+    _stillWanted(run);
     await extractModelFiles(_part(e).path, _tmp(e).path, e.files);
+    _stillWanted(run);
     final target = Directory('${root.path}/${e.folder}');
     if (target.existsSync()) await target.delete(recursive: true);
     await _tmp(e).rename(target.path);
@@ -131,6 +134,7 @@ class VoiceModelStore extends ChangeNotifier implements ModelAvailability {
 
   /// Récupère l'archive dans le fichier temporaire en suivant la progression.
   Future<void> _fetch(VoiceModelEntry e, _Run run) async {
+    _stillWanted(run);
     final client = run.client = HttpClient()
       ..connectionTimeout = const Duration(seconds: 20);
     final response = await (await client.getUrl(e.url)).close();
@@ -141,6 +145,7 @@ class VoiceModelStore extends ChangeNotifier implements ModelAvailability {
     var received = 0;
     try {
       await for (final chunk in response) {
+        _stillWanted(run);
         sink.add(chunk);
         received += chunk.length;
         _setStatus(e.language, VoiceModelDownloading(_ratio(received, e)));
@@ -152,6 +157,11 @@ class VoiceModelStore extends ChangeNotifier implements ModelAvailability {
     if (received != e.archiveBytes) {
       throw const FormatException('unexpected size');
     }
+  }
+
+  /// Interrompt l'installation si l'utilisateur l'a annulée.
+  void _stillWanted(_Run run) {
+    if (run.cancelled) throw const HttpException('cancelled');
   }
 
   /// Avancement entre 0 et 1.

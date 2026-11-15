@@ -1498,4 +1498,11 @@ const Map<String, String> enStrings = {
   'Seul ce téléchargement passe par Internet : ta voix et le texte dicté ne quittent jamais l’ordinateur.': 'Only this download goes over the Internet: your voice and the dictated text never leave the computer.',
   'Tu peux le supprimer dans les réglages à tout moment : tout l’espace est rendu.': 'You can delete it in the settings at any time: all the space is given back.',
   'La dictée utilise les modèles de reconnaissance Kroko de Banafo (modèles communautaires sous licence CC-BY-SA, selon l’éditeur) et le moteur sherpa-onnx (Apache-2.0). Ils sont téléchargés à ta demande, jamais inclus dans MIRA.': 'Dictation uses the Kroko speech recognition models by Banafo (community models under the CC-BY-SA licence, according to the publisher) and the sherpa-onnx engine (Apache-2.0). They are downloaded at your request and never bundled with MIRA.',
+  'Téléchargement du modèle de dictée en cours : {0} %':
+      'Dictation model download in progress: {0}%',
+  'Téléchargement du modèle de dictée lancé : tu peux continuer, suivi dans Réglages › Messagerie': 'Dictation model download started: you can carry on, follow it in Settings › Mail',
+  'Modèle de dictée prêt : touche le micro pour dicter':
+      'Dictation model ready: tap the microphone to dictate',
+  'Téléchargement du modèle de dictée impossible':
+      'Dictation model download failed',
 };

@@ -15,11 +15,15 @@ class MicButton extends StatefulWidget {
     super.key,
     required this.target,
     this.onProblem,
+    this.onDictated,
     this.box = 34,
   });
 
   final TextEditingController target;
   final void Function(DictationProblem problem)? onProblem;
+
+  /// Appelé à chaque écriture de texte dicté dans le champ (par exemple pour marquer un brouillon modifié).
+  final VoidCallback? onDictated;
   final double box;
 
   @override
@@ -29,6 +33,25 @@ class MicButton extends StatefulWidget {
 class _MicButtonState extends State<MicButton> {
   DictationController? _dictation;
   bool _started = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.target.addListener(_targetChanged);
+  }
+
+  @override
+  void didUpdateWidget(MicButton old) {
+    super.didUpdateWidget(old);
+    if (identical(old.target, widget.target)) return;
+    old.target.removeListener(_targetChanged);
+    widget.target.addListener(_targetChanged);
+  }
+
+  /// Prévient que le champ a changé pendant que la dictée y écrit.
+  void _targetChanged() {
+    if (_mine) widget.onDictated?.call();
+  }
 
   @override
   void didChangeDependencies() {
@@ -42,6 +65,7 @@ class _MicButtonState extends State<MicButton> {
 
   @override
   void dispose() {
+    widget.target.removeListener(_targetChanged);
     _dictation?.removeListener(_changed);
     _dictation?.release(widget.target);
     super.dispose();

@@ -14,6 +14,7 @@ class DictationInserter {
   String _lastRaw = '';
   String _skip = '';
   bool _released = false;
+  bool _firstWrite = true;
 
   /// Remplace le texte provisoire (ou l'insère au curseur la première fois).
   void showPartial(String text) {
@@ -57,19 +58,23 @@ class DictationInserter {
     _written = '';
   }
 
-  /// Pose l'ancrage à la sélection actuelle ; une sélection non vide sera remplacée.
+  /// Pose l'ancrage ; seule la toute première écriture remplace une sélection, ensuite on écrit après elle.
   void _anchor() {
     final text = target.text;
     final sel = target.selection;
-    final a = sel.isValid ? sel.start : text.length;
-    final b = sel.isValid ? sel.end : text.length;
-    _start = a;
-    _written = text.substring(a, b);
+    final end = sel.isValid ? sel.end : text.length;
+    final start = sel.isValid && _firstWrite ? sel.start : end;
+    _firstWrite = false;
+    _start = start;
+    _written = text.substring(start, end);
   }
 
   /// Écrit [body] à la place du texte précédemment écrit par l'inserter.
   void _write(String body, {required bool finalize}) {
-    if (_start == null && body.isEmpty) return;
+    if (_start == null && body.isEmpty) {
+      if (finalize) _reset();
+      return;
+    }
     if (_start == null) _anchor();
     final text = target.text;
     final start = _start!;

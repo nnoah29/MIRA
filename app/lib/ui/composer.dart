@@ -587,6 +587,7 @@ class _ComposerState extends State<Composer> {
                 const SizedBox(width: 10),
                 MicButton(
                   target: c.body,
+                  onDictated: s.touch,
                   onProblem: (problem) => reportVoiceProblem(context, problem),
                 ),
               ],

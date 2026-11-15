@@ -40,6 +40,8 @@ const engineErrorTexts = <String, String>{
   'incompatible_state.ai_local_disk_space': 'Pas assez d’espace disque pour ce modèle : libère de la place puis réessaie',
   'incompatible_state.ai_local_unsupported_platform':
       'Le modèle local n’est pas pris en charge sur cet appareil',
+  'incompatible_state.ai_memory_disabled':
+      'La mémoire de l’assistant est désactivée',
   'incompatible_state.ai_model_missing': 'Choisis d’abord un modèle d’IA',
   'incompatible_state.body_unavailable_offline':
       'Corps du message indisponible hors ligne',
@@ -62,6 +64,10 @@ const engineErrorTexts = <String, String>{
       'Cette conversation est trop volumineuse pour être enregistrée',
   'invalid_input.ai_input_too_large':
       'Le texte est trop long pour le service d’IA',
+  'invalid_input.ai_memory_model': 'Indique le modèle d’embeddings à utiliser',
+  'invalid_input.ai_memory_sensitive': 'Ce texte ressemble à un secret (mot de passe, clé, numéro de carte) : il n’est pas retenu',
+  'invalid_input.ai_memory_text':
+      'Le souvenir est vide ou trop long (1 000 caractères au plus)',
   'invalid_input.ai_journal_limit':
       'Nombre de lignes du journal des envois hors limites',
   'invalid_input.ai_key_invalid': 'Clé du service d’IA invalide',
@@ -99,6 +105,7 @@ const engineErrorTexts = <String, String>{
   'not_found.action': 'Action introuvable',
   'not_found.ai_connection': 'Connexion d’IA introuvable',
   'not_found.ai_conversation': 'Cette conversation n’existe plus',
+  'not_found.ai_memory': 'Ce souvenir n’existe plus',
   'not_found.ai_model': 'Modèle d’IA introuvable',
   'not_found.ai_provider': 'Service d’IA inconnu',
   'not_found.attachment': 'Pièce jointe introuvable',

@@ -10,6 +10,7 @@ import '../theme/icons.dart';
 import 'ai_consent_dialog.dart';
 import 'ai_content_dialog.dart';
 import 'chat_action_card.dart';
+import 'chat_memory_card.dart';
 import 'chat_draft_card.dart';
 import 'chat_history_view.dart';
 import 'chat_markdown.dart';
@@ -583,6 +584,13 @@ class _Bubble extends StatelessWidget {
                     targets: s.actionTargets(a.proposal),
                     onConfirm: () => s.settleAction(a, apply: true),
                     onDismiss: () => s.settleAction(a, apply: false),
+                  ),
+              if (!me)
+                for (final m in msg.memories)
+                  ChatMemoryCard(
+                    m,
+                    onConfirm: () => s.chatCtl.settleMemory(m, apply: true),
+                    onDismiss: () => s.chatCtl.settleMemory(m, apply: false),
                   ),
               if (!me)
                 for (final list in msg.cards)

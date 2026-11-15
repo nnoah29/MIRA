@@ -193,6 +193,7 @@ class AiAdmin {
         'draft_proposed' => [AiDraftProposal.fromLine(line)],
         'action_proposed' => [AiActionProposal.fromLine(line)],
         'mail_cards_shown' => [AiMailCards.fromLine(line)],
+        'memory_proposed' => [AiMemoryProposal.fromLine(line)],
         'done' => [_done(line['reason'])],
         'error' => [_failed(line['error'])],
         _ => const [],

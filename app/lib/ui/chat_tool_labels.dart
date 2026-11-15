@@ -14,6 +14,9 @@ String toolAction(ToolActivity tool) => switch (tool.name) {
   'get_thread' => t('Lecture d’un fil'),
   'list_mailboxes' => t('Boîtes consultées'),
   'show_mails' => t('Cartes de messages'),
+  'recall_memory' => t('Mémoire consultée'),
+  'remember' => t('Proposition de souvenir'),
+  'forget_memory' => t('Proposition d’oubli'),
   _ => tool.name,
 };
 

@@ -254,6 +254,46 @@ class AiMailCards extends AiChatEvent {
   };
 }
 
+/// Proposition de l'IA sur la mémoire : [action] vaut `remember` (retenir [text]) ou `forget` (oublier le souvenir [memoryId]). Rien ne change avant la confirmation.
+class AiMemoryProposal extends AiChatEvent {
+  final String id;
+  final String action;
+  final String text;
+  final String kind;
+  final String? memoryId;
+  const AiMemoryProposal({
+    required this.id,
+    required this.action,
+    required this.text,
+    required this.kind,
+    this.memoryId,
+  });
+
+  /// Lit la ligne `memory_proposed` du flux : l'identifiant de l'appel et la proposition.
+  factory AiMemoryProposal.fromLine(Map<String, dynamic> line) =>
+      AiMemoryProposal.fromJson({
+        ...(line['proposal'] as Map).cast<String, dynamic>(),
+        'call_id': line['id'],
+      });
+
+  factory AiMemoryProposal.fromJson(Map<String, dynamic> json) =>
+      AiMemoryProposal(
+        id: '${json['call_id']}',
+        action: '${json['action']}',
+        text: '${json['text']}',
+        kind: '${json['kind']}',
+        memoryId: json['id'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+    'call_id': id,
+    'action': action,
+    'text': text,
+    'kind': kind,
+    'id': memoryId,
+  };
+}
+
 /// Action sur la boîte que l'IA propose : [action] vaut `archive`, `trash`, `mark_read`, `mark_unread`, `star` ou `unstar`. Rien ne change avant la confirmation de l'utilisateur.
 class AiActionProposal extends AiChatEvent {
   final String id;

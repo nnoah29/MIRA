@@ -9,8 +9,16 @@ const aiKindMailList = 'mail_list';
 /// Type de contenu « boîtes et comptes consultés » tel que le moteur le nomme.
 const aiKindToolResult = 'tool_result';
 
+/// Type de contenu « souvenirs de la mémoire » tel que le moteur le nomme.
+const aiKindMemory = 'memory';
+
 /// Types de contenu que l'app sait produire aujourd'hui.
-const aiKnownKinds = [aiKindMail, aiKindMailList, aiKindToolResult];
+const aiKnownKinds = [
+  aiKindMail,
+  aiKindMailList,
+  aiKindToolResult,
+  aiKindMemory,
+];
 
 /// Catégories de données sensibles que le masquage reconnaît, dans l'ordre d'affichage.
 const aiMaskCategories = ['iban', 'card', 'secret', 'otp', 'email', 'phone'];

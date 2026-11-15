@@ -14,6 +14,7 @@ import 'assistant.dart';
 import 'chat_context.dart';
 import 'chat_conversation.dart';
 import 'chat_history_state.dart';
+import 'chat_memory_actions.dart';
 import 'chat_mentions.dart';
 import 'chat_message.dart';
 import 'chat_message_json.dart';
@@ -259,6 +260,8 @@ class ChatController extends ChangeNotifier {
           ..removeWhere((a) => a.proposal.id == event.id)
           ..add(ProposedAction(event));
         notifyListeners();
+      case AiMemoryProposal():
+        _addMemory(reply, event);
       case AiMailCards():
         reply.cards
           ..removeWhere((c) => c.id == event.id)
@@ -568,11 +571,51 @@ class ChatController extends ChangeNotifier {
     return null;
   }
 
+  /// Garde la proposition de mémoire (la dernière de l'appel l'emporte) puis lit le souvenir visé en arrière-plan.
+  void _addMemory(ChatMsg reply, AiMemoryProposal event) {
+    final item = ProposedMemory(event);
+    reply.memories
+      ..removeWhere((m) => m.proposal.id == event.id)
+      ..add(item);
+    notifyListeners();
+    final ai = admin();
+    if (ai == null) return;
+    unawaited(
+      resolveForgetTarget(ai, item).then((_) {
+        if (!_disposed) notifyListeners();
+      }),
+    );
+  }
+
+  /// L'utilisateur confirme ou ignore une proposition de mémoire ; seule la confirmation écrit, et un échec laisse la carte en attente.
+  Future<void> settleMemory(ProposedMemory item, {required bool apply}) async {
+    final ai = admin();
+    if (item.status != 'pending' || (apply && (ai == null || item.missing))) {
+      return;
+    }
+    if (apply) {
+      try {
+        await applyMemoryProposal(ai!, item);
+      } on Object catch (e) {
+        item.error = engineErrorText(e);
+        notifyListeners();
+        return;
+      }
+    }
+    item.error = null;
+    item.status = apply ? 'done' : 'dismissed';
+    notifyListeners();
+    unawaited(resave());
+  }
+
   /// Une action laissée en attente dans une conversation ancienne ne peut plus être confirmée : ses messages ont pu changer.
   void _expirePendingActions(List<ChatMsg> messages) {
     for (final m in messages) {
       for (final a in m.actions.where((a) => a.status == 'pending')) {
         a.status = 'dismissed';
+      }
+      for (final x in m.memories.where((x) => x.status == 'pending')) {
+        x.status = 'dismissed';
       }
     }
   }

@@ -579,6 +579,14 @@ const Map<String, String> enStrings = {
   'Ce service d’IA ne propose pas la connexion par navigateur':
       'This AI service does not offer browser sign-in',
   'Choisis d’abord un modèle d’IA': 'First choose an AI model',
+  'La mémoire de l’assistant est désactivée':
+      'The assistant’s memory is turned off',
+  'Indique le modèle d’embeddings à utiliser':
+      'Enter the embedding model to use',
+  'Ce texte ressemble à un secret (mot de passe, clé, numéro de carte) : il n’est pas retenu': 'This text looks like a secret (password, key, card number): it is not remembered',
+  'Le souvenir est vide ou trop long (1 000 caractères au plus)':
+      'The memory is empty or too long (1,000 characters at most)',
+  'Ce souvenir n’existe plus': 'This memory no longer exists',
   'Le texte est trop long pour le service d’IA':
       'The text is too long for the AI service',
   'Clé du service d’IA invalide': 'Invalid AI service key',
@@ -1373,6 +1381,19 @@ const Map<String, String> enStrings = {
   'Lecture d’un fil': 'Reading a thread',
   'Boîtes consultées': 'Mailboxes consulted',
   'Cartes de messages': 'Message cards',
+  'Souvenirs de la mémoire': 'Memory items',
+  'les souvenirs de la mémoire': 'memory items',
+  'Retenir': 'Remember',
+  'Oublier': 'Forget',
+  'Retenir ceci ?': 'Remember this?',
+  'Oublier ceci ?': 'Forget this?',
+  'Retenu': 'Remembered',
+  'Oublié': 'Forgotten',
+  'Action menée': 'Action taken',
+  'Préférence': 'Preference',
+  'Proposition d’oubli': 'Forget suggestion',
+  'Proposition de souvenir': 'Memory suggestion',
+  'Mémoire consultée': 'Memory consulted',
   'résultat': 'result',
   'résultats': 'results',
   'erreur': 'error',

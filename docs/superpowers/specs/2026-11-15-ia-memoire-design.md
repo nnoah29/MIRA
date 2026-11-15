@@ -50,3 +50,12 @@ Choix de l'utilisateur : **A par défaut, C en option explicite** ; B écartée.
 ## 7. Laissé au réalisateur
 
 Choix exact du modèle d'embeddings (multilingue, ≤ 300 Mo, GGUF) à épingler avec taille et SHA-256 ; valeur de k et seuil de similarité ; dimension des vecteurs ; format de sérialisation (BLOB `f32`) ; option de serveur dédié ou partagé avec le modèle de chat.
+
+## 8. Décisions de réalisation (lot 1a)
+
+- **Modèle d'embeddings** : Granite Embedding 278M multilingue, Q6_K (236 Mo, Apache-2.0, 768 dimensions, contexte 512). Q6_K plutôt que Q6_K_L (283 Mo) pour garder de la marge sous 300 Mo. Sources dans `docs/SOURCES.md`.
+- **Pooling CLS explicite** (`--pooling cls`) : le GGUF ne documente pas son type de pooling.
+- **Découpage** : un souvenir est plafonné à 2 000 caractères, ce qui tient dans 512 jetons ; le découpage de textes longs (mails) relève du lot 2.
+- **Vecteurs normalisés** par le serveur : la similarité cosinus reste calculée telle quelle, sans hypothèse de norme.
+- **Embedder HTTP générique** (`HttpEmbedder`) : le même client sert le mode local et l'option fournisseur, seule l'adresse et la clé changent.
+- **Erreurs** : une réponse d'embeddings inutilisable donne `server.ai_bad_response`, sans citer le corps.

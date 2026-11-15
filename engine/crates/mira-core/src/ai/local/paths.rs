@@ -39,6 +39,11 @@ impl LocalPaths {
         self.models_dir().join(&model.file_name)
     }
 
+    /// Fichier du modèle d'embeddings de la mémoire, sous `embeddings/`
+    pub fn embedding_file(&self, model: &AiLocalModel) -> PathBuf {
+        self.root.join("embeddings").join(&model.file_name)
+    }
+
     /// Dossier de la clé du lancement en cours
     pub fn run_dir(&self) -> PathBuf {
         self.root.join("run")

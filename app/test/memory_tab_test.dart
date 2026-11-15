@@ -11,9 +11,16 @@ void main() {
   });
 
   test('l’onglet Mémoire suit IA avec un moteur, et n’existe pas sans', () {
-    final tabs = settingsTabs(true);
+    final tabs = settingsTabs(true, false);
     expect(tabs[tabs.indexOf('IA') + 1], 'Mémoire');
     expect(tabs.last, 'À propos');
-    expect(settingsTabs(false), isNot(contains('Mémoire')));
+    expect(settingsTabs(false, false), isNot(contains('Mémoire')));
+  });
+
+  test('Voix s’insère avant À propos sans déplacer Mémoire', () {
+    final tabs = settingsTabs(true, true);
+    expect(tabs[tabs.indexOf('IA') + 1], 'Mémoire');
+    expect(tabs[tabs.length - 2], 'Voix');
+    expect(tabs.last, 'À propos');
   });
 }

@@ -7,7 +7,7 @@ use super::embeddings_wire::{embeddings_request, parse_embeddings};
 use crate::ai::transport::{TransportLimits, post_bounded};
 use crate::ports::SecretValue;
 
-const EMBEDDINGS_PATH: &str = "/v1/embeddings";
+const DEFAULT_PATH: &str = "/v1/embeddings";
 
 /// Client d'un service d'embeddings : adresse de base, clé, modèle et plafonds de l'échange.
 pub struct HttpEmbedder {
@@ -15,6 +15,7 @@ pub struct HttpEmbedder {
     key: SecretValue,
     model_id: String,
     limits: TransportLimits,
+    path: String,
 }
 
 impl HttpEmbedder {
@@ -30,7 +31,14 @@ impl HttpEmbedder {
             key,
             model_id,
             limits,
+            path: DEFAULT_PATH.to_string(),
         }
+    }
+
+    /// Change le chemin de la route d'embeddings, quand l'adresse de base porte déjà `/v1`
+    pub fn with_path(mut self, path: &str) -> Self {
+        self.path = path.to_string();
+        self
     }
 }
 
@@ -51,7 +59,7 @@ impl Embedder for HttpEmbedder {
                 &self.base_url,
                 AuthScheme::Bearer,
                 &self.key,
-                EMBEDDINGS_PATH,
+                &self.path,
                 body,
                 &self.limits,
             )

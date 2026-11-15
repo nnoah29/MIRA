@@ -10,8 +10,8 @@ pub mod runtime_fake;
 pub mod zip_archives;
 
 use mira_vocabulary::{
-    AiLocalModel, AiLocalRuntime, AiLocalServerBuild, AiProviderDescriptor, AiProviderId, AiQuirks,
-    AuthScheme, LocalTier, WireFormat,
+    AiLocalEmbedding, AiLocalModel, AiLocalRuntime, AiLocalServerBuild, AiProviderDescriptor,
+    AiProviderId, AiQuirks, AuthScheme, LocalTier, WireFormat,
 };
 
 /// Modèle de test de ce palier ; fichier et somme à compléter par le test qui télécharge
@@ -29,6 +29,19 @@ pub fn test_model(id: &str, tier: LocalTier, tools: bool) -> AiLocalModel {
         ctx_size: 4096,
         supports_tools: tools,
         reasoning: false,
+    }
+}
+
+/// Modèle d'embeddings de test : fichier `embed.bin` de cinq octets, arguments propres au mode embeddings
+pub fn test_embedding() -> AiLocalEmbedding {
+    let mut model = test_model("embed", LocalTier::Mini, false);
+    model.size = 5;
+    AiLocalEmbedding {
+        model,
+        server_args: ["--embedding", "--pooling", "cls"]
+            .iter()
+            .map(|a| (*a).to_string())
+            .collect(),
     }
 }
 

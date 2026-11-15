@@ -9,27 +9,16 @@ use mira_core::api::Engine;
 use mira_core::profile::ProfilePaths;
 use mira_core::storage::Database;
 use mira_vocabulary::{
-    AiConnection, AiConnectionId, AiProvider, AiProviderDescriptor, AiProviderId, CONTRACT_VERSION,
-    MaskingSettings,
+    AiConnection, AiConnectionId, AiProviderId, CONTRACT_VERSION, MaskingSettings,
 };
 use tempfile::TempDir;
 
+use super::provider::LocalTestProvider;
 use crate::local_support::runtime_fake::fake_args;
-use crate::local_support::{descriptor, test_runtime};
+use crate::local_support::{descriptor, test_embedding, test_runtime};
 use crate::support_api::config;
 
 const FAKE: &str = include_str!("../local_support/fake_server.py");
-
-/// Fournisseur de test qui rend une fiche donnée
-#[derive(Debug)]
-struct LocalTestProvider(AiProviderDescriptor);
-
-impl AiProvider for LocalTestProvider {
-    /// Rend la fiche portée par le fournisseur
-    fn descriptor(&self) -> AiProviderDescriptor {
-        self.0.clone()
-    }
-}
 
 /// Moteur de test dont le profil contient déjà serveur et modèles factices
 pub struct LocalFixture {
@@ -43,6 +32,11 @@ pub struct LocalFixture {
 impl LocalFixture {
     /// Ouvre le moteur, pose `model-server` (le faux) et les fichiers des modèles `mini` et `big`
     pub fn start(idle_stop_seconds: u64) -> Self {
+        Self::start_with(idle_stop_seconds, false)
+    }
+
+    /// Comme `start`, avec en plus le modèle d'embeddings de la mémoire déclaré dans la fiche et posé sous `ai-memory/`
+    pub fn start_with(idle_stop_seconds: u64, embedding: bool) -> Self {
         let home = tempfile::tempdir().unwrap();
         let mut config = config(home.path());
         let paths = ProfilePaths::resolve(&config.profile, &config.environment).unwrap();
@@ -51,7 +45,8 @@ impl LocalFixture {
         runtime.server_args = fake_args(&log, &[]);
         runtime.idle_stop_seconds = idle_stop_seconds;
         runtime.start_timeout_seconds = 30;
-        place_files(&paths.root, &runtime.server[0].sha256);
+        runtime.embedding = embedding.then(test_embedding);
+        place_files(&paths.root, &runtime.server[0].sha256, embedding);
         let provider = LocalTestProvider(descriptor("local-test", false, Some(runtime)));
         let mut registry = AiProviderRegistry::new();
         registry.register(Arc::new(provider));
@@ -104,7 +99,7 @@ impl LocalFixture {
 }
 
 /// Pose le faux serveur et les deux modèles dans `<profil>/local-ai/`
-fn place_files(profile_root: &Path, sha256: &str) {
+fn place_files(profile_root: &Path, sha256: &str, embedding: bool) {
     let base = profile_root.join("local-ai");
     let server = base.join("server").join(&sha256[..12]);
     std::fs::create_dir_all(&server).unwrap();
@@ -114,5 +109,10 @@ fn place_files(profile_root: &Path, sha256: &str) {
     std::fs::create_dir_all(base.join("models")).unwrap();
     for name in ["mini.bin", "big.bin"] {
         std::fs::write(base.join("models").join(name), b"MODEL").unwrap();
+    }
+    if embedding {
+        let folder = profile_root.join("ai-memory").join("embeddings");
+        std::fs::create_dir_all(&folder).unwrap();
+        std::fs::write(folder.join("embed.bin"), b"MODEL").unwrap();
     }
 }

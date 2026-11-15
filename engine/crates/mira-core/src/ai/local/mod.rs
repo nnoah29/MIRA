@@ -5,6 +5,7 @@ mod download;
 mod download_errors;
 mod download_transfer;
 mod download_verify;
+mod embedding_endpoint;
 mod embedding_paths;
 mod endpoint;
 mod extract;
@@ -31,6 +32,7 @@ mod zip_names;
 
 pub(crate) use connection::trim_local_connection;
 pub use download::{CancelFlag, DownloadJob, download_file};
+pub(crate) use embedding_endpoint::embedding_setup;
 pub(crate) use endpoint::{installed_ids, installed_models, local_endpoint};
 pub use extract::extract_tar_gz;
 pub use extract_zip::extract_zip;

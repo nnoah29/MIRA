@@ -2,6 +2,7 @@
 
 use super::key_login::AiKeyLogins;
 use super::local::{LocalInstallSlot, LocalRuntimeManager};
+use super::memory::MemoryRuntime;
 use super::session::AiSessionLocks;
 
 /// Ce que l'assistant d'IA garde en mémoire pendant la vie du moteur.
@@ -11,4 +12,5 @@ pub(crate) struct AiState {
     pub(crate) session_locks: AiSessionLocks,
     pub(crate) local_runtime: LocalRuntimeManager,
     pub(crate) local_install: LocalInstallSlot,
+    pub(crate) memory: MemoryRuntime,
 }

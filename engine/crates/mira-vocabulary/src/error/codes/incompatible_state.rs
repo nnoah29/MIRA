@@ -48,3 +48,5 @@ pub const AI_LOCAL_UNSUPPORTED_PLATFORM: ErrorCode =
     ErrorCode("incompatible_state.ai_local_unsupported_platform");
 /// Une installation de modèle local est déjà en cours.
 pub const AI_LOCAL_BUSY: ErrorCode = ErrorCode("incompatible_state.ai_local_busy");
+/// La mémoire de l'IA est désactivée : rien n'est retenu ni cherché.
+pub const AI_MEMORY_DISABLED: ErrorCode = ErrorCode("incompatible_state.ai_memory_disabled");

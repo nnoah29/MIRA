@@ -3,5 +3,6 @@
 mod kinds;
 mod read;
 mod rows;
+mod settings;
 mod vector;
 mod write;

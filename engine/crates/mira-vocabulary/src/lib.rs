@@ -36,6 +36,7 @@ pub use ai::memory_proposal::{MemoryProposal, MemoryProposalAction};
 pub use ai::memory_settings::{MemoryEmbedder, MemorySettings, MemoryStatus};
 pub use ai::model::{AiModel, AiModelList};
 pub use ai::provider::{AiProvider, AiProviderId};
+pub use ai::style::{STYLE_MIN_MAILS, StyleProfile, StyleRegister, StyleSettings, StyleStatus};
 pub use ai::tool::{ToolCall, ToolOutcome, ToolRisk, ToolState};
 pub use contract::version::{CONTRACT_VERSION, ContractVersion};
 pub use domain::account::{Account, AccountState, SyncSettings};

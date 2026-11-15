@@ -19,4 +19,5 @@ pub mod memory_proposal;
 pub mod memory_settings;
 pub mod model;
 pub mod provider;
+pub mod style;
 pub mod tool;

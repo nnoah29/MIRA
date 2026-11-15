@@ -13,6 +13,7 @@ mod framing;
 mod guard;
 mod journal;
 mod kinds;
+mod memory_context;
 mod neutralize;
 mod prepare;
 mod progress;
@@ -31,6 +32,7 @@ mod truncate;
 
 pub use context::render_context;
 pub use framing::{TOOLS_NOTICE, frame_result};
+pub use memory_context::memory_allowed;
 pub use tool_consent::{ToolDecision, decide_call, decide_tool};
 pub(crate) use truncate::TRUNCATION_MARK;
 pub use truncate::{MAX_INPUT_CHARS, truncate_request};

@@ -41,7 +41,7 @@ fn kind_label(kind: MemoryKind) -> &'static str {
 }
 
 /// Une ligne par souvenir : identifiant, genre et texte.
-fn render(hits: &[MemoryHit]) -> String {
+pub(crate) fn render_hits(hits: &[MemoryHit]) -> String {
     let lines: Vec<String> = hits
         .iter()
         .map(|hit| {
@@ -78,7 +78,10 @@ pub(super) async fn run(engine: &Engine, arguments: &str) -> ToolRun {
         Ok(hits) if hits.is_empty() => {
             ToolRun::recalled("Aucun souvenir ne correspond.".to_string(), 0)
         }
-        Ok(hits) => ToolRun::recalled(render(&hits), u32::try_from(hits.len()).unwrap_or(u32::MAX)),
+        Ok(hits) => ToolRun::recalled(
+            render_hits(&hits),
+            u32::try_from(hits.len()).unwrap_or(u32::MAX),
+        ),
         Err(_) => ToolRun::error("la recherche dans la mémoire a échoué".to_string()),
     }
 }

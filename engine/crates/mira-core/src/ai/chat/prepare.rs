@@ -11,6 +11,7 @@ use mira_vocabulary::{
 
 use super::checks::{Checked, check, context_summary};
 use super::context::render_context;
+use super::memory_context::add_memories;
 use super::tools_plan::with_tools;
 use super::truncate::{MAX_INPUT_CHARS, request_chars, truncate_request};
 use crate::ai::local::tools_allowed;
@@ -40,14 +41,14 @@ pub(crate) struct ChatPlan {
 /// Vérifie connexion, fournisseur, consentement, types de contenu, clé puis modèle, dans cet ordre, et rend le plan ; les outils ne sont annoncés que si le client les permet et que le service les supporte.
 pub(crate) async fn prepare(
     engine: &Engine,
-    start: ChatStart,
+    mut start: ChatStart,
     host: Option<Weak<Engine>>,
 ) -> Result<ChatPlan, MiraError> {
     let connection = load_connection(engine, start.connection.as_ref())?;
     let checked = check(engine, &connection, &start).await?;
-    let enabled = tools_enabled(&start, &checked, host.is_some());
+    add_memories(engine, &mut start, &connection, checked.local).await;
+    let (enabled, mode) = (tools_enabled(&start, &checked, host.is_some()), start.mode);
     let (kinds, parts) = context_summary(&start.request);
-    let mode = start.mode;
     let request = with_tools(start.request, enabled, mode, memory_enabled(engine));
     let (request, masker) = shape_request(request, &connection.masking);
     Ok(ChatPlan {

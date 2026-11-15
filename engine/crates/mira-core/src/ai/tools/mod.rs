@@ -32,5 +32,6 @@ mod show_mails;
 pub use catalog::{is_proposal, kind_of, specs, specs_for, specs_with, summary_of};
 pub use execute::is_read;
 pub use propose::propose;
+pub(crate) use recall_memory::render_hits;
 pub use run::run;
 pub use run_result::ToolRun;

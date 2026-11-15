@@ -24,6 +24,7 @@ async fn remember_proposal_arrives_in_order_and_writes_nothing() {
         let f = LoopFixture::start(format).await;
         enable_with_one_memory(&f);
         let turns = [
+            one_vector(),
             tool_turn(format, "", &[("c1", "remember", REMEMBER_ARGS)], None),
             text_turn(format, "Je te propose de le retenir.", None),
         ];
@@ -58,6 +59,7 @@ async fn recall_returns_the_stored_text_and_its_id() {
     enable_with_one_memory(&f);
     let call = [("c1", "recall_memory", r#"{"query":"mon chat"}"#)];
     let turns = [
+        one_vector(),
         tool_turn(format, "", &call, None),
         one_vector(),
         text_turn(format, "Il s'appelle Mochi.", None),
@@ -72,7 +74,7 @@ async fn recall_returns_the_stored_text_and_its_id() {
             "done:end_turn"
         ]
     );
-    let results = tool_results(&f.bodies()[2], format);
+    let results = tool_results(f.bodies().last().unwrap(), format);
     assert!(
         results[0].contains("mem-1") && results[0].contains("Mochi"),
         "{results:?}"
@@ -87,6 +89,7 @@ async fn forget_proposal_carries_the_id_and_deletes_nothing() {
     enable_with_one_memory(&f);
     let args = r#"{"id":"mem-1","reason":"il est parti"}"#;
     let turns = [
+        one_vector(),
         tool_turn(format, "", &[("c1", "forget_memory", args)], None),
         text_turn(format, "D'accord.", None),
     ];
@@ -129,6 +132,7 @@ async fn recall_fails_softly_when_the_embedder_is_down() {
     };
     let call = [("c1", "recall_memory", r#"{"query":"chat"}"#)];
     let turns = [
+        one_vector(),
         tool_turn(format, "", &call, None),
         down,
         text_turn(format, "Je ne retrouve pas.", None),
@@ -143,6 +147,6 @@ async fn recall_fails_softly_when_the_embedder_is_down() {
             "done:end_turn"
         ]
     );
-    let results = tool_results(&f.bodies()[2], format);
+    let results = tool_results(f.bodies().last().unwrap(), format);
     assert!(!results[0].contains("sk-secret"), "{results:?}");
 }

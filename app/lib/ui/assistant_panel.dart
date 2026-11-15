@@ -16,6 +16,7 @@ import 'chat_action_card.dart';
 import 'chat_draft_card.dart';
 import 'chat_history_view.dart';
 import 'chat_markdown.dart';
+import 'chat_mail_cards.dart';
 import 'chat_sources.dart';
 import 'chat_tool_chips.dart';
 import 'mail_ref.dart';
@@ -505,8 +506,12 @@ class _Bubble extends StatelessWidget {
   /// Messages consultés par les outils que le magasin connaît ; les autres identifiants sont ignorés.
   List<Mail> _known(MailStore s, ChatMsg msg) => [
     for (final id in msg.sources)
-      if (s.byId(id) != null) s.byId(id)!,
+      if (s.mailOfCited(id) != null) s.mailOfCited(id)!,
   ];
+
+  /// Message d'une carte : seulement s'il fait partie de ceux que les outils ont renvoyés.
+  Mail? _consulted(MailStore s, ChatMsg msg, String id) =>
+      msg.sources.contains(id) ? s.mailOfCited(id) : null;
 
   @override
   Widget build(BuildContext context) {
@@ -591,11 +596,15 @@ class _Bubble extends StatelessWidget {
                     onConfirm: () => s.settleAction(a, apply: true),
                     onDismiss: () => s.settleAction(a, apply: false),
                   ),
+              if (!me)
+                for (final list in msg.cards)
+                  ChatMailCards(list, find: (id) => _consulted(s, msg, id)),
               if (!me &&
                   msg.done &&
+                  msg.cards.isEmpty &&
                   (msg.refs ?? const []).isEmpty &&
                   _known(s, msg).isNotEmpty)
-                ChatSources(_known(s, msg).take(5).toList()),
+                ChatSources(_known(s, msg)),
               if (!me && msg.done && msg.draft != null) ...[
                 Container(
                   width: double.infinity,
@@ -663,14 +672,19 @@ class _Bubble extends StatelessWidget {
                     ],
                   ),
                 ),
-              if (!me && msg.done && msg.refs != null && msg.refs!.isNotEmpty)
+              if (!me &&
+                  msg.done &&
+                  msg.cards.isEmpty &&
+                  msg.refs != null &&
+                  msg.refs!.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       for (final id in msg.refs!)
-                        if (s.byId(id) != null) MailRef(s.byId(id)!),
+                        if (s.mailOfCited(id) != null)
+                          MailRef(s.mailOfCited(id)!),
                     ],
                   ),
                 ),

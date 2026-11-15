@@ -13,6 +13,7 @@ pub mod time;
 pub use address::EmailAddress;
 pub use address::entry::AddressEntry;
 pub use ai::action::{ActionProposal, MailActionKind};
+pub use ai::cards::{MailCard, MailCards};
 pub use ai::chat::{ChatMessage, ChatRequest, ChatRole, ToolSpec};
 pub use ai::connection::{AiConnection, AiConnectionKind};
 pub use ai::content::{ContentKind, ContextPart};

@@ -1,6 +1,6 @@
 //! Résultat d'une exécution d'outil : texte rendu, type de contenu, état, nombre de résultats et sources.
 
-use mira_vocabulary::{ActionProposal, ContentKind, DraftProposal, ToolState};
+use mira_vocabulary::{ActionProposal, ContentKind, DraftProposal, MailCards, ToolState};
 
 /// Ce que l'outil renvoie au modèle, et ce que l'app peut en montrer.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -12,6 +12,7 @@ pub struct ToolRun {
     pub sources: Vec<String>,
     pub proposal: Option<DraftProposal>,
     pub action: Option<ActionProposal>,
+    pub cards: Option<MailCards>,
 }
 
 impl ToolRun {
@@ -25,6 +26,7 @@ impl ToolRun {
             sources: Vec::new(),
             proposal: None,
             action: None,
+            cards: None,
         }
     }
 
@@ -38,6 +40,7 @@ impl ToolRun {
             sources,
             proposal: None,
             action: None,
+            cards: None,
         }
     }
 
@@ -51,6 +54,7 @@ impl ToolRun {
             sources: Vec::new(),
             proposal: Some(proposal),
             action: None,
+            cards: None,
         }
     }
 
@@ -64,6 +68,21 @@ impl ToolRun {
             sources: Vec::new(),
             proposal: None,
             action: Some(action),
+            cards: None,
+        }
+    }
+
+    /// Cartes de messages montrées : la phrase fixe renvoyée au modèle et les cartes pour l'application.
+    pub fn cards_shown(text: String, cards: MailCards) -> Self {
+        Self {
+            text,
+            kind: ContentKind::ToolResult,
+            state: ToolState::Ok,
+            results: u32::try_from(cards.cards.len()).unwrap_or(u32::MAX),
+            sources: Vec::new(),
+            proposal: None,
+            action: None,
+            cards: Some(cards),
         }
     }
 }

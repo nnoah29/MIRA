@@ -840,6 +840,14 @@ class EngineMailSource implements MailSource {
     );
   }
 
+  @override
+  Future<Mail?> messageById(String id) async {
+    final summary = await _summary(id);
+    if (summary == null) return null;
+    final found = _mailsOfHits([summary]);
+    return found.isEmpty ? null : found.first;
+  }
+
   Future<Map<String, dynamic>?> _summary(String id) async {
     try {
       final raw = await client.call(

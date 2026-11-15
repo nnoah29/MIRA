@@ -62,4 +62,25 @@ void main() {
     expect(shown, hasLength(5));
     await close(tester, store);
   });
+
+  testWidgets('the_sources_list_unfolds_beyond_five_messages', (tester) async {
+    final engine = withDefaultConnection();
+    final store = await pumpPanel(tester, engine);
+    final ids = [for (final m in store.mails.take(8)) m.id];
+    engine.scripts.add([
+      finished(ids),
+      {'type': 'text', 'text': 'Voici ce que j’ai vu.'},
+      {'type': 'done', 'reason': 'end_turn'},
+    ]);
+    await tester.tap(find.text('RÉSUME CE MAIL'));
+    await settle(tester);
+    await tester.ensureVisible(find.byKey(const ValueKey('chat-sources-more')));
+    await tester.tap(find.byKey(const ValueKey('chat-sources-more')));
+    await tester.pump();
+    for (final id in ids) {
+      expect(find.byKey(ValueKey('chat-source-$id')), findsOneWidget);
+    }
+    expect(find.byKey(const ValueKey('chat-sources-more')), findsNothing);
+    await close(tester, store);
+  });
 }

@@ -168,6 +168,9 @@ abstract class MailSource {
   /// Cherche aussi sur le serveur (corps non téléchargés compris) ; plus lent que la recherche locale.
   Future<ServerSearch> searchServer(String query);
 
+  /// Un message du moteur par son identifiant, même absent des listes chargées (`null` : introuvable).
+  Future<Mail?> messageById(String id);
+
   /// Brouillons et envois (`null` : démonstration).
   ComposeAdmin? get composer;
 

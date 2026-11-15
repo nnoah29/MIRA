@@ -23,6 +23,7 @@ pub mod render;
 mod run;
 mod run_result;
 mod search_messages;
+mod show_mails;
 
 pub use catalog::{is_proposal, kind_of, specs, specs_for, summary_of};
 pub use execute::is_read;

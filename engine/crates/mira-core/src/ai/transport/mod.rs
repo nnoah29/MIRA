@@ -9,7 +9,7 @@ mod limits;
 mod retry_after;
 mod stream;
 
-pub use body::get_bounded;
+pub use body::{get_bounded, post_bounded};
 pub use failure::map_status;
 pub use limits::TransportLimits;
 pub use stream::{AiStreamBody, post_stream};

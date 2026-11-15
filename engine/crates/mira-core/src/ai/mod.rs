@@ -6,6 +6,7 @@ pub mod chat;
 pub mod key_login;
 pub mod local;
 pub mod masking;
+pub mod memory;
 pub mod models;
 pub mod registry;
 pub(crate) mod session;

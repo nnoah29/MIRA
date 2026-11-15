@@ -49,6 +49,10 @@ class Handler(BaseHTTPRequestHandler):
         body = self.rfile.read(length)
         if self.headers.get("Authorization") != "Bearer " + key:
             return self.reply(401, b'{"error":"bad key"}')
+        if self.path == "/v1/embeddings":
+            inputs = json.loads(body.decode())["input"]
+            data = [{"index": i, "embedding": [1.0, float(i)]} for i in range(len(inputs))]
+            return self.reply(200, json.dumps({"data": data}).encode())
         if log:
             with open(log, "a") as f:
                 f.write(json.dumps({"event": "chat", "body": body.decode()}) + "\n")

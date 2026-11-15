@@ -40,3 +40,12 @@ fn embedding_server_args_force_cls_pooling() {
     assert_eq!(args[at("-c") + 1], "512");
     assert_eq!(args[at("-ub") + 1], "512");
 }
+
+/// La fiche du runtime local porte le modèle d'embeddings et ses arguments pour le cœur
+#[test]
+fn local_runtime_carries_the_embedding_model_and_args() {
+    let descriptor = mira_vocabulary::AiProvider::descriptor(&mira_ai_local::LocalAiProvider);
+    let embedding = descriptor.local_runtime.unwrap().embedding.unwrap();
+    assert_eq!(embedding.model, embedding_model());
+    assert_eq!(embedding.server_args, embedding_server_args());
+}

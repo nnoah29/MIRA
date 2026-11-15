@@ -26,10 +26,14 @@ pub use ai::descriptor::{
 pub use ai::draft::{ChatMode, DraftProposal, DraftProposalKind};
 pub use ai::error::AiError;
 pub use ai::journal::{AiJournalEntry, AiJournalFinish, AiToolCount};
-pub use ai::local_runtime::{AiLocalModel, AiLocalRuntime, AiLocalServerBuild, LocalTier};
+pub use ai::local_runtime::{
+    AiLocalEmbedding, AiLocalModel, AiLocalRuntime, AiLocalServerBuild, LocalTier,
+};
 pub use ai::local_status::{LocalInstallInfo, LocalModelStatus, LocalRuntimeStatus};
 pub use ai::masking::{MaskingMode, MaskingSettings, SensitiveCategory};
 pub use ai::memory::{MemoryHit, MemoryKind, MemoryRecord, MemorySource};
+pub use ai::memory_proposal::{MemoryProposal, MemoryProposalAction};
+pub use ai::memory_settings::{MemoryEmbedder, MemorySettings, MemoryStatus};
 pub use ai::model::{AiModel, AiModelList};
 pub use ai::provider::{AiProvider, AiProviderId};
 pub use ai::tool::{ToolCall, ToolOutcome, ToolRisk, ToolState};

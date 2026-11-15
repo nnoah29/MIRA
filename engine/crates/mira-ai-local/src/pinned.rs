@@ -1,7 +1,8 @@
 //! Serveur et modèles épinglés par taille et somme SHA-256 : les changer demande une nouvelle version de MIRA.
 
-use mira_vocabulary::AiLocalRuntime;
+use mira_vocabulary::{AiLocalEmbedding, AiLocalRuntime};
 
+use crate::pinned_embedding::{embedding_model, embedding_server_args};
 use crate::pinned_models::models;
 use crate::pinned_server::server_builds;
 
@@ -15,6 +16,10 @@ pub fn runtime() -> AiLocalRuntime {
         idle_stop_seconds: 300,
         start_timeout_seconds: 120,
         models: models(),
+        embedding: Some(AiLocalEmbedding {
+            model: embedding_model(),
+            server_args: embedding_server_args(),
+        }),
     }
 }
 

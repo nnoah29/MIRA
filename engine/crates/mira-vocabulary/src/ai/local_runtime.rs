@@ -48,4 +48,13 @@ pub struct AiLocalRuntime {
     pub idle_stop_seconds: u64,
     pub start_timeout_seconds: u64,
     pub models: Vec<AiLocalModel>,
+    #[serde(default)]
+    pub embedding: Option<AiLocalEmbedding>,
+}
+
+/// Modèle d'embeddings de la mémoire et arguments propres à son serveur, sans que le cœur nomme personne.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AiLocalEmbedding {
+    pub model: AiLocalModel,
+    pub server_args: Vec<String>,
 }

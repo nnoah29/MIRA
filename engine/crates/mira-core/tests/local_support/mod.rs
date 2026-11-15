@@ -51,6 +51,7 @@ pub fn test_runtime() -> AiLocalRuntime {
             test_model("mini", LocalTier::Mini, false),
             test_model("big", LocalTier::Advanced, true),
         ],
+        embedding: None,
     }
 }
 

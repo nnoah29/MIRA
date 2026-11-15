@@ -15,6 +15,8 @@ pub mod local_runtime;
 pub mod local_status;
 pub mod masking;
 pub mod memory;
+pub mod memory_proposal;
+pub mod memory_settings;
 pub mod model;
 pub mod provider;
 pub mod tool;

@@ -85,5 +85,9 @@ fn delete_all_returns_count() {
             .unwrap();
     }
     assert_eq!(db.write(|tx| tx.delete_all_ai_memories()).unwrap(), 2);
-    assert!(db.read(|tx| tx.list_ai_memories(10, None)).unwrap().is_empty());
+    assert!(
+        db.read(|tx| tx.list_ai_memories(10, None))
+            .unwrap()
+            .is_empty()
+    );
 }

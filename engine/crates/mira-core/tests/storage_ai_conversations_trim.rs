@@ -25,8 +25,10 @@ fn migration_20_applies_on_existing_profile() {
     let path = dir.path().join("mira.sqlite3");
     drop(Database::open(&path).unwrap());
     let raw = rusqlite::Connection::open(&path).unwrap();
-    raw.execute_batch("DROP TABLE ai_memories; DROP TABLE ai_conversations; PRAGMA user_version = 19;")
-        .unwrap();
+    raw.execute_batch(
+        "DROP TABLE ai_memories; DROP TABLE ai_conversations; PRAGMA user_version = 19;",
+    )
+    .unwrap();
     drop(raw);
     let db = Database::open(&path).unwrap();
     assert_eq!(schema_version(), 21);

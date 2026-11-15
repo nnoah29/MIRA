@@ -18,7 +18,6 @@ pub use ai::chat::{ChatMessage, ChatRequest, ChatRole, ToolSpec};
 pub use ai::connection::{AiConnection, AiConnectionKind};
 pub use ai::content::{ContentKind, ContextPart};
 pub use ai::conversation::{AiConversation, AiConversationMeta};
-pub use ai::memory::{MemoryHit, MemoryKind, MemoryRecord, MemorySource};
 pub use ai::delta::{ChatDelta, StopReason};
 pub use ai::descriptor::{
     AiKeyLogin, AiProviderDescriptor, AiQuirks, AiSessionLogin, AuthScheme, MaxTokensField,
@@ -30,6 +29,7 @@ pub use ai::journal::{AiJournalEntry, AiJournalFinish, AiToolCount};
 pub use ai::local_runtime::{AiLocalModel, AiLocalRuntime, AiLocalServerBuild, LocalTier};
 pub use ai::local_status::{LocalInstallInfo, LocalModelStatus, LocalRuntimeStatus};
 pub use ai::masking::{MaskingMode, MaskingSettings, SensitiveCategory};
+pub use ai::memory::{MemoryHit, MemoryKind, MemoryRecord, MemorySource};
 pub use ai::model::{AiModel, AiModelList};
 pub use ai::provider::{AiProvider, AiProviderId};
 pub use ai::tool::{ToolCall, ToolOutcome, ToolRisk, ToolState};

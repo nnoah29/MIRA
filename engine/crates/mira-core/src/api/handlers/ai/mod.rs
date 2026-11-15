@@ -1,5 +1,6 @@
 //! Domaine « assistant d'IA » : un fichier par opération, clés au trousseau, consentement par destination.
 
+mod about_me;
 mod add_connection;
 mod allowed_kinds;
 mod clear_conversations;
@@ -113,7 +114,7 @@ pub(crate) async fn route(engine: &Engine, request: AiRequest) -> Answer {
         R::SetAiHistoryEnabled { enabled } => set_history(engine, enabled),
         R::GetAiHistoryEnabled => get_history(engine),
         r @ (R::GetLocalRuntimeStatus | R::InstallLocalModel { .. } | R::RemoveLocalModel { .. } | R::StopLocalRuntime) => route_local(engine, r).await,
-        r @ (R::InstallMemoryModel | R::GetMemoryStatus | R::SetMemorySettings { .. } | R::ListMemories { .. } | R::SearchMemories { .. } | R::RememberMemory { .. } | R::UpdateMemory { .. } | R::ForgetMemory { .. } | R::ForgetAllMemories | R::ReindexMemories) => route_memory(engine, r).await,
+        r @ (R::InstallMemoryModel | R::GetMemoryStatus | R::SetMemorySettings { .. } | R::ListMemories { .. } | R::SearchMemories { .. } | R::RememberMemory { .. } | R::UpdateMemory { .. } | R::ForgetMemory { .. } | R::ForgetAllMemories | R::ReindexMemories | R::GetAboutMe | R::SetAboutMe { .. }) => route_memory(engine, r).await,
     }
 }
 

@@ -56,6 +56,10 @@ fn write_requests() -> Vec<AiRequest> {
         },
         AiRequest::ForgetAllMemories,
         AiRequest::ReindexMemories,
+        AiRequest::GetAboutMe,
+        AiRequest::SetAboutMe {
+            text: "Je suis médecin. Je signe « Noah ».".to_string(),
+        },
     ]
 }
 
@@ -86,6 +90,10 @@ pub fn responses() -> Vec<(&'static str, AiResponse)> {
         ),
         ("ai.memory", AiResponse::Memory(sample_record())),
         ("ai.memory_forgotten", AiResponse::MemoryForgotten(12)),
+        (
+            "ai.about_me",
+            AiResponse::AboutMe("Je suis médecin.".to_string()),
+        ),
         (
             "ai.memory_reindexed",
             AiResponse::MemoryReindexed { done: 2, failed: 0 },

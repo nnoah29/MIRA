@@ -2,6 +2,7 @@
 
 use mira_vocabulary::MiraError;
 
+use super::about_me::{handle_get_about_me as get_about, handle_set_about_me as set_about};
 use super::memory_install::handle_install_memory_model as install_memory;
 use super::memory_read::handle_search_memories as search;
 use super::memory_read::{handle_get_memory_status as status, handle_list_memories as list};
@@ -31,6 +32,8 @@ pub(super) async fn route_memory(engine: &Engine, request: R) -> Answer {
         R::ForgetMemory { id } => forget(engine, &id),
         R::ForgetAllMemories => forget_all(engine),
         R::ReindexMemories => reindex(engine).await,
+        R::GetAboutMe => get_about(engine),
+        R::SetAboutMe { text } => set_about(engine, &text),
         _ => Err(super::unexpected()),
     }
 }

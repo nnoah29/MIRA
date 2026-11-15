@@ -130,6 +130,10 @@ pub enum AiRequest {
     },
     ForgetAllMemories,
     ReindexMemories,
+    GetAboutMe,
+    SetAboutMe {
+        text: String,
+    },
 }
 
 /// Types autorisés par un consentement sans liste : le mail ouvert, comme avant le contrat 1.2.

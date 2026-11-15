@@ -26,6 +26,7 @@ pub enum AiResponse {
     Memory(MemoryRecord),
     MemoryForgotten(u64),
     MemoryReindexed { done: u64, failed: u64 },
+    AboutMe(String),
     KeyLoginStarted { flow: String, authorize_url: String },
     Done,
 }

@@ -9,6 +9,7 @@ use mira_vocabulary::{
     ContentKind, ErrorCategory, MaskingSettings, MiraError,
 };
 
+use super::about_context::{about_of, append_about};
 use super::checks::{Checked, check, context_summary};
 use super::context::render_context;
 use super::memory_context::add_memories;
@@ -50,7 +51,7 @@ pub(crate) async fn prepare(
     let (enabled, mode) = (tools_enabled(&start, &checked, host.is_some()), start.mode);
     let (kinds, parts) = context_summary(&start.request);
     let request = with_tools(start.request, enabled, mode, memory_enabled(engine));
-    let (request, masker) = shape_request(request, &connection.masking);
+    let (request, masker) = shape_request(request, &connection.masking, &about_of(engine));
     Ok(ChatPlan {
         descriptor: checked.descriptor,
         base_url: checked.base_url,
@@ -81,8 +82,12 @@ fn tools_enabled(start: &ChatStart, checked: &Checked, has_host: bool) -> bool {
     start.allow_tools && has_host && tools_allowed(&checked.descriptor, &checked.model)
 }
 
-/// Rend le contexte, masque les textes envoyés (pas la consigne), puis tronque ; rend aussi la table du masquage.
-fn shape_request(request: ChatRequest, masking: &MaskingSettings) -> (ChatRequest, Masker) {
+/// Rend le contexte, masque les textes envoyés et le texte de l'utilisateur (pas la consigne), puis tronque ; rend aussi la table du masquage.
+fn shape_request(
+    request: ChatRequest,
+    masking: &MaskingSettings,
+    about: &str,
+) -> (ChatRequest, Masker) {
     let mut masker = Masker::new(masking);
     let mut request = render_context(request);
     masker.reserve(request.system.as_deref().unwrap_or_default());
@@ -93,6 +98,8 @@ fn shape_request(request: ChatRequest, masking: &MaskingSettings) -> (ChatReques
     for message in &mut request.messages {
         message.text = masker.mask(&message.text);
     }
+    let about = masker.mask(about);
+    append_about(&mut request, &about);
     (truncate_request(request, MAX_INPUT_CHARS), masker)
 }
 

@@ -27,6 +27,8 @@ pub fn op_name(request: &AiRequest) -> &'static str {
         AiRequest::ForgetMemory { .. } => "forget_memory",
         AiRequest::ForgetAllMemories => "forget_all_memories",
         AiRequest::ReindexMemories => "reindex_memories",
+        AiRequest::GetAboutMe => "get_about_me",
+        AiRequest::SetAboutMe { .. } => "set_about_me",
         _ => "unknown",
     }
 }

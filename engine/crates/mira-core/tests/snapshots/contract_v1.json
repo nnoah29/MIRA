@@ -1,5 +1,5 @@
 {
-  "contract": "1.11",
+  "contract": "1.12",
   "requests": {
     "account.add_account": {
       "domain": "account",
@@ -247,6 +247,12 @@
         "op": "forget_memory"
       }
     },
+    "ai.get_about_me": {
+      "domain": "ai",
+      "request": {
+        "op": "get_about_me"
+      }
+    },
     "ai.get_ai_conversation": {
       "domain": "ai",
       "request": {
@@ -381,6 +387,13 @@
         "limit": 5,
         "op": "search_memories",
         "query": "comment je signe"
+      }
+    },
+    "ai.set_about_me": {
+      "domain": "ai",
+      "request": {
+        "op": "set_about_me",
+        "text": "Je suis médecin. Je signe « Noah »."
       }
     },
     "ai.set_ai_allowed_content": {
@@ -1606,6 +1619,13 @@
       ],
       "type": "accounts"
     },
+    "ai.about_me": {
+      "data": {
+        "data": "Je suis médecin.",
+        "type": "about_me"
+      },
+      "type": "ai"
+    },
     "ai.connection": {
       "data": {
         "data": {
@@ -1966,7 +1986,7 @@
         ],
         "version": {
           "major": 1,
-          "minor": 11
+          "minor": 12
         }
       },
       "type": "contract_info"

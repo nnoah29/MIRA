@@ -35,6 +35,7 @@ pub const ALL: &[ErrorCode] = &[
     invalid_input::AI_MEMORY_TEXT,
     invalid_input::AI_MEMORY_SENSITIVE,
     invalid_input::AI_MEMORY_MODEL,
+    invalid_input::AI_ABOUT_TEXT,
     not_found::ACCOUNT,
     not_found::MESSAGE,
     not_found::MAILBOX,

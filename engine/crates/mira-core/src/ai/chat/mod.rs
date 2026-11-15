@@ -1,6 +1,7 @@
 //! Génération en flux : vérifications locales, rendu du contexte, troncature, tâche de diffusion annulable.
 //! Les deltas passent par un canal borné ; le journal ne reçoit que des comptes et des codes, sans contenu.
 
+mod about_context;
 mod answer;
 mod answer_tools;
 mod assembler;

@@ -52,3 +52,5 @@ pub const AI_MEMORY_TEXT: ErrorCode = ErrorCode("invalid_input.ai_memory_text");
 pub const AI_MEMORY_SENSITIVE: ErrorCode = ErrorCode("invalid_input.ai_memory_sensitive");
 /// Nom de modèle d'embeddings vide pour la mémoire en mode fournisseur.
 pub const AI_MEMORY_MODEL: ErrorCode = ErrorCode("invalid_input.ai_memory_model");
+/// Texte « ce que tu dois savoir de moi » trop long (1 000 caractères au plus).
+pub const AI_ABOUT_TEXT: ErrorCode = ErrorCode("invalid_input.ai_about_text");

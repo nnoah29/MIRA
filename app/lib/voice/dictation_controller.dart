@@ -31,37 +31,83 @@ class DictationController extends ChangeNotifier {
   StreamSubscription<DictationEvent>? _events;
   StreamSubscription<Float32List>? _samples;
   Timer? _limit;
+  int _session = 0;
+  Future<void>? _opening;
+  Future<void>? _closing;
 
   /// Démarre la dictée dans [field] ; une dictée en cours ailleurs est arrêtée d'abord.
   Future<void> start(TextEditingController field) async {
+    await _closing;
     if (state != DictationState.idle) {
       if (identical(target, field)) return;
       await stop();
     }
     problem = null;
     target = field;
+    final session = ++_session;
     _set(DictationState.preparing);
-    final failure = await _open(field);
-    if (failure != null) await _fail(failure);
+    final run = _run(field, session);
+    _opening = run;
+    await run;
+    if (identical(_opening, run)) _opening = null;
   }
 
-  /// Ouvre reconnaisseur et micro ; rend la raison de l'échec, ou null si tout écoute.
-  Future<DictationProblem?> _open(TextEditingController field) async {
-    if (!models.isInstalled(language)) return DictationProblem.modelMissing;
-    if (!await audio.requestPermission()) {
-      return DictationProblem.microphoneDenied;
-    }
+  /// Ouvre la dictée de cette session ; une session dépassée par un arrêt est abandonnée sans bruit.
+  Future<void> _run(TextEditingController field, int session) async {
     try {
-      await recognizer.start(language);
+      final failure = await _open(field, session);
+      if (failure != null) await _fail(failure, session);
+    } on _Superseded {
+      return;
+    }
+  }
+
+  /// Rend la raison de l'échec d'ouverture, ou null si tout écoute ; lève [_Superseded] si un arrêt est survenu.
+  Future<DictationProblem?> _open(
+    TextEditingController field,
+    int session,
+  ) async {
+    if (!models.isInstalled(language)) return DictationProblem.modelMissing;
+    final allowed = await _guard(
+      audio.requestPermission,
+      DictationProblem.microphoneUnavailable,
+    );
+    _stillCurrent(session);
+    if (allowed == false) return DictationProblem.microphoneDenied;
+    if (allowed is! bool) return allowed as DictationProblem;
+    final failure = await _guard(
+      () => recognizer.start(language),
+      DictationProblem.recognizerFailed,
+    );
+    _stillCurrent(session);
+    if (failure is DictationProblem) return failure;
+    final samples = await _guard(
+      audio.start,
+      DictationProblem.microphoneUnavailable,
+    );
+    _stillCurrent(session);
+    if (samples is DictationProblem) return samples;
+    _listen(field, samples as Stream<Float32List>);
+    return null;
+  }
+
+  /// Exécute [action] ; en cas d'échec rend la raison [fallback] (ou celle portée par une [DictationException]).
+  Future<Object?> _guard(
+    Future<Object?> Function() action,
+    DictationProblem fallback,
+  ) async {
+    try {
+      return await action();
     } on DictationException catch (e) {
       return e.problem;
-    }
-    try {
-      _listen(field, await audio.start());
     } on Object {
-      return DictationProblem.microphoneUnavailable;
+      return fallback;
     }
-    return null;
+  }
+
+  /// Lève [_Superseded] si un arrêt ou un autre démarrage a dépassé cette session.
+  void _stillCurrent(int session) {
+    if (session != _session) throw const _Superseded();
   }
 
   /// Branche le micro sur le reconnaisseur et le reconnaisseur sur le champ.
@@ -71,12 +117,12 @@ class DictationController extends ChangeNotifier {
     _events = recognizer.events.listen(
       (e) => _onEvent(inserter, e),
       onError: (Object _) =>
-          unawaited(_fail(DictationProblem.recognizerFailed)),
+          unawaited(_fail(DictationProblem.recognizerFailed, _session)),
     );
     _samples = samples.listen(
       recognizer.feed,
       onError: (Object _) =>
-          unawaited(_fail(DictationProblem.microphoneUnavailable)),
+          unawaited(_fail(DictationProblem.microphoneUnavailable, _session)),
     );
     _limit = Timer(maxDuration, () => unawaited(stop()));
     _set(DictationState.listening);
@@ -93,12 +139,21 @@ class DictationController extends ChangeNotifier {
     }
   }
 
-  /// Arrête la dictée : le dernier texte reconnu est validé dans le champ.
+  /// Arrête la dictée : le dernier texte reconnu est validé dans le champ ; attend la fin d'une ouverture en cours.
   Future<void> stop() async {
-    if (state == DictationState.idle || state == DictationState.stopping) {
-      return;
-    }
+    if (state == DictationState.idle) return;
+    if (state == DictationState.stopping) return _closing;
+    _session++;
     _set(DictationState.stopping);
+    final closing = _shutdown();
+    _closing = closing;
+    await closing;
+    if (identical(_closing, closing)) _closing = null;
+  }
+
+  /// Laisse finir une ouverture dépassée, puis ferme micro et reconnaisseur et revient au repos.
+  Future<void> _shutdown() async {
+    await _opening;
     await _close();
     _finish();
   }
@@ -118,8 +173,10 @@ class DictationController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Arrête sur échec : la raison est conservée pour l'interface.
-  Future<void> _fail(DictationProblem why) async {
+  /// Arrête sur échec de la session [session] : la raison est conservée pour l'interface.
+  Future<void> _fail(DictationProblem why, int session) async {
+    if (session != _session) return;
+    _session++;
     problem = why;
     await _close();
     _finish();
@@ -158,4 +215,9 @@ class DictationController extends ChangeNotifier {
     state = next;
     notifyListeners();
   }
+}
+
+/// Signal interne : la session d'ouverture a été dépassée par un arrêt ou un autre démarrage.
+class _Superseded implements Exception {
+  const _Superseded();
 }

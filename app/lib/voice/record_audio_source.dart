@@ -23,6 +23,7 @@ class RecordAudioSource implements AudioSource {
 
   @override
   Future<Stream<Float32List>> start() async {
+    await stop();
     final recorder = _recorder = AudioRecorder();
     final decoder = Pcm16Decoder();
     final bytes = await recorder.startStream(

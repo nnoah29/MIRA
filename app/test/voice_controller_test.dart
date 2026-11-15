@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
@@ -184,5 +185,77 @@ void main() {
     await r.controller.start(field());
     expect(r.controller.problem, isNull);
     expect(r.controller.state, DictationState.listening);
+  });
+
+  test('stop pendant la préparation : rien ne reste ouvert', () async {
+    final r = Rig();
+    r.recognizer.startDelay = const Duration(milliseconds: 100);
+    unawaited(r.controller.start(field()));
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(r.controller.state, DictationState.preparing);
+    await r.controller.stop();
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    expect(r.controller.state, DictationState.idle);
+    expect(r.controller.target, isNull);
+    expect(r.audio.isOpen, isFalse);
+  });
+
+  test(
+    'champ fermé pendant la préparation : aucune écriture, micro fermé',
+    () async {
+      final r = Rig();
+      r.recognizer.startDelay = const Duration(milliseconds: 100);
+      final f = field();
+      unawaited(r.controller.start(f));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      r.controller.release(f);
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      r.recognizer.say(const DictationPartial('fantôme'));
+      expect(f.text, '');
+      expect(r.controller.state, DictationState.idle);
+      expect(r.audio.isOpen, isFalse);
+    },
+  );
+
+  test(
+    'démarrer ailleurs pendant l’arrêt : la nouvelle dictée reste ouverte',
+    () async {
+      final r = Rig();
+      r.recognizer.stopDelay = const Duration(milliseconds: 100);
+      final a = field();
+      final b = field();
+      await r.controller.start(a);
+      unawaited(r.controller.stop());
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(r.controller.state, DictationState.stopping);
+      await r.controller.start(b);
+      expect(r.controller.state, DictationState.listening);
+      expect(identical(r.controller.target, b), isTrue);
+      expect(r.audio.isOpen, isTrue);
+      r.recognizer.say(const DictationPartial('bonjour'));
+      expect(b.text, 'bonjour');
+      await r.controller.stop();
+      expect(r.audio.isOpen, isFalse);
+    },
+  );
+
+  test(
+    'une exception de la demande d’autorisation ne bloque pas l’état',
+    () async {
+      final r = Rig();
+      r.audio.permissionError = StateError('plugin');
+      await r.controller.start(field());
+      expect(r.controller.problem, DictationProblem.microphoneUnavailable);
+      expect(r.controller.state, DictationState.idle);
+    },
+  );
+
+  test('une erreur inattendue du reconnaisseur ne bloque pas l’état', () async {
+    final r = Rig();
+    r.recognizer.startOtherError = StateError('natif');
+    await r.controller.start(field());
+    expect(r.controller.problem, DictationProblem.recognizerFailed);
+    expect(r.controller.state, DictationState.idle);
+    expect(r.audio.isOpen, isFalse);
   });
 }

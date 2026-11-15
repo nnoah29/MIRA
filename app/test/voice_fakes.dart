@@ -13,6 +13,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Micro factice : on y pousse des échantillons à la main.
 class FakeAudioSource implements AudioSource {
   bool permission = true;
+  Duration permissionDelay = Duration.zero;
+  Object? permissionError;
+  bool isOpen = false;
   Object? startError;
   int startCount = 0;
   int stopCount = 0;
@@ -22,6 +25,10 @@ class FakeAudioSource implements AudioSource {
   @override
   Future<bool> requestPermission() async {
     permissionAsked++;
+    if (permissionDelay > Duration.zero) {
+      await Future<void>.delayed(permissionDelay);
+    }
+    if (permissionError != null) throw permissionError!;
     return permission;
   }
 
@@ -29,6 +36,7 @@ class FakeAudioSource implements AudioSource {
   Future<Stream<Float32List>> start() async {
     if (startError != null) throw startError!;
     startCount++;
+    isOpen = true;
     out = StreamController<Float32List>();
     return out.stream;
   }
@@ -36,6 +44,7 @@ class FakeAudioSource implements AudioSource {
   @override
   Future<void> stop() async {
     stopCount++;
+    isOpen = false;
     if (!out.isClosed) unawaited(out.close());
   }
 }
@@ -45,6 +54,9 @@ class FakeRecognizer implements SpeechRecognizer {
   final StreamController<DictationEvent> _events =
       StreamController<DictationEvent>.broadcast(sync: true);
   DictationException? startError;
+  Object? startOtherError;
+  Duration startDelay = Duration.zero;
+  Duration stopDelay = Duration.zero;
   DictationLanguage? startedWith;
   String? textOnStop;
   int startCount = 0;
@@ -56,7 +68,9 @@ class FakeRecognizer implements SpeechRecognizer {
 
   @override
   Future<void> start(DictationLanguage language) async {
+    if (startDelay > Duration.zero) await Future<void>.delayed(startDelay);
     if (startError != null) throw startError!;
+    if (startOtherError != null) throw startOtherError!;
     startCount++;
     startedWith = language;
   }
@@ -67,6 +81,7 @@ class FakeRecognizer implements SpeechRecognizer {
   @override
   Future<void> stop() async {
     stopCount++;
+    if (stopDelay > Duration.zero) await Future<void>.delayed(stopDelay);
     final t = textOnStop;
     if (t != null) _events.add(DictationFinal(t));
   }

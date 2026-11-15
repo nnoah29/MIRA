@@ -1,48 +1,17 @@
 #![allow(dead_code, clippy::unwrap_used, clippy::expect_used, clippy::panic)]
-//! Outils des tests de la mémoire : embedder factice par mots-clés et service prêt sur une base en mémoire.
+//! Outils des tests de la mémoire : service prêt sur une base en mémoire ou sur un fichier.
 
+pub mod embedder;
+
+use std::path::Path;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize};
 
-use mira_core::ai::memory::{EmbedFuture, Embedder, MemoryStore};
+use embedder::KeywordEmbedder;
+use mira_core::ai::memory::MemoryStore;
 use mira_core::ports::{ManualClock, SequentialIds};
 use mira_core::storage::Database;
-use mira_vocabulary::{MiraError, Timestamp};
-
-/// Embedder déterministe : compte « chat », « chien » et « mail » dans chaque texte
-pub struct KeywordEmbedder {
-    pub model: String,
-    pub fail: AtomicBool,
-    pub calls: AtomicUsize,
-}
-
-impl Embedder for KeywordEmbedder {
-    /// Identifiant du modèle factice
-    fn model_id(&self) -> &str {
-        &self.model
-    }
-
-    /// Un vecteur de quatre valeurs par texte ; échoue si `fail` est levé
-    fn embed<'a>(&'a self, texts: &'a [String]) -> EmbedFuture<'a> {
-        Box::pin(async move {
-            self.calls.fetch_add(1, Ordering::SeqCst);
-            if self.fail.load(Ordering::SeqCst) {
-                return Err(MiraError::new(
-                    mira_vocabulary::ErrorCategory::Server,
-                    mira_vocabulary::error::codes::server::AI_UNAVAILABLE,
-                    "embedder en panne",
-                ));
-            }
-            Ok(texts.iter().map(|t| keywords(t)).collect())
-        })
-    }
-}
-
-/// Vecteur d'un texte : occurrences des trois mots-clés puis une composante constante
-fn keywords(text: &str) -> Vec<f32> {
-    let count = |word: &str| text.matches(word).count() as f32;
-    vec![count("chat"), count("chien"), count("mail"), 0.1]
-}
+use mira_vocabulary::Timestamp;
 
 /// Service, base et embedder partagés par un test
 pub struct Setup {
@@ -63,12 +32,27 @@ pub fn setup(model: &str) -> Setup {
     }
 }
 
+/// Service neuf sur le fichier de base de ce dossier, pour observer le journal WAL
+pub fn setup_in(dir: &Path, model: &str) -> Setup {
+    let db = Arc::new(Database::open(&dir.join("mira.sqlite3")).unwrap());
+    let embedder = embedder(model);
+    let store = store_over(&db, &embedder);
+    Setup {
+        db,
+        embedder,
+        store,
+    }
+}
+
 /// Embedder factice du modèle `model`
 pub fn embedder(model: &str) -> Arc<KeywordEmbedder> {
     Arc::new(KeywordEmbedder {
         model: model.to_string(),
         fail: AtomicBool::new(false),
+        short: AtomicBool::new(false),
+        wide: AtomicBool::new(false),
         calls: AtomicUsize::new(0),
+        last_len: AtomicUsize::new(0),
     })
 }
 

@@ -55,7 +55,12 @@ Choix exact du modèle d'embeddings (multilingue, ≤ 300 Mo, GGUF) à épingler
 
 - **Modèle d'embeddings** : Granite Embedding 278M multilingue, Q6_K (236 Mo, Apache-2.0, 768 dimensions, contexte 512). Q6_K plutôt que Q6_K_L (283 Mo) pour garder de la marge sous 300 Mo. Sources dans `docs/SOURCES.md`.
 - **Pooling CLS explicite** (`--pooling cls`) : le GGUF ne documente pas son type de pooling.
-- **Découpage** : un souvenir est plafonné à 2 000 caractères, ce qui tient dans 512 jetons ; le découpage de textes longs (mails) relève du lot 2.
+- **Taille** : un souvenir est plafonné à 1 000 caractères (marge sous les 512 jetons du modèle local, même pour du texte dense) et la question d'un rappel est tronquée à la même taille ; le découpage de textes longs (mails) relève du lot 2.
+- **Rappel** : au plus 10 souvenirs (`k` plafonné), seuil de similarité 0,3 (à confirmer à l'essai réel : vecteurs CLS parfois anisotropes).
+- **Réindexation** : par lots de 16, un texte que le modèle refuse est compté en échec (`ReindexReport`) et laissé de côté, sans jamais boucler ; la mise à jour ne touche que le vecteur et seulement si le texte n'a pas changé.
+- **Oubli** : `forget` et `forget_all` tronquent le journal WAL (`erase_traces`).
+- **Emplacements** : modèle et serveur d'embeddings vivent sous `<profil>/ai-memory/` (hors de `local-ai/`, que le retrait du dernier modèle de chat efface), avec leur propre dossier d'exécution pour ne jamais partager le fichier de clé du chat.
+- **Contrat pour le lot 1b** : l'identifiant de modèle passé à `HttpEmbedder` doit être qualifié par le fournisseur (par exemple `fournisseur:modèle`) ; un changement de dimension périme les vecteurs au rappel ; câbler `LocalEmbedder` dans `Engine` (exécutable, arrêt dans `shutdown_within`) avec `LocalPaths::embedding_run_dir()` et `embedding_models_dir()`.
 - **Vecteurs normalisés** par le serveur : la similarité cosinus reste calculée telle quelle, sans hypothèse de norme.
 - **Embedder HTTP générique** (`HttpEmbedder`) : le même client sert le mode local et l'option fournisseur, seule l'adresse et la clé changent.
 - **Erreurs** : une réponse d'embeddings inutilisable donne `server.ai_bad_response`, sans citer le corps.

@@ -60,12 +60,15 @@ impl MemoryStore {
 
     /// Oublie un souvenir ; inconnu : `not_found.ai_memory`
     pub async fn forget(&self, id: &str) -> Result<(), MiraError> {
-        self.db.write(|tx| tx.delete_ai_memory(id))
+        self.db.write(|tx| tx.delete_ai_memory(id))?;
+        self.db.erase_traces()
     }
 
     /// Oublie tout et rend le nombre de souvenirs effacés
     pub async fn forget_all(&self) -> Result<u64, MiraError> {
-        self.db.write(|tx| tx.delete_all_ai_memories())
+        let removed = self.db.write(|tx| tx.delete_all_ai_memories())?;
+        self.db.erase_traces()?;
+        Ok(removed)
     }
 }
 

@@ -5,7 +5,7 @@ use mira_vocabulary::{ErrorCategory, MiraError, SensitiveCategory};
 
 use crate::ai::masking::detect;
 
-pub(super) const MAX_CHARS: usize = 2_000;
+pub(super) const MAX_CHARS: usize = 1_000;
 const FORBIDDEN: [SensitiveCategory; 4] = [
     SensitiveCategory::Secret,
     SensitiveCategory::Card,
@@ -20,7 +20,7 @@ pub(super) fn checked_text(text: &str) -> Result<String, MiraError> {
         return Err(MiraError::new(
             ErrorCategory::InvalidInput,
             AI_MEMORY_TEXT,
-            "le souvenir doit contenir entre 1 et 2 000 caractères",
+            "le souvenir doit contenir entre 1 et 1 000 caractères",
         ));
     }
     if !detect(trimmed, &FORBIDDEN).is_empty() {

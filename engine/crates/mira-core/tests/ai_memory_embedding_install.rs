@@ -33,7 +33,7 @@ async fn install_downloads_from_fake_server_and_verifies() {
         .await
         .unwrap();
     assert_eq!(file, paths.embedding_file(&model));
-    assert!(file.starts_with(paths.root().join("embeddings")));
+    assert!(file.starts_with(paths.embedding_models_dir()));
     assert_eq!(std::fs::read(&file).unwrap(), bytes);
 }
 
@@ -66,4 +66,23 @@ async fn is_installed_false_before_and_true_after() {
         .await
         .unwrap();
     assert!(is_embedding_installed(&paths, &model));
+}
+
+/// Le modèle d'embeddings vit hors de `local-ai/` : retirer le dernier modèle de chat ne l'efface pas
+#[test]
+fn embedding_files_live_outside_the_local_ai_root() {
+    let dir = tempfile::tempdir().unwrap();
+    let paths = LocalPaths::new(dir.path());
+    let model = test_model("embed-test", LocalTier::Mini, false);
+    assert!(!paths.embedding_file(&model).starts_with(paths.root()));
+    assert!(!paths.embedding_models_dir().starts_with(paths.root()));
+    assert!(!paths.embedding_run_dir().starts_with(paths.root()));
+}
+
+/// Le serveur d'embeddings a son propre dossier d'exécution : sa clé ne remplace jamais celle du chat
+#[test]
+fn embedding_run_dir_differs_from_chat_run_dir() {
+    let dir = tempfile::tempdir().unwrap();
+    let paths = LocalPaths::new(dir.path());
+    assert_ne!(paths.embedding_run_dir(), paths.run_dir());
 }

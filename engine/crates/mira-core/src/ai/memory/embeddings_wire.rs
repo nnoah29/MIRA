@@ -38,6 +38,9 @@ pub fn parse_embeddings(body: &str, expected: usize) -> Result<Vec<Vec<f32>>, Mi
     }
     let mut items = reply.data;
     items.sort_by_key(|item| item.index);
+    if items.iter().enumerate().any(|(i, item)| item.index != i) {
+        return Err(bad_response("index inattendus"));
+    }
     let dim = items.first().map_or(0, |item| item.embedding.len());
     let consistent = items.iter().all(|item| item.embedding.len() == dim);
     let finite = items

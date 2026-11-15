@@ -80,3 +80,15 @@ async fn forget_all_returns_count() {
     }
     assert_eq!(s.store.forget_all().await.unwrap(), 2);
 }
+
+/// Une question démesurée est tronquée avant d'être envoyée à l'embedder
+#[tokio::test]
+async fn recall_truncates_a_huge_query() {
+    let s = setup("m1");
+    s.store
+        .remember("chat noir", MemoryKind::Fact, MemorySource::User)
+        .await
+        .unwrap();
+    s.store.recall(&"chat ".repeat(20_000), 5).await.unwrap();
+    assert!(s.embedder.last_len.load(Ordering::SeqCst) <= 1_000);
+}

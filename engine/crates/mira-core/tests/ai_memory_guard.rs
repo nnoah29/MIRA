@@ -56,3 +56,10 @@ async fn remember_rejects_iban() {
         AI_MEMORY_SENSITIVE.0
     );
 }
+
+/// La limite de 1 000 caractères tient dans le contexte de 512 jetons du modèle local
+#[tokio::test]
+async fn remember_rejects_text_just_over_limit() {
+    let s = setup("m1");
+    assert_eq!(refused(&s, &"a".repeat(1_001)).await, AI_MEMORY_TEXT.0);
+}

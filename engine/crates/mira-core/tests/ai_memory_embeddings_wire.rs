@@ -52,3 +52,17 @@ fn parse_rejects_empty_vector_and_garbage() {
     let error = parse_embeddings("<html>secret-token</html>", 1).unwrap_err();
     assert!(!error.message.contains("secret-token"));
 }
+
+/// Des index répétés ou qui ne forment pas 0..n sont refusés : les vecteurs iraient aux mauvais textes
+#[test]
+fn parse_rejects_duplicate_or_gapped_indexes() {
+    for indexes in [[0, 0], [1, 2]] {
+        let body = json!({"data": [
+            {"index": indexes[0], "embedding": [1.0]},
+            {"index": indexes[1], "embedding": [2.0]}
+        ]})
+        .to_string();
+        let error = parse_embeddings(&body, 2).unwrap_err();
+        assert_eq!(error.code, AI_BAD_RESPONSE.0);
+    }
+}

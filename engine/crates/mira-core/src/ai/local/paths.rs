@@ -8,6 +8,7 @@ use mira_vocabulary::{AiLocalModel, AiLocalServerBuild};
 #[derive(Debug, Clone)]
 pub struct LocalPaths {
     pub(super) root: PathBuf,
+    pub(super) memory_root: PathBuf,
 }
 
 impl LocalPaths {
@@ -15,6 +16,7 @@ impl LocalPaths {
     pub fn new(profile_root: &Path) -> Self {
         Self {
             root: profile_root.join("local-ai"),
+            memory_root: profile_root.join("ai-memory"),
         }
     }
 

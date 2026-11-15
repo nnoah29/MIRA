@@ -19,4 +19,5 @@ pub use http_embedder::HttpEmbedder;
 pub use local_embedder::{LocalEmbedder, LocalEmbedderSetup, embedding_runtime};
 pub use ranking::{cosine, top_k};
 pub use store::MemoryStore;
+pub use store_reindex::ReindexReport;
 pub use vectors::{decode_vector, encode_vector};

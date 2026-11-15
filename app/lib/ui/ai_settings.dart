@@ -7,12 +7,14 @@ import '../engine/ai_history_admin.dart';
 import '../i18n/i18n.dart';
 import '../state/ai_journal_state.dart';
 import '../state/ai_local_state.dart';
+import '../state/ai_memory_state.dart';
 import '../state/ai_settings_state.dart';
 import '../state/chat_history_state.dart';
 import '../theme/app_theme.dart';
 import 'ai_history_section.dart';
 import 'ai_journal_view.dart';
 import 'ai_local_panel.dart';
+import 'ai_memory_section.dart';
 import 'ai_provider_family.dart';
 import 'ai_provider_panel.dart';
 import 'ai_provider_tabs.dart';
@@ -44,6 +46,7 @@ class _AiSettingsState extends State<AiSettings> {
   bool showJournal = false;
   late final AiJournalState journal = AiJournalState(widget.admin);
   late final AiLocalState local = AiLocalState(widget.admin);
+  late final AiMemoryState memory = AiMemoryState(widget.admin);
   late final ChatHistoryState history =
       widget.history ??
       ChatHistoryState(() => AiHistoryAdmin(widget.admin.client));
@@ -58,6 +61,7 @@ class _AiSettingsState extends State<AiSettings> {
     state.load();
     local.refresh();
     history.load();
+    memory.load();
   }
 
   void _refresh() {
@@ -72,6 +76,7 @@ class _AiSettingsState extends State<AiSettings> {
     local.removeListener(_refresh);
     state.dispose();
     local.dispose();
+    memory.dispose();
     journal.dispose();
     if (widget.history == null) history.dispose();
     super.dispose();
@@ -171,6 +176,7 @@ class _AiSettingsState extends State<AiSettings> {
               ),
             ),
           AiHistorySection(state: history, onCleared: widget.onHistoryCleared),
+          AiMemorySection(state: memory, connections: state.connections),
           _switch(),
           if (showJournal) _journal() else ..._providers(),
         ],

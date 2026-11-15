@@ -212,6 +212,48 @@ class AiDraftProposal extends AiChatEvent {
   };
 }
 
+/// Un message que l'IA montre dans le chat : identifiant du moteur et raison, si elle en donne une.
+class AiMailCard {
+  final String id;
+  final String? reason;
+  const AiMailCard(this.id, this.reason);
+
+  factory AiMailCard.fromJson(Map<String, dynamic> json) =>
+      AiMailCard('${json['id']}', json['reason'] as String?);
+
+  Map<String, dynamic> toJson() => {'id': id, 'reason': reason};
+}
+
+/// Lot de cartes d'un appel de l'outil `show_mails` : titre facultatif et messages, dans l'ordre voulu par l'IA.
+class AiMailCards extends AiChatEvent {
+  final String id;
+  final String? title;
+  final List<AiMailCard> cards;
+  const AiMailCards({required this.id, this.title, required this.cards});
+
+  /// Lit la ligne `mail_cards_shown` du flux : l'identifiant de l'appel et le lot.
+  factory AiMailCards.fromLine(Map<String, dynamic> line) =>
+      AiMailCards.fromJson({
+        ...(line['cards'] as Map).cast<String, dynamic>(),
+        'id': line['id'],
+      });
+
+  factory AiMailCards.fromJson(Map<String, dynamic> json) => AiMailCards(
+    id: '${json['id']}',
+    title: json['title'] as String?,
+    cards: [
+      for (final c in (json['cards'] as List))
+        AiMailCard.fromJson((c as Map).cast<String, dynamic>()),
+    ],
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'cards': [for (final c in cards) c.toJson()],
+  };
+}
+
 /// Action sur la boîte que l'IA propose : [action] vaut `archive`, `trash`, `mark_read`, `mark_unread`, `star` ou `unstar`. Rien ne change avant la confirmation de l'utilisateur.
 class AiActionProposal extends AiChatEvent {
   final String id;

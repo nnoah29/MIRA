@@ -13,6 +13,7 @@ String toolAction(ToolActivity tool) => switch (tool.name) {
   'get_message' => t('Lecture d’un message'),
   'get_thread' => t('Lecture d’un fil'),
   'list_mailboxes' => t('Boîtes consultées'),
+  'show_mails' => t('Cartes de messages'),
   _ => tool.name,
 };
 

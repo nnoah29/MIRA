@@ -27,6 +27,7 @@ Map<String, dynamic> _msgJson(ChatMsg m) => {
   'actions': [
     for (final a in m.actions) {...a.proposal.toJson(), 'status': a.status},
   ],
+  'cards': [for (final c in m.cards) c.toJson()],
   'tools': [for (final t in m.tools) _toolJson(t)],
   'failed': m.failed,
   'note': m.note,
@@ -78,6 +79,9 @@ ChatMsg _msg(Map<String, dynamic> j) {
         status: json['status'] as String? ?? 'pending',
       ),
     );
+  }
+  for (final c in (j['cards'] as List?) ?? const []) {
+    m.cards.add(AiMailCards.fromJson((c as Map).cast<String, dynamic>()));
   }
   for (final d in (j['drafts'] as List?) ?? const []) {
     m.drafts.add(AiDraftProposal.fromJson((d as Map).cast<String, dynamic>()));

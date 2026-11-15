@@ -192,6 +192,7 @@ class AiAdmin {
         'tool_finished' => [_toolFinished(line)],
         'draft_proposed' => [AiDraftProposal.fromLine(line)],
         'action_proposed' => [AiActionProposal.fromLine(line)],
+        'mail_cards_shown' => [AiMailCards.fromLine(line)],
         'done' => [_done(line['reason'])],
         'error' => [_failed(line['error'])],
         _ => const [],

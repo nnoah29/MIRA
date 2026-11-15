@@ -259,6 +259,11 @@ class ChatController extends ChangeNotifier {
           ..removeWhere((a) => a.proposal.id == event.id)
           ..add(ProposedAction(event));
         notifyListeners();
+      case AiMailCards():
+        reply.cards
+          ..removeWhere((c) => c.id == event.id)
+          ..add(event);
+        notifyListeners();
       case AiDraftProposal():
         reply.drafts
           ..removeWhere((d) => d.id == event.id)

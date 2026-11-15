@@ -49,6 +49,9 @@ class ChatMsg {
   /// Brouillons proposés par l'IA pendant cette réponse, un par appel d'outil.
   final List<AiDraftProposal> drafts = [];
 
+  /// Listes de cartes de messages montrées par l'IA pendant cette réponse, une par appel d'outil.
+  final List<AiMailCards> cards = [];
+
   /// Actions sur la boîte proposées par l'IA pendant cette réponse, une par appel d'outil.
   final List<ProposedAction> actions = [];
 

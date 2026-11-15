@@ -1,6 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'ai_settings_harness.dart';
+import 'package:flutter/material.dart';
+import 'package:mira/engine/ai_admin.dart';
+import 'package:mira/theme/app_theme.dart';
+import 'package:mira/ui/memory_settings.dart';
+import 'package:mira/ui/overlays.dart';
+
+import 'ai_settings_harness.dart' show byKey, connection, tapKey;
 import 'fake_ai_engine.dart';
 
 Map<String, dynamic> row(String id, String text, int at) => {
@@ -26,11 +32,21 @@ Future<FakeAiEngine> open(
     ..add(row('a', 'CHAT-NOIR', 1))
     ..add(row('b', 'CHIEN-GRIS', 2));
   setup?.call(engine);
-  await pumpSettings(
-    tester,
-    using: engine,
-    connections: [connection('c1', label: 'MON-SERVICE', hasKey: true)],
+  engine.connections.add(connection('c1', label: 'MON-SERVICE', hasKey: true));
+  await tester.binding.setSurfaceSize(const Size(900, 2400));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+  addTearDown(Pops.close);
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: buildTheme(false),
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: MemorySettings(admin: AiAdmin(engine)),
+        ),
+      ),
+    ),
   );
+  await tester.pumpAndSettle();
   return engine;
 }
 

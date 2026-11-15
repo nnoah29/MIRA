@@ -1381,6 +1381,7 @@ const Map<String, String> enStrings = {
   'Lecture d’un fil': 'Reading a thread',
   'Boîtes consultées': 'Mailboxes consulted',
   'Cartes de messages': 'Message cards',
+  'Mémoire': 'Memory',
   'Activée': 'On',
   'Désactivée': 'Off',
   'Afficher la suite': 'Show more',

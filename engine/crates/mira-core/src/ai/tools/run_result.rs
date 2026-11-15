@@ -1,6 +1,8 @@
 //! Résultat d'une exécution d'outil : texte rendu, type de contenu, état, nombre de résultats et sources.
 
-use mira_vocabulary::{ActionProposal, ContentKind, DraftProposal, MailCards, ToolState};
+use mira_vocabulary::{
+    ActionProposal, ContentKind, DraftProposal, MailCards, MemoryProposal, ToolState,
+};
 
 /// Ce que l'outil renvoie au modèle, et ce que l'app peut en montrer.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -13,6 +15,7 @@ pub struct ToolRun {
     pub proposal: Option<DraftProposal>,
     pub action: Option<ActionProposal>,
     pub cards: Option<MailCards>,
+    pub memory: Option<MemoryProposal>,
 }
 
 impl ToolRun {
@@ -27,6 +30,7 @@ impl ToolRun {
             proposal: None,
             action: None,
             cards: None,
+            memory: None,
         }
     }
 
@@ -41,6 +45,7 @@ impl ToolRun {
             proposal: None,
             action: None,
             cards: None,
+            memory: None,
         }
     }
 
@@ -55,6 +60,7 @@ impl ToolRun {
             proposal: Some(proposal),
             action: None,
             cards: None,
+            memory: None,
         }
     }
 
@@ -69,6 +75,7 @@ impl ToolRun {
             proposal: None,
             action: Some(action),
             cards: None,
+            memory: None,
         }
     }
 
@@ -83,6 +90,7 @@ impl ToolRun {
             proposal: None,
             action: None,
             cards: Some(cards),
+            memory: None,
         }
     }
 }

@@ -74,27 +74,13 @@ async fn finish_call(
     })
 }
 
-/// Annonce la proposition de brouillon éventuelle, puis la fin de l'appel.
+/// Annonce les propositions et cartes éventuelles, puis la fin de l'appel.
 async fn announce_end(
     guard: &Guard<'_>,
     call: &ToolCall,
-    finished: Finished,
+    mut finished: Finished,
 ) -> Result<(), Ending> {
-    if let Some(proposal) = finished.proposal {
-        let id = call.id.clone();
-        let proposed = ChatDelta::DraftProposed { id, proposal };
-        guard.send(proposed).await.map_err(Ending::from)?;
-    }
-    if let Some(proposal) = finished.action {
-        let id = call.id.clone();
-        let proposed = ChatDelta::ActionProposed { id, proposal };
-        guard.send(proposed).await.map_err(Ending::from)?;
-    }
-    if let Some(cards) = finished.cards {
-        let id = call.id.clone();
-        let shown = ChatDelta::MailCardsShown { id, cards };
-        guard.send(shown).await.map_err(Ending::from)?;
-    }
+    announce_extras(guard, call, &mut finished).await?;
     let end = ChatDelta::ToolFinished {
         id: call.id.clone(),
         state: finished.state,
@@ -103,5 +89,49 @@ async fn announce_end(
         denied_kind: finished.denied,
     };
     guard.send(end).await.map_err(Ending::from)?;
+    Ok(())
+}
+
+/// Annonce, dans l'ordre, brouillon, action, cartes de messages et proposition de mémoire.
+async fn announce_extras(
+    guard: &Guard<'_>,
+    call: &ToolCall,
+    finished: &mut Finished,
+) -> Result<(), Ending> {
+    let id = call.id.clone();
+    if let Some(proposal) = finished.proposal.take() {
+        let proposed = ChatDelta::DraftProposed {
+            id: id.clone(),
+            proposal,
+        };
+        guard.send(proposed).await.map_err(Ending::from)?;
+    }
+    if let Some(proposal) = finished.action.take() {
+        let proposed = ChatDelta::ActionProposed {
+            id: id.clone(),
+            proposal,
+        };
+        guard.send(proposed).await.map_err(Ending::from)?;
+    }
+    announce_cards_and_memory(guard, id, finished).await
+}
+
+/// Annonce les cartes de messages puis la proposition de mémoire éventuelles.
+async fn announce_cards_and_memory(
+    guard: &Guard<'_>,
+    id: String,
+    finished: &mut Finished,
+) -> Result<(), Ending> {
+    if let Some(cards) = finished.cards.take() {
+        let shown = ChatDelta::MailCardsShown {
+            id: id.clone(),
+            cards,
+        };
+        guard.send(shown).await.map_err(Ending::from)?;
+    }
+    if let Some(proposal) = finished.memory.take() {
+        let proposed = ChatDelta::MemoryProposed { id, proposal };
+        guard.send(proposed).await.map_err(Ending::from)?;
+    }
     Ok(())
 }

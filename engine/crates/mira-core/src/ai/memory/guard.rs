@@ -14,7 +14,7 @@ const FORBIDDEN: [SensitiveCategory; 4] = [
 ];
 
 /// Rend le texte nettoyé de ses blancs de bord, ou refuse un texte vide, trop long ou sensible
-pub(super) fn checked_text(text: &str) -> Result<String, MiraError> {
+pub(crate) fn checked_text(text: &str) -> Result<String, MiraError> {
     let trimmed = text.trim();
     if trimmed.is_empty() || trimmed.chars().count() > MAX_CHARS {
         return Err(MiraError::new(

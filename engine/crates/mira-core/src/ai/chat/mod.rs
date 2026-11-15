@@ -23,6 +23,7 @@ mod run;
 mod stream;
 mod tool_consent;
 mod tool_exec;
+mod tool_finished;
 mod tool_step;
 mod tool_usage;
 mod tools_plan;

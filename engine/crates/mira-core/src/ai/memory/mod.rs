@@ -24,6 +24,7 @@ pub use embedder::{EmbedFuture, Embedder};
 pub use embedding_install::{install_embedding_model, is_embedding_installed};
 pub use embeddings_wire::{embeddings_request, parse_embeddings};
 pub(crate) use forgetting::{forget_everything, forget_one};
+pub(crate) use guard::checked_text;
 pub use http_embedder::HttpEmbedder;
 pub use local_embedder::{LocalEmbedder, LocalEmbedderSetup, embedding_runtime};
 pub(crate) use memory_install::{MemoryInstallPlan, run_memory_install};

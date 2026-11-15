@@ -48,7 +48,7 @@ pub(crate) async fn prepare(
     let enabled = tools_enabled(&start, &checked, host.is_some());
     let (kinds, parts) = context_summary(&start.request);
     let mode = start.mode;
-    let request = with_tools(start.request, enabled, mode);
+    let request = with_tools(start.request, enabled, mode, memory_enabled(engine));
     let (request, masker) = shape_request(request, &connection.masking);
     Ok(ChatPlan {
         descriptor: checked.descriptor,
@@ -67,6 +67,12 @@ pub(crate) async fn prepare(
         request,
         masker,
     })
+}
+
+/// Dit si la mémoire est activée ; illisible, elle ne l'est pas.
+fn memory_enabled(engine: &Engine) -> bool {
+    let settings = engine.database.read(|tx| tx.ai_memory_settings());
+    settings.is_ok_and(|settings| settings.enabled)
 }
 
 /// Dit si les outils sont annoncés : le client les permet, le modèle les supporte, un hôte les exécute.

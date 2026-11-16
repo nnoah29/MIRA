@@ -7,6 +7,7 @@ import '../data/models.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
+import 'blinking_underscore.dart';
 import 'overlays.dart';
 import 'search_filters_bar.dart';
 import 'widgets.dart';
@@ -863,40 +864,6 @@ class _Star extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Tiret du bas « _ » orange qui clignote, comme un curseur de terminal.
-class BlinkingUnderscore extends StatefulWidget {
-  const BlinkingUnderscore({super.key});
-  @override
-  State<BlinkingUnderscore> createState() => _BlinkingUnderscoreState();
-}
-
-class _BlinkingUnderscoreState extends State<BlinkingUnderscore>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1060),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final p = context.pal;
-    return AnimatedBuilder(
-      animation: _c,
-      // Allumé la première moitié du cycle, éteint la seconde (clignotement net).
-      builder: (_, _) => Opacity(
-        opacity: _c.value < .5 ? 1 : 0,
-        child: Container(width: 18, height: 4, color: p.accent),
       ),
     );
   }

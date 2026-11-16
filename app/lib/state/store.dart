@@ -33,6 +33,7 @@ import '../theme/wall_source.dart';
 import '../theme/wall_theme.dart';
 import '../theme/app_theme.dart';
 import 'assistant.dart';
+import 'memory_trimmer.dart';
 import 'chat_context.dart';
 import 'chat_controller.dart';
 import 'chat_history_state.dart';
@@ -199,7 +200,8 @@ class MailStore extends ChangeNotifier {
     this.engineError,
     this.webDemo = false,
     this.aiAdminOverride,
-  }) {
+    MemoryTrimmer? trimmer,
+  }) : _trimmer = trimmer ?? systemMemoryTrimmer() {
     contactBook = ContactBook.decode(
       prefs.getString('contactNames'),
       prefs.getString('contactHistory'),
@@ -452,6 +454,7 @@ class MailStore extends ChangeNotifier {
 
   @override
   void dispose() {
+    _trimAgain?.cancel();
     _changeSub?.cancel();
     _syncSub?.cancel();
     _counterSub?.cancel();
@@ -2574,6 +2577,8 @@ class MailStore extends ChangeNotifier {
   /// L'interface a libéré ses vues et ses caches ; le moteur (relevé, règles, notifications) continue.
   bool hibernating = false;
   Timer? _sleep;
+  Timer? _trimAgain;
+  final MemoryTrimmer _trimmer;
 
   /// Programme l'hibernation après le délai réglé, si la fenêtre reste sans focus.
   void _armSleep() {
@@ -2591,12 +2596,15 @@ class MailStore extends ChangeNotifier {
       ..clear()
       ..clearLiveImages();
     source?.releaseCaches();
+    _trimmer.trim();
+    _trimAgain = Timer(const Duration(seconds: 30), _trimmer.trim);
     notifyListeners();
   }
 
   /// Le focus revient : l'interface se reconstruit depuis les données déjà chargées.
   void _wakeUi() {
     _sleep?.cancel();
+    _trimAgain?.cancel();
     if (!hibernating) return;
     hibernating = false;
     notifyListeners();

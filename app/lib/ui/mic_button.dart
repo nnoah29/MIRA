@@ -7,6 +7,7 @@ import '../theme/app_theme.dart';
 import '../voice/dictation_controller.dart';
 import '../voice/dictation_types.dart';
 import '../voice/voice_services.dart';
+import 'dictation_bars.dart';
 import 'widgets.dart';
 
 /// Bouton de dictée lié à un champ de texte ; invisible quand les services de dictée ne sont pas fournis.
@@ -117,6 +118,9 @@ class _MicButtonState extends State<MicButton> {
               tip: on ? t('Arrêter la dictée') : t('Dicter'),
               on: on,
               box: widget.box,
+              glyph: on
+                  ? DictationBars(level: d.level, ready: d.recognizerReady)
+                  : null,
               onTap: _toggle,
             ),
             if (on)

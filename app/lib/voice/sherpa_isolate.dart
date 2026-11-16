@@ -5,6 +5,8 @@ import 'dart:typed_data';
 
 import 'package:sherpa_onnx/sherpa_onnx.dart' as so;
 
+import 'sherpa_config.dart';
+
 /// Un reconnaisseur en flux et le dernier texte provisoire déjà annoncé.
 class SherpaSession {
   SherpaSession._(this._recognizer, this._stream, this._send);
@@ -20,18 +22,7 @@ class SherpaSession {
     void Function(List<Object> message) send,
   ) {
     so.initBindings();
-    final model = so.OnlineModelConfig(
-      transducer: so.OnlineTransducerModelConfig(
-        encoder: '$modelDir/encoder.onnx',
-        decoder: '$modelDir/decoder.onnx',
-        joiner: '$modelDir/joiner.onnx',
-      ),
-      tokens: '$modelDir/tokens.txt',
-      numThreads: 2,
-    );
-    final recognizer = so.OnlineRecognizer(
-      so.OnlineRecognizerConfig(model: model),
-    );
+    final recognizer = so.OnlineRecognizer(recognizerConfigFor(modelDir));
     return SherpaSession._(recognizer, recognizer.createStream(), send);
   }
 

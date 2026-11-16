@@ -1,5 +1,7 @@
 //! Confirmation avant de télécharger un modèle de dictée : taille, source, ce qui est envoyé, comment le retirer.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../i18n/i18n.dart';
@@ -67,7 +69,8 @@ Future<void> offerVoiceModelInstall(
   await store.install(language);
   final done = store.statusOf(language);
   if (done is VoiceModelInstalled) {
-    notify(t('Modèle de dictée prêt : touche le micro pour dicter'));
+    notify(t('Modèle de dictée prêt : la dictée démarre'));
+    unawaited(services.dictation.retry());
   } else if (done is VoiceModelFailed) {
     notify(t('Téléchargement du modèle de dictée impossible'), err: true);
   }

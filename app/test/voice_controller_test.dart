@@ -105,7 +105,8 @@ void main() {
     );
     await r.controller.start(field());
     expect(r.controller.problem, DictationProblem.recognizerFailed);
-    expect(r.audio.startCount, 0);
+    expect(r.audio.isOpen, isFalse);
+    expect(r.audio.stopCount, 1);
   });
 
   test('une seconde cible arrête la première', () async {
@@ -192,7 +193,7 @@ void main() {
     r.recognizer.startDelay = const Duration(milliseconds: 100);
     unawaited(r.controller.start(field()));
     await Future<void>.delayed(const Duration(milliseconds: 20));
-    expect(r.controller.state, DictationState.preparing);
+    expect(r.controller.state, DictationState.listening);
     await r.controller.stop();
     await Future<void>.delayed(const Duration(milliseconds: 300));
     expect(r.controller.state, DictationState.idle);

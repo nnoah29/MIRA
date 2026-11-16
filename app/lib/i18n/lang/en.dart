@@ -1564,8 +1564,8 @@ const Map<String, String> enStrings = {
   'Téléchargement du modèle de dictée en cours : {0} %':
       'Dictation model download in progress: {0}%',
   'Téléchargement du modèle de dictée lancé : tu peux continuer, suivi dans Réglages › Messagerie': 'Dictation model download started: you can carry on, follow it in Settings › Mail',
-  'Modèle de dictée prêt : touche le micro pour dicter':
-      'Dictation model ready: tap the microphone to dictate',
+  'Modèle de dictée prêt : la dictée démarre':
+      'Dictation model ready: dictation is starting',
   'Téléchargement du modèle de dictée impossible':
       'Dictation model download failed',
 };

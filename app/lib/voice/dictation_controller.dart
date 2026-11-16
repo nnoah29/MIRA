@@ -1,10 +1,12 @@
 //! Pilote une dictée à la fois pour toute l'app : micro, reconnaissance, insertion dans le champ visé.
 
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 
+import 'audio_level.dart';
 import 'dictation_inserter.dart';
 import 'dictation_types.dart';
 import 'transcript_text.dart';
@@ -41,6 +43,12 @@ class DictationController extends ChangeNotifier {
   bool _recognizerReady = false;
   bool _micOpen = false;
   TextEditingController? _retryTarget;
+
+  /// Niveau sonore du micro, de 0 à 1, pour l'animation ; il retombe doucement au silence.
+  final ValueNotifier<double> level = ValueNotifier<double>(0);
+
+  /// Dit si le reconnaisseur a fini de charger son modèle (avant, le son est seulement mis de côté).
+  bool get recognizerReady => _recognizerReady;
 
   /// Démarre la dictée dans [field] ; une dictée en cours ailleurs est arrêtée d'abord.
   Future<void> start(TextEditingController field) async {
@@ -142,6 +150,7 @@ class DictationController extends ChangeNotifier {
 
   /// Transmet le son au reconnaisseur, ou le garde (30 s au plus) pendant qu'il charge son modèle.
   void _onSamples(Float32List chunk) {
+    level.value = math.max(audioLevel(chunk), level.value * 0.6);
     if (_recognizerReady) return recognizer.feed(chunk);
     if (_backlogSamples + chunk.length > _backlogLimit) return;
     _backlogSamples += chunk.length;
@@ -154,6 +163,7 @@ class DictationController extends ChangeNotifier {
     _backlog.forEach(recognizer.feed);
     _backlog.clear();
     _backlogSamples = 0;
+    notifyListeners();
   }
 
   /// Écrit un texte reconnu dans le champ.
@@ -227,6 +237,7 @@ class DictationController extends ChangeNotifier {
     await _quietly(recognizer.stop);
     await _events?.cancel();
     _events = null;
+    level.value = 0;
     _backlog.clear();
     _backlogSamples = 0;
     _recognizerReady = false;
@@ -255,6 +266,12 @@ class DictationController extends ChangeNotifier {
     _inserter = null;
     target = null;
     _set(DictationState.idle);
+  }
+
+  @override
+  void dispose() {
+    level.dispose();
+    super.dispose();
   }
 
   /// Change l'état et prévient l'interface.

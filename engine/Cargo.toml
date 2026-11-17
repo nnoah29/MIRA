@@ -21,6 +21,9 @@ mira-ai-openai = { path = "crates/mira-ai-openai" }
 mira-ai-google = { path = "crates/mira-ai-google" }
 mira-ai-mistral = { path = "crates/mira-ai-mistral" }
 mira-ai-groq = { path = "crates/mira-ai-groq" }
+mira-ai-openrouter = { path = "crates/mira-ai-openrouter" }
+mira-ai-chatgpt = { path = "crates/mira-ai-chatgpt" }
+mira-ai-local = { path = "crates/mira-ai-local" }
 mira-ai-generic = { path = "crates/mira-ai-generic" }
 mira-assembly = { path = "crates/mira-assembly" }
 mira-protocol = { path = "crates/mira-protocol" }
@@ -32,7 +35,7 @@ serde_json = "1"
 yaml_serde = "0.10"
 yaml-rust2 = "0.13"
 thiserror = "2"
-tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "net", "io-util", "sync", "time", "fs"] }
+tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "net", "io-util", "sync", "time", "fs", "process"] }
 base64 = "0.22"
 sha2 = "0.10"
 rand = "0.9"
@@ -54,6 +57,11 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 clap = { version = "4", features = ["derive"] }
 proptest = "1"
 tempfile = "3"
+flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
+tar = { version = "0.4", default-features = false }
+rustix = { version = "1.1", features = ["fs", "process"] }
+zip = { version = "9.5", default-features = false, features = ["deflate"] }
+sysinfo = { version = "0.40", default-features = false, features = ["system", "disk"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 tokio-rustls = { version = "0.26", default-features = false, features = ["ring"] }
 webpki-roots = "1"

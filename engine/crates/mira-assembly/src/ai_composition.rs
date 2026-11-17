@@ -3,14 +3,17 @@
 use std::sync::Arc;
 
 use mira_ai_anthropic::AnthropicAiProvider;
+use mira_ai_chatgpt::ChatGptAiProvider;
 use mira_ai_generic::GenericAiProvider;
 use mira_ai_google::GoogleAiProvider;
 use mira_ai_groq::GroqAiProvider;
+use mira_ai_local::LocalAiProvider;
 use mira_ai_mistral::MistralAiProvider;
 use mira_ai_openai::OpenAiAiProvider;
+use mira_ai_openrouter::OpenRouterAiProvider;
 use mira_core::ai::AiProviderRegistry;
 
-/// Construit le registre : anthropic, openai, google, mistral, groq, puis le service compatible.
+/// Construit le registre : anthropic, openai, google, mistral, groq, openrouter, chatgpt, local, puis le service compatible.
 pub fn build_ai_registry() -> AiProviderRegistry {
     let mut registry = AiProviderRegistry::new();
     registry.register(Arc::new(AnthropicAiProvider));
@@ -18,6 +21,9 @@ pub fn build_ai_registry() -> AiProviderRegistry {
     registry.register(Arc::new(GoogleAiProvider));
     registry.register(Arc::new(MistralAiProvider));
     registry.register(Arc::new(GroqAiProvider));
+    registry.register(Arc::new(OpenRouterAiProvider));
+    registry.register(Arc::new(ChatGptAiProvider));
+    registry.register(Arc::new(LocalAiProvider));
     registry.register(Arc::new(GenericAiProvider));
     registry
 }

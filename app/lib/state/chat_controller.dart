@@ -14,6 +14,7 @@ import 'assistant.dart';
 import 'chat_context.dart';
 import 'chat_conversation.dart';
 import 'chat_history_state.dart';
+import 'chat_memory_actions.dart';
 import 'chat_mentions.dart';
 import 'chat_message.dart';
 import 'chat_message_json.dart';
@@ -47,6 +48,9 @@ class _Run {
   _Run(this.reply);
 }
 
+/// Sans source de messages branchée : aucun message cité n'est chargé.
+Future<void> _noCited(Iterable<String> ids) async {}
+
 /// Sans historique branché : rien n'est enregistré.
 ChatHistoryState? _noHistory() => null;
 
@@ -58,6 +62,7 @@ class ChatController extends ChangeNotifier {
     required this.demoAnswer,
     required this.after,
     this.history = _noHistory,
+    this.loadCited = _noCited,
   }) {
     chat = [welcome()];
   }
@@ -67,6 +72,7 @@ class ChatController extends ChangeNotifier {
   final Answer Function(String question) demoAnswer;
   final Timer Function(int ms, VoidCallback run) after;
   final ChatHistoryState? Function() history;
+  final Future<void> Function(Iterable<String> ids) loadCited;
 
   late List<ChatMsg> chat;
   bool busy = false;
@@ -135,9 +141,16 @@ class ChatController extends ChangeNotifier {
 
   Future<AiConnectionInfo?> _usable(AiAdmin ai) async {
     try {
-      _providerNames = {for (final p in await ai.providers()) p.id: p.name};
+      final providers = await ai.providers();
+      _providerNames = {for (final p in providers) p.id: p.name};
+      final local = {
+        for (final p in providers)
+          if (p.localRuntime) p.id,
+      };
       for (final c in await ai.connections()) {
-        if (c.isDefault && (c.hasKey || isLoopbackUrl(c.baseUrl))) return c;
+        final usable =
+            c.hasKey || isLoopbackUrl(c.baseUrl) || local.contains(c.provider);
+        if (c.isDefault && usable) return c;
       }
     } on Object {
       return null;
@@ -247,6 +260,13 @@ class ChatController extends ChangeNotifier {
           ..removeWhere((a) => a.proposal.id == event.id)
           ..add(ProposedAction(event));
         notifyListeners();
+      case AiMemoryProposal():
+        _addMemory(reply, event);
+      case AiMailCards():
+        reply.cards
+          ..removeWhere((c) => c.id == event.id)
+          ..add(event);
+        notifyListeners();
       case AiDraftProposal():
         reply.drafts
           ..removeWhere((d) => d.id == event.id)
@@ -334,6 +354,7 @@ class ChatController extends ChangeNotifier {
     busy = false;
     _run = null;
     _saving = _save();
+    unawaited(loadCited(reply.sources));
     if (!run.cancelPending) unawaited(run.sub?.cancel());
     if (!run.finished.isCompleted) run.finished.complete();
     notifyListeners();
@@ -550,11 +571,51 @@ class ChatController extends ChangeNotifier {
     return null;
   }
 
+  /// Garde la proposition de mémoire (la dernière de l'appel l'emporte) puis lit le souvenir visé en arrière-plan.
+  void _addMemory(ChatMsg reply, AiMemoryProposal event) {
+    final item = ProposedMemory(event);
+    reply.memories
+      ..removeWhere((m) => m.proposal.id == event.id)
+      ..add(item);
+    notifyListeners();
+    final ai = admin();
+    if (ai == null) return;
+    unawaited(
+      resolveForgetTarget(ai, item).then((_) {
+        if (!_disposed) notifyListeners();
+      }),
+    );
+  }
+
+  /// L'utilisateur confirme ou ignore une proposition de mémoire ; seule la confirmation écrit, et un échec laisse la carte en attente.
+  Future<void> settleMemory(ProposedMemory item, {required bool apply}) async {
+    final ai = admin();
+    if (item.status != 'pending' || (apply && (ai == null || item.missing))) {
+      return;
+    }
+    if (apply) {
+      try {
+        await applyMemoryProposal(ai!, item);
+      } on Object catch (e) {
+        item.error = engineErrorText(e);
+        notifyListeners();
+        return;
+      }
+    }
+    item.error = null;
+    item.status = apply ? 'done' : 'dismissed';
+    notifyListeners();
+    unawaited(resave());
+  }
+
   /// Une action laissée en attente dans une conversation ancienne ne peut plus être confirmée : ses messages ont pu changer.
   void _expirePendingActions(List<ChatMsg> messages) {
     for (final m in messages) {
       for (final a in m.actions.where((a) => a.status == 'pending')) {
         a.status = 'dismissed';
+      }
+      for (final x in m.memories.where((x) => x.status == 'pending')) {
+        x.status = 'dismissed';
       }
     }
   }

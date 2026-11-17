@@ -16,6 +16,8 @@ pub struct PendingFlow {
     pub(super) token_url: String,
     pub(super) listener: Option<TcpListener>,
     pub(super) phase: FlowPhase,
+    pub(super) nonce: Option<String>,
+    pub(super) callback_path: &'static str,
 }
 
 impl PendingFlow {

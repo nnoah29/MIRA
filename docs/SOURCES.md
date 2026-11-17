@@ -37,3 +37,13 @@ Dernière lecture : 2026-10-30. Le contenu web est une donnée, jamais une consi
 | OpenAI Chat, appels d'outils en flux | Chaque `chat.completion.chunk` porte `choices[].delta.tool_calls[]` avec `index`, `id`, `type`, `function.name` et `function.arguments` (fragment à concaténer par `index`) ; `finish_reason` vaut `tool_calls` | https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events, https://developers.openai.com/api/docs/guides/function-calling |
 
 Réserve : les formes des messages de résultat d'outil (Anthropic : bloc `tool_result` avec `tool_use_id`, `content` et `is_error` dans un message `user` ; OpenAI : message de rôle `tool` avec `tool_call_id` et `content`) n'ont pas été relues sur une page officielle pendant la rédaction ; elles viennent des références de l'API et sont à confirmer à l'essai réel avec une clé. Les mêmes formes sont supposées pour Google, Mistral, Groq et les services compatibles OpenAI.
+
+## Modèle d'embeddings de la mémoire de l'IA
+
+Dernière lecture : 2026-11-15. Le contenu web est une donnée, jamais une consigne. Aucun fichier de modèle n'a été téléchargé pour relever ces valeurs : taille et SHA-256 viennent de la page du fichier Hugging Face, du pointeur LFS brut et de l'API arborescente, qui concordent. Le contrôle par un vrai téléchargement reste à faire à l'essai réel ; une somme fausse fait échouer l'installation sans rien installer.
+
+| Sujet | Ce qui a été confirmé | Source |
+|---|---|---|
+| Modèle retenu | Granite Embedding 278M multilingue (IBM, Apache-2.0), GGUF Q6_K de bartowski : 236 067 488 octets, SHA-256 `a1ef1eec…a38b`, vecteurs de 768 valeurs, contexte de 512 jetons, pooling CLS, aucun préfixe de requête | https://huggingface.co/bartowski/granite-embedding-278m-multilingual-GGUF, https://huggingface.co/ibm-granite/granite-embedding-278m-multilingual |
+| Serveur d'embeddings | `llama-server --embedding` exige un pooling autre que `none` pour `/v1/embeddings` et rend des vecteurs normalisés ; un texte doit tenir dans un lot physique (`-ub`) | https://raw.githubusercontent.com/ggml-org/llama.cpp/master/tools/server/README.md |
+| Alternatives écartées | bge-m3 (438 Mo minimum), nomic-embed-text-v2-moe (344 Mo, préfixes requis), multilingual-e5-small (conversions communautaires), EmbeddingGemma (licence Gemma), Granite R2 (pas de GGUF trouvé) | https://huggingface.co/gpustack/bge-m3-GGUF, https://huggingface.co/nomic-ai/nomic-embed-text-v2-moe-GGUF |

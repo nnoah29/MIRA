@@ -3,8 +3,10 @@
 use serde::{Deserialize, Serialize};
 
 use super::action::ActionProposal;
+use super::cards::MailCards;
 use super::content::ContentKind;
 use super::draft::DraftProposal;
+use super::memory_proposal::MemoryProposal;
 use super::tool::ToolState;
 
 /// Raison pour laquelle la réponse s'arrête ; un échec porte son code stable.
@@ -61,6 +63,14 @@ pub enum ChatDelta {
     ActionProposed {
         id: String,
         proposal: ActionProposal,
+    },
+    MailCardsShown {
+        id: String,
+        cards: MailCards,
+    },
+    MemoryProposed {
+        id: String,
+        proposal: MemoryProposal,
     },
     Done {
         reason: StopReason,

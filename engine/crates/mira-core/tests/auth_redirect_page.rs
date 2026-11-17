@@ -88,3 +88,21 @@ async fn page_never_reflects_values_from_the_query() {
     .await
     .unwrap();
 }
+
+/// L'empreinte annoncée par la politique est celle que calcule un navigateur, qui lit les fins de ligne du style comme de simples sauts de ligne
+#[tokio::test]
+async fn the_style_hash_is_the_one_a_browser_computes_whatever_the_line_endings() {
+    use base64::Engine as _;
+    use sha2::{Digest, Sha256};
+    let reply = browser_reply(23, "/callback?code=secret-code-value").await;
+    let style = reply
+        .split_once("<style>")
+        .and_then(|(_, rest)| rest.split_once("</style>"))
+        .map(|(style, _)| style.replace("\r\n", "\n").replace('\r', "\n"))
+        .unwrap();
+    let hash = base64::engine::general_purpose::STANDARD.encode(Sha256::digest(style.as_bytes()));
+    assert!(
+        reply.contains(&format!("style-src 'sha256-{hash}'")),
+        "{reply}"
+    );
+}

@@ -3,17 +3,24 @@
 use mira_vocabulary::{ChatMode, ToolCall};
 
 use super::run_result::ToolRun;
-use super::{compose_draft, edit_draft, propose_action, specs_for};
+use super::{
+    compose_draft, edit_draft, forget_memory, propose_action, remember, show_mails, specs_with,
+};
 
 /// Valide l'appel d'un outil de brouillon ; un outil absent du jeu du mode est indisponible.
 pub fn propose(mode: ChatMode, call: &ToolCall) -> ToolRun {
-    let offered = specs_for(mode).iter().any(|spec| spec.name == call.name);
+    let offered = specs_with(mode, true)
+        .iter()
+        .any(|spec| spec.name == call.name);
     if !offered {
         return ToolRun::error("outil indisponible dans ce contexte".to_string());
     }
     match call.name.as_str() {
         compose_draft::NAME => compose_draft::run(&call.arguments),
         propose_action::NAME => propose_action::run(&call.arguments),
+        show_mails::NAME => show_mails::run(&call.arguments),
+        remember::NAME => remember::run(&call.arguments),
+        forget_memory::NAME => forget_memory::run(&call.arguments),
         edit_draft::NAME => edit_draft::run(
             matches!(mode, ChatMode::Composer { selection: true }),
             &call.arguments,

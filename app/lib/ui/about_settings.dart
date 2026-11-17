@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../app_info.dart';
 import '../i18n/i18n.dart';
+import '../platform_open.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import 'widgets.dart';
 
 /// Ouvre une adresse dans le navigateur ; remplacée dans les tests.
-Future<bool> Function(Uri url) openLink = launchUrl;
+Future<bool> Function(Uri url) openLink = openExternal;
 
 /// Onglet « À propos » : l'application, sa politique de confidentialité et son auteur.
 class AboutSettings extends StatelessWidget {
@@ -94,6 +94,17 @@ class AboutSettings extends StatelessWidget {
           [
             _Link(t('Politique de confidentialité'), privacyUrl),
             _Link(t('Conditions d’utilisation'), termsUrl),
+          ],
+        ),
+        _section(
+          context,
+          t('Dictée vocale'),
+          t(
+            'La dictée utilise les modèles de reconnaissance Kroko de Banafo (modèles communautaires sous licence CC-BY-SA, selon l’éditeur) et le moteur sherpa-onnx (Apache-2.0). Ils sont téléchargés à ta demande, jamais inclus dans MIRA.',
+          ),
+          [
+            _Link('Kroko ASR', 'https://huggingface.co/Banafo/Kroko-ASR'),
+            _Link('sherpa-onnx', 'https://github.com/k2-fsa/sherpa-onnx'),
           ],
         ),
         _section(

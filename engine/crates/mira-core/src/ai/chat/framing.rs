@@ -11,6 +11,9 @@ pub const COMPOSE_NOTICE: &str = "Pour écrire ou modifier un message, appelle l
 /// Consigne ajoutée en mode assistant : proposer les actions sur la boîte, jamais les faire, jamais inventer d'identifiant.
 pub const ACTION_NOTICE: &str = "Pour archiver, mettre à la corbeille, marquer comme lu ou non lu ou mettre en favori, appelle propose_mailbox_action avec les identifiants de messages donnés par les outils de lecture, jamais des identifiants inventés : l'utilisateur confirme avant que quoi que ce soit change, tu ne peux rien faire directement.";
 
+/// Consigne ajoutée quand la mémoire est activée : chercher avant de supposer, proposer plutôt que retenir, jamais de secret.
+pub const MEMORY_NOTICE: &str = "Tu as une mémoire des préférences et des faits de l'utilisateur : appelle recall_memory quand une information sur lui peut t'aider (son style, ses habitudes, ce qu'il t'a appris). Pour retenir une information durable, appelle remember : l'utilisateur confirme, tu ne retiens rien directement et tu ne proposes jamais de secret ni de donnée bancaire. Pour oublier, appelle forget_memory avec l'identifiant donné par recall_memory.";
+
 /// Entoure le résultat d'un outil de sa balise ; le texte ne peut ni la fermer ni en ouvrir une.
 pub fn frame_result(name: &str, text: &str) -> String {
     let name = name.replace(['\n', '\r'], " ").replace('"', "&quot;");

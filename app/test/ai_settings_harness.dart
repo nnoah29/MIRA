@@ -7,11 +7,37 @@ import 'package:mira/ui/overlays.dart';
 
 import 'fake_ai_engine.dart';
 
-Map<String, dynamic> provider(String id, String name, {bool free = false}) => {
+Map<String, dynamic> provider(
+  String id,
+  String name, {
+  bool free = false,
+  bool login = false,
+  bool session = false,
+  bool local = false,
+}) => {
   'id': id,
   'display_name': name,
   'base_url': 'https://example.org/v1',
   'base_url_editable': free,
+  'key_login': login
+      ? {
+          'authorize_url': 'https://a.example/auth',
+          'exchange_url': 'https://a.example/k',
+        }
+      : null,
+  'session_login': session
+      ? {
+          'authorize_url': 'https://a.example/authorize',
+          'token_url': 'https://a.example/token',
+          'resource': 'https://a.example/v1',
+          'scopes': ['openid'],
+          'required_scope': 'openid',
+          'agent_name': 'MIRA',
+        }
+      : null,
+  'local_runtime': local
+      ? {'server': [], 'models': [], 'health_path': '/health'}
+      : null,
 };
 
 Map<String, dynamic> connection(
@@ -61,6 +87,7 @@ Future<FakeAiEngine> pumpSettings(
       provider('openai', 'OpenAI'),
       provider('anthropic', 'Anthropic'),
       provider('generic', 'Compatible OpenAI', free: true),
+      provider('openrouter', 'OpenRouter', login: true),
     ])
     ..connections.addAll(connections);
   await tester.binding.setSurfaceSize(const Size(900, 2400));

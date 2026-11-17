@@ -37,6 +37,7 @@ const _paths = <String, String>{
   'eye': '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   'bot': '<rect x="4" y="8" width="16" height="12"/><path d="M12 4v4M9 13v2M15 13v2"/>',
   'spark': '<path d="M12 3l2 6 6 3-6 3-2 6-2-6-6-3 6-3z"/>',
+  'mic': '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/>',
   'img':
       '<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
   'fwd': '<path d="M14 8l6 5-6 5"/><path d="M20 13H10a6 6 0 00-6 6"/>',

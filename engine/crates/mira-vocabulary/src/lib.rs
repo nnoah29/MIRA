@@ -13,18 +13,30 @@ pub mod time;
 pub use address::EmailAddress;
 pub use address::entry::AddressEntry;
 pub use ai::action::{ActionProposal, MailActionKind};
+pub use ai::cards::{MailCard, MailCards};
 pub use ai::chat::{ChatMessage, ChatRequest, ChatRole, ToolSpec};
 pub use ai::connection::{AiConnection, AiConnectionKind};
 pub use ai::content::{ContentKind, ContextPart};
 pub use ai::conversation::{AiConversation, AiConversationMeta};
 pub use ai::delta::{ChatDelta, StopReason};
-pub use ai::descriptor::{AiProviderDescriptor, AiQuirks, AuthScheme, MaxTokensField, WireFormat};
+pub use ai::descriptor::{
+    AiKeyLogin, AiProviderDescriptor, AiQuirks, AiSessionLogin, AuthScheme, MaxTokensField,
+    WireFormat,
+};
 pub use ai::draft::{ChatMode, DraftProposal, DraftProposalKind};
 pub use ai::error::AiError;
 pub use ai::journal::{AiJournalEntry, AiJournalFinish, AiToolCount};
+pub use ai::local_runtime::{
+    AiLocalEmbedding, AiLocalModel, AiLocalRuntime, AiLocalServerBuild, LocalTier,
+};
+pub use ai::local_status::{LocalInstallInfo, LocalModelStatus, LocalRuntimeStatus};
 pub use ai::masking::{MaskingMode, MaskingSettings, SensitiveCategory};
+pub use ai::memory::{MemoryHit, MemoryKind, MemoryMatch, MemoryRecord, MemorySource};
+pub use ai::memory_proposal::{MemoryProposal, MemoryProposalAction};
+pub use ai::memory_settings::{MemoryEmbedder, MemorySettings, MemoryStatus};
 pub use ai::model::{AiModel, AiModelList};
 pub use ai::provider::{AiProvider, AiProviderId};
+pub use ai::style::{STYLE_MIN_MAILS, StyleProfile, StyleRegister, StyleSettings, StyleStatus};
 pub use ai::tool::{ToolCall, ToolOutcome, ToolRisk, ToolState};
 pub use contract::version::{CONTRACT_VERSION, ContractVersion};
 pub use domain::account::{Account, AccountState, SyncSettings};

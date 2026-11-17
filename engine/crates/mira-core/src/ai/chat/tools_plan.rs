@@ -2,18 +2,32 @@
 
 use mira_vocabulary::{ChatMode, ChatRequest};
 
-use super::framing::{ACTION_NOTICE, COMPOSE_NOTICE, TOOLS_NOTICE};
+use super::framing::{ACTION_NOTICE, COMPOSE_NOTICE, MEMORY_NOTICE, TOOLS_NOTICE};
 use super::prepare::ChatPlan;
-use crate::ai::tools::specs_for;
+use crate::ai::tools::specs_with;
 
 /// Annonce les outils du mode et les consignes qui les encadrent, ou aucun si `enabled` est faux.
-pub(super) fn with_tools(mut request: ChatRequest, enabled: bool, mode: ChatMode) -> ChatRequest {
-    request.tools = if enabled { specs_for(mode) } else { Vec::new() };
+pub(super) fn with_tools(
+    mut request: ChatRequest,
+    enabled: bool,
+    mode: ChatMode,
+    memory: bool,
+) -> ChatRequest {
+    request.tools = if enabled {
+        specs_with(mode, memory)
+    } else {
+        Vec::new()
+    };
     if enabled {
         let actions = matches!(mode, ChatMode::Assistant)
             .then(|| format!("\n\n{ACTION_NOTICE}"))
             .unwrap_or_default();
-        let notice = format!("{TOOLS_NOTICE}\n\n{COMPOSE_NOTICE}{actions}");
+        let recall = if memory && matches!(mode, ChatMode::Assistant) {
+            format!("\n\n{MEMORY_NOTICE}")
+        } else {
+            String::new()
+        };
+        let notice = format!("{TOOLS_NOTICE}\n\n{COMPOSE_NOTICE}{actions}{recall}");
         request.system = Some(match request.system.take() {
             Some(system) => format!("{system}\n\n{notice}"),
             None => notice,

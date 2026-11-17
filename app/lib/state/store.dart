@@ -33,6 +33,7 @@ import '../theme/wall_source.dart';
 import '../theme/wall_theme.dart';
 import '../theme/app_theme.dart';
 import 'assistant.dart';
+import 'memory_trimmer.dart';
 import 'chat_context.dart';
 import 'chat_controller.dart';
 import 'chat_history_state.dart';
@@ -189,6 +190,7 @@ class MailStore extends ChangeNotifier {
     welcome: _welcome,
     demoAnswer: (q) => answerTo(this, q),
     after: _after,
+    loadCited: loadCited,
   )..addListener(notifyListeners);
 
   MailStore(
@@ -198,7 +200,8 @@ class MailStore extends ChangeNotifier {
     this.engineError,
     this.webDemo = false,
     this.aiAdminOverride,
-  }) {
+    MemoryTrimmer? trimmer,
+  }) : _trimmer = trimmer ?? systemMemoryTrimmer() {
     contactBook = ContactBook.decode(
       prefs.getString('contactNames'),
       prefs.getString('contactHistory'),
@@ -451,6 +454,7 @@ class MailStore extends ChangeNotifier {
 
   @override
   void dispose() {
+    _trimAgain?.cancel();
     _changeSub?.cancel();
     _syncSub?.cancel();
     _counterSub?.cancel();
@@ -476,10 +480,46 @@ class MailStore extends ChangeNotifier {
     for (final m in mails) {
       if (m.id == id) return m;
     }
-    for (final m in [..._hits, ..._deep]) {
+    for (final m in [..._hits, ..._deep, ..._cited]) {
       if (m.id == id) return m;
     }
     return null;
+  }
+
+  List<Mail> _cited = const [];
+
+  /// Conversation d'un message cité : l'assistant donne l'identifiant du message du moteur, pas celui de la conversation.
+  Mail? mailOfCited(String id) {
+    final known = byId(id);
+    if (known != null) return known;
+    final lists = [
+      ..._boxes.values.expand((l) => l),
+      ..._hits,
+      ..._deep,
+      ..._cited,
+    ];
+    for (final m in lists) {
+      if (m.msgs.any((x) => x.ref == id)) return m;
+    }
+    return null;
+  }
+
+  /// Charge du moteur les messages cités par l'assistant que les listes déjà chargées ne contiennent pas.
+  Future<void> loadCited(Iterable<String> ids) async {
+    final src = source;
+    if (src == null) return;
+    final fetched = <Mail>[];
+    for (final id in ids.where((id) => mailOfCited(id) == null)) {
+      try {
+        final m = await src.messageById(id);
+        if (m != null) fetched.add(m);
+      } catch (_) {
+        continue;
+      }
+    }
+    if (fetched.isEmpty) return;
+    _cited = [..._cited, ...fetched];
+    notifyListeners();
   }
 
   // ---- messages plus anciens ----
@@ -2537,6 +2577,8 @@ class MailStore extends ChangeNotifier {
   /// L'interface a libéré ses vues et ses caches ; le moteur (relevé, règles, notifications) continue.
   bool hibernating = false;
   Timer? _sleep;
+  Timer? _trimAgain;
+  final MemoryTrimmer _trimmer;
 
   /// Programme l'hibernation après le délai réglé, si la fenêtre reste sans focus.
   void _armSleep() {
@@ -2554,12 +2596,15 @@ class MailStore extends ChangeNotifier {
       ..clear()
       ..clearLiveImages();
     source?.releaseCaches();
+    _trimmer.trim();
+    _trimAgain = Timer(const Duration(seconds: 30), _trimmer.trim);
     notifyListeners();
   }
 
   /// Le focus revient : l'interface se reconstruit depuis les données déjà chargées.
   void _wakeUi() {
     _sleep?.cancel();
+    _trimAgain?.cancel();
     if (!hibernating) return;
     hibernating = false;
     notifyListeners();

@@ -3,10 +3,16 @@
 pub(crate) mod access;
 pub(crate) mod base_url;
 pub mod chat;
+pub mod key_login;
+pub mod local;
 pub mod masking;
+pub mod memory;
 pub mod models;
 pub mod registry;
+pub(crate) mod session;
 pub mod sse;
+pub(crate) mod state;
+pub mod style;
 pub mod tools;
 pub mod transport;
 pub mod wire;

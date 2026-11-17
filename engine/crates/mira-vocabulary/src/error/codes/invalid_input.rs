@@ -46,3 +46,11 @@ pub const AI_CONVERSATION_TOO_LARGE: ErrorCode =
     ErrorCode("invalid_input.ai_conversation_too_large");
 /// Contenu de conversation d'IA qui n'est pas un objet JSON.
 pub const AI_CONVERSATION_PAYLOAD: ErrorCode = ErrorCode("invalid_input.ai_conversation_payload");
+/// Texte de souvenir vide ou trop long.
+pub const AI_MEMORY_TEXT: ErrorCode = ErrorCode("invalid_input.ai_memory_text");
+/// Texte de souvenir qui contient un secret ou une donnée bancaire.
+pub const AI_MEMORY_SENSITIVE: ErrorCode = ErrorCode("invalid_input.ai_memory_sensitive");
+/// Nom de modèle d'embeddings vide pour la mémoire en mode fournisseur.
+pub const AI_MEMORY_MODEL: ErrorCode = ErrorCode("invalid_input.ai_memory_model");
+/// Texte « ce que tu dois savoir de moi » trop long (1 000 caractères au plus).
+pub const AI_ABOUT_TEXT: ErrorCode = ErrorCode("invalid_input.ai_about_text");

@@ -11,6 +11,9 @@ import '../data/models.dart';
 import '../state/draft_ai_controller.dart';
 import '../state/rich_controller.dart';
 import '../state/store.dart';
+import '../voice/voice_services.dart';
+import 'mic_button.dart';
+import 'voice_problem.dart';
 import '../state/template_insert.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
@@ -580,6 +583,14 @@ class _ComposerState extends State<Composer> {
               ],
               const SizedBox(width: 10),
               IBtn('trash', tip: t('Supprimer le brouillon'), onTap: s.discard),
+              if (voiceServicesOf(context) != null) ...[
+                const SizedBox(width: 10),
+                MicButton(
+                  target: c.body,
+                  onDictated: s.touch,
+                  onProblem: (problem) => reportVoiceProblem(context, problem),
+                ),
+              ],
               if (aiOn) ...[
                 const SizedBox(width: 10),
                 IBtn(

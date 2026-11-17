@@ -10,13 +10,30 @@ class AiProviderInfo {
   final String name;
   final String baseUrl;
   final bool editableUrl;
-  const AiProviderInfo(this.id, this.name, this.baseUrl, this.editableUrl);
+  final bool keyLogin;
+  final bool sessionLogin;
+  final bool localRuntime;
+  const AiProviderInfo(
+    this.id,
+    this.name,
+    this.baseUrl,
+    this.editableUrl, {
+    this.keyLogin = false,
+    this.sessionLogin = false,
+    this.localRuntime = false,
+  });
+
+  /// Dit si la connexion se fait par le navigateur : clé reçue une fois, ou session de l'abonné.
+  bool get browserLogin => keyLogin || sessionLogin;
 
   factory AiProviderInfo.fromJson(Map<String, dynamic> json) => AiProviderInfo(
     '${json['id']}',
     '${json['display_name']}',
     '${json['base_url']}',
     json['base_url_editable'] == true,
+    keyLogin: json['key_login'] != null,
+    sessionLogin: json['session_login'] != null,
+    localRuntime: json['local_runtime'] != null,
   );
 }
 
@@ -192,6 +209,88 @@ class AiDraftProposal extends AiChatEvent {
     'selection': selection,
     'reply_to': replyTo,
     'identity': identity,
+  };
+}
+
+/// Un message que l'IA montre dans le chat : identifiant du moteur et raison, si elle en donne une.
+class AiMailCard {
+  final String id;
+  final String? reason;
+  const AiMailCard(this.id, this.reason);
+
+  factory AiMailCard.fromJson(Map<String, dynamic> json) =>
+      AiMailCard('${json['id']}', json['reason'] as String?);
+
+  Map<String, dynamic> toJson() => {'id': id, 'reason': reason};
+}
+
+/// Lot de cartes d'un appel de l'outil `show_mails` : titre facultatif et messages, dans l'ordre voulu par l'IA.
+class AiMailCards extends AiChatEvent {
+  final String id;
+  final String? title;
+  final List<AiMailCard> cards;
+  const AiMailCards({required this.id, this.title, required this.cards});
+
+  /// Lit la ligne `mail_cards_shown` du flux : l'identifiant de l'appel et le lot.
+  factory AiMailCards.fromLine(Map<String, dynamic> line) =>
+      AiMailCards.fromJson({
+        ...(line['cards'] as Map).cast<String, dynamic>(),
+        'id': line['id'],
+      });
+
+  factory AiMailCards.fromJson(Map<String, dynamic> json) => AiMailCards(
+    id: '${json['id']}',
+    title: json['title'] as String?,
+    cards: [
+      for (final c in (json['cards'] as List))
+        AiMailCard.fromJson((c as Map).cast<String, dynamic>()),
+    ],
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'cards': [for (final c in cards) c.toJson()],
+  };
+}
+
+/// Proposition de l'IA sur la mémoire : [action] vaut `remember` (retenir [text]) ou `forget` (oublier le souvenir [memoryId]). Rien ne change avant la confirmation.
+class AiMemoryProposal extends AiChatEvent {
+  final String id;
+  final String action;
+  final String text;
+  final String kind;
+  final String? memoryId;
+  const AiMemoryProposal({
+    required this.id,
+    required this.action,
+    required this.text,
+    required this.kind,
+    this.memoryId,
+  });
+
+  /// Lit la ligne `memory_proposed` du flux : l'identifiant de l'appel et la proposition.
+  factory AiMemoryProposal.fromLine(Map<String, dynamic> line) =>
+      AiMemoryProposal.fromJson({
+        ...(line['proposal'] as Map).cast<String, dynamic>(),
+        'call_id': line['id'],
+      });
+
+  factory AiMemoryProposal.fromJson(Map<String, dynamic> json) =>
+      AiMemoryProposal(
+        id: '${json['call_id']}',
+        action: '${json['action']}',
+        text: '${json['text']}',
+        kind: '${json['kind']}',
+        memoryId: json['id'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+    'call_id': id,
+    'action': action,
+    'text': text,
+    'kind': kind,
+    'id': memoryId,
   };
 }
 

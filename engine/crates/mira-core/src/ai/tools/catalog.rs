@@ -5,8 +5,9 @@ use serde_json::Value;
 
 use super::render::{cut, one_line};
 use super::{
-    compose_draft, edit_draft, get_message, get_thread, list_identities, list_mailboxes,
-    list_messages, propose_action, search_messages,
+    compose_draft, edit_draft, forget_memory, get_message, get_thread, list_identities,
+    list_mailboxes, list_messages, propose_action, recall_memory, remember, search_messages,
+    show_mails,
 };
 
 const SUMMARY_CHARS: usize = 80;
@@ -23,19 +24,43 @@ pub fn specs() -> Vec<ToolSpec> {
     ]
 }
 
-/// Outils annoncés dans ce mode : la lecture, plus l'outil de brouillon du mode.
+/// Outils annoncés dans ce mode, sans ceux de la mémoire : la lecture, plus l'outil de brouillon du mode.
 pub fn specs_for(mode: ChatMode) -> Vec<ToolSpec> {
+    specs_with(mode, false)
+}
+
+/// Outils annoncés dans ce mode ; ceux de la mémoire s'y ajoutent pour l'assistant quand elle est activée.
+pub fn specs_with(mode: ChatMode, memory: bool) -> Vec<ToolSpec> {
     let mut all = specs();
     match mode {
-        ChatMode::Assistant => all.extend([compose_draft::spec(), propose_action::spec()]),
+        ChatMode::Assistant => all.extend([
+            compose_draft::spec(),
+            propose_action::spec(),
+            show_mails::spec(),
+        ]),
         ChatMode::Composer { selection } => all.push(edit_draft::spec(selection)),
+    }
+    if memory && matches!(mode, ChatMode::Assistant) {
+        all.extend([
+            recall_memory::spec(),
+            remember::spec(),
+            forget_memory::spec(),
+        ]);
     }
     all
 }
 
 /// Dit si l'outil est une proposition de brouillon : il n'envoie rien au service et n'exige aucun type de contenu.
 pub fn is_proposal(name: &str) -> bool {
-    [compose_draft::NAME, edit_draft::NAME, propose_action::NAME].contains(&name)
+    [
+        compose_draft::NAME,
+        edit_draft::NAME,
+        propose_action::NAME,
+        show_mails::NAME,
+        remember::NAME,
+        forget_memory::NAME,
+    ]
+    .contains(&name)
 }
 
 /// Type de contenu que renvoie l'outil, ou rien s'il est inconnu.
@@ -44,6 +69,7 @@ pub fn kind_of(name: &str) -> Option<ContentKind> {
         search_messages::NAME | list_messages::NAME => Some(ContentKind::MailList),
         get_message::NAME | get_thread::NAME => Some(ContentKind::MailMessage),
         list_mailboxes::NAME | list_identities::NAME => Some(ContentKind::ToolResult),
+        recall_memory::NAME => Some(ContentKind::Memory),
         _ => None,
     }
 }
@@ -53,6 +79,9 @@ pub fn summary_of(call: &ToolCall) -> String {
     let arguments: Option<Value> = serde_json::from_str(&call.arguments).ok();
     let key = match call.name.as_str() {
         propose_action::NAME => "reason",
+        show_mails::NAME => "title",
+        remember::NAME => "text",
+        forget_memory::NAME => "reason",
         name if is_proposal(name) => "subject",
         _ => "query",
     };

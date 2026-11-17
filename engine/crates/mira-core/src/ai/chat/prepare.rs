@@ -9,10 +9,13 @@ use mira_vocabulary::{
     ContentKind, ErrorCategory, MaskingSettings, MiraError,
 };
 
-use super::checks::{check, context_summary};
+use super::about_context::{about_of, append_about};
+use super::checks::{Checked, check, context_summary};
 use super::context::render_context;
+use super::memory_context::add_memories;
 use super::tools_plan::with_tools;
 use super::truncate::{MAX_INPUT_CHARS, request_chars, truncate_request};
+use crate::ai::local::tools_allowed;
 use crate::ai::masking::Masker;
 use crate::api::{ChatStart, Engine};
 use crate::ports::SecretValue;
@@ -37,18 +40,18 @@ pub(crate) struct ChatPlan {
 }
 
 /// Vérifie connexion, fournisseur, consentement, types de contenu, clé puis modèle, dans cet ordre, et rend le plan ; les outils ne sont annoncés que si le client les permet et que le service les supporte.
-pub(crate) fn prepare(
+pub(crate) async fn prepare(
     engine: &Engine,
-    start: ChatStart,
+    mut start: ChatStart,
     host: Option<Weak<Engine>>,
 ) -> Result<ChatPlan, MiraError> {
     let connection = load_connection(engine, start.connection.as_ref())?;
-    let checked = check(engine, &connection, &start)?;
-    let enabled = start.allow_tools && checked.descriptor.supports_tools && host.is_some();
+    let checked = check(engine, &connection, &start).await?;
+    add_memories(engine, &mut start, &connection, checked.local).await;
+    let (enabled, mode) = (tools_enabled(&start, &checked, host.is_some()), start.mode);
     let (kinds, parts) = context_summary(&start.request);
-    let mode = start.mode;
-    let request = with_tools(start.request, enabled, mode);
-    let (request, masker) = shape_request(request, &connection.masking);
+    let request = with_tools(start.request, enabled, mode, memory_enabled(engine));
+    let (request, masker) = shape_request(request, &connection.masking, &about_of(engine));
     Ok(ChatPlan {
         descriptor: checked.descriptor,
         base_url: checked.base_url,
@@ -68,8 +71,23 @@ pub(crate) fn prepare(
     })
 }
 
-/// Rend le contexte, masque les textes envoyés (pas la consigne), puis tronque ; rend aussi la table du masquage.
-fn shape_request(request: ChatRequest, masking: &MaskingSettings) -> (ChatRequest, Masker) {
+/// Dit si la mémoire est activée ; illisible, elle ne l'est pas.
+fn memory_enabled(engine: &Engine) -> bool {
+    let settings = engine.database.read(|tx| tx.ai_memory_settings());
+    settings.is_ok_and(|settings| settings.enabled)
+}
+
+/// Dit si les outils sont annoncés : le client les permet, le modèle les supporte, un hôte les exécute.
+fn tools_enabled(start: &ChatStart, checked: &Checked, has_host: bool) -> bool {
+    start.allow_tools && has_host && tools_allowed(&checked.descriptor, &checked.model)
+}
+
+/// Rend le contexte, masque les textes envoyés et le texte de l'utilisateur (pas la consigne), puis tronque ; rend aussi la table du masquage.
+fn shape_request(
+    request: ChatRequest,
+    masking: &MaskingSettings,
+    about: &str,
+) -> (ChatRequest, Masker) {
     let mut masker = Masker::new(masking);
     let mut request = render_context(request);
     masker.reserve(request.system.as_deref().unwrap_or_default());
@@ -80,6 +98,8 @@ fn shape_request(request: ChatRequest, masking: &MaskingSettings) -> (ChatReques
     for message in &mut request.messages {
         message.text = masker.mask(&message.text);
     }
+    let about = masker.mask(about);
+    append_about(&mut request, &about);
     (truncate_request(request, MAX_INPUT_CHARS), masker)
 }
 

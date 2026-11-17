@@ -5,14 +5,19 @@ import 'package:provider/provider.dart';
 import '../data/models.dart';
 import '../state/assistant.dart';
 import '../state/store.dart';
+import '../voice/voice_services.dart';
+import 'mic_button.dart';
+import 'voice_problem.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
 import 'ai_consent_dialog.dart';
 import 'ai_content_dialog.dart';
 import 'chat_action_card.dart';
+import 'chat_memory_card.dart';
 import 'chat_draft_card.dart';
 import 'chat_history_view.dart';
 import 'chat_markdown.dart';
+import 'chat_mail_cards.dart';
 import 'chat_sources.dart';
 import 'chat_tool_chips.dart';
 import 'mail_ref.dart';
@@ -55,6 +60,7 @@ class _AssistantPanelState extends State<AssistantPanel> {
   Future<void> _send(MailStore s, [String? q]) async {
     final t = q ?? input.text;
     if (t.trim().isEmpty || s.busy) return;
+    voiceServicesOf(context)?.dictation.release(input);
     input.clear();
     await s.sendChat(t);
     if (!mounted) return;
@@ -447,6 +453,14 @@ class _AssistantPanelState extends State<AssistantPanel> {
                         height: null,
                       ),
                       const Spacer(),
+                      if (voiceServicesOf(context) != null) ...[
+                        MicButton(
+                          target: input,
+                          onProblem: (problem) =>
+                              reportVoiceProblem(context, problem),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       if (s.busy)
                         Btn(
                           key: const ValueKey('chat-stop'),
@@ -493,8 +507,12 @@ class _Bubble extends StatelessWidget {
   /// Messages consultés par les outils que le magasin connaît ; les autres identifiants sont ignorés.
   List<Mail> _known(MailStore s, ChatMsg msg) => [
     for (final id in msg.sources)
-      if (s.byId(id) != null) s.byId(id)!,
+      if (s.mailOfCited(id) != null) s.mailOfCited(id)!,
   ];
+
+  /// Message d'une carte : seulement s'il fait partie de ceux que les outils ont renvoyés.
+  Mail? _consulted(MailStore s, ChatMsg msg, String id) =>
+      msg.sources.contains(id) ? s.mailOfCited(id) : null;
 
   @override
   Widget build(BuildContext context) {
@@ -579,11 +597,22 @@ class _Bubble extends StatelessWidget {
                     onConfirm: () => s.settleAction(a, apply: true),
                     onDismiss: () => s.settleAction(a, apply: false),
                   ),
+              if (!me)
+                for (final m in msg.memories)
+                  ChatMemoryCard(
+                    m,
+                    onConfirm: () => s.chatCtl.settleMemory(m, apply: true),
+                    onDismiss: () => s.chatCtl.settleMemory(m, apply: false),
+                  ),
+              if (!me)
+                for (final list in msg.cards)
+                  ChatMailCards(list, find: (id) => _consulted(s, msg, id)),
               if (!me &&
                   msg.done &&
+                  msg.cards.isEmpty &&
                   (msg.refs ?? const []).isEmpty &&
                   _known(s, msg).isNotEmpty)
-                ChatSources(_known(s, msg).take(5).toList()),
+                ChatSources(_known(s, msg)),
               if (!me && msg.done && msg.draft != null) ...[
                 Container(
                   width: double.infinity,
@@ -651,14 +680,19 @@ class _Bubble extends StatelessWidget {
                     ],
                   ),
                 ),
-              if (!me && msg.done && msg.refs != null && msg.refs!.isNotEmpty)
+              if (!me &&
+                  msg.done &&
+                  msg.cards.isEmpty &&
+                  msg.refs != null &&
+                  msg.refs!.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       for (final id in msg.refs!)
-                        if (s.byId(id) != null) MailRef(s.byId(id)!),
+                        if (s.mailOfCited(id) != null)
+                          MailRef(s.mailOfCited(id)!),
                     ],
                   ),
                 ),

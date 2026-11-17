@@ -16,16 +16,17 @@ Future<String?> showRenameDialog(BuildContext context, String current) =>
     );
 
 /// Demande de confirmer la suppression de la conversation [title].
-Future<bool> showDeleteDialog(BuildContext context, String title) => _confirm(
-  context,
-  confirmKey: 'confirm-delete-conversation',
-  title: t('Supprimer cette conversation ?'),
-  body: t('« {0} » est effacée de cet appareil.', [title]),
-  action: t('Supprimer'),
-);
+Future<bool> showDeleteDialog(BuildContext context, String title) =>
+    showConfirmDialog(
+      context,
+      confirmKey: 'confirm-delete-conversation',
+      title: t('Supprimer cette conversation ?'),
+      body: t('« {0} » est effacée de cet appareil.', [title]),
+      action: t('Supprimer'),
+    );
 
 /// Demande de confirmer l'effacement de toutes les conversations.
-Future<bool> showClearHistoryDialog(BuildContext context) => _confirm(
+Future<bool> showClearHistoryDialog(BuildContext context) => showConfirmDialog(
   context,
   confirmKey: 'confirm-clear-history',
   title: t('Effacer tout l’historique ?'),
@@ -35,7 +36,8 @@ Future<bool> showClearHistoryDialog(BuildContext context) => _confirm(
   action: t('Effacer'),
 );
 
-Future<bool> _confirm(
+/// Boîte de confirmation : rend vrai si l'utilisateur valide.
+Future<bool> showConfirmDialog(
   BuildContext context, {
   required String confirmKey,
   required String title,
@@ -44,7 +46,7 @@ Future<bool> _confirm(
 }) async {
   final ok = await showDialog<bool>(
     context: context,
-    builder: (d) => _Shell(
+    builder: (d) => DialogShell(
       title: title,
       body: Text(body, style: Fonts.sans(size: 13.5, color: d.pal.dim)),
       actions: [
@@ -62,11 +64,13 @@ Future<bool> _confirm(
   return ok == true;
 }
 
-class _Shell extends StatelessWidget {
+/// Coque commune des boîtes de dialogue : titre, corps et actions alignées à droite.
+class DialogShell extends StatelessWidget {
   final String title;
   final Widget body;
   final List<Widget> actions;
-  const _Shell({
+  const DialogShell({
+    super.key,
     required this.title,
     required this.body,
     required this.actions,
@@ -136,7 +140,7 @@ class _RenameDialogState extends State<_RenameDialog> {
   @override
   Widget build(BuildContext context) {
     final p = context.pal;
-    return _Shell(
+    return DialogShell(
       title: t('Renommer la conversation'),
       body: TextField(
         key: const ValueKey('chat-history-rename-field'),

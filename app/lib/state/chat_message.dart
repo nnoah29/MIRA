@@ -32,6 +32,27 @@ class ProposedAction {
   ProposedAction(this.proposal, {this.status = 'pending'});
 }
 
+/// Proposition de l'IA sur la mémoire et son état : `pending`, `done` (confirmée et appliquée) ou `dismissed` (ignorée).
+class ProposedMemory {
+  final AiMemoryProposal proposal;
+  String status;
+
+  /// Texte du souvenir à oublier, retrouvé par son identifiant ; absent tant qu'il n'est pas lu.
+  String? target;
+
+  /// Vrai quand le souvenir à oublier n'existe plus : la proposition ne peut qu'être ignorée.
+  bool missing;
+
+  /// Dernier échec d'une confirmation, texte déjà traduit ; non enregistré avec la conversation.
+  String? error;
+  ProposedMemory(
+    this.proposal, {
+    this.status = 'pending',
+    this.target,
+    this.missing = false,
+  });
+}
+
 class ChatMsg {
   final String role; // 'me' | 'ai'
   bool done;
@@ -49,8 +70,14 @@ class ChatMsg {
   /// Brouillons proposés par l'IA pendant cette réponse, un par appel d'outil.
   final List<AiDraftProposal> drafts = [];
 
+  /// Listes de cartes de messages montrées par l'IA pendant cette réponse, une par appel d'outil.
+  final List<AiMailCards> cards = [];
+
   /// Actions sur la boîte proposées par l'IA pendant cette réponse, une par appel d'outil.
   final List<ProposedAction> actions = [];
+
+  /// Propositions de mémoire (retenir ou oublier) faites par l'IA pendant cette réponse, une par appel d'outil.
+  final List<ProposedMemory> memories = [];
 
   /// Texte venu du moteur d'IA (non traduisible) ; faux pour la démonstration et les notices.
   final bool fromEngine;

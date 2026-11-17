@@ -1,6 +1,6 @@
 //! Lecture bornée d'une réponse non diffusée, comme la liste des modèles.
 
-use mira_vocabulary::{AiError, AiProviderDescriptor};
+use mira_vocabulary::{AiError, AiProviderDescriptor, AuthScheme};
 use reqwest::header::{ACCEPT, HeaderValue};
 
 use super::auth_header::{add_auth_header, header_map};
@@ -35,4 +35,21 @@ async fn read_bounded(mut body: AiStreamBody) -> Result<Vec<u8>, AiError> {
         all.extend_from_slice(&chunk);
     }
     Ok(all)
+}
+
+/// Envoie un corps JSON en POST avec la clé et lit la réponse, plafonnée à `max_body`.
+pub async fn post_bounded(
+    base_url: &str,
+    scheme: AuthScheme,
+    key: &SecretValue,
+    path: &str,
+    body: String,
+    limits: &TransportLimits,
+) -> Result<Vec<u8>, AiError> {
+    let url = endpoint(base_url, path)?;
+    let mut headers = header_map(&[("content-type".to_string(), "application/json".to_string())])?;
+    add_auth_header(&mut headers, scheme, key)?;
+    let client = build_client(&url, limits)?;
+    let response = send_checked(client.post(url).headers(headers).body(body), limits).await?;
+    read_bounded(AiStreamBody::new(response, limits.idle, limits.max_body)).await
 }

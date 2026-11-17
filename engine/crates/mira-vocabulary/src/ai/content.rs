@@ -10,6 +10,7 @@ pub enum ContentKind {
     MailList,
     Attachment,
     ToolResult,
+    Memory,
 }
 
 impl ContentKind {
@@ -20,6 +21,7 @@ impl ContentKind {
             Self::MailList => "mail_list",
             Self::Attachment => "attachment",
             Self::ToolResult => "tool_result",
+            Self::Memory => "memory",
         }
     }
 }

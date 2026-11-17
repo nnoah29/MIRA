@@ -5,7 +5,8 @@ use mira_vocabulary::ToolCall;
 use super::render::cut;
 use super::run_result::ToolRun;
 use super::{
-    get_message, get_thread, list_identities, list_mailboxes, list_messages, search_messages,
+    get_message, get_thread, list_identities, list_mailboxes, list_messages, recall_memory,
+    search_messages,
 };
 use crate::api::Engine;
 
@@ -18,6 +19,7 @@ pub async fn run(engine: &Engine, call: &ToolCall) -> ToolRun {
         get_thread::NAME => get_thread::run(engine, &call.arguments).await,
         list_mailboxes::NAME => list_mailboxes::run(engine, &call.arguments).await,
         list_identities::NAME => list_identities::run(engine, &call.arguments).await,
+        recall_memory::NAME => recall_memory::run(engine, &call.arguments).await,
         other => ToolRun::error(format!("outil inconnu : {}", cut(other, 40))),
     }
 }

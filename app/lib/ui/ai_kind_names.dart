@@ -8,6 +8,7 @@ String aiKindName(String kind) => switch (kind) {
   aiKindMail => t('Mail ouvert'),
   aiKindMailList => t('Listes de messages'),
   aiKindToolResult => t('Boîtes et comptes consultés'),
+  aiKindMemory => t('Souvenirs de la mémoire'),
   _ => kind,
 };
 
@@ -16,5 +17,6 @@ String aiKindObject(String kind) => switch (kind) {
   aiKindMail => t('le mail ouvert'),
   aiKindMailList => t('les listes de messages'),
   aiKindToolResult => t('les boîtes et comptes consultés'),
+  aiKindMemory => t('les souvenirs de la mémoire'),
   _ => kind,
 };

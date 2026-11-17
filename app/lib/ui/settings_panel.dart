@@ -5,6 +5,7 @@ import '../data/models.dart';
 import '../data/rule_models.dart';
 import '../state/local_labels.dart';
 import '../state/store.dart';
+import '../voice/voice_services.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
 import '../theme/wall_source.dart';
@@ -13,12 +14,14 @@ import 'body_renderer.dart';
 import 'accounts_settings.dart';
 import 'contacts_settings.dart';
 import 'ai_settings.dart';
+import 'memory_settings.dart';
 import 'image_rules_section.dart';
 import 'labels_settings.dart';
 import 'templates_settings.dart';
 import 'maintenance_settings.dart';
 import 'notification_settings.dart';
 import 'rules_settings.dart';
+import 'voice_settings.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
 
@@ -34,7 +37,8 @@ List<(String, String)> get accentPresets => <(String, String)>[
   (t('Jaune'), 'e5b100'),
 ];
 
-List<String> _tabs(bool engine) => [
+/// Onglets des paramètres, dans l'ordre affiché ; ceux du moteur disparaissent en démonstration, « Voix » sans service de dictée.
+List<String> settingsTabs(bool engine, bool voice) => [
   t('Apparence'),
   t('Messagerie'),
   t('Notifications'),
@@ -44,7 +48,9 @@ List<String> _tabs(bool engine) => [
   if (engine) t('Règles'),
   if (engine) t('Modèles'),
   if (engine) t('IA'),
+  if (engine) t('Mémoire'),
   if (engine) t('Stockage'),
+  if (voice) t('Voix'),
   t('À propos'),
 ];
 
@@ -220,10 +226,13 @@ class _SettingsPanelState extends State<SettingsPanel> {
       ),
     );
 
+    final hasVoice = voiceServicesOf(context) != null;
     if (s.wantsAddAccount && s.source != null) tab = 3;
-    final aboutTab = _tabs(s.source != null).length - 1;
+    final aboutTab = settingsTabs(s.source != null, hasVoice).length - 1;
     Widget contentFor(int index) => index == aboutTab
         ? box([const AboutSettings()])
+        : hasVoice && index == aboutTab - 1
+        ? box([const VoiceSettings()])
         : switch (index) {
             0 => box([
               srow(
@@ -490,7 +499,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 onHistoryCleared: s.chatCtl.startNew,
               ),
             ]),
-            9 when s.source != null => box([const MaintenanceSettings()]),
+            9 when s.aiAdmin != null => box([
+              MemorySettings(admin: s.aiAdmin!),
+            ]),
+            10 when s.source != null => box([const MaintenanceSettings()]),
             _ when s.source != null => box([const AccountsSettings()]),
             _ => box([
               srow(me.name, me.email, const SizedBox.shrink()),
@@ -533,7 +545,11 @@ class _SettingsPanelState extends State<SettingsPanel> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                for (var i = 0; i < _tabs(s.source != null).length; i++)
+                for (
+                  var i = 0;
+                  i < settingsTabs(s.source != null, hasVoice).length;
+                  i++
+                )
                   KeyedSubtree(
                     key: _tabKeys.putIfAbsent(i, GlobalKey.new),
                     child: Hov(
@@ -554,7 +570,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                             ),
                           ),
                           child: Mono(
-                            _tabs(s.source != null)[i],
+                            settingsTabs(s.source != null, hasVoice)[i],
                             ls: .14,
                             color: on ? p.accent : (h ? p.text : p.muted),
                             height: null,
@@ -569,7 +585,11 @@ class _SettingsPanelState extends State<SettingsPanel> {
         ),
         Expanded(
           child: w <= 760
-              ? _pagedContent(_tabs(s.source != null).length, hp, contentFor)
+              ? _pagedContent(
+                  settingsTabs(s.source != null, hasVoice).length,
+                  hp,
+                  contentFor,
+                )
               : ScrollArea(
                   padding: EdgeInsets.fromLTRB(hp, 0, hp, 40),
                   child: FadeSlideIn(

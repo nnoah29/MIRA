@@ -5,7 +5,9 @@ import 'i18n.dart';
 const engineErrorTexts = <String, String>{
   // i18n:keys-begin
   'authentication.ai_key_rejected':
-      'Clé refusée par le service d’IA : vérifie-la',
+      'Accès refusé par le service d’IA : vérifie ta clé ou reconnecte-toi',
+  'authentication.ai_session_expired': 'La connexion à ton abonnement a expiré ou a été retirée : reconnecte-toi',
+  'authentication.ai_session_incomplete': 'Autorisation incomplète : ton abonnement ne donne pas cet accès (formule Plus ou Pro requise pour ChatGPT)',
   'authentication.app_password_required':
       'Ce service exige un mot de passe d’application',
   'authentication.oauth_cancelled': 'Connexion annulée',
@@ -29,8 +31,17 @@ const engineErrorTexts = <String, String>{
       'Ce service d’IA n’est pas autorisé à recevoir ce type de contenu',
   'incompatible_state.ai_history_disabled':
       'L’historique des conversations est désactivé',
+  'incompatible_state.ai_key_login_unsupported':
+      'Ce service d’IA ne propose pas la connexion par navigateur',
   'incompatible_state.ai_key_missing':
-      'Aucune clé enregistrée pour ce service d’IA',
+      'Aucune clé ni connexion enregistrée pour ce service d’IA',
+  'incompatible_state.ai_local_busy':
+      'Une installation du modèle local est déjà en cours',
+  'incompatible_state.ai_local_disk_space': 'Pas assez d’espace disque pour ce modèle : libère de la place puis réessaie',
+  'incompatible_state.ai_local_unsupported_platform':
+      'Le modèle local n’est pas pris en charge sur cet appareil',
+  'incompatible_state.ai_memory_disabled':
+      'La mémoire de l’assistant est désactivée',
   'incompatible_state.ai_model_missing': 'Choisis d’abord un modèle d’IA',
   'incompatible_state.body_unavailable_offline':
       'Corps du message indisponible hors ligne',
@@ -47,12 +58,18 @@ const engineErrorTexts = <String, String>{
       'Opération interdite sur une boîte système',
   'internal.bug': 'Erreur interne de MIRA',
   'invalid_input.address': 'Adresse e-mail invalide',
+  'invalid_input.ai_about_text':
+      'Le texte est trop long (1 000 caractères au plus)',
   'invalid_input.ai_conversation_payload': 'Conversation illisible',
   'invalid_input.ai_conversation_title': 'Le titre de la conversation est vide ou trop long (80 caractères au plus)',
   'invalid_input.ai_conversation_too_large':
       'Cette conversation est trop volumineuse pour être enregistrée',
   'invalid_input.ai_input_too_large':
       'Le texte est trop long pour le service d’IA',
+  'invalid_input.ai_memory_model': 'Indique le modèle d’embeddings à utiliser',
+  'invalid_input.ai_memory_sensitive': 'Ce texte ressemble à un secret (mot de passe, clé, numéro de carte) : il n’est pas retenu',
+  'invalid_input.ai_memory_text':
+      'Le souvenir est vide ou trop long (1 000 caractères au plus)',
   'invalid_input.ai_journal_limit':
       'Nombre de lignes du journal des envois hors limites',
   'invalid_input.ai_key_invalid': 'Clé du service d’IA invalide',
@@ -90,6 +107,7 @@ const engineErrorTexts = <String, String>{
   'not_found.action': 'Action introuvable',
   'not_found.ai_connection': 'Connexion d’IA introuvable',
   'not_found.ai_conversation': 'Cette conversation n’existe plus',
+  'not_found.ai_memory': 'Ce souvenir n’existe plus',
   'not_found.ai_model': 'Modèle d’IA introuvable',
   'not_found.ai_provider': 'Service d’IA inconnu',
   'not_found.attachment': 'Pièce jointe introuvable',
@@ -110,6 +128,9 @@ const engineErrorTexts = <String, String>{
   'secrets.secret_missing':
       'Mot de passe introuvable dans le trousseau : saisis-le à nouveau',
   'server.ai_bad_response': 'Réponse inattendue du service d’IA',
+  'server.ai_local_checksum_mismatch': 'Le fichier téléchargé est incomplet ou altéré : il a été supprimé, réessaie',
+  'server.ai_local_runtime_failed': 'Le modèle local s’est arrêté : la mémoire était peut-être insuffisante, essaie un palier plus léger',
+  'server.ai_local_start_timeout': 'Le modèle local met trop de temps à démarrer : réessaie ou choisis un palier plus léger',
   'server.ai_quota_exhausted': 'Crédit ou quota du service d’IA épuisé',
   'server.ai_rate_limited':
       'Le service d’IA limite le nombre de requêtes : réessaie plus tard',

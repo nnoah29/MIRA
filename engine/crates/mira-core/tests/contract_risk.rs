@@ -11,6 +11,7 @@ use serde_json::Value;
 const READS: &[&str] = &[
     "account.list_accounts",
     "ai.get_ai_history_enabled",
+    "ai.get_local_runtime_status",
     "ai.list_ai_connections",
     "ai.list_ai_journal",
     "ai.list_ai_providers",
@@ -98,4 +99,16 @@ fn sending_deleting_and_configuring_have_cautious_levels() {
     assert_eq!(risk_named("compose.update_draft"), ToolRisk::Reversible);
     assert_eq!(risk_named("account.delete_account"), ToolRisk::Sensitive);
     assert_eq!(risk_named("ai.add_ai_connection"), ToolRisk::Sensitive);
+}
+
+/// Aucune requête de mémoire n'est une lecture : l'IA n'y accède que par ses outils, avec consentement
+#[test]
+fn memory_requests_are_never_a_read() {
+    for name in [
+        "ai.get_memory_status",
+        "ai.list_memories",
+        "ai.search_memories",
+    ] {
+        assert_eq!(risk_named(name), ToolRisk::Sensitive, "{name}");
+    }
 }

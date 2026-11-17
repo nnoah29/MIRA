@@ -6,6 +6,7 @@ import 'package:mira/engine/ai_admin.dart';
 import 'package:mira/main.dart';
 import 'package:mira/state/store.dart';
 import 'package:mira/theme/app_theme.dart';
+import 'package:mira/voice/voice_services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -31,7 +32,11 @@ FakeAiEngine withDefaultConnection() => FakeAiEngine()
     'models': null,
   });
 
-Future<MailStore> pumpPanel(WidgetTester tester, FakeAiEngine? engine) async {
+Future<MailStore> pumpPanel(
+  WidgetTester tester,
+  FakeAiEngine? engine, {
+  VoiceServices? voice,
+}) async {
   GoogleFonts.config.allowRuntimeFetching = false;
   SharedPreferences.setMockInitialValues({});
   await initializeDateFormatting('fr_FR');
@@ -43,8 +48,12 @@ Future<MailStore> pumpPanel(WidgetTester tester, FakeAiEngine? engine) async {
     await SharedPreferences.getInstance(),
     aiAdminOverride: engine == null ? null : AiAdmin(engine),
   );
+  final app = ChangeNotifierProvider.value(
+    value: store,
+    child: const MiraApp(),
+  );
   await tester.pumpWidget(
-    ChangeNotifierProvider.value(value: store, child: const MiraApp()),
+    voice == null ? app : VoiceScope(services: voice, child: app),
   );
   await tester.pump(const Duration(milliseconds: 100));
   await tester.tap(find.text('ASSISTANT IA').first);

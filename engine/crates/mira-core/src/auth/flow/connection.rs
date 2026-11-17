@@ -19,20 +19,22 @@ const CONNECTION_PATIENCE: Duration = Duration::from_secs(10);
 pub(super) async fn serve_connection(
     stream: TcpStream,
     state: String,
+    path: &'static str,
 ) -> Option<Result<AuthorizationCode, MiraError>> {
-    timeout(CONNECTION_PATIENCE, answer_request(stream, &state))
+    timeout(CONNECTION_PATIENCE, answer_request(stream, &state, path))
         .await
         .ok()
         .flatten()
 }
 
-/// Lit la requête puis répond : 404 hors `/callback`, 400 si `state` est faux, 200 sinon (page de succès ou d'échec)
+/// Lit la requête puis répond : 404 hors du chemin de rappel, 400 si `state` est faux, 200 sinon (page de succès ou d'échec)
 async fn answer_request(
     mut stream: TcpStream,
     state: &str,
+    path: &str,
 ) -> Option<Result<AuthorizationCode, MiraError>> {
     let target = read_request_target(&mut stream).await?;
-    let Some(query) = target.strip_prefix("/callback?") else {
+    let Some(query) = target.strip_prefix(&format!("{path}?")) else {
         respond(&mut stream, "404 Not Found", "").await;
         return None;
     };

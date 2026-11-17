@@ -7,7 +7,7 @@ import '../platform_info.dart';
 import '../state/store.dart';
 import 'resident_prompt.dart';
 import 'shell.dart';
-import 'welcome_page.dart';
+import 'onboarding/onboarding_flow.dart';
 
 /// Racine de l'écran : l'accueil du premier lancement tant qu'il est ouvert, sinon la messagerie.
 class AppRoot extends StatefulWidget {
@@ -39,6 +39,6 @@ class _AppRootState extends State<AppRoot> {
   Widget build(BuildContext context) {
     final welcome = context.select<MailStore, bool>((s) => s.welcomeOpen);
     if (!welcome) _askResident();
-    return welcome ? const WelcomePage() : const Shell();
+    return welcome ? const OnboardingFlow() : const Shell();
   }
 }

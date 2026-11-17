@@ -1,0 +1,219 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../engine/ai_models.dart';
+import '../../i18n/i18n.dart';
+import '../../state/ai_local_state.dart';
+import '../../state/ai_settings_state.dart';
+import '../../state/store.dart';
+import '../../theme/app_theme.dart';
+import '../ai_browser_login.dart';
+import '../ai_connection_card.dart';
+import '../ai_local_panel.dart';
+import '../ai_session_warning.dart';
+import '../widgets.dart';
+import 'onboarding_controller.dart';
+import 'step_layout.dart';
+
+/// Page 5 (optionnelle) : explique l'IA et propose la connexion par navigateur d'un service qui la permet.
+class AiStep extends StatefulWidget {
+  final OnboardingController controller;
+  const AiStep({super.key, required this.controller});
+
+  @override
+  State<AiStep> createState() => _AiStepState();
+}
+
+class _AiStepState extends State<AiStep> {
+  late final AiSettingsState _state = AiSettingsState(
+    context.read<MailStore>().aiAdmin!,
+  );
+
+  AiLocalState? _local;
+
+  @override
+  void initState() {
+    super.initState();
+    _state.addListener(_refresh);
+    _state.load();
+  }
+
+  @override
+  void dispose() {
+    _state.removeListener(_refresh);
+    for (final id in _state.logins.keys.toList()) {
+      _state.cancelLogin(id);
+    }
+    _state.dispose();
+    _local?.dispose();
+    super.dispose();
+  }
+
+  void _refresh() {
+    if (mounted) setState(() {});
+  }
+
+  /// Services qui se connectent par le navigateur : clé reçue d'abord, abonnements ensuite.
+  List<AiProviderInfo> get _providers => [
+    ..._state.providers.where((p) => p.keyLogin),
+    ..._state.providers.where((p) => p.sessionLogin),
+  ];
+
+  Future<void> _login(AiProviderInfo provider) async {
+    if (provider.sessionLogin &&
+        !await confirmSessionLogin(context, provider)) {
+      return;
+    }
+    if (_state.connectionsOf(provider.id).isEmpty) {
+      await _state.addConnection(provider.id, label: provider.name);
+    }
+    final made = _state.connectionsOf(provider.id);
+    if (made.isEmpty) return;
+    final id = made.first.id;
+    await _state.loginByBrowser(id, openLoginPage);
+    final done = _state.connections.any((c) => c.id == id && c.hasKey);
+    if (mounted && done) widget.controller.next();
+  }
+
+  Widget _waiting(Pal p) => Wrap(
+    spacing: 12,
+    runSpacing: 8,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    children: [
+      Text(
+        t('En attente du navigateur…'),
+        style: Fonts.sans(size: 14, color: p.muted),
+      ),
+      Btn(
+        key: const ValueKey('onb-ai-cancel'),
+        label: t('Annuler'),
+        onTap: () => _state.cancelLogin(_state.logins.keys.first),
+      ),
+    ],
+  );
+
+  Widget _actions(Pal p, List<AiProviderInfo> providers) {
+    if (providers.isEmpty) {
+      return Text(
+        t('Tu pourras brancher un service d’IA dans Réglages › IA.'),
+        style: Fonts.sans(size: 15, color: p.dim),
+      );
+    }
+    if (_state.logins.isNotEmpty) return _waiting(p);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [for (final provider in providers) _loginButton(provider)],
+    );
+  }
+
+  /// Bouton d'un service : « Se connecter avec … » ; « Continue with … » pour un abonnement.
+  Widget _loginButton(AiProviderInfo provider) {
+    final name = aiProviderTitle(provider);
+    final session = provider.sessionLogin;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Btn(
+          key: ValueKey(session ? 'onb-ai-${provider.id}' : 'onb-ai-login'),
+          label: session
+              ? 'Continue with $name'
+              : t('Se connecter avec {0}', [name]),
+          go: true,
+          onTap: _state.busy.isNotEmpty ? null : () => _login(provider),
+        ),
+      ),
+    );
+  }
+
+  /// Fournisseur du modèle local, s'il est proposé par le moteur.
+  AiProviderInfo? get _localProvider =>
+      _state.providers.where((p) => p.localRuntime).firstOrNull;
+
+  /// Ouvre le choix des paliers : seule lecture de l'état, rien n'est téléchargé.
+  void _openLocal() {
+    final admin = context.read<MailStore>().aiAdmin!;
+    final local = _local ??= AiLocalState(admin)..addListener(_refresh);
+    local.refresh();
+    setState(() {});
+  }
+
+  /// Option facultative sous les services en ligne : un modèle qui tourne sur la machine.
+  Widget _localOption(Pal p, AiProviderInfo provider) {
+    final local = _local;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Btn(
+          key: const ValueKey('onb-ai-local'),
+          label: t('Modèle local (facultatif, sans compte)'),
+          onTap: local == null ? _openLocal : null,
+        ),
+        if (local != null && local.status != null && !local.supported)
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Text(
+              t('Le modèle local n’est pas disponible sur cet appareil.'),
+              style: Fonts.sans(size: 13.5, color: p.dim),
+            ),
+          ),
+        if (local != null && local.supported)
+          AiLocalPanel(state: local, settings: _state, providerId: provider.id),
+      ],
+    );
+  }
+
+  Widget _notes(Pal p) {
+    final link = _state.loginLinks.values.firstOrNull;
+    final error = _state.error;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (link != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: SelectableText(
+              '${t('Le navigateur ne s’est pas ouvert : copie ce lien dans ton navigateur.')}\n$link',
+              key: const ValueKey('onb-ai-link'),
+              style: Fonts.sans(size: 13, color: p.dim),
+            ),
+          ),
+        if (error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Text(
+              error,
+              key: const ValueKey('onb-ai-error'),
+              style: Fonts.sans(size: 13.5, color: p.accent),
+            ),
+          ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.pal;
+    return StepLayout(
+      title: t('ASSISTANT D’IA'),
+      lead: t(
+        'Ton texte n’est envoyé qu’avec ton accord, les données sensibles sont masquées avant l’envoi. Ta clé reste sur cet appareil.',
+      ),
+      children: [
+        _actions(p, _providers),
+        if (_localProvider != null && _state.logins.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: _localOption(p, _localProvider!),
+          ),
+        _notes(p),
+        const SizedBox(height: 20),
+        Btn(
+          key: const ValueKey('onb-ai-later'),
+          label: t('Plus tard (Réglages › IA)'),
+          onTap: widget.controller.next,
+        ),
+      ],
+    );
+  }
+}

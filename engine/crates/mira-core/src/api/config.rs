@@ -7,7 +7,7 @@ use mira_vocabulary::ProfileId;
 use crate::accounts::NetworkPolicy;
 use crate::ai::AiProviderRegistry;
 use crate::auth::OAuthClientConfig;
-use crate::ports::{Clock, IdGenerator, SecretStore};
+use crate::ports::{Clock, IdGenerator, SecretStore, SystemResources};
 use crate::profile::ProfileEnvironment;
 use crate::registry::ProviderRegistry;
 
@@ -23,4 +23,5 @@ pub struct EngineConfig {
     pub ids: Arc<dyn IdGenerator>,
     pub oauth: OAuthClientConfig,
     pub network: NetworkPolicy,
+    pub resources: Arc<dyn SystemResources>,
 }

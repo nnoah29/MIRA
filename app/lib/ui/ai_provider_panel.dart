@@ -9,19 +9,68 @@ import '../theme/app_theme.dart';
 import 'ai_add_connection.dart';
 import 'ai_connection_card.dart';
 
-/// Ce que montre l'onglet de [provider] : cartes existantes, invitation, ajout (fournisseur libre : toujours).
+/// Ce que montre l'onglet : une section par fournisseur du groupe (clé d'API, abonnement), chacune avec ses cartes ou son invitation.
 class AiProviderPanel extends StatelessWidget {
   final AiSettingsState state;
-  final AiProviderInfo provider;
+  final List<AiProviderInfo> providers;
   const AiProviderPanel({
     super.key,
     required this.state,
-    required this.provider,
+    required this.providers,
   });
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      for (final provider in providers)
+        _AiProviderSection(
+          key: ValueKey('ai-section-${provider.id}'),
+          state: state,
+          provider: provider,
+          titled: providers.length > 1,
+        ),
+    ],
+  );
+}
+
+/// Les connexions d'un fournisseur, ou l'invitation à en ajouter une (fournisseur libre : toujours possible).
+class _AiProviderSection extends StatelessWidget {
+  final AiSettingsState state;
+  final AiProviderInfo provider;
+  final bool titled;
+  const _AiProviderSection({
+    super.key,
+    required this.state,
+    required this.provider,
+    required this.titled,
+  });
+
+  /// Titre d'une section quand l'onglet en réunit plusieurs.
+  Widget _title(Pal p) => Padding(
+    padding: const EdgeInsets.only(top: 20),
+    child: Text(
+      provider.sessionLogin
+          ? t('Avec ton abonnement {0}', [provider.name])
+          : t('Avec une clé d’API'),
+      key: ValueKey('ai-section-title-${provider.id}'),
+      style: Fonts.sans(size: 13.5, w: FontWeight.w500, color: p.text),
+    ),
+  );
 
   /// Phrase d'invitation d'un fournisseur sans connexion.
   Widget _invite(Pal p) => Text(
-    provider.editableUrl
+    provider.sessionLogin
+        ? t(
+            'Pour utiliser {0}, connecte ton abonnement dans le navigateur : aucune clé à recopier.',
+            [provider.name],
+          )
+        : provider.keyLogin
+        ? t(
+            'Pour utiliser {0}, connecte-toi avec ton compte dans le navigateur : aucune clé à recopier.',
+            [provider.name],
+          )
+        : provider.editableUrl
         ? t(
             'Un service compatible avec l’API d’OpenAI (serveur local, passerelle, autre fournisseur) : indique son adresse et ta propre clé d’API.',
           )
@@ -40,6 +89,7 @@ class AiProviderPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (titled) _title(context.pal),
         if (mine.isEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 16, bottom: 4),

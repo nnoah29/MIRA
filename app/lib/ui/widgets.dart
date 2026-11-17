@@ -228,6 +228,9 @@ class IBtn extends StatelessWidget {
   final double size, box;
   final double stroke;
   final Color? color;
+
+  /// Remplace l'icône (par exemple par une animation) sans changer le reste du bouton.
+  final Widget? glyph;
   const IBtn(
     this.icon, {
     super.key,
@@ -239,6 +242,7 @@ class IBtn extends StatelessWidget {
     this.box = 34,
     this.stroke = 1.6,
     this.color,
+    this.glyph,
   });
 
   @override
@@ -254,13 +258,15 @@ class IBtn extends StatelessWidget {
         height: box,
         alignment: Alignment.center,
         color: h ? p.surface : Colors.transparent,
-        child: Ico(
-          icon,
-          size: size,
-          stroke: stroke,
-          filled: filled,
-          color: color ?? (on ? p.accent : (h ? p.text : p.muted)),
-        ),
+        child:
+            glyph ??
+            Ico(
+              icon,
+              size: size,
+              stroke: stroke,
+              filled: filled,
+              color: color ?? (on ? p.accent : (h ? p.text : p.muted)),
+            ),
       ),
     );
   }

@@ -19,6 +19,12 @@ impl IdGenerator for UuidV7Ids {
     }
 }
 
+/// Identifiant `urn:uuid:` (UUID v4) construit à partir de 16 octets aléatoires.
+pub fn urn_uuid_from_random_bytes(bytes: [u8; 16]) -> String {
+    let id = uuid::Builder::from_random_bytes(bytes).into_uuid();
+    format!("urn:uuid:{id}")
+}
+
 /// Identifiants déterministes `id-000001`, `id-000002`… pour les tests.
 #[derive(Debug, Default)]
 pub struct SequentialIds {

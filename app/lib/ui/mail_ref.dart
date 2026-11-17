@@ -13,7 +13,8 @@ import 'widgets.dart';
 /// Ligne d'un message cité ; [id] sert à retrouver la ligne dans les tests.
 class MailRef extends StatelessWidget {
   final Mail m;
-  const MailRef(this.m, {super.key});
+  final String? reason;
+  const MailRef(this.m, {super.key, this.reason});
   @override
   Widget build(BuildContext context) {
     final p = context.pal;
@@ -51,6 +52,15 @@ class MailRef extends StatelessWidget {
                       '${m.from.name} · ${rowTime(m.date)}',
                       style: Fonts.sans(size: 12, color: p.dim),
                     ),
+                    if (reason != null)
+                      Text(
+                        reason!,
+                        style: Fonts.sans(
+                          size: 13,
+                          color: p.muted,
+                          height: 1.4,
+                        ),
+                      ),
                   ],
                 ),
               ),

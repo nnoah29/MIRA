@@ -2,7 +2,7 @@
 
 use mira_vocabulary::{
     AiConnection, AiConversation, AiConversationMeta, AiJournalEntry, AiModelList,
-    AiProviderDescriptor,
+    AiProviderDescriptor, LocalRuntimeStatus, MemoryMatch, MemoryRecord, MemoryStatus,
 };
 use serde::{Deserialize, Serialize};
 
@@ -19,5 +19,14 @@ pub enum AiResponse {
     Conversation(AiConversation),
     ConversationMeta(AiConversationMeta),
     HistoryEnabled(bool),
+    LocalRuntime(LocalRuntimeStatus),
+    MemoryStatus(MemoryStatus),
+    Memories(Vec<MemoryRecord>),
+    MemoryMatches(Vec<MemoryMatch>),
+    Memory(MemoryRecord),
+    MemoryForgotten(u64),
+    MemoryReindexed { done: u64, failed: u64 },
+    AboutMe(String),
+    KeyLoginStarted { flow: String, authorize_url: String },
     Done,
 }

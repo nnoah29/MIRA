@@ -38,3 +38,5 @@ pub const AI_CONNECTION: ErrorCode = ErrorCode("not_found.ai_connection");
 pub const AI_PROVIDER: ErrorCode = ErrorCode("not_found.ai_provider");
 /// Conversation d'IA enregistrée inconnue.
 pub const AI_CONVERSATION: ErrorCode = ErrorCode("not_found.ai_conversation");
+/// Souvenir de la mémoire de l'IA inconnu.
+pub const AI_MEMORY: ErrorCode = ErrorCode("not_found.ai_memory");

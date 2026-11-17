@@ -126,7 +126,7 @@ void main() {
       final client = await daemon.attach();
       final info = await client.call(req('engine', 'get_contract_info'));
       expect(info['type'], 'contract_info');
-      expect((info['data'] as Map)['version'], {'major': 1, 'minor': 7});
+      expect((info['data'] as Map)['version'], {'major': 1, 'minor': 12});
       await client.close();
     },
     skip: skip,

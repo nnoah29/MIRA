@@ -29,6 +29,9 @@ class DictationController extends ChangeNotifier {
   final Duration recognizerStartTimeout;
   DictationLanguage language;
   DictationState state = DictationState.idle;
+
+  /// Façon dont la dictée en cours a été lancée (continue tant qu'aucune n'est en cours).
+  DictationMode mode = DictationMode.continuous;
   DictationProblem? problem;
   TextEditingController? target;
   DictationInserter? _inserter;
@@ -52,13 +55,17 @@ class DictationController extends ChangeNotifier {
   bool get recognizerReady => _recognizerReady;
 
   /// Démarre la dictée dans [field] ; une dictée en cours ailleurs est arrêtée d'abord.
-  Future<void> start(TextEditingController field) async {
+  Future<void> start(
+    TextEditingController field, {
+    DictationMode mode = DictationMode.continuous,
+  }) async {
     await _closing;
     if (state != DictationState.idle) {
       if (identical(target, field)) return;
       await stop();
     }
     problem = null;
+    this.mode = mode;
     _stopRequested = false;
     _retryTarget = null;
     target = field;
@@ -277,6 +284,7 @@ class DictationController extends ChangeNotifier {
 
   /// Retour à l'état de repos.
   void _finish() {
+    mode = DictationMode.continuous;
     _stopRequested = false;
     _inserter = null;
     target = null;

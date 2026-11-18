@@ -55,6 +55,9 @@ class DictationException implements Exception {
 /// Étape de la dictée.
 enum DictationState { idle, preparing, listening, stopping }
 
+/// Façon de dicter : en continu jusqu'à un nouvel appui, ou phrase par phrase tant qu'on maintient une touche.
+enum DictationMode { continuous, pushToTalk }
+
 /// Source audio : PCM mono 16 kHz, échantillons dans [-1, 1].
 abstract interface class AudioSource {
   /// Demande l'autorisation d'utiliser le micro ; faux si elle est refusée.

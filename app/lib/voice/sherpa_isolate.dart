@@ -12,7 +12,7 @@ class SherpaSession {
   SherpaSession._(this._recognizer, this._stream, this._send);
 
   final so.OnlineRecognizer _recognizer;
-  final so.OnlineStream _stream;
+  so.OnlineStream _stream;
   final void Function(List<Object> message) _send;
   String _last = '';
 
@@ -52,19 +52,32 @@ class SherpaSession {
     }
   }
 
-  /// Fin de la parole : ajoute un court silence pour vider le modèle, valide le reste, libère tout.
-  void finish() {
+  /// Fin de la parole : vide le modèle avec un court silence, valide le reste, puis repart d'un flux neuf (le modèle reste chargé).
+  void finishStream() {
     _stream.acceptWaveform(samples: Float32List(6400), sampleRate: 16000);
     _stream.inputFinished();
     _decodeAvailable();
     _last = _recognizer.getResult(_stream).text;
     if (_last.trim().isNotEmpty) _send(['final', _last]);
     _stream.free();
+    _stream = _recognizer.createStream();
+    _last = '';
+  }
+
+  /// Nouvelle dictée sur le modèle déjà chargé.
+  void restart() {
+    _recognizer.reset(_stream);
+    _last = '';
+  }
+
+  /// Libère le flux et le modèle.
+  void dispose() {
+    _stream.free();
     _recognizer.free();
   }
 }
 
-/// Point d'entrée de l'isolate : reçoit `['init', dossier]`, des paquets audio, puis `'stop'`.
+/// Point d'entrée de l'isolate : `['init', dossier]`, des paquets audio, `'stop'` ; `'begin'` et `'release'` pour garder le modèle.
 void sherpaIsolateMain(SendPort toMain) {
   final inbox = ReceivePort();
   toMain.send(inbox.sendPort);
@@ -81,6 +94,7 @@ void sherpaIsolateMain(SendPort toMain) {
 /// Traite un message de l'interface et rend la session à garder.
 SherpaSession? _handle(SherpaSession? session, Object? message, SendPort out) {
   if (message is List && message.first == 'init') {
+    session?.dispose();
     final opened = SherpaSession.open(message[1] as String, out.send);
     out.send(['ready']);
     return opened;
@@ -89,10 +103,25 @@ SherpaSession? _handle(SherpaSession? session, Object? message, SendPort out) {
     session?.accept(message.materialize().asFloat32List());
     return session;
   }
-  if (message == 'stop') {
-    session?.finish();
-    out.send(['done']);
-    return null;
+  return _control(session, message, out);
+}
+
+/// Commandes sans audio : nouvelle dictée sur le modèle chargé, fin de dictée, libération du modèle.
+SherpaSession? _control(SherpaSession? session, Object? message, SendPort out) {
+  switch (message) {
+    case 'begin':
+      session?.restart();
+      out.send(['ready']);
+      return session;
+    case 'stop':
+      session?.finishStream();
+      out.send(['done']);
+      return session;
+    case 'release':
+      session?.dispose();
+      out.send(['released']);
+      return null;
+    default:
+      return session;
   }
-  return session;
 }

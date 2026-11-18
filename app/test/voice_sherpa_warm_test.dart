@@ -6,7 +6,8 @@ import 'package:mira/voice/dictation_types.dart';
 import 'package:mira/voice/sherpa_recognizer.dart';
 import 'package:mira/voice/voice_model_catalog.dart';
 import 'package:mira/voice/voice_model_store.dart';
-import 'package:sherpa_onnx/sherpa_onnx.dart' as so;
+
+import 'voice_native_libraries.dart';
 
 final String? modelsDir = Platform.environment['MIRA_VOICE_MODELS'];
 const why = 'modèles absents (définir MIRA_VOICE_MODELS)';
@@ -32,7 +33,7 @@ void main() {
   test(
     'le modèle gardé chaud rend le démarrage suivant presque instantané',
     () async {
-      so.initBindings();
+      initSherpaBindings();
       final r = SherpaRecognizer(
         storeWithModels(root),
         keepWarm: const Duration(minutes: 3),
@@ -50,7 +51,7 @@ void main() {
   );
 
   test('durée nulle : le modèle est libéré à la fin de la dictée', () async {
-    so.initBindings();
+    initSherpaBindings();
     final r = SherpaRecognizer(storeWithModels(root), keepWarm: Duration.zero);
     await r.start(DictationLanguage.fr);
     await r.stop();
@@ -59,7 +60,7 @@ void main() {
   }, skip: modelsDir == null ? why : false);
 
   test('après la durée de garde, le modèle est libéré', () async {
-    so.initBindings();
+    initSherpaBindings();
     final r = SherpaRecognizer(
       storeWithModels(root),
       keepWarm: const Duration(milliseconds: 700),
@@ -72,7 +73,7 @@ void main() {
   }, skip: modelsDir == null ? why : false);
 
   test('changer de langue recharge le bon modèle', () async {
-    so.initBindings();
+    initSherpaBindings();
     final r = SherpaRecognizer(storeWithModels(root));
     await r.start(DictationLanguage.fr);
     await r.stop();

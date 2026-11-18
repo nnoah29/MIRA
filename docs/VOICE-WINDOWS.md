@@ -125,6 +125,9 @@ micro Windows (record_windows : Media Foundation / WASAPI)
 
 ## 6. Ce qu'il faut faire pour une dictée fluide et utile sous Windows
 
+> Le détail pas à pas, avec les essais à cocher, les risques connus et les mesures à relever, est dans
+> `docs/VOICE-WINDOWS-A-FAIRE.md`. Cette section n'en est que le résumé.
+
 Le travail est surtout de la **vérification**, pas du développement :
 
 1. **Premier essai réel** sur une machine Windows (x64 d'abord, puis ARM64 si possible) : la dictée démarre-t-elle, le texte

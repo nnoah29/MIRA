@@ -125,8 +125,8 @@ micro Windows (record_windows : Media Foundation / WASAPI)
 
 ## 6. Ce qu'il faut faire pour une dictée fluide et utile sous Windows
 
-> Le détail pas à pas, avec les essais à cocher, les risques connus et les mesures à relever, est dans
-> `docs/VOICE-WINDOWS-A-FAIRE.md`. Cette section n'en est que le résumé.
+> Validé à la main sous Windows 11 (23H2) le 2026-11-18 : micro, modèle et Espace maintenu fonctionnent. Les tests
+> d'intégration chargent d'abord l'`onnxruntime.dll` de sherpa, car Windows prendrait sinon celle de `System32` (1.10).
 
 Le travail est surtout de la **vérification**, pas du développement :
 

@@ -20,6 +20,8 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 - **b) Les adresses `data:` sont autorisées sans condition.** Le même `_onNavigate` laisse passer toute navigation vers `about:` ou `data:`. Un lien `data:text/html,…` dans un mail ouvre alors une page de l'expéditeur **sans la règle CSP**, avec JavaScript actif. Elle peut contacter l'extérieur librement (révèle l'adresse IP, confirme la lecture, imite un écran de connexion).
 - **c) JavaScript est actif alors que le contenu est hostile.** Il ne sert qu'à mesurer la hauteur de la page et à relayer la molette, et cela donne à une éventuelle exécution de script un canal vers l'application (`MiraMail`).
 
+**Statut (2026-11-18).** Trous **a** et **b** corrigés dans `app/lib/engine/web_document.dart` et `web_navigation.dart` (tests : `web_document_hardening_test.dart`, `web_navigation_test.dart`) : règle CSP complétée, `meta refresh`, `http-equiv` inconnus et `<base>` retirés avant chargement, `about:`/`data:` refusés une fois le document chargé. **Reste le trou c** (nettoyage du HTML d'origine côté moteur, seconde ligne de défense) et la vérification réelle sur chaque plateforme.
+
 **Plateformes.** Linux (WebKitGTK), Android (WebView), Windows (WebView2) ; macOS le sera aussi quand il arrivera. Le rendu natif en widgets (sans vue web) n'est pas concerné.
 
 **Correctif.**

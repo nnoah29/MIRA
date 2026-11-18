@@ -7,8 +7,24 @@ final _doctype = RegExp(r'^\s*<!doctype[^>]*>', caseSensitive: false);
 /// Politique de contenu du document : rien ne se charge ni ne s'exécute, sauf les images incorporées (et distantes si autorisées).
 String contentPolicy({required bool remoteImages}) {
   final images = remoteImages ? 'data: https: http:' : 'data:';
-  return "default-src 'none'; img-src $images; style-src 'unsafe-inline'; font-src data:";
+  return "default-src 'none'; img-src $images; style-src 'unsafe-inline'; font-src data:; "
+      "form-action 'none'; base-uri 'none'; frame-src 'none'; object-src 'none'";
 }
+
+final _meta = RegExp(
+  r'''<meta\b[^>]*?\bhttp-equiv\s*=\s*(["']?)([^"'\s>]*)\1[^>]*>''',
+  caseSensitive: false,
+);
+final _base = RegExp(r'<base\b[^>]*>', caseSensitive: false);
+const _keptEquiv = {'content-type', 'x-ua-compatible', 'content-language'};
+
+/// Retire du courriel ce qui redirige ou change la base des adresses (`refresh`, `<base>`, `http-equiv` inconnu).
+String _withoutNavigation(String html) => html
+    .replaceAllMapped(
+      _meta,
+      (m) => _keptEquiv.contains(m.group(2)!.toLowerCase()) ? m.group(0)! : '',
+    )
+    .replaceAll(_base, '');
 
 /// La page ne défile pas elle-même : c'est le lecteur qui la fait défiler, à sa hauteur complète.
 /// Ses hauteurs ne suivent pas celle de la vue (`height:100%`, fréquent dans les courriels) : la vue prend la hauteur du contenu, qui sinon grandirait avec elle sans fin.
@@ -30,7 +46,7 @@ String webDocument(
 }) {
   final meta =
       '<meta http-equiv="Content-Security-Policy" content="${contentPolicy(remoteImages: remoteImages)}">${viewport ? _viewport : ''}$_noOwnScroll';
-  final body = _inlineImages(html, inline);
+  final body = _inlineImages(_withoutNavigation(html), inline);
   final doctype = _doctype.firstMatch(body);
   final at = doctype?.end ?? 0;
   return body.replaceRange(at, at, meta);

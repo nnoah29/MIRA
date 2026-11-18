@@ -7,6 +7,7 @@ import '../state/assistant.dart';
 import '../state/store.dart';
 import '../voice/voice_services.dart';
 import 'mic_button.dart';
+import 'push_to_talk_space.dart';
 import 'voice_problem.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
@@ -421,20 +422,25 @@ class _AssistantPanelState extends State<AssistantPanel> {
                       const SingleActivator(LogicalKeyboardKey.enter): () =>
                           _send(s),
                     },
-                    child: TextField(
-                      controller: input,
-                      focusNode: focus,
-                      minLines: 2,
-                      maxLines: 2,
-                      cursorColor: p.accent,
-                      cursorWidth: 1,
-                      style: Fonts.sans(size: 15, color: p.text),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
-                        hintText: t('Demande quelque chose à l’assistant…'),
-                        hintStyle: Fonts.sans(size: 15, color: p.dim),
+                    child: PushToTalkSpace(
+                      target: input,
+                      onProblem: (problem) =>
+                          reportVoiceProblem(context, problem),
+                      child: TextField(
+                        controller: input,
+                        focusNode: focus,
+                        minLines: 2,
+                        maxLines: 2,
+                        cursorColor: p.accent,
+                        cursorWidth: 1,
+                        style: Fonts.sans(size: 15, color: p.text),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                          hintText: t('Demande quelque chose à l’assistant…'),
+                          hintStyle: Fonts.sans(size: 15, color: p.dim),
+                        ),
                       ),
                     ),
                   ),

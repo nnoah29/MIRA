@@ -13,6 +13,7 @@ import '../state/rich_controller.dart';
 import '../state/store.dart';
 import '../voice/voice_services.dart';
 import 'mic_button.dart';
+import 'push_to_talk_space.dart';
 import 'voice_problem.dart';
 import '../state/template_insert.dart';
 import '../theme/app_theme.dart';
@@ -476,24 +477,32 @@ class _ComposerState extends State<Composer> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                TextField(
-                                  controller: c.body,
-                                  strutStyle: StrutStyle.disabled,
-                                  focusNode: c.bodyFocus,
-                                  maxLines: null,
-                                  onChanged: (_) => s.touch(),
-                                  textAlign: c.center
-                                      ? TextAlign.center
-                                      : TextAlign.start,
-                                  cursorColor: p.accent,
-                                  cursorWidth: 1,
-                                  style: bodyStyle,
-                                  decoration: InputDecoration(
-                                    isDense: true,
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.zero,
-                                    hintText: t('Écris ton message…'),
-                                    hintStyle: bodyStyle.copyWith(color: p.dim),
+                                PushToTalkSpace(
+                                  target: c.body,
+                                  onEdited: s.touch,
+                                  onProblem: (problem) =>
+                                      reportVoiceProblem(context, problem),
+                                  child: TextField(
+                                    controller: c.body,
+                                    strutStyle: StrutStyle.disabled,
+                                    focusNode: c.bodyFocus,
+                                    maxLines: null,
+                                    onChanged: (_) => s.touch(),
+                                    textAlign: c.center
+                                        ? TextAlign.center
+                                        : TextAlign.start,
+                                    cursorColor: p.accent,
+                                    cursorWidth: 1,
+                                    style: bodyStyle,
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.zero,
+                                      hintText: t('Écris ton message…'),
+                                      hintStyle: bodyStyle.copyWith(
+                                        color: p.dim,
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 if (c.quote != null)

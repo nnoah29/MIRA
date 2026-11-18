@@ -29,6 +29,9 @@ class DictationController extends ChangeNotifier {
   final Duration recognizerStartTimeout;
   DictationLanguage language;
   DictationState state = DictationState.idle;
+
+  /// Façon dont la dictée en cours a été lancée (continue tant qu'aucune n'est en cours).
+  DictationMode mode = DictationMode.continuous;
   DictationProblem? problem;
   TextEditingController? target;
   DictationInserter? _inserter;
@@ -42,6 +45,7 @@ class DictationController extends ChangeNotifier {
   int _backlogSamples = 0;
   bool _recognizerReady = false;
   bool _micOpen = false;
+  bool _stopRequested = false;
   TextEditingController? _retryTarget;
 
   /// Niveau sonore du micro, de 0 à 1, pour l'animation ; il retombe doucement au silence.
@@ -51,13 +55,18 @@ class DictationController extends ChangeNotifier {
   bool get recognizerReady => _recognizerReady;
 
   /// Démarre la dictée dans [field] ; une dictée en cours ailleurs est arrêtée d'abord.
-  Future<void> start(TextEditingController field) async {
+  Future<void> start(
+    TextEditingController field, {
+    DictationMode mode = DictationMode.continuous,
+  }) async {
     await _closing;
     if (state != DictationState.idle) {
       if (identical(target, field)) return;
       await stop();
     }
     problem = null;
+    this.mode = mode;
+    _stopRequested = false;
     _retryTarget = null;
     target = field;
     final session = ++_session;
@@ -90,6 +99,7 @@ class DictationController extends ChangeNotifier {
       DictationProblem.microphoneUnavailable,
     );
     _stillCurrent(session);
+    _abortIfNothingSaid();
     if (allowed == false) return DictationProblem.microphoneDenied;
     if (allowed is! bool) return allowed as DictationProblem;
     final samples = await _guard(
@@ -98,6 +108,10 @@ class DictationController extends ChangeNotifier {
     );
     _stillCurrent(session);
     if (samples is DictationProblem) return samples;
+    if (_stopRequested) {
+      await _quietly(audio.stop);
+      throw const _Superseded();
+    }
     _listen(field, samples as Stream<Float32List>);
     final failure = await _guard(
       () => recognizer.start(language).timeout(recognizerStartTimeout),
@@ -121,6 +135,11 @@ class DictationController extends ChangeNotifier {
     } on Object {
       return fallback;
     }
+  }
+
+  /// Un arrêt demandé avant l'ouverture du micro annule l'ouverture : il n'y a rien à garder.
+  void _abortIfNothingSaid() {
+    if (_stopRequested && !_micOpen) throw const _Superseded();
   }
 
   /// Lève [_Superseded] si un arrêt ou un autre démarrage a dépassé cette session.
@@ -181,7 +200,8 @@ class DictationController extends ChangeNotifier {
   Future<void> stop() async {
     if (state == DictationState.idle) return;
     if (state == DictationState.stopping) return _closing;
-    _session++;
+    _stopRequested = true;
+    if (_opening == null) _session++;
     _set(DictationState.stopping);
     final closing = _shutdown();
     _closing = closing;
@@ -202,6 +222,7 @@ class DictationController extends ChangeNotifier {
     if (identical(_retryTarget, field)) _retryTarget = null;
     if (!identical(target, field) || state == DictationState.idle) return;
     _inserter?.release();
+    _session++;
     unawaited(stop());
   }
 
@@ -263,6 +284,8 @@ class DictationController extends ChangeNotifier {
 
   /// Retour à l'état de repos.
   void _finish() {
+    mode = DictationMode.continuous;
+    _stopRequested = false;
     _inserter = null;
     target = null;
     _set(DictationState.idle);

@@ -10,6 +10,7 @@ import '../voice/voice_model_store.dart';
 import '../voice/voice_services.dart';
 import 'ai_local_text.dart';
 import 'voice_model_dialog.dart';
+import 'voice_push_settings.dart';
 import 'widgets.dart';
 
 /// Section « Dictée vocale » ; vide quand l'app n'a pas de services de dictée.
@@ -79,6 +80,7 @@ class _Content extends StatelessWidget {
           const SizedBox(height: 6),
           _languages(),
           const SizedBox(height: 14),
+          VoicePushSettings(services: services),
           for (final entry in services.models.catalog)
             _ModelCard(services: services, entry: entry),
           Text(

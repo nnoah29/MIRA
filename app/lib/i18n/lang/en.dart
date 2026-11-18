@@ -1544,6 +1544,16 @@ const Map<String, String> enStrings = {
       'The local model is not available on this device.',
   'Dicter': 'Dictate',
   'Arrêter la dictée': 'Stop dictation',
+  'Dicter en continu · maintiens Espace pour parler phrase par phrase':
+      'Dictate continuously · hold Space to talk one phrase at a time',
+  'Dicter phrase par phrase': 'Dictate one phrase at a time',
+  'Espace maintenu': 'Hold Space',
+  'Maintiens Espace dans un champ pour parler, relâche pour valider. Un appui court reste une espace.': 'Hold Space in a field to talk, release to confirm. A short press is still a space.',
+  'Délai de maintien': 'Hold delay',
+  'Durée d’appui sur Espace avant que la dictée démarre.':
+      'How long to hold Space before dictation starts.',
+  'Garder le modèle en mémoire': 'Keep the model in memory',
+  'Après une dictée, le modèle reste chargé pour que la suivante démarre tout de suite ; il occupe environ 130 Mo pendant ce temps.': 'After dictation the model stays loaded so the next one starts right away; it uses about 130 MB in the meantime.',
   'Modèle de dictée absent : installez-le dans Réglages › Dictée vocale':
       'Dictation model missing: install it in Settings › Voice dictation',
   'Accès au micro refusé : autorisez-le dans les réglages du système':

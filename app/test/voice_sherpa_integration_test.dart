@@ -7,6 +7,8 @@ import 'package:mira/voice/voice_model_catalog.dart';
 import 'package:mira/voice/voice_model_store.dart';
 import 'package:sherpa_onnx/sherpa_onnx.dart' as so;
 
+import 'voice_native_libraries.dart';
+
 final String? modelsDir = Platform.environment['MIRA_VOICE_MODELS'];
 const why = 'modèles absents (définir MIRA_VOICE_MODELS)';
 
@@ -46,7 +48,7 @@ void main() {
   test(
     'français : phrase reconnue en direct puis validée, fin comprise',
     () async {
-      so.initBindings();
+      initSherpaBindings();
       final r = SherpaRecognizer(storeWithModels(root));
       final wav =
           '$modelsDir/${voiceModelCatalog.first.folder}/test_wavs/0.wav';
@@ -61,7 +63,7 @@ void main() {
   );
 
   test('anglais : phrase reconnue', () async {
-    so.initBindings();
+    initSherpaBindings();
     final r = SherpaRecognizer(storeWithModels(root));
     final wav = '$modelsDir/${voiceModelCatalog.last.folder}/test_wavs/0.wav';
     final events = await dictate(r, DictationLanguage.en, wav);

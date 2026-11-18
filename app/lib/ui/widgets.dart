@@ -15,6 +15,9 @@ class Hov extends StatefulWidget {
 
   /// Léger effet « bouton enfoncé » pendant l'appui.
   final bool press;
+
+  /// Façon d'afficher l'info-bulle ; `manual` libère l'appui long pour un autre usage.
+  final TooltipTriggerMode? tipTrigger;
   const Hov({
     super.key,
     required this.builder,
@@ -23,6 +26,7 @@ class Hov extends StatefulWidget {
     this.tip,
     this.opaque = true,
     this.press = false,
+    this.tipTrigger,
   });
 
   @override
@@ -70,6 +74,7 @@ class _HovState extends State<Hov> {
       w = Tooltip(
         message: widget.tip!,
         waitDuration: const Duration(milliseconds: 700),
+        triggerMode: widget.tipTrigger,
         child: w,
       );
     }
@@ -231,6 +236,9 @@ class IBtn extends StatelessWidget {
 
   /// Remplace l'icône (par exemple par une animation) sans changer le reste du bouton.
   final Widget? glyph;
+
+  /// Façon d'afficher l'info-bulle (voir [Hov.tipTrigger]).
+  final TooltipTriggerMode? tipTrigger;
   const IBtn(
     this.icon, {
     super.key,
@@ -243,6 +251,7 @@ class IBtn extends StatelessWidget {
     this.stroke = 1.6,
     this.color,
     this.glyph,
+    this.tipTrigger,
   });
 
   @override
@@ -251,6 +260,7 @@ class IBtn extends StatelessWidget {
     return Hov(
       onTap: onTap,
       tip: tip,
+      tipTrigger: tipTrigger,
       press: true,
       builder: (_, h) => AnimatedContainer(
         duration: const Duration(milliseconds: 130),

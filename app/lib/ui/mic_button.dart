@@ -34,6 +34,7 @@ class MicButton extends StatefulWidget {
 class _MicButtonState extends State<MicButton> {
   DictationController? _dictation;
   bool _started = false;
+  bool _pressing = false;
 
   @override
   void initState() {
@@ -101,6 +102,33 @@ class _MicButtonState extends State<MicButton> {
     }
   }
 
+  /// Info-bulle au repos : fait découvrir Espace maintenu quand il est actif.
+  String _idleTip() =>
+      voiceServicesOf(context)?.preferences.holdSpaceEnabled ?? false
+      ? t('Dicter en continu · maintiens Espace pour parler phrase par phrase')
+      : t('Dicter');
+
+  /// Appui long : dictée phrase par phrase tant que le bouton est tenu, sauf si une dictée est déjà en cours.
+  void _pressStart() {
+    final d = _dictation;
+    if (d == null) return;
+    final free =
+        d.state == DictationState.idle ||
+        (d.state == DictationState.stopping &&
+            d.mode == DictationMode.pushToTalk);
+    if (!free) return;
+    _pressing = true;
+    _started = true;
+    d.start(widget.target, mode: DictationMode.pushToTalk);
+  }
+
+  /// Le bouton est relâché : la dictée lancée par l'appui long s'arrête jusqu'au bout.
+  void _pressEnd() {
+    if (!_pressing) return;
+    _pressing = false;
+    _dictation?.stop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final d = voiceServicesOf(context)?.dictation;
@@ -109,34 +137,40 @@ class _MicButtonState extends State<MicButton> {
       listenable: d,
       builder: (context, _) {
         final on = _mine && d.state == DictationState.listening;
-        return Stack(
-          alignment: Alignment.topRight,
-          children: [
-            IBtn(
-              'mic',
-              key: const ValueKey('voice-mic-button'),
-              tip: on ? t('Arrêter la dictée') : t('Dicter'),
-              on: on,
-              box: widget.box,
-              glyph: on
-                  ? DictationBars(level: d.level, ready: d.recognizerReady)
-                  : null,
-              onTap: _toggle,
-            ),
-            if (on)
-              Padding(
-                padding: const EdgeInsets.all(6),
-                child: Container(
-                  key: const ValueKey('voice-mic-listening'),
-                  width: 7,
-                  height: 7,
-                  decoration: BoxDecoration(
-                    color: context.pal.accent,
-                    shape: BoxShape.circle,
+        return GestureDetector(
+          onLongPressStart: (_) => _pressStart(),
+          onLongPressEnd: (_) => _pressEnd(),
+          onLongPressCancel: _pressEnd,
+          child: Stack(
+            alignment: Alignment.topRight,
+            children: [
+              IBtn(
+                'mic',
+                key: const ValueKey('voice-mic-button'),
+                tip: on ? t('Arrêter la dictée') : _idleTip(),
+                tipTrigger: TooltipTriggerMode.manual,
+                on: on,
+                box: widget.box,
+                glyph: on
+                    ? DictationBars(level: d.level, ready: d.recognizerReady)
+                    : null,
+                onTap: _toggle,
+              ),
+              if (on)
+                Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Container(
+                    key: const ValueKey('voice-mic-listening'),
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: context.pal.accent,
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         );
       },
     );

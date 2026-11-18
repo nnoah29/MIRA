@@ -1544,6 +1544,8 @@ const Map<String, String> enStrings = {
       'The local model is not available on this device.',
   'Dicter': 'Dictate',
   'Arrêter la dictée': 'Stop dictation',
+  'Dicter en continu · maintiens Espace pour parler phrase par phrase':
+      'Dictate continuously · hold Space to talk one phrase at a time',
   'Modèle de dictée absent : installez-le dans Réglages › Dictée vocale':
       'Dictation model missing: install it in Settings › Voice dictation',
   'Accès au micro refusé : autorisez-le dans les réglages du système':

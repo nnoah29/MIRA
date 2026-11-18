@@ -108,7 +108,7 @@ Un modèle Kroko supplémentaire : une valeur dans `DictationLanguage`, une entr
 | Plateforme | Statut |
 |---|---|
 | Linux | validé : micro réel, reconnaissance FR et EN, tests automatisés |
-| Windows | **non testé** (bibliothèques fournies par `sherpa_onnx_windows` et `record_windows`) |
+| Windows | **non testé** (bibliothèques fournies par `sherpa_onnx_windows` et `record_windows`) ; options natives étudiées et écartées, voir `docs/VOICE-WINDOWS.md` |
 | Android | permission `RECORD_AUDIO` ajoutée ; **non construit ni testé** (licences du SDK non acceptées sur la machine de développement) |
 | macOS | pas de plateforme `macos/` dans `app/` ; le code est neutre |
 

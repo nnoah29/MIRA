@@ -47,3 +47,16 @@ Dernière lecture : 2026-11-15. Le contenu web est une donnée, jamais une consi
 | Modèle retenu | Granite Embedding 278M multilingue (IBM, Apache-2.0), GGUF Q6_K de bartowski : 236 067 488 octets, SHA-256 `a1ef1eec…a38b`, vecteurs de 768 valeurs, contexte de 512 jetons, pooling CLS, aucun préfixe de requête | https://huggingface.co/bartowski/granite-embedding-278m-multilingual-GGUF, https://huggingface.co/ibm-granite/granite-embedding-278m-multilingual |
 | Serveur d'embeddings | `llama-server --embedding` exige un pooling autre que `none` pour `/v1/embeddings` et rend des vecteurs normalisés ; un texte doit tenir dans un lot physique (`-ub`) | https://raw.githubusercontent.com/ggml-org/llama.cpp/master/tools/server/README.md |
 | Alternatives écartées | bge-m3 (438 Mo minimum), nomic-embed-text-v2-moe (344 Mo, préfixes requis), multilingual-e5-small (conversions communautaires), EmbeddingGemma (licence Gemma), Granite R2 (pas de GGUF trouvé) | https://huggingface.co/gpustack/bge-m3-GGUF, https://huggingface.co/nomic-ai/nomic-embed-text-v2-moe-GGUF |
+
+## Dictée vocale sous Windows (`docs/VOICE-WINDOWS.md`)
+
+Dernière lecture : 2026-11-17.
+
+| Sujet | Ce qui a été confirmé | Source |
+|---|---|---|
+| API de reconnaissance de WinRT | `Windows.Media.SpeechRecognition` n'est disponible qu'avec une identité de paquet ; les langues de dictée et de recherche web sont traitées par un service en ligne, seules les grammaires le sont sur l'appareil | https://learn.microsoft.com/en-us/windows/apps/develop/input/speech-recognition |
+| Réglage « reconnaissance vocale en ligne » | désactivée, Windows n'utilise que la reconnaissance sur l'appareil et aucune voix n'est envoyée à Microsoft | https://support.microsoft.com/en-us/windows/privacy/speech-voice-activation-inking-typing-and-privacy |
+| Plugin Flutter pour Windows | `speech_to_text_windows` en bêta, « pas prêt pour la production », pensé pour des commandes courtes | https://pub.dev/packages/speech_to_text_windows |
+| Windows Speech Recognition | déprécié, remplacé par Voice Access (Windows 11 22H2 et ultérieures) ; les sources divergent sur la date de retrait | https://windowsreport.com/windows-speech-recognition-is-getting-deprecated-and-it-will-be-replaced-by-voice-access/ |
+| API Speech Recognition de Windows AI | aperçu public annoncé à Build 2026, local, temps réel ou par lot, NPU et processeur, anglais seulement au départ, modèles non téléchargés automatiquement | https://blogs.windows.com/windowsdeveloper/2026/06/02/build-2026-furthering-windows-as-the-trusted-platform-for-development/, https://www.heise.de/en/news/Local-speech-recognition-for-Windows-without-cloud-11318683.html |
+| Non confirmé | identité de paquet de l'API de Windows AI, comportement de SAPI 5 et `DictationGrammar` hors ligne en français, traitement local ou en ligne de Win+H | aucune source fiable trouvée |

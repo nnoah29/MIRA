@@ -29,7 +29,7 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 | SEC-A01-1 | Socket Unix en 0600, dossier en 0700 | ✅ | `transport/unix.rs:40`, `unix_files.rs:11-13` |
 | SEC-A01-2 | Jeton local en fichier privé, refus si 0o077 | ✅ | `token/file.rs` `refuse_shared` |
 | SEC-A01-3 | TCP lié à 127.0.0.1 seulement | ✅ | `transport/tcp.rs:18` |
-| SEC-A01-4 | Comparaison du jeton en temps constant | 🟡 | aucune occurrence de `ct_eq`/`subtle` ; lire `session/hello.rs` |
+| SEC-A01-4 | Comparaison du jeton en temps constant | ✅ | `token/mod.rs:23` : HMAC + `hmac::verify` (corrigé après lecture) |
 | SEC-A01-5 | Contrôle du pair sur socket Unix (`SO_PEERCRED`, même UID) | 🟡 | non trouvé ; le 0600 couvre le cas courant |
 | SEC-A01-6 | Sous TCP loopback : tout processus local de n'importe quel utilisateur peut tenter de se connecter | 🟡 | seul le jeton protège ; évaluer limitation de tentatives |
 | SEC-A01-7 | Autorisations par opération (une session « lecture » ne peut pas écrire/envoyer) | 🟡 | `Auth` n'a qu'un `LocalToken` ; pas de notion de portée |

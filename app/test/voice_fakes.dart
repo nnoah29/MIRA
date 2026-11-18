@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:mira/voice/dictation_controller.dart';
 import 'package:mira/voice/dictation_types.dart';
+import 'package:mira/voice/model_keeper.dart';
 import 'package:mira/voice/voice_model_catalog.dart';
 import 'package:mira/voice/voice_model_store.dart';
 import 'package:mira/voice/voice_preferences.dart';
@@ -100,14 +101,23 @@ class FakeModels implements ModelAvailability {
   bool isInstalled(DictationLanguage language) => installed.contains(language);
 }
 
+/// Réglage de garde du modèle factice : retient la dernière durée reçue.
+class FakeWarm implements KeepWarmSetting {
+  Duration? last;
+
+  @override
+  set keepWarm(Duration keep) => last = keep;
+}
+
 /// Services de dictée complets avec des faux, prêts à être fournis à l'interface.
 class FakeVoice {
-  FakeVoice._(this.audio, this.recognizer, this.services, this.root);
+  FakeVoice._(this.audio, this.recognizer, this.services, this.root, this.warm);
 
   final FakeAudioSource audio;
   final FakeRecognizer recognizer;
   final VoiceServices services;
   final Directory root;
+  final FakeWarm warm;
 
   /// Construit les faux services sur un dossier temporaire ; le dossier est supprimé par [dispose].
   static Future<FakeVoice> create({
@@ -120,7 +130,9 @@ class FakeVoice {
     final recognizer = FakeRecognizer();
     final root = Directory.systemTemp.createTempSync('voice-ui');
     final store = VoiceModelStore(root: root, catalog: catalog);
+    final warm = FakeWarm();
     final services = VoiceServices(
+      warm: warm,
       dictation: DictationController(
         audio: audio,
         recognizer: recognizer,
@@ -129,7 +141,7 @@ class FakeVoice {
       models: store,
       preferences: VoicePreferences(prefs),
     );
-    return FakeVoice._(audio, recognizer, services, root);
+    return FakeVoice._(audio, recognizer, services, root, warm);
   }
 
   /// Arrête la dictée et supprime le dossier temporaire.

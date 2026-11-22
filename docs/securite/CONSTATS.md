@@ -53,6 +53,8 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 
 **Pourquoi c'est un risque.** MIRA embarque des composants qui lisent des données hostiles : `ammonia` (HTML), `mail_parser` / `mail_builder` (mails), `zip` / `tar` / `flate2` (archives), `rustls` (TLS), `reqwest`. Une faille publiée dans l'un d'eux resterait inconnue tant que personne ne la cherche.
 
+**Statut (2026-11-22).** Premier passage de `cargo deny check advisories` : **plus de 25 avis réels**, dont `ammonia` (4 avis, dont XSS par SVG/MathML : c'est l'assainisseur du HTML des mails), `lettre` (injection de commandes SMTP, usurpation de réponses STARTTLS, mauvais destinataire), `rustls`/`rustls-webpki` (certificats refusés à tort acceptés, rétrogradation d'échange de clés), `url`, `zstd`, `tokio`, `rusqlite`/SQLite (CVE). **Tous corrigés** par mise à jour du verrou (`ammonia` 4.2.5, `lettre` 0.11.24, `rustls` 0.23.46, `rustls-webpki` 0.103.17, `tokio` 1.54.1, `url` 2.5.9, `zstd` 0.14.4, `webpki-roots` 1.0.12) et montée de `rusqlite` 0.40 → 0.41 (SQLite embarqué corrigé), sans changement de code ; tests ciblés HTML, SMTP et stockage verts. **Restent 4 avis « non maintenu »** (`chrono`, `zbus_names`, `zvariant`, `zvariant_derive`), sans correctif possible, inscrits avec justification dans `engine/deny.toml`. Ajoutés : `.github/workflows/securite.yml` (hebdomadaire + avant release : avis RustSec et OSV sur `pubspec.lock`) et `.github/dependabot.yml`. **Reste** : SBOM par release, et l'audit Dart n'a pas encore tourné (OSV-Scanner absent de cette machine).
+
 **Plateformes.** Toutes (c'est la chaîne de fabrication).
 
 **Correctif.**

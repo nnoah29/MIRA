@@ -1,0 +1,29 @@
+name: securite
+on:
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  avis-rust:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with: { toolchain: "1.99.0" }
+      - run: cargo install cargo-deny --locked
+      - name: Avis de sécurité RustSec
+        working-directory: engine
+        run: cargo deny --log-level error check advisories
+  avis-dart:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Avis OSV sur pubspec.lock
+        run: |
+          curl -fsSL -o osv-scanner https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64
+          chmod +x osv-scanner
+          ./osv-scanner scan source --lockfile app/pubspec.lock

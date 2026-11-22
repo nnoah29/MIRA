@@ -14,3 +14,11 @@ deny = [{ name = "libloading" }, { name = "openssl-sys" }, { name = "openssl" }]
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
+
+[advisories]
+ignore = [
+    { id = "RUSTSEC-2026-0543", reason = "chrono non maintenu, aucune alternative corrigée ; usage limité à mira-host" },
+    { id = "RUSTSEC-2026-0371", reason = "zbus_names non maintenu, dépendance transitive du trousseau Linux" },
+    { id = "RUSTSEC-2026-0370", reason = "zvariant non maintenu, dépendance transitive du trousseau Linux" },
+    { id = "RUSTSEC-2026-0372", reason = "zvariant_derive non maintenu, dépendance transitive du trousseau Linux" },
+]

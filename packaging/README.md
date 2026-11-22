@@ -26,7 +26,10 @@ packaging/install.sh              # installe la dernière release, ou la met à 
 packaging/install.sh 1.0.0        # une version précise
 packaging/install.sh --force      # réinstalle même si la version est déjà là
 packaging/install.sh --uninstall  # retire l'application (comptes et mails conservés)
+MIRA_INSTALL_FROM=<dossier> packaging/install.sh 2.4.0   # hors ligne : archive et SHA256SUMS déjà téléchargés
 ```
+
+**Un seul emplacement.** `install.sh` refuse de s'installer (code 2) si MIRA est déjà installé par le système (pacman, apt, dnf, ou fichiers sous `/usr/lib/mira-mail`) et indique la commande de retrait ; il refuse aussi root et `sudo`, un lanceur étranger dans `~/.local/bin` (sauf `--force`), une version mal formée, une archive à chemins `..`, sans binaire ou sans métadonnées, ou dont la somme SHA-256 est fausse. Chaque version est extraite dans un dossier à part puis activée par un lien `current` remplacé atomiquement ; un échec rétablit la version précédente. Test : `packaging/tests/install_script.sh` (aucun réseau).
 
 Installation pour l'utilisateur courant, sans `sudo`, quelle que soit la distribution : l'archive `.tar.gz` de la release est vérifiée avec `SHA256SUMS`, puis extraite dans `~/.local/share/mira-mail/<version>/` ; `current` pointe vers la version active, la précédente est gardée pour revenir en arrière. Commande `~/.local/bin/mira-mail`, lanceur et icônes dans `~/.local/share`. Le dépôt étant privé, le script passe par `gh` s'il est connecté, sinon par `curl` (dépôt public seulement).
 

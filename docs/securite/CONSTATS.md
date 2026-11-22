@@ -82,25 +82,13 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 
 ## 5. Windows : protection du jeton du démon à confirmer — gravité MOYENNE (à confirmer)
 
-**Le problème.** Sous Linux, le fichier du jeton et le socket sont réservés à l'utilisateur (permissions 0600/0700). Sous Windows, la vérification est volontairement vide (`token/file.rs:44`, « phase Windows ») et le démon écoute en TCP sur `127.0.0.1`.
-
-**Pourquoi c'est un risque.** Le jeton est l'unique clé d'accès au démon, donc à tous les mails. Sur un poste partagé (plusieurs sessions, bureau à distance), un autre utilisateur peut atteindre le port local ; seul le jeton l'arrête. Si les droits du dossier qui contient le jeton sont trop larges, il le lit.
-
-**Plateformes.** Windows. **macOS** devra être traité dès le départ (socket Unix dans le dossier de l'utilisateur, pas de TCP).
-
-**Correctif.** Fixer explicitement les droits du dossier et du fichier du jeton à l'utilisateur seul (ACL), ou remplacer le TCP par un tube nommé (*named pipe*) avec ACL. Tester avec un second compte Windows.
+**Reporté, à faire sous Windows.** Sous Linux le jeton et le socket sont réservés à l'utilisateur ; sous Windows la vérification est vide (`token/file.rs`, « phase Windows ») et le démon écoute en TCP sur `127.0.0.1`. Ce point demande une machine Windows à deux comptes pour être validé : problème, pistes de correctif et tests sont dans **`docs/securite/A-FAIRE-WINDOWS.md`**. Décision du 2026-11-22 : ne pas l'implémenter depuis Linux.
 
 ---
 
-## 6. Le démon accepte un nombre illimité de connexions — gravité BASSE
+## 6. Le démon accepte un nombre illimité de connexions — gravité INFORMATIVE (constat corrigé)
 
-**Le problème.** La boucle d'acceptation (`server/accept.rs`) crée une tâche par connexion sans plafond. Il y a bien un délai de 5 s pour le premier message et une taille maximale de 8 Ko, mais pas de limite du nombre de connexions.
-
-**Pourquoi c'est un risque.** Un programme local malveillant peut ouvrir des milliers de connexions et épuiser la mémoire du démon (déni de service). Il ne peut rien lire sans le jeton, qui fait 256 bits et se compare en temps constant.
-
-**Plateformes.** Toutes, surtout là où le TCP est utilisé.
-
-**Correctif.** Plafonner les connexions simultanées (par exemple 16) et couper celles qui échouent à l'authentification.
+**Correction du 2026-11-22.** La première passe affirmait l'absence de plafond ; c'était inexact. Les connexions qui n'ont pas encore envoyé leur `hello` sont plafonnées à 64 (`pending_hello`, `server/context.rs`, `session/mod.rs:54`), avec un délai de 5 s et une taille maximale de trame, le tout testé (`session_hello_limits.rs`). Un programme local ne peut donc pas saturer le démon sans jeton. Le seul reste : un client **déjà authentifié** peut ouvrir beaucoup de sessions ; il possède déjà tous les droits, le gain d'un plafond serait marginal. **Aucun correctif nécessaire.**
 
 ---
 
@@ -164,5 +152,5 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 1. **Constat 1** (vue web) : c'est le seul qui touche directement un attaquant anonyme par un simple mail.
 2. **Constat 3** (surveillance des dépendances) : rapide, grand gain.
 3. **Constat 2** (désabonnement).
-4. **Constat 5** (Windows) avant de diffuser sur Windows.
-5. Constats 6 à 9, et la décision sur le chiffrement de la base (4).
+4. **Constat 5** (Windows) : reporté, voir `A-FAIRE-WINDOWS.md`.
+5. Constats 7 à 9, et la décision sur le chiffrement de la base (4).

@@ -42,6 +42,7 @@ rand = "0.9"
 regex = "1"
 ring = "0.17"
 uuid = { version = "1.28", features = ["v7"] }
+url = "2"
 rusqlite = { version = "0.41", features = ["bundled"] }
 zstd = "0.14"
 mail-parser = "0.11"

@@ -13,6 +13,7 @@ mod model;
 mod preview;
 mod summary;
 mod unsubscribe;
+mod unsubscribe_host;
 
 pub use headers::{parse_headers, parse_unsubscribe_headers};
 pub use html_text::html_to_text;

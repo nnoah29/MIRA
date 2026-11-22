@@ -3,6 +3,8 @@
 use mail_parser::Message;
 use mira_vocabulary::Unsubscribe;
 
+use super::unsubscribe_host::is_public_https;
+
 /// Éléments entre chevrons d'un en-tête `List-Unsubscribe`.
 fn angle_items(text: &str) -> Vec<&str> {
     let mut items = Vec::new();
@@ -27,7 +29,7 @@ fn first_with_prefix(items: &[&str], prefix: &str) -> Option<String> {
 /// Lit les moyens de désabonnement d'un message ; `None` si aucun n'est exploitable.
 pub(crate) fn unsubscribe_from(message: &Message<'_>) -> Option<Unsubscribe> {
     let items = angle_items(message.header_raw("List-Unsubscribe")?);
-    let https_url = first_with_prefix(&items, "https:");
+    let https_url = first_with_prefix(&items, "https:").filter(|url| is_public_https(url));
     let mailto = first_with_prefix(&items, "mailto:");
     if https_url.is_none() && mailto.is_none() {
         return None;

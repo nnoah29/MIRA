@@ -38,6 +38,8 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 
 **Pourquoi c'est un risque.** Un mail falsifié (usurpation d'un vrai expéditeur) peut fournir n'importe quelle adresse HTTPS, y compris une machine du réseau local (`https://192.168.x.x/…`) ou un site qui, en voyant la requête, sait que votre adresse est active. L'appel part de l'ordinateur de l'utilisateur, donc depuis son réseau privé.
 
+**Statut (2026-11-22).** Points 1 et 3 corrigés. Le moteur (`mime/unsubscribe_host.rs`) n'expose plus une adresse `https` visant une machine locale ou privée (boucle, `10.x`, `172.16–31.x`, `192.168.x`, `169.254.x`, `100.64/10`, IPv6 locales, noms sans point, `.local`, identifiants dans l'adresse) : le mailto reste proposé, sans « un clic ». Côté application (`state/unsubscribe.dart`), le nom est résolu et chaque adresse obtenue contrôlée (contre un nom public qui pointe en privé), les redirections ne sont pas suivies, la réponse est limitée à 64 Ko et 10 s. Tests : `mime_unsubscribe_private_hosts.rs`, `unsubscribe_one_click_safety_test.dart`. **Reste le point 2** (exiger un DKIM valide) : le moteur ne vérifie pas encore DKIM. Limite connue : entre la résolution et la connexion, un nom peut changer d'adresse (rebinding), risque faible et résiduel.
+
 **Plateformes.** Toutes.
 
 **Correctif.**

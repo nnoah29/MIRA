@@ -1797,6 +1797,7 @@ dependencies = [
  "tokio",
  "tokio-rustls",
  "tracing",
+ "url",
  "uuid",
  "webpki-roots",
  "yaml-rust2",

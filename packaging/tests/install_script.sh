@@ -32,7 +32,9 @@ make_release() {
   else
     tar -czf "$dir/$archive" -C "$src" "mira-mail-$version"
   fi
-  (cd "$dir" && sha256sum "$archive" > SHA256SUMS)
+  printf 'deb-%s' "$version" > "$dir/mira-mail_${version}_amd64.deb"
+  printf 'rpm-%s' "$version" > "$dir/mira-mail-${version}-1.x86_64.rpm"
+  (cd "$dir" && sha256sum "$archive" "mira-mail_${version}_amd64.deb" "mira-mail-${version}-1.x86_64.rpm" > SHA256SUMS)
   [ "$mode" != "badsum" ] || printf '%064d  %s\n' 0 "$archive" > "$dir/SHA256SUMS"
 }
 
@@ -43,9 +45,23 @@ new_env() {
   unset XDG_DATA_HOME XDG_CONFIG_HOME
   export PATH="$tmp/bin:$HOME/.local/bin:/usr/bin:/bin"
   export MIRA_SYSTEM_ROOT="$tmp/sysroot"
+  export MIRA_SUDO="$tmp/bin/sudo"
+  unset MIRA_PACKAGE_MANAGER
+  rm -f "$tmp/sudo.log" "$tmp/pacman.installed" "$tmp/PKGBUILD.seen"
+  printf '#!/bin/sh\necho "sudo $*" >> "%s/sudo.log"\ncase "$1" in pacman) exec "$@" ;; esac\nexit 0\n' "$tmp" > "$tmp/bin/sudo"
+  chmod +x "$tmp/bin/sudo"
   local tool
   for tool in pacman dpkg-query rpm; do printf '#!/bin/sh\nexit 1\n' > "$tmp/bin/$tool"; chmod +x "$tmp/bin/$tool"; done
 }
+
+fake_pacman() {
+  printf '%s\n' '#!/bin/sh' "state=\"$tmp/pacman.installed\"" 'case "$1" in' \
+    '  -Q) if [ -f "$state" ] && [ "$2" = "mira-mail" ]; then echo "mira-mail-dev 2.3.1-1"; exit 0; fi; exit 1 ;;' \
+    '  -R) rm -f "$state"; exit 0 ;;' '  *) exit 0 ;;' 'esac' > "$tmp/bin/pacman"
+  chmod +x "$tmp/bin/pacman"
+  if [ "$1" = installed ]; then : > "$tmp/pacman.installed"; fi
+}
+sudo_log() { cat "$tmp/sudo.log" 2>/dev/null || true; }
 
 run() { MIRA_INSTALL_FROM="$1" bash "$script" "${@:2}" 2>&1; }
 root() { echo "$HOME/.local/share/mira-mail"; }
@@ -145,6 +161,67 @@ if [ "$(id -u)" = 0 ]; then
 else
   ok "ignoré (le test ne tourne pas en root)"
 fi
+
+echo "# paquet système : retrait avec sudo"
+new_env; fake_pacman installed
+out="$(run "$tmp/r100" 1.0.0 --yes)"; code=$?
+check "avec --yes : installation utilisateur faite" "[ $code = 0 ] && [ -L $HOME/.local/bin/mira-mail ]"
+check "sudo pacman -R --noconfirm lancé" "sudo_log | grep -qx 'sudo pacman -R --noconfirm mira-mail-dev'"
+new_env; fake_pacman installed
+out="$(run "$tmp/r100" 1.0.0)"; code=$?
+check "sans terminal ni --yes : refus, aucun sudo" "[ $code = 2 ] && [ -z \"\$(sudo_log)\" ] && has '--system'"
+
+echo "# désinstallation avec paquet système"
+new_env; fake_pacman none
+run "$tmp/r100" 1.0.0 >/dev/null; fake_pacman installed
+out="$(run "$tmp/r100" --uninstall --yes)"; code=$?
+check "--uninstall --yes retire utilisateur et système" "[ $code = 0 ] && [ ! -e $(root) ] && sudo_log | grep -qx 'sudo pacman -R --noconfirm mira-mail-dev'"
+new_env; fake_pacman none
+run "$tmp/r100" 1.0.0 >/dev/null; fake_pacman installed
+out="$(run "$tmp/r100" --uninstall)"; code=$?
+check "sans terminal : retire l'utilisateur, indique la commande système" "[ ! -e $(root) ] && has 'sudo pacman -R mira-mail-dev' && [ -z \"\$(sudo_log)\" ]"
+
+echo "# installation système (--system)"
+new_env; export MIRA_PACKAGE_MANAGER=apt
+out="$(run "$tmp/r100" 1.0.0 --system --yes)"; code=$?
+check "apt : sudo apt install -y du .deb vérifié" "[ $code = 0 ] && sudo_log | grep -qE '^sudo apt install -y .*/mira-mail_1.0.0_amd64.deb$'"
+check "apt : rien dans ~/.local" "[ ! -e $(root) ] && [ ! -e $HOME/.local/bin/mira-mail ]"
+new_env; export MIRA_PACKAGE_MANAGER=dnf
+out="$(run "$tmp/r100" 1.0.0 --system --yes)"; code=$?
+check "dnf : sudo dnf install -y du .rpm" "[ $code = 0 ] && sudo_log | grep -qE '^sudo dnf install -y .*/mira-mail-1.0.0-1.x86_64.rpm$'"
+new_env; export MIRA_PACKAGE_MANAGER=apt
+out="$(run "$tmp/bad-sum" 1.2.0 --system --yes)"; code=$?
+check "somme absente ou fausse : refus, aucun sudo" "[ $code != 0 ] && [ -z \"\$(sudo_log)\" ]"
+new_env; export MIRA_PACKAGE_MANAGER=zypper
+out="$(run "$tmp/r100" 1.0.0 --system --yes)"; code=$?
+check "gestionnaire inconnu refusé" "[ $code != 0 ] && has 'non pris en charge'"
+new_env; export MIRA_PACKAGE_MANAGER=apt MIRA_SUDO=/nonexistent/sudo
+out="$(run "$tmp/r100" 1.0.0 --system --yes)"; code=$?
+check "sudo absent : commande à lancer en root affichée" "[ $code != 0 ] && has 'en root'"
+
+echo "# installation système sur Arch : PKGBUILD généré, sudo pacman -U seulement"
+new_env; export MIRA_PACKAGE_MANAGER=pacman; fake_pacman none
+printf '#!/bin/sh\ncp PKGBUILD "%s/PKGBUILD.seen"\ntouch "$PKGDEST/mira-mail-bin-1.0.0-1-x86_64.pkg.tar.zst"\n' "$tmp" > "$tmp/bin/makepkg"
+chmod +x "$tmp/bin/makepkg"
+out="$(run "$tmp/r100" 1.0.0 --system --yes)"; code=$?
+sum="$(awk '$2 == "mira-mail-1.0.0-x86_64.tar.gz" {print $1}' "$tmp/r100/SHA256SUMS")"
+check "code 0 et pacman -U sur le paquet construit" "[ $code = 0 ] && sudo_log | grep -qE '^sudo pacman -U --noconfirm .*/mira-mail-bin-1.0.0-1-x86_64.pkg.tar.zst$'"
+check "PKGBUILD : version et somme vérifiée" "grep -qx 'pkgver=1.0.0' $tmp/PKGBUILD.seen && grep -qx \"sha256sums=('$sum')\" $tmp/PKGBUILD.seen"
+check "PKGBUILD : package() identique à celui du dépôt" "[ \"\$(sed -n '/^package()/,/^}/p' $tmp/PKGBUILD.seen)\" = \"\$(sed -n '/^package()/,/^}/p' $here/../arch/PKGBUILD)\" ]"
+check "PKGBUILD : dépendances identiques à celles du dépôt" "[ \"\$(grep '^depends=' $tmp/PKGBUILD.seen)\" = \"\$(grep '^depends=' $here/../arch/PKGBUILD)\" ]"
+rm -f "$tmp/bin/makepkg"
+
+echo "# --system : un seul emplacement"
+new_env; fake_pacman none
+run "$tmp/r100" 1.0.0 >/dev/null; export MIRA_PACKAGE_MANAGER=apt
+out="$(run "$tmp/r100" 1.0.0 --system)"; code=$?
+check "installation utilisateur présente, sans --yes : refus" "[ $code = 2 ] && [ -d $(root) ] && has 'install.sh --uninstall'"
+out="$(run "$tmp/r100" 1.0.0 --system --yes)"; code=$?
+check "avec --yes : utilisateur retiré puis paquet installé" "[ $code = 0 ] && [ ! -e $(root) ] && sudo_log | grep -q 'apt install'"
+new_env; export MIRA_PACKAGE_MANAGER=apt
+printf '#!/bin/sh\ncase "$*" in *Status-Abbrev*) printf "ii " ;; *) printf "1.0.0-1" ;; esac\n' > "$tmp/bin/dpkg-query"; chmod +x "$tmp/bin/dpkg-query"
+out="$(run "$tmp/r100" 1.0.0 --system --yes)"
+check "version système déjà à jour : rien à faire" "has 'déjà installé par le système' && [ -z \"\$(sudo_log)\" ]"
 
 echo "# désinstallation"
 new_env

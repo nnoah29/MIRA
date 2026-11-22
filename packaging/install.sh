@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Installe MIRA pour l'utilisateur courant (sans sudo) depuis une release GitHub : un seul emplacement, ~/.local/share/mira-mail.
-# Refuse de s'installer si MIRA est déjà installé par le système (pacman, apt, dnf) ; relancé, il met à jour. `--uninstall` retire l'installation.
-# Usage : install.sh [--force] [--uninstall] [--help] [version]   (ex. install.sh 1.0.0)
-# Hors ligne : MIRA_INSTALL_FROM=<dossier contenant l'archive et SHA256SUMS> install.sh <version>
+# Installe MIRA depuis une release GitHub, à un seul emplacement par machine : pour l'utilisateur (~/.local/share/mira-mail, sans sudo)
+# ou, avec --system, par le paquet de la distribution (apt, dnf, pacman ; sudo demandé). Relancé, il met à jour.
+# Si l'autre emplacement est déjà occupé, il propose de le retirer (sudo pour un paquet système). `--uninstall` retire tout.
+# Usage : install.sh [--system] [--yes] [--force] [--uninstall] [--help] [version]   (ex. install.sh 1.0.0)
+# Hors ligne : MIRA_INSTALL_FROM=<dossier contenant les fichiers de la release et SHA256SUMS> install.sh <version>
 set -euo pipefail
 umask 022
 
@@ -16,6 +17,9 @@ unit_dir="${XDG_CONFIG_HOME:-$home_dir/.config}/systemd/user"
 unit="$unit_dir/mira-daemon.service"
 icons="$data/icons/hicolor"
 sysroot="${MIRA_SYSTEM_ROOT:-}"
+sudo_cmd="${MIRA_SUDO:-sudo}"
+system_mode=0
+assume_yes=0
 force=0
 uninstall=0
 wanted=""
@@ -43,7 +47,9 @@ parse_args() {
     case "$arg" in
       --force) force=1 ;;
       --uninstall) uninstall=1 ;;
-      -h|--help) sed -n '2,5p' "$0"; exit 0 ;;
+      --system) system_mode=1 ;;
+      -y|--yes) assume_yes=1 ;;
+      -h|--help) sed -n '2,6p' "$0"; exit 0 ;;
       -*) die "option inconnue « $arg » (voir --help)." ;;
       *) [ -z "$wanted" ] || die "une seule version peut être demandée."; wanted="${arg#v}" ;;
     esac
@@ -99,16 +105,51 @@ removal_hint() {
   esac
 }
 
-refuse_if_system_install() {
+as_root() {
+  command -v "$sudo_cmd" >/dev/null 2>&1 || die "« $sudo_cmd » est introuvable. Lancez cette commande vous-même, en root : $*"
+  echo "→ $sudo_cmd $*"
+  "$sudo_cmd" "$@"
+}
+
+confirm() {
+  [ "$assume_yes" = 0 ] || return 0
+  [ -t 0 ] && [ -t 2 ] || return 1
+  local answer
+  read -r -p "$1 [o/N] " answer || return 1
+  case "$answer" in o|O|oui|Oui|y|Y|yes) return 0 ;; *) return 1 ;; esac
+}
+
+yes_flag() {
+  [ "$assume_yes" = 1 ] || return 0
+  case "$1" in pacman) echo "--noconfirm" ;; *) echo "-y" ;; esac
+}
+
+remove_system_package() {
+  local manager="$1" name="$2" flag
+  flag="$(yes_flag "$manager")"
+  case "$manager" in
+    pacman) as_root pacman -R ${flag:+"$flag"} "$name" ;;
+    apt) as_root apt remove ${flag:+"$flag"} "$name" ;;
+    dnf) as_root dnf remove ${flag:+"$flag"} "$name" ;;
+    *) die "MIRA est installé hors gestionnaire de paquets : $(removal_hint "$manager" "$name")." ;;
+  esac
+  if system_package >/dev/null; then die "le paquet système est toujours installé."; fi
+}
+
+resolve_system_conflict() {
   local found manager name
   found="$(system_package)" || return 0
   manager="${found%%|*}"
   name="${found#*|}"
+  echo "MIRA est déjà installé par le système (« $name »)." >&2
+  echo "Deux installations en parallèle se disputeraient le lanceur et le démon : MIRA n'a qu'un seul emplacement." >&2
+  if [ "$manager" != "fichiers" ] && confirm "Retirer le paquet système « $name » (sudo) pour installer pour l'utilisateur ?"; then
+    remove_system_package "$manager" "$name"
+    return 0
+  fi
   {
-    echo "MIRA est déjà installé par le système (« $name »)."
-    echo "Deux installations en parallèle se disputeraient le lanceur et le démon : MIRA n'a qu'un seul emplacement."
-    echo "Pour l'utiliser : mettez-le à jour avec votre gestionnaire de paquets."
-    echo "Pour passer à l'installation utilisateur : $(removal_hint "$manager" "$name"), puis relancez ce script."
+    echo "Pour l'utiliser : mettez-le à jour avec votre gestionnaire de paquets, ou lancez « install.sh --system »."
+    echo "Pour passer à l'installation utilisateur : $(removal_hint "$manager" "$name"), ou relancez avec --yes, puis relancez ce script."
   } >&2
   exit 2
 }
@@ -230,16 +271,28 @@ report_running_daemon() {
   fi
 }
 
-uninstall_all() {
-  local found
+uninstall_user() {
   command -v systemctl >/dev/null 2>&1 && systemctl --user disable --now mira-daemon.service >/dev/null 2>&1 || true
   rm -f "$unit"
   rm -rf "${root:?}" "$bin" "$bin.new" "$desktop" \
     "$icons/512x512/apps/com.toffanoah.mira.png" "$icons/scalable/apps/com.toffanoah.mira.svg" \
     "$data/metainfo/com.toffanoah.mira.metainfo.xml"
   command -v systemctl >/dev/null 2>&1 && systemctl --user daemon-reload >/dev/null 2>&1 || true
-  echo "MIRA désinstallé. Vos comptes et mails restent dans ~/.local/share et ~/.config."
-  if found="$(system_package)"; then echo "Une installation système subsiste (« ${found#*|} »)." >&2; fi
+}
+
+uninstall_all() {
+  local found manager name
+  uninstall_user
+  echo "Installation utilisateur retirée. Vos comptes et mails restent dans ~/.local/share et ~/.config."
+  found="$(system_package)" || return 0
+  manager="${found%%|*}"
+  name="${found#*|}"
+  if [ "$manager" != "fichiers" ] && confirm "Retirer aussi le paquet système « $name » (sudo) ?"; then
+    remove_system_package "$manager" "$name"
+    echo "Paquet système « $name » retiré."
+  else
+    echo "Une installation système subsiste (« $name ») : $(removal_hint "$manager" "$name")" >&2
+  fi
 }
 
 resolve_version() {
@@ -298,11 +351,120 @@ install_release() {
   if [ -n "$installed" ]; then report_running_daemon; fi
 }
 
+detect_manager() {
+  local manager="${MIRA_PACKAGE_MANAGER:-}"
+  if [ -z "$manager" ]; then
+    if command -v pacman >/dev/null 2>&1; then manager=pacman
+    elif command -v apt-get >/dev/null 2>&1; then manager=apt
+    elif command -v dnf >/dev/null 2>&1; then manager=dnf
+    fi
+  fi
+  case "$manager" in
+    pacman|apt|dnf) echo "$manager" ;;
+    *) die "gestionnaire de paquets non pris en charge (pacman, apt, dnf) : utilisez l'installation utilisateur (sans --system)." ;;
+  esac
+}
+
+system_installed_version() {
+  local version=""
+  case "$1" in
+    pacman) version="$(pacman -Q mira-mail 2>/dev/null | awk '{print $2}')" || true ;;
+    apt) version="$(dpkg-query -W -f='${Version}' mira-mail 2>/dev/null)" || true ;;
+    dnf) version="$(rpm -q --qf '%{VERSION}' mira-mail 2>/dev/null)" || true ;;
+  esac
+  echo "${version%%-*}"
+}
+
+remove_user_install_for_system() {
+  [ -d "$root" ] || [ -L "$bin" ] || return 0
+  echo "MIRA est déjà installé pour l'utilisateur ($root)." >&2
+  if confirm "Le retirer pour n'avoir qu'une installation, celle du système ?"; then
+    uninstall_user
+    return 0
+  fi
+  echo "Retirez-le d'abord : install.sh --uninstall (ou relancez avec --yes)." >&2
+  exit 2
+}
+
+write_pkgbuild() {
+  local file="$1" version="$2" sum="$3"
+  {
+    printf '%s\n' "pkgname=mira-mail-bin" "pkgver=$version" "pkgrel=1" "pkgdesc='Desktop mail client that works offline'" \
+      "arch=('x86_64')" "url='https://github.com/$repo'" "license=('MIT')" \
+      "depends=('gtk3' 'webkit2gtk-4.1' 'libepoxy' 'fontconfig' 'glibc' 'gcc-libs')" \
+      "provides=('mira-mail')" "conflicts=('mira-mail')" "options=('!strip' '!debug')" \
+      "source=(\"mira-mail-$version-x86_64.tar.gz\")" "sha256sums=('$sum')" ""
+    cat <<'PKGBUILD_BODY'
+package() {
+  cd "mira-mail-$pkgver-x86_64"
+  install -d "$pkgdir/usr/lib/mira-mail" "$pkgdir/usr/bin"
+  cp -a app/. "$pkgdir/usr/lib/mira-mail/"
+  ln -s ../lib/mira-mail/mira "$pkgdir/usr/bin/mira-mail"
+  sed 's|^Exec=.*|Exec=mira-mail|' share/com.toffanoah.mira.desktop \
+    | install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/com.toffanoah.mira.desktop"
+  install -Dm644 share/com.toffanoah.mira.png "$pkgdir/usr/share/icons/hicolor/512x512/apps/com.toffanoah.mira.png"
+  install -Dm644 share/com.toffanoah.mira.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/com.toffanoah.mira.svg"
+  sed 's|@DAEMON@|/usr/lib/mira-mail/mira-daemon|' share/mira-daemon.service.in \
+    | install -Dm644 /dev/stdin "$pkgdir/usr/lib/systemd/user/mira-daemon.service"
+  install -Dm644 share/LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 share/com.toffanoah.mira.metainfo.xml "$pkgdir/usr/share/metainfo/com.toffanoah.mira.metainfo.xml"
+}
+PKGBUILD_BODY
+  } > "$file"
+}
+
+install_system_arch() {
+  local version="$1" archive dir sum pkg flag
+  archive="mira-mail-$version-x86_64.tar.gz"
+  command -v makepkg >/dev/null 2>&1 || die "« makepkg » est requis pour construire le paquet Arch (paquet base-devel)."
+  dir="$stage/arch"
+  mkdir -p "$dir"
+  fetch "v$version" "$archive" "$dir"
+  fetch "v$version" SHA256SUMS "$dir"
+  verify_checksum "$dir" "$archive"
+  sum="$(awk -v f="$archive" '$2 == f || $2 == "*" f {print $1}' "$dir/SHA256SUMS")"
+  write_pkgbuild "$dir/PKGBUILD" "$version" "$sum"
+  (cd "$dir" && PKGDEST="$dir" makepkg -f --nodeps >/dev/null) || die "la construction du paquet Arch a échoué."
+  pkg="$(find "$dir" -maxdepth 1 -name 'mira-mail-bin-*.pkg.tar.*' ! -name '*.sig' | head -n1)"
+  [ -n "$pkg" ] || die "makepkg n'a produit aucun paquet."
+  flag="$(yes_flag pacman)"
+  as_root pacman -U ${flag:+"$flag"} "$pkg"
+}
+
+install_system_file() {
+  local manager="$1" version="$2" file flag
+  case "$manager" in
+    apt) file="mira-mail_${version}_amd64.deb" ;;
+    dnf) file="mira-mail-${version}-1.x86_64.rpm" ;;
+  esac
+  fetch "v$version" "$file" "$stage"
+  fetch "v$version" SHA256SUMS "$stage"
+  verify_checksum "$stage" "$file"
+  flag="$(yes_flag "$manager")"
+  as_root "$manager" install ${flag:+"$flag"} "$stage/$file"
+}
+
+system_install() {
+  local manager version installed
+  manager="$(detect_manager)"
+  version="$(resolve_version)"
+  installed="$(system_installed_version "$manager")"
+  if [ "$installed" = "$version" ] && [ "$force" = 0 ]; then
+    echo "MIRA $version est déjà installé par le système et à jour."
+    exit 0
+  fi
+  remove_user_install_for_system
+  stage="$(mktemp -d "${TMPDIR:-/tmp}/mira-install.XXXXXX")"
+  if [ "$manager" = pacman ]; then install_system_arch "$version"; else install_system_file "$manager" "$version"; fi
+  echo "MIRA $version installé par le système : lancez « mira-mail » ou cherchez MIRA dans le menu des applications."
+}
+
 main() {
   parse_args "$@"
   check_environment
   if [ "$uninstall" = 1 ]; then uninstall_all; exit 0; fi
-  refuse_if_system_install
+  if [ "$system_mode" = 1 ]; then system_install; exit 0; fi
+  resolve_system_conflict
   local version installed=""
   version="$(resolve_version)"
   if [ -f "$root/current/VERSION" ]; then installed="$(cat "$root/current/VERSION")"; fi

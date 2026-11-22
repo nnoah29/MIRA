@@ -60,6 +60,9 @@ pub async fn run(accepted: Accepted, ctx: Arc<ServerContext>) {
     let Some(access) = welcome else {
         return;
     };
+    let Ok(_slot) = ctx.client_slots.clone().try_acquire_owned() else {
+        return;
+    };
     let _attached = ctx.clients.attach();
     let presence = PresenceKey::new(ctx.host.clone());
     let (out, queue) = mpsc::channel(OUTBOX_DEPTH);

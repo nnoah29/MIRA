@@ -86,9 +86,9 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 
 ---
 
-## 6. Le démon accepte un nombre illimité de connexions — gravité INFORMATIVE (constat corrigé)
+## 6. Le démon accepte un nombre illimité de connexions — gravité BASSE (corrigé)
 
-**Correction du 2026-11-22.** La première passe affirmait l'absence de plafond ; c'était inexact. Les connexions qui n'ont pas encore envoyé leur `hello` sont plafonnées à 64 (`pending_hello`, `server/context.rs`, `session/mod.rs:54`), avec un délai de 5 s et une taille maximale de trame, le tout testé (`session_hello_limits.rs`). Un programme local ne peut donc pas saturer le démon sans jeton. Le seul reste : un client **déjà authentifié** peut ouvrir beaucoup de sessions ; il possède déjà tous les droits, le gain d'un plafond serait marginal. **Aucun correctif nécessaire.**
+**Statut (2026-11-22).** La première passe affirmait l'absence totale de plafond ; c'était inexact pour les connexions qui n'ont pas encore envoyé leur `hello` (plafonnées, avec délai de 5 s et taille maximale de trame), mais exact pour les connexions déjà identifiées. **Corrigé** (`server/context.rs`, `session/mod.rs`) : au plus **3 clients identifiés** en même temps (l'application n'en ouvre qu'un, multiplexé), les suivants sont fermés ; la place d'un client parti est réutilisable. Les connexions en attente de `hello` passent de 64 à **8**. Tests : `session_max_clients.rs` (2), `session_hello_limits.rs` (existant). Compromis connu : un programme local qui ouvre 8 connexions muettes peut retarder une connexion légitime pendant 5 s, mais ne peut rien lire sans le jeton.
 
 ---
 

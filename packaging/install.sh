@@ -205,10 +205,10 @@ install_daemon_unit() {
 }
 
 prune_old_versions() {
-  local keep_a="$1" keep_b="$2" dir name
+  local keep="$1" dir name
   for dir in "$root"/*/; do
     name="$(basename "$dir")"
-    case "$name" in current|"$keep_a"|"$keep_b") ;; *) rm -rf "${root:?}/$name" ;; esac
+    case "$name" in current|"$keep") ;; *) rm -rf "${root:?}/$name" ;; esac
   done
 }
 
@@ -292,7 +292,7 @@ install_release() {
   install_desktop_files
   install_daemon_unit
   rollback_to=""
-  prune_old_versions "$new_dir" "$previous"
+  prune_old_versions "$new_dir"
   echo "MIRA $version installé : lancez « mira-mail » ou cherchez MIRA dans le menu des applications."
   report_shadowing
   if [ -n "$installed" ]; then report_running_daemon; fi

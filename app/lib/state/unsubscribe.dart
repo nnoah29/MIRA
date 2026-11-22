@@ -75,9 +75,10 @@ bool isPublicAddress(InternetAddress a) {
   }
   final mapped =
       b.sublist(0, 10).every((x) => x == 0) && b[10] == 255 && b[11] == 255;
-  if (mapped)
+  if (mapped) {
     return isPublicAddress(
       InternetAddress.fromRawAddress(Uint8List.fromList(b.sublist(12))),
     );
+  }
   return !(b.every((x) => x == 0) || (b[0] & 0xfe) == 0xfc);
 }

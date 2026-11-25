@@ -34,6 +34,7 @@ import '../theme/wall_theme.dart';
 import '../theme/app_theme.dart';
 import 'assistant.dart';
 import 'memory_trimmer.dart';
+import 'chat_attached_file.dart';
 import 'chat_context.dart';
 import 'chat_controller.dart';
 import 'chat_history_state.dart';
@@ -372,6 +373,7 @@ class MailStore extends ChangeNotifier {
   final Set<String> sel = <String>{};
   String? open;
   final List<String> chatAttachedIds = [];
+  final List<ChatAttachedFile> chatFiles = [];
   PaneView view = PaneView.empty;
   late String theme;
 
@@ -3946,6 +3948,7 @@ class MailStore extends ChangeNotifier {
   Future<void> sendChat(String text) async {
     final input = chatInput();
     chatAttachedIds.clear();
+    chatFiles.clear();
     notifyListeners();
     await chatCtl.send(text, input);
   }
@@ -3970,6 +3973,18 @@ class MailStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Joint un fichier au prochain message de l'assistant.
+  void attachChatFile(ChatAttachedFile file) {
+    chatFiles.add(file);
+    notifyListeners();
+  }
+
+  /// Détache un fichier du prochain message.
+  void detachChatFile(String id) {
+    chatFiles.removeWhere((f) => f.id == id);
+    notifyListeners();
+  }
+
   /// Détache un mail du prochain message.
   void detachChatMail(String id) {
     if (chatAttachedIds.remove(id)) notifyListeners();
@@ -3978,7 +3993,8 @@ class MailStore extends ChangeNotifier {
   /// Mails joints tels que l'assistant les reçoit : métadonnées et texte brut.
   ChatContextInput chatInput() {
     final all = [for (final m in chatAttached) _mailInput(m)];
-    if (all.isEmpty) return const ChatContextInput();
+    final files = List<ChatAttachedFile>.of(chatFiles);
+    if (all.isEmpty) return ChatContextInput(files: files);
     final first = all.first;
     return ChatContextInput(
       subject: first.subject,
@@ -3987,6 +4003,7 @@ class MailStore extends ChangeNotifier {
       date: first.date,
       body: first.body,
       attached: all.sublist(1),
+      files: files,
     );
   }
 

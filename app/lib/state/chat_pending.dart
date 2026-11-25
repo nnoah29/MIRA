@@ -30,6 +30,5 @@ class ChatPending {
     this.replacing,
   ]);
 
-  List<String> get kinds =>
-      kindsOverride ?? (input.hasMail ? const [aiKindMail] : const []);
+  List<String> get kinds => kindsOverride ?? input.kinds;
 }

@@ -77,7 +77,7 @@ class _AssistantPanelState extends State<AssistantPanel> {
   void _toggleAttach(BuildContext anchor, MailStore s) => Pops.show(
     anchor,
     'chat-attach',
-    (ctx, close) => ChatAttachPopup(store: s),
+    (ctx, close) => ChatAttachPopup(store: s, close: close),
     maxWidth: 420,
   );
 

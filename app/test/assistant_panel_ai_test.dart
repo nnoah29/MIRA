@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mira/state/chat_attached_file.dart';
 import 'package:mira/state/store.dart';
 import 'package:mira/ui/overlays.dart';
 import 'package:mira/ui/step_animator.dart';
@@ -121,6 +122,59 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.byKey(const ValueKey('chat-mail-picker')), findsNothing);
     expect(find.byKey(const ValueKey('chat-attach-menu')), findsNothing);
+    await close(tester, store);
+  });
+
+  testWidgets('attach_menu_offers_a_file_option', (tester) async {
+    final store = await pumpPanel(tester, withDefaultConnection());
+    await tester.tap(find.byKey(const ValueKey('chat-attach')));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(
+      find.byKey(const ValueKey('chat-attach-option-mail')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('chat-attach-option-file')),
+      findsOneWidget,
+    );
+    Pops.close();
+    await tester.pump();
+    await close(tester, store);
+  });
+
+  testWidgets('attached_file_shows_a_chip_is_sent_then_cleared', (
+    tester,
+  ) async {
+    final engine = withDefaultConnection()
+      ..scripts.add([
+        {'type': 'done', 'reason': 'end_turn'},
+      ]);
+    final store = await pumpPanel(tester, engine);
+    store.attachChatFile(
+      const ChatAttachedFile(id: 'f1', name: 'devis.txt', text: 'Total : 42'),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byKey(const ValueKey('chat-attach-chip-f1')), findsOneWidget);
+    await tester.tap(find.text('RÉSUME CE MAIL'));
+    await tester.pump(const Duration(milliseconds: 300));
+    final request = engine.chatStarts.single['request'] as Map;
+    final part = (request['context'] as List).single as Map;
+    expect(part['kind'], 'attachment');
+    expect(part['label'], 'devis.txt');
+    expect(store.chatFiles, isEmpty);
+    await close(tester, store);
+  });
+
+  testWidgets('file_chip_cross_detaches_the_file', (tester) async {
+    final store = await pumpPanel(tester, withDefaultConnection());
+    store.attachChatFile(
+      const ChatAttachedFile(id: 'f1', name: 'devis.txt', text: 'Total : 42'),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.byKey(const ValueKey('chat-attach-remove-f1')));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(store.chatFiles, isEmpty);
+    expect(find.byKey(const ValueKey('chat-attach-chip-f1')), findsNothing);
     await close(tester, store);
   });
 

@@ -354,7 +354,14 @@ const Map<String, String> enStrings = {
   'Assistant': 'Assistant',
   'Joindre': 'Attach',
   'Joindre un mail': 'Attach a mail',
-  'Retirer ce mail': 'Remove this mail',
+  'Retirer': 'Remove',
+  'Fichiers joints': 'Attached files',
+  'les fichiers joints': 'attached files',
+  'Fichier trop volumineux (10 Mo au plus) : {0}':
+      'File too large (10 MB at most): {0}',
+  'Ce fichier n’est ni du texte ni un PDF lisible : {0}':
+      'This file is neither text nor a readable PDF: {0}',
+  'Aucun texte trouvé dans ce fichier : {0}': 'No text found in this file: {0}',
   'Aucun mail reçu.': 'No mail received.',
   'Utiliser comme réponse': 'Use as reply',
   'Réponses simulées': 'Simulated replies',

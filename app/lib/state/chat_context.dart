@@ -3,6 +3,7 @@
 import '../data/format.dart';
 import '../engine/ai_privacy_models.dart';
 import '../i18n/i18n.dart';
+import 'chat_attached_file.dart';
 import 'chat_message.dart';
 
 /// Nombre de caractères du texte du mail transmis au service.
@@ -20,6 +21,9 @@ class ChatContextInput {
 
   /// Autres mails joints au même message (le premier est porté par les champs ci-dessus).
   final List<ChatContextInput> attached;
+
+  /// Fichiers joints au message (texte déjà extrait).
+  final List<ChatAttachedFile> files;
   const ChatContextInput({
     this.subject,
     this.from,
@@ -27,10 +31,31 @@ class ChatContextInput {
     this.date,
     this.body,
     this.attached = const [],
+    this.files = const [],
   });
 
   /// Vrai quand au moins un mail est joint.
   bool get hasMail => hasOwnMail || attached.isNotEmpty;
+
+  /// Types de contenu que ce message envoie au service.
+  List<String> get kinds => [
+    if (hasMail) aiKindMail,
+    if (files.isNotEmpty) aiKindAttachment,
+  ];
+
+  /// Même contexte réduit aux types autorisés : sans mails si le mail n'est pas autorisé, sans fichiers si le fichier ne l'est pas.
+  ChatContextInput restrictedTo(Iterable<String> allowed) {
+    final mails = allowed.contains(aiKindMail);
+    return ChatContextInput(
+      subject: mails ? subject : null,
+      from: mails ? from : null,
+      to: mails ? to : null,
+      date: mails ? date : null,
+      body: mails ? body : null,
+      attached: mails ? attached : const [],
+      files: allowed.contains(aiKindAttachment) ? files : const [],
+    );
+  }
 
   /// Vrai quand les champs propres décrivent un mail.
   bool get hasOwnMail => subject != null || body != null;
@@ -49,6 +74,13 @@ List<Map<String, String>> chatMailParts(ChatContextInput input) => [
   if (input.hasOwnMail) chatMailPart(input),
   for (final extra in input.attached) chatMailPart(extra),
 ];
+
+/// Partie de contexte typée d'un fichier joint : nom en étiquette, texte clippé.
+Map<String, String> chatFilePart(ChatAttachedFile file) => {
+  'kind': aiKindAttachment,
+  'label': _clip(file.name, chatLabelBudget - 1),
+  'text': _clip(file.text, chatBodyBudget),
+};
 
 /// Partie de contexte typée d'un mail joint : objet en étiquette, métadonnées et texte clippé ; le moteur la met en forme.
 Map<String, String> chatMailPart(ChatContextInput input) => {
@@ -98,6 +130,9 @@ Map<String, dynamic> buildChatStart({
   return {
     'system': chatSystemPrompt(),
     'messages': [for (final m in last) _message(m, m.text)],
-    'context': chatMailParts(input),
+    'context': [
+      ...chatMailParts(input),
+      for (final f in input.files) chatFilePart(f),
+    ],
   };
 }

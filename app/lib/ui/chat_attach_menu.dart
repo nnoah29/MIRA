@@ -26,17 +26,10 @@ class ChatAttachMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.pal;
-    return Container(
+    return Column(
       key: const ValueKey('chat-attach-menu'),
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      decoration: BoxDecoration(
-        color: p.bg,
-        border: Border.all(color: p.line),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [for (final o in options) _row(p, o)],
-      ),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [for (final o in options) _row(p, o)],
     );
   }
 

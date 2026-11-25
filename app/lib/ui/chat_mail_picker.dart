@@ -1,4 +1,4 @@
-//! Liste défilante des derniers mails reçus pour en joindre un ou plusieurs au message de l'assistant.
+//! Liste défilante des derniers mails reçus pour en joindre plusieurs au message de l'assistant, dans un popover.
 
 import 'package:flutter/material.dart';
 
@@ -11,31 +11,28 @@ import 'widgets.dart';
 /// Sélecteur à cases : expéditeur et objet par ligne, un clic joint ou détache le mail.
 class ChatMailPicker extends StatelessWidget {
   final MailStore store;
-  final VoidCallback onDone;
-  const ChatMailPicker({super.key, required this.store, required this.onDone});
+  const ChatMailPicker({super.key, required this.store});
 
   @override
   Widget build(BuildContext context) {
     final p = context.pal;
     final mails = store.recentInboxMails();
-    return Container(
-      key: const ValueKey('chat-mail-picker'),
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      decoration: BoxDecoration(
-        color: p.bg,
-        border: Border.all(color: p.line),
-      ),
+    return SizedBox(
+      width: 380,
       child: Column(
+        key: const ValueKey('chat-mail-picker'),
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _header(p),
           ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 260),
+            constraints: const BoxConstraints(maxHeight: 320),
             child: mails.isEmpty
                 ? _empty(p)
-                : ListView(
-                    shrinkWrap: true,
-                    children: [for (final m in mails) _row(p, m)],
+                : SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [for (final m in mails) _row(p, m)],
+                    ),
                   ),
           ),
         ],
@@ -44,20 +41,8 @@ class ChatMailPicker extends StatelessWidget {
   }
 
   Widget _header(Pal p) => Padding(
-    padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
-    child: Row(
-      children: [
-        Mono(t('Joindre un mail'), color: p.accent, height: null),
-        const Spacer(),
-        Btn(
-          key: const ValueKey('chat-mail-picker-done'),
-          label: t('Terminé'),
-          fontSize: 9.5,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          onTap: onDone,
-        ),
-      ],
-    ),
+    padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+    child: Mono(t('Joindre un mail'), color: p.accent, height: null),
   );
 
   Widget _empty(Pal p) => Padding(

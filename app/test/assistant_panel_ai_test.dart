@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mira/state/store.dart';
+import 'package:mira/ui/overlays.dart';
 import 'package:mira/ui/step_animator.dart';
 
 import 'ai_panel_harness.dart';
@@ -104,6 +105,22 @@ void main() {
     for (final id in ids) {
       expect(find.byKey(ValueKey('chat-attach-chip-$id')), findsOneWidget);
     }
+    Pops.close();
+    await tester.pump();
+    await close(tester, store);
+  });
+
+  testWidgets('attach_popover_closes_on_outside_click', (tester) async {
+    final store = await pumpPanel(tester, withDefaultConnection());
+    await tester.tap(find.byKey(const ValueKey('chat-attach')));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.byKey(const ValueKey('chat-attach-option-mail')));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byKey(const ValueKey('chat-mail-picker')), findsOneWidget);
+    await tester.tapAt(const Offset(300, 100));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byKey(const ValueKey('chat-mail-picker')), findsNothing);
+    expect(find.byKey(const ValueKey('chat-attach-menu')), findsNothing);
     await close(tester, store);
   });
 

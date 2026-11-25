@@ -15,8 +15,7 @@ import 'ai_consent_dialog.dart';
 import 'ai_content_dialog.dart';
 import 'chat_action_card.dart';
 import 'chat_attach_chips.dart';
-import 'chat_attach_menu.dart';
-import 'chat_mail_picker.dart';
+import 'chat_attach_popup.dart';
 import 'chat_memory_card.dart';
 import 'chat_draft_card.dart';
 import 'chat_history_view.dart';
@@ -26,6 +25,7 @@ import 'chat_sources.dart';
 import 'chat_tool_chips.dart';
 import 'mail_ref.dart';
 import 'demo_banner.dart';
+import 'overlays.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
 
@@ -42,7 +42,6 @@ class _AssistantPanelState extends State<AssistantPanel> {
   int lastLen = -1;
   String lastShown = '';
   bool showHistory = false;
-  _AttachStep attach = _AttachStep.closed;
 
   @override
   void initState() {
@@ -74,31 +73,13 @@ class _AssistantPanelState extends State<AssistantPanel> {
     await _askContent(s);
   }
 
-  /// Ouvre ou ferme le menu de jonction.
-  void _toggleAttach() => setState(
-    () => attach = attach == _AttachStep.closed
-        ? _AttachStep.menu
-        : _AttachStep.closed,
+  /// Ouvre ou ferme le popover de jonction, ancré sur le bouton « + » ; il se ferme d'un clic à côté.
+  void _toggleAttach(BuildContext anchor, MailStore s) => Pops.show(
+    anchor,
+    'chat-attach',
+    (ctx, close) => ChatAttachPopup(store: s),
+    maxWidth: 420,
   );
-
-  /// Panneau de jonction affiché au-dessus de la saisie : menu d'options ou liste des mails.
-  Widget _attachPanel(MailStore s) => switch (attach) {
-    _AttachStep.closed => const SizedBox.shrink(),
-    _AttachStep.menu => ChatAttachMenu(
-      options: [
-        ChatAttachOption(
-          id: 'mail',
-          icon: 'inbox',
-          label: t('Joindre un mail'),
-          onTap: () => setState(() => attach = _AttachStep.mails),
-        ),
-      ],
-    ),
-    _AttachStep.mails => ChatMailPicker(
-      store: s,
-      onDone: () => setState(() => attach = _AttachStep.closed),
-    ),
-  };
 
   /// Affiche ou masque la liste des conversations ; elle se relit à chaque ouverture.
   void _toggleHistory(MailStore s) {
@@ -360,12 +341,6 @@ class _AssistantPanelState extends State<AssistantPanel> {
               ],
             ),
           ),
-          Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: hp - 16 < 0 ? 0 : hp - 16,
-            ),
-            child: _attachPanel(s),
-          ),
           Container(
             margin: EdgeInsets.fromLTRB(hp, 0, hp, 24),
             decoration: BoxDecoration(
@@ -416,11 +391,13 @@ class _AssistantPanelState extends State<AssistantPanel> {
                   ),
                   child: Row(
                     children: [
-                      IBtn(
-                        'plus',
-                        key: const ValueKey('chat-attach'),
-                        tip: t('Joindre'),
-                        onTap: _toggleAttach,
+                      Builder(
+                        builder: (anchor) => IBtn(
+                          'plus',
+                          key: const ValueKey('chat-attach'),
+                          tip: t('Joindre'),
+                          onTap: () => _toggleAttach(anchor, s),
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Ico('spark', size: 13, color: p.dim),
@@ -724,6 +701,3 @@ class _TypingState extends State<_Typing> with SingleTickerProviderStateMixin {
   double _op(double t) =>
       t < .5 ? 1 - (t / .5) * .8 : .2 + ((t - .5) / .5) * .8;
 }
-
-/// Étape du panneau de jonction de l'assistant.
-enum _AttachStep { closed, menu, mails }

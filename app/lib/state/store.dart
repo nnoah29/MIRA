@@ -371,7 +371,7 @@ class MailStore extends ChangeNotifier {
   String sort = 'new';
   final Set<String> sel = <String>{};
   String? open;
-  String? ctxOff;
+  final List<String> chatAttachedIds = [];
   PaneView view = PaneView.empty;
   late String theme;
 
@@ -3943,37 +3943,60 @@ class MailStore extends ChangeNotifier {
   // ---- assistant ----
   void clearChat() => chatCtl.startNew();
 
-  Future<void> sendChat(String text) => chatCtl.send(text, chatInput());
+  Future<void> sendChat(String text) async {
+    final input = chatInput();
+    chatAttachedIds.clear();
+    notifyListeners();
+    await chatCtl.send(text, input);
+  }
 
   Future<void> stopChat() => chatCtl.stop();
 
-  /// Dit si le mail ouvert a été retiré du contexte de l'assistant (valable pour ce mail seulement).
-  bool get ctxDropped => open != null && ctxOff == open;
+  /// Mails joints au prochain message, dans l'ordre de jonction (ceux qui n'existent plus sont ignorés).
+  List<Mail> get chatAttached => [for (final id in chatAttachedIds) ?byId(id)];
 
-  /// Retire le mail ouvert du contexte de l'assistant.
-  void dropCtx() {
-    ctxOff = open;
+  /// Derniers mails reçus proposés à la jonction, du plus récent au plus ancien.
+  List<Mail> recentInboxMails({int limit = 50}) {
+    final inbox = [
+      for (final m in mails)
+        if (m.folder == 'inbox' && m.draft == null) m,
+    ]..sort((a, b) => b.date.compareTo(a.date));
+    return inbox.take(limit).toList();
+  }
+
+  /// Joint ou détache un mail du prochain message de l'assistant.
+  void toggleChatAttachment(String id) {
+    if (!chatAttachedIds.remove(id)) chatAttachedIds.add(id);
     notifyListeners();
   }
 
-  /// Remet le mail ouvert dans le contexte de l'assistant.
-  void restoreCtx() {
-    ctxOff = null;
-    notifyListeners();
+  /// Détache un mail du prochain message.
+  void detachChatMail(String id) {
+    if (chatAttachedIds.remove(id)) notifyListeners();
   }
 
-  /// Mail ouvert tel que l'assistant le reçoit : métadonnées et texte brut.
+  /// Mails joints tels que l'assistant les reçoit : métadonnées et texte brut.
   ChatContextInput chatInput() {
-    final m = byId(open);
-    if (m == null || ctxDropped) return const ChatContextInput();
+    final all = [for (final m in chatAttached) _mailInput(m)];
+    if (all.isEmpty) return const ChatContextInput();
+    final first = all.first;
     return ChatContextInput(
-      subject: m.subject,
-      from: '${m.from.name} <${m.from.email}>',
-      to: m.to.map((p) => '${p.name} <${p.email}>').join(', '),
-      date: DateTime.fromMillisecondsSinceEpoch(m.date).toIso8601String(),
-      body: plainOf(m.msgs.last.body),
+      subject: first.subject,
+      from: first.from,
+      to: first.to,
+      date: first.date,
+      body: first.body,
+      attached: all.sublist(1),
     );
   }
+
+  ChatContextInput _mailInput(Mail m) => ChatContextInput(
+    subject: m.subject,
+    from: '${m.from.name} <${m.from.email}>',
+    to: m.to.map((p) => '${p.name} <${p.email}>').join(', '),
+    date: DateTime.fromMillisecondsSinceEpoch(m.date).toIso8601String(),
+    body: plainOf(m.msgs.last.body),
+  );
 
   void scheduleCleanup(List<String> ids) => _after(
     1800,
@@ -3998,13 +4021,5 @@ class MailStore extends ChangeNotifier {
     view = PaneView.read;
     reveal(m);
     openMail(m.id);
-  }
-
-  void openCtx() {
-    final m = byId(open);
-    if (m != null) {
-      view = PaneView.read;
-      notifyListeners();
-    }
   }
 }

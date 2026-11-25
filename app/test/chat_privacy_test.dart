@@ -89,9 +89,7 @@ void main() {
     expect(part['text'], contains('a </mail> b <mail>'));
   });
 
-  testWidgets('no_context_part_when_no_mail_is_open_or_context_dropped', (
-    tester,
-  ) async {
+  testWidgets('no_context_part_when_no_mail_is_attached', (tester) async {
     final empty = buildChatStart(
       history: [ChatMsg(role: 'me', text: 'Bonjour')],
       input: const ChatContextInput(),
@@ -102,8 +100,6 @@ void main() {
         {'type': 'done', 'reason': 'end_turn'},
       ]);
     final store = await pumpPanel(tester, engine);
-    await tester.tap(find.byKey(const ValueKey('ctx-drop')));
-    await tester.pump(const Duration(milliseconds: 100));
     await ask(tester);
     expect(requestOf(engine, 0)['context'], isEmpty);
     await close(tester, store);
@@ -151,6 +147,7 @@ void main() {
         okReply,
       ]);
     final store = await pumpPanel(tester, engine);
+    store.toggleChatAttachment(store.recentInboxMails().first.id);
     await ask(tester);
     final title = tester.widget<Text>(
       find.byKey(const ValueKey('ai-content-title')),
@@ -240,6 +237,7 @@ void main() {
       okReply,
     ]);
     final store = await pumpPanel(tester, engine);
+    store.toggleChatAttachment(store.recentInboxMails().first.id);
     await ask(tester);
     expect(requestOf(engine, 0)['context'], isNotEmpty);
     await tapKey(tester, 'ai-consent-kind-mail_message');

@@ -14,6 +14,9 @@ import '../theme/icons.dart';
 import 'ai_consent_dialog.dart';
 import 'ai_content_dialog.dart';
 import 'chat_action_card.dart';
+import 'chat_attach_chips.dart';
+import 'chat_attach_menu.dart';
+import 'chat_mail_picker.dart';
 import 'chat_memory_card.dart';
 import 'chat_draft_card.dart';
 import 'chat_history_view.dart';
@@ -39,6 +42,7 @@ class _AssistantPanelState extends State<AssistantPanel> {
   int lastLen = -1;
   String lastShown = '';
   bool showHistory = false;
+  _AttachStep attach = _AttachStep.closed;
 
   @override
   void initState() {
@@ -69,6 +73,32 @@ class _AssistantPanelState extends State<AssistantPanel> {
     if (!mounted) return s.chatCtl.declineContent();
     await _askContent(s);
   }
+
+  /// Ouvre ou ferme le menu de jonction.
+  void _toggleAttach() => setState(
+    () => attach = attach == _AttachStep.closed
+        ? _AttachStep.menu
+        : _AttachStep.closed,
+  );
+
+  /// Panneau de jonction affiché au-dessus de la saisie : menu d'options ou liste des mails.
+  Widget _attachPanel(MailStore s) => switch (attach) {
+    _AttachStep.closed => const SizedBox.shrink(),
+    _AttachStep.menu => ChatAttachMenu(
+      options: [
+        ChatAttachOption(
+          id: 'mail',
+          icon: 'inbox',
+          label: t('Joindre un mail'),
+          onTap: () => setState(() => attach = _AttachStep.mails),
+        ),
+      ],
+    ),
+    _AttachStep.mails => ChatMailPicker(
+      store: s,
+      onDone: () => setState(() => attach = _AttachStep.closed),
+    ),
+  };
 
   /// Affiche ou masque la liste des conversations ; elle se relit à chaque ouverture.
   void _toggleHistory(MailStore s) {
@@ -150,51 +180,6 @@ class _AssistantPanelState extends State<AssistantPanel> {
     }
   }
 
-  /// Texte du bandeau de contexte : sujet du mail ouvert, mail retiré ou aucun message.
-  String _ctxLabel(MailStore s, String? subject) {
-    if (subject == null) {
-      return t(
-        ' · aucun message sélectionné. Clique sur un mail dans la liste.',
-      );
-    }
-    return s.ctxDropped
-        ? t(' · retiré : l’assistant ne voit pas ce mail.')
-        : ' · $subject';
-  }
-
-  /// Boutons du bandeau : ouvrir ou retirer le contexte, ou le rétablir une fois retiré.
-  List<Widget> _ctxActions(MailStore s, bool hasMail) {
-    if (!hasMail) return const [];
-    const pad = EdgeInsets.symmetric(horizontal: 10, vertical: 6);
-    if (s.ctxDropped) {
-      return [
-        Btn(
-          key: const ValueKey('ctx-restore'),
-          label: t('Rétablir'),
-          padding: pad,
-          fontSize: 9.5,
-          onTap: s.restoreCtx,
-        ),
-      ];
-    }
-    return [
-      Btn(
-        key: const ValueKey('ctx-open'),
-        label: t('Ouvrir'),
-        padding: pad,
-        fontSize: 9.5,
-        onTap: s.openCtx,
-      ),
-      const SizedBox(width: 6),
-      IBtn(
-        'x',
-        key: const ValueKey('ctx-drop'),
-        tip: t('Retirer le contexte'),
-        onTap: s.dropCtx,
-      ),
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
     final s = context.watch<MailStore>();
@@ -202,7 +187,6 @@ class _AssistantPanelState extends State<AssistantPanel> {
     final w = MediaQuery.sizeOf(context).width;
     final narrow = w <= 1100;
     final hp = narrow ? 16.0 : 32.0;
-    final m = s.byId(s.open);
     final demo = s.chatCtl.demo;
 
     // Défilement automatique en bas à chaque mise à jour du fil.
@@ -314,33 +298,6 @@ class _AssistantPanelState extends State<AssistantPanel> {
           )
         else ...[
           ..._historyNotes(s, hp),
-          Container(
-            margin: EdgeInsets.fromLTRB(hp, 4, hp, 0),
-            child: DashedBox(
-              color: p.line,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: Row(
-                children: [
-                  KeyedSubtree(
-                    key: const ValueKey('ctx-icon'),
-                    child: Ico('inbox', color: p.muted),
-                  ),
-                  const SizedBox(width: 12),
-                  Mono(t('Contexte'), color: p.accent, height: null),
-                  Expanded(
-                    child: Text(
-                      _ctxLabel(s, m?.subject),
-                      key: const ValueKey('ctx-text'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Fonts.sans(size: 14, color: p.muted),
-                    ),
-                  ),
-                  ..._ctxActions(s, m != null),
-                ],
-              ),
-            ),
-          ),
           Expanded(
             child: ListView(
               controller: thread,
@@ -403,6 +360,12 @@ class _AssistantPanelState extends State<AssistantPanel> {
               ],
             ),
           ),
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: hp - 16 < 0 ? 0 : hp - 16,
+            ),
+            child: _attachPanel(s),
+          ),
           Container(
             margin: EdgeInsets.fromLTRB(hp, 0, hp, 24),
             decoration: BoxDecoration(
@@ -412,6 +375,7 @@ class _AssistantPanelState extends State<AssistantPanel> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                ChatAttachChips(store: s),
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -452,6 +416,13 @@ class _AssistantPanelState extends State<AssistantPanel> {
                   ),
                   child: Row(
                     children: [
+                      IBtn(
+                        'plus',
+                        key: const ValueKey('chat-attach'),
+                        tip: t('Joindre'),
+                        onTap: _toggleAttach,
+                      ),
+                      const SizedBox(width: 8),
                       Ico('spark', size: 13, color: p.dim),
                       const SizedBox(width: 8),
                       Mono(
@@ -753,3 +724,6 @@ class _TypingState extends State<_Typing> with SingleTickerProviderStateMixin {
   double _op(double t) =>
       t < .5 ? 1 - (t / .5) * .8 : .2 + ((t - .5) / .5) * .8;
 }
+
+/// Étape du panneau de jonction de l'assistant.
+enum _AttachStep { closed, menu, mails }

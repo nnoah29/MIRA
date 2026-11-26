@@ -7,6 +7,16 @@ const _afterMargin = 5000000000000000 + 6500000000;
 
 /// Fabrique de widgets des courriels : ajoute au moteur ce qu'un navigateur fait et qu'il ne fait pas.
 class MailWidgetFactory extends WidgetFactory {
+  MailWidgetFactory({this.remoteImages = false});
+
+  /// Vrai seulement quand l'utilisateur a autorisé les images distantes pour ce message.
+  final bool remoteImages;
+
+  /// Les arrière-plans CSS distants suivent la règle des balises `img` : refusés tant que non autorisés.
+  @override
+  ImageProvider? imageProviderFromNetwork(String url) =>
+      remoteImages ? super.imageProviderFromNetwork(url) : null;
+
   @override
   void parse(BuildTree tree) {
     super.parse(tree);

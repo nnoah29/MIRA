@@ -81,12 +81,13 @@ class _MailHtmlState extends State<MailHtml> {
     if (!asyncBuild) _markReady();
     return _body = HtmlWidget(
       msg.html!,
+      key: ValueKey(remoteOk),
       buildAsync: asyncBuild,
       onLoadingBuilder: asyncBuild
           ? (_, _, _) => _LoadMarker(onGone: _markReady)
           : null,
       textStyle: style,
-      factoryBuilder: MailWidgetFactory.new,
+      factoryBuilder: () => MailWidgetFactory(remoteImages: remoteOk),
       customWidgetBuilder: (e) =>
           e.localName == 'img' ? _image(e, remoteOk, style) : null,
       customStylesBuilder: (e) => _styleOf(e, p, onPaper),

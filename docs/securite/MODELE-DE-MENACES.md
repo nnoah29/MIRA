@@ -24,7 +24,7 @@ Complète `AUDIT-SECURITE-CHECKLIST.md` (surface d'attaque) et `CONSTATS.md`. M�
 
 | Frontière | Menace (STRIDE) | Parade en place | Reste |
 |---|---|---|---|
-| Mail → affichage | E : script, S : fausse page, I : pixel espion | nettoyage du HTML côté moteur (`sanitize_original_html`) ; rendu actuel en widgets natifs (aucun script) ; images `<img>` distantes bloquées | arrière-plans CSS distants (constat 11) ; vue web durcie non branchée (constat 11) ; alerte d'hameçonnage (constat 8) |
+| Mail → affichage | E : script, S : fausse page, I : pixel espion | nettoyage du HTML côté moteur (`sanitize_original_html`) ; rendu actuel en widgets natifs (aucun script) ; images `<img>` et arrière-plans CSS distants bloqués | vue web durcie non branchée (constat 11, à trancher) ; alerte d'hameçonnage (constat 8) |
 | Mail → analyseur MIME | D : parties ou imbrication géantes | plafonds de taille, tests de structures hostiles (`mime_structure_limits`) | fuzzing |
 | Application → SMTP | T : injection d'en-têtes | `single_line`, `bare_message_id`, adresses validées, tests CRLF y compris pièces jointes | — |
 | Moteur → IMAP | T : injection de commandes | `quote`/`quote_mailbox` refusent CR, LF, NUL ; drapeaux en énumération fixe | fuzzing |

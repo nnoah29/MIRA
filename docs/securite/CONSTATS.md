@@ -145,13 +145,15 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 
 ---
 
-## 11. Vue web durcie non branchée, arrière-plans CSS distants chargés — gravité MOYENNE (découvert à la relecture, 2026-11-26)
+## 11. Vue web durcie non branchée (à trancher), arrière-plans CSS distants chargés (corrigé) — gravité MOYENNE (découvert à la relecture, 2026-11-26)
 
 **Ce que la relecture indépendante a établi (vérifié dans le code).**
 - `WebMailBody` (la vue web du constat 1) **n'est appelée nulle part** : son appel dans `html_body.dart` a été retiré par le commit `33173df` (25 octobre, intitulé « compteurs non lus corrigés… »), ce qui ressemble à un retrait accidentel. Le rendu réel est `MailHtml`, en widgets natifs (`flutter_widget_from_html`), sur le HTML d'origine nettoyé par `sanitize_original_html`. Les correctifs a et b du constat 1 et leurs tests sont justes mais protègent un chemin dormant ; **le nettoyage moteur (c) est, en pratique, la protection active**. `reader.dart` calcule encore `nativeBody` à partir de `usesWebView`.
 - **Images distantes** : `MailHtml` ne filtre que `<img>`. `flutter_widget_from_html_core` 0.17.4 charge aussi `background-image:url(…)` (`buildDecorationImage` → `imageProviderFromNetwork`), et `MailWidgetFactory` ne le surcharge pas ; `sanitize_original_html` garde `style` et `<style>`. Un mail avec `<td style="background-image:url(https://…/u?id=…)">` fait donc partir un pixel espion à l'ouverture, quelle que soit la politique d'images. Existait avant la branche.
 
-**Décisions à prendre.** (1) Rebrancher la vue web (si le retrait n'était pas voulu) ou assumer le rendu natif et réécrire le constat 1 en conséquence. (2) Le blocage des arrière-plans distants est un correctif sans ambiguïté : surcharger `imageProviderFromNetwork` dans `MailWidgetFactory`.
+**Arrière-plans distants : corrigé (2026-11-26).** `MailWidgetFactory(remoteImages: …)` surcharge `imageProviderFromNetwork` : refusé tant que les images distantes ne sont pas autorisées pour le message. Test de non-régression écrit d'abord et vu en échec (`html_remote_background_test.dart`), famille `html_*_test.dart` verte (33 tests). Non couverts, à vérifier : les autres usages d'URL par le moteur de rendu (`list-style-image`, polices).
+
+**Décision restante.** Rebrancher la vue web (si le retrait n'était pas voulu) ou assumer le rendu natif et réécrire le constat 1 en conséquence.
 
 ---
 

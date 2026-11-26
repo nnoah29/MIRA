@@ -1,5 +1,7 @@
 # Constats de sécurité MIRA — en clair
 
+> **Pour reprendre le chantier : lire `RESTE-A-FAIRE.md`** (ce qui reste, dans l'ordre, les reports et leurs déclencheurs, les décisions prises).
+
 Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **les plateformes touchées**, **le correctif**. Ils sont classés du plus grave au moins grave. La checklist technique (`AUDIT-SECURITE-CHECKLIST.md`) en est le complément.
 
 **Ce qui a été vérifié** : lecture du code du moteur, du démon, de l'application Flutter et du manifeste Android. **Ce qui ne l'a pas été** : aucun test en conditions réelles. Les points marqués « à confirmer par un test » sont une hypothèse fondée sur le code, pas une faille démontrée.

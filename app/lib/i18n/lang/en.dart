@@ -1490,6 +1490,7 @@ const Map<String, String> enStrings = {
   'Connexion au moteur en arrière-plan perdue':
       'Lost the connection to the background engine',
   'Moteur en arrière-plan injoignable': 'Background engine unreachable',
+  'Trop d’applications MIRA sont déjà connectées au moteur en arrière-plan : fermez-en une, puis relancez MIRA': 'Too many MIRA apps are already connected to the background engine: close one, then restart MIRA',
   'Requête trop volumineuse': 'Request too large',
   'La variable MIRA_DAEMON_BIN désigne un fichier introuvable':
       'The MIRA_DAEMON_BIN variable points to a file that does not exist',

@@ -6,7 +6,7 @@ use tokio::io::{ReadHalf, WriteHalf};
 use tokio::sync::OwnedSemaphorePermit;
 use tokio::time::timeout;
 
-use super::{Access, hello};
+use super::hello::{self, Admitted};
 use crate::server::ServerContext;
 use crate::transport::ByteStream;
 
@@ -30,7 +30,7 @@ pub(super) async fn greet(
     reader: &mut Reader,
     writer: &mut Writer,
     ctx: &ServerContext,
-) -> Option<Access> {
+) -> Option<Admitted> {
     let _place = take_waiting_place(ctx).await?;
     let entry = ctx.pending.register();
     tokio::select! {

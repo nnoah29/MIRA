@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""Garde-fou contre la divergence de engine/Cargo.lock et bridge/Cargo.lock (constat 12).
+
+Échoue si une dépendance présente dans les deux verrous n'a pas le même ensemble de versions, sauf écart consigné dans tools/lock-sync-ecarts.txt ; échoue aussi si une consigne est périmée.
+Usage : tools/check-lock-sync [ENGINE.lock BRIDGE.lock ÉCARTS.txt]
+"""
+import re
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+PACKAGE = re.compile(r'\[\[package\]\]\nname = "([^"]+)"\nversion = "([^"]+)"')
+
+
+def read_versions(path):
+    """Versions par nom de paquet d'un Cargo.lock."""
+    versions = defaultdict(set)
+    for name, version in PACKAGE.findall(Path(path).read_text()):
+        versions[name].add(version)
+    return versions
+
+
+def format_gap(name, engine, bridge):
+    """Ligne canonique d'un écart."""
+    return f"{name} engine={','.join(sorted(engine))} bridge={','.join(sorted(bridge))}"
+
+
+def current_gaps(engine, bridge):
+    """Écarts réels entre les deux verrous, par ligne canonique."""
+    return {
+        format_gap(name, engine[name], bridge[name])
+        for name in engine.keys() & bridge.keys()
+        if engine[name] != bridge[name]
+    }
+
+
+def read_accepted(path):
+    """Écarts consignés : lignes non vides, hors commentaires."""
+    lines = Path(path).read_text().splitlines()
+    return {line.strip() for line in lines if line.strip() and not line.startswith("#")}
+
+
+def main(argv):
+    """Compare les verrous et signale écarts nouveaux et consignes périmées."""
+    engine_lock, bridge_lock, accepted_file = argv or [
+        ROOT / "engine/Cargo.lock",
+        ROOT / "bridge/Cargo.lock",
+        ROOT / "tools/lock-sync-ecarts.txt",
+    ]
+    gaps = current_gaps(read_versions(engine_lock), read_versions(bridge_lock))
+    accepted = read_accepted(accepted_file)
+    for line in sorted(gaps - accepted):
+        print(f"check-lock-sync : écart non consigné entre les deux verrous : {line}")
+    for line in sorted(accepted - gaps):
+        print(f"check-lock-sync : consigne périmée (écart disparu ou changé) : {line}")
+    if gaps != accepted:
+        return 1
+    print(f"check-lock-sync : OK ({len(gaps)} écart(s) consigné(s))")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

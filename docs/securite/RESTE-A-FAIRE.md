@@ -19,10 +19,9 @@ Vue web et HTML d'origine durcis (constat 1) et **rebranchés** (retirés par er
 
 ## 3. À faire, par ordre de priorité recommandé
 
-### 3.1 Garde-fou contre la divergence des deux `Cargo.lock` (petit)
-- **Pourquoi** : `bridge/` et `engine/` ont chacun leur verrou ; c'est ce qui a laissé le pont vulnérable (constat 12). Seul le workflow hebdomadaire le détecterait.
-- **Faire** : un contrôle (dans `ci.sh` ou un workflow) qui échoue si une dépendance présente dans les deux verrous n'a pas la même version, et le contrôle des avis du pont quand le réseau est disponible (`cargo deny --manifest-path bridge/Cargo.toml --config engine/deny.toml check advisories`).
-- **Terminé quand** : modifier un seul des deux verrous fait échouer le contrôle (test de l'outil, comme `tools/test-check-ci-pins`).
+### 3.1 Garde-fou contre la divergence des deux `Cargo.lock` — FAIT (2026-11-26, branche `feat/SEC-03-garde-fou-verrous`)
+- **Fait** : `tools/check-lock-sync` échoue si une dépendance présente dans les deux verrous n'a pas le même ensemble de versions ; test de l'outil `tools/test-check-lock-sync` (écrit et vu rouge d'abord), branché dans `ci.sh`. Le contrôle des avis du pont (`cargo deny --manifest-path bridge/Cargo.toml --config engine/deny.toml check advisories`) est aussi dans `ci.sh`, ignoré avec un message si le réseau est indisponible ; vérifié vert le 2026-11-26.
+- **Écarts existants** : les verrous divergeaient déjà sur 30 crates (`cc`, `serde_json`, `zstd`, `zerocopy`, `windows-*`…, aucun avis ouvert). Ils sont consignés dans `tools/lock-sync-ecarts.txt` : seul un écart nouveau ou une consigne périmée fait échouer. **Alignement fait le 2026-11-26 (SEC-07)** : 17 crates remontées par `cargo update -p … --precise` (moteur : `cc`, `equivalent`, `inout`, `keyring-core`, `serde_json`, `sha2`, `syn`, `unicode-ident`, `zbus_names`, `zerocopy`, `zstd`, `zvariant`… ; pont : `rustix`), `check-lock-sync` à 13 écarts. Ceux qui restent viennent de graphes de dépendances différents (`windows-*`, `bitflags`, `core-foundation` côté moteur ; `hashbrown` 0.14 et `miniz_oxide` 0.8 côté pont) et ne se corrigent pas par `cargo update`. Vérifié : `cargo check` du moteur et du pont, `cargo deny` (avis, interdits, licences, sources) vert sur les deux, tests ciblés (stockage `zstd`, instantanés de contrat `serde_json`, PKCE `sha2`, trousseau, démon). **Non vérifié** : `./ci.sh` complète et les tests du pont.
 
 ### 3.2 Alerte d'hameçonnage sur les liens (constat 8, gros)
 - **Pourquoi** : rien ne prévient quand le texte d'un lien affiche `banque.fr` et que la cible est `banque-secure.xyz`, ni pour les homographes (alphabets mélangés, IDN).
@@ -35,21 +34,15 @@ Vue web et HTML d'origine durcis (constat 1) et **rebranchés** (retirés par er
 - **Pistes** : élargir la définition du mail « simple » (`isSimpleHtml` dans `app/lib/ui/body_renderer.dart`, seuils `_maxSimpleLength`, `_maxSimpleImages`, `_maxSimpleTables`, `_heavyTags`, `_heavyCss`) pour envoyer moins de mails à la vue web ; libérer la vue plus vite quand le mail n'est plus visible (voir `web_page_pause_test.dart` et les commits de pause des animations).
 - **Terminé quand** : une mesure avant/après (CPU sur un mail riche, par exemple LinkedIn) est consignée.
 
-### 3.4 Instruire les 29 points 🟡 de la checklist
-Aucun n'est une faille connue ; aucun n'est vérifié. Chaque point instruit reçoit : constat, preuve (fichier:ligne), gravité, correctif éventuel, test de non-régression, puis passe à ✅ ou ❌ dans la checklist. Les plus sensibles d'abord :
-- **Jeton et démon** : SEC-A01-5 (`SO_PEERCRED`), A01-6, A01-7 (portées par opération), A01-8 (accès croisé par identifiant de compte), D-7 (trames du démon).
-- **IA** : LLM01, LLM06, LLM07, LLM08, A03-8 (test de bout en bout avec le mail 09 piégé).
-- **Comptes et secrets** : A07-3 (révocation à la suppression), A07-4, A07-5, A02-11 (`zeroize`).
-- **Fichiers et réseau** : A04-2 (littéraux IMAP, `html/limits.rs`, pièces jointes : citer les preuves ou tester), A08-5 (import/export de profil), D-1 (pièces jointes), A10-3, A10-4, A10-5.
-- **Autres** : A03-4 et A03-5 (couverts par les correctifs, à confirmer avec `VERIFICATIONS-REELLES.md`), A05-3 (paquets), A06-4, A09-4, A09-5, D-3, D-4, D-5.
-La liste exacte se relit avec : `grep "🟡" docs/securite/AUDIT-SECURITE-CHECKLIST.md`.
+### 3.4 Instruire les points 🟡 de la checklist — FAIT, un seul reste (2026-11-26, branche `feat/SEC-05-checklist-orange`)
+28 points sur 29 sont passés à ✅ avec preuve citée dans `AUDIT-SECURITE-CHECKLIST.md`. Trouvailles pendant l'instruction : constat 13 (`SecretValue` non effacé, corrigé) et constat 14 (image distante autorisée vers une machine locale, corrigé en partie). **Reste 🟡 : SEC-A10-5** (le WebView préfetche-t-il le DNS des liens ?), non démontrable sans WebView : procédure de capture DNS ajoutée à `VERIFICATIONS-REELLES.md`, à exécuter par l'utilisateur. Choix à confirmer : aperçu des notifications activé par défaut (D-4) ; aucun verrou applicatif (A07-5) ; unité systemd non durcie, justification dans A05-3.
 
-### 3.5 Mineurs consignés, non corrigés (relecture indépendante du 2026-11-26)
-- **Filtre d'adresses du désabonnement** : plages oubliées — `255.255.255.255`, `240.0.0.0/4`, `198.18.0.0/15`, `192.0.0.0/24`, `fec0::/10`, IPv4-compatible `::a.b.c.d`, NAT64 `64:ff9b::/96` avec IPv4 privée, `ff00::/8` côté Rust. Fichiers : `engine/crates/mira-core/src/mime/unsubscribe_host.rs`, `app/lib/state/unsubscribe.dart` (`isPublicAddress`). Une liste partagée suffirait. Allocations inutiles dans la boucle des suffixes (`unsubscribe_host.rs`).
-- **Rebinding DNS** du désabonnement : résolution puis nouvelle résolution par `HttpClient`. Correctif fort : `HttpClient.connectionFactory` qui se connecte à l'adresse déjà contrôlée, avec SNI sur le nom.
-- **Poignée de main du démon** : le plafond de clients identifiés est pris après `hello_ok` ; un 4e client se croit connecté puis est fermé (`session/mod.rs`). Corriger demande une variante de refus `busy` dans le protocole.
-- **Vue web** : `NavigationRequest` ne dit pas si un clic est à l'origine ; une navigation http(s) automatique ouvrirait le navigateur. Les vecteurs connus sont fermés par trois couches (scripts retirés, `meta refresh` retiré, formulaires et cadres interdits par la CSP). JavaScript reste actif (mesure de hauteur). À confirmer avec les mails piégés 01 à 05.
-- **Tests de l'éviction** : l'ordre d'arrivée de deux connexions simultanées n'est pas déterministe ; les tests espacent leurs arrivées de 100 ms.
+### 3.5 Mineurs — traités le 2026-11-26 (branche `feat/SEC-04-mineurs`)
+- **Filtre d'adresses du désabonnement** : FAIT, Rust et Dart alignés, un test par plage (voir constat 2).
+- **Rebinding DNS** : FAIT (`connectionFactory` sur l'adresse contrôlée, TLS sur le nom, test avec certificat local).
+- **Poignée de main du démon** : FAIT le 2026-11-26 (SEC-06) : `hello_err busy`, protocole 1.2 (`DESIGN-BUSY.md`).
+- **Vue web** : FAIT côté code (clics relayés par le script, navigation automatique bloquée) ; **à vérifier à la main** avec les mails piégés (ligne ajoutée à `VERIFICATIONS-REELLES.md`), le test unitaire ne peut pas piloter un vrai WebView.
+- **Tests de l'éviction** : FAIT, synchronisation explicite sur l'inscription des connexions.
 
 ### 3.6 À exécuter par l'utilisateur
 - **Vérifications réelles** : `VERIFICATIONS-REELLES.md` avec `tools/deposer-mails-pieges` (serveur IMAP local sur `127.0.0.1` seulement). Consigner OK ou ÉCHEC par ligne et par plateforme dans `RESULTATS-VERIFICATIONS.md` (à créer). Un ÉCHEC est une faille : correctif, test de non-régression, nouvelle vérification.
@@ -77,6 +70,9 @@ La liste exacte se relit avec : `grep "🟡" docs/securite/AUDIT-SECURITE-CHECKL
 | 2026-11-26 | Vue web rebranchée (retrait accidentel de `33173df`) ; mode Auto : widgets pour les mails simples, vue web pour les riches. |
 | 2026-11-26 | Branche `feat/SEC-01-audit-securite` non poussée ; fusionnée `--no-ff` dans `dev`, puis `dev` poussé. |
 | 2026-11-26 | Plafond du démon : évincer la plus ancienne connexion en attente (`server/pending.rs`, `session/greeting.rs`). |
+| 2026-11-26 | SEC-04 : navigation de la vue web — clics relayés par le script plutôt qu'un indicateur de geste ; refus `busy` en design seulement. |
+| 2026-11-26 | Refus `busy` accepté et codé (SEC-06) ; aperçu des notifications gardé par défaut ; alignement des verrous à faire ensuite. |
+| 2026-11-26 | SEC-05 : unité systemd `--user` non durcie (le démon lance l'app, `NoNewPrivileges` hériterait) ; `SecretValue` effacé à la destruction ; image distante vers machine privée refusée même autorisée. |
 | 2026-11-26 | Constat 10 : épingler la CI maintenant ; signature des releases reportée. |
 
 ## 6. Pour reprendre

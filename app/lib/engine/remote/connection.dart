@@ -7,7 +7,7 @@ import 'host_state.dart';
 
 /// Le démon a refusé la poignée de main ; la raison est fixe et ne contient jamais le jeton.
 class HandshakeRefused implements Exception {
-  /// `protocol_version`, `contract_version`, `auth` ou `malformed`.
+  /// `protocol_version`, `contract_version`, `auth`, `busy` ou `malformed`.
   final String reason;
   const HandshakeRefused(this.reason);
 

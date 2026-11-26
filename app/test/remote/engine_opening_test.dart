@@ -307,6 +307,15 @@ void main() {
     expect(world.embedded + other.embedded, 0);
   });
 
+  test('a_busy_daemon_is_reported_and_never_replaced_by_embedded', () async {
+    final world = World()..attachError = const HandshakeRefused('busy');
+    await expectLater(
+      openEngineClient(deps: world.deps()),
+      throwsA(failsWith('host.busy')),
+    );
+    expect(world.embedded, 0);
+  });
+
   test(
     'a_missing_token_file_with_a_live_socket_is_reported_not_hidden',
     () async {

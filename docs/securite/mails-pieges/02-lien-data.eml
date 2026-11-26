@@ -1,0 +1,11 @@
+From: Test piege <piege@example.invalid>
+To: moi@example.invalid
+Subject: [PIEGE 02] lien data:
+Date: Thu, 26 Nov 2026 10:00:00 +0000
+Message-ID: <02-lien-data@mira.test>
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+<p>PIEGE 02 : cliquez le lien. Rien ne doit s'ouvrir ni contacter l'écouteur.</p>
+<p><a href="data:text/html,%3Cscript%3Efetch('http://127.0.0.1:8999/data')%3C/script%3E">lien data:</a></p>
+<p><a href="javascript:fetch('http://127.0.0.1:8999/js')">lien javascript:</a></p>

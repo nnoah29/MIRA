@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+"""Auto-test de tools/generate-sbom : JSON CycloneDX valide, références uniques, composants Rust et Dart présents, version refusée si mal formée."""
+import json
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+TOOL = Path(__file__).resolve().parent / "generate-sbom"
+
+
+def run(*args):
+    return subprocess.run([str(TOOL), *args], capture_output=True, text=True)
+
+
+def main():
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / "sbom.json"
+        assert run("9.9.9", str(out)).returncode == 0
+        sbom = json.loads(out.read_text(encoding="utf-8"))
+        refs = [c["bom-ref"] for c in sbom["components"]]
+        assert sbom["bomFormat"] == "CycloneDX" and sbom["specVersion"] == "1.5"
+        assert sbom["metadata"]["component"]["version"] == "9.9.9"
+        assert len(refs) == len(set(refs)), "références en double"
+        assert any(r.startswith("pkg:cargo/") for r in refs), "aucun composant Rust"
+        assert any(r.startswith("pkg:pub/") for r in refs), "aucun composant Dart"
+        assert run("pas-une-version", str(out)).returncode != 0
+    print("test-generate-sbom : OK")
+
+
+main()

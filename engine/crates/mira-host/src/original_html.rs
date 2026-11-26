@@ -1,16 +1,17 @@
-//! HTML d'origine d'un message : lu dans la source brute locale, sans assainissement (AG-47).
+//! HTML d'origine d'un message : lu dans la source brute locale, nettoyé légèrement (AG-47, audit SEC-1c).
 
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
 use mail_parser::{MessageParser, PartType};
 use mira_assembly::api::{MessageRequest, Request, Response};
+use mira_assembly::html::sanitize_original_html;
 use mira_assembly::mira_vocabulary::MessageId;
 use serde_json::json;
 
 use crate::Host;
 use crate::envelope::{failure, internal_failure, success};
 
-/// Pages HTML (vraies parties `text/html`) d'une source brute, jointes bout à bout.
+/// Pages HTML (vraies parties `text/html`) d'une source brute, nettoyées puis jointes bout à bout.
 pub fn html_of_raw(raw: &[u8]) -> Option<String> {
     let message = MessageParser::default().parse(raw)?;
     let pages: Vec<String> = message
@@ -18,7 +19,7 @@ pub fn html_of_raw(raw: &[u8]) -> Option<String> {
         .iter()
         .filter_map(|id| message.part(*id))
         .filter_map(|part| match &part.body {
-            PartType::Html(html) => Some(html.to_string()),
+            PartType::Html(html) => Some(sanitize_original_html(html)),
             _ => None,
         })
         .collect();

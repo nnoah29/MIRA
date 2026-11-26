@@ -11,7 +11,10 @@ use super::{Clients, TestHook};
 use crate::token::Token;
 
 /// Nombre de connexions qui peuvent attendre leur `hello` en même temps.
-const MAX_PENDING_HELLO: usize = 64;
+const MAX_PENDING_HELLO: usize = 8;
+
+/// Nombre de clients identifiés servis en même temps (l'application n'en ouvre qu'un).
+const MAX_CLIENTS: usize = 3;
 
 /// Ce que partagent les sessions : l'hôte du moteur, le jeton, les limites et l'état.
 #[derive(Debug)]
@@ -23,6 +26,7 @@ pub struct ServerContext {
     pub event_queue: usize,
     pub event_lag_grace: Duration,
     pub pending_hello: Arc<Semaphore>,
+    pub client_slots: Arc<Semaphore>,
     pub shutdown_wait: Duration,
     pub clients: Clients,
     pub retry_unlock: Notify,
@@ -33,7 +37,7 @@ pub struct ServerContext {
 }
 
 impl ServerContext {
-    /// Contexte aux valeurs par défaut : 16 Mio par trame, `hello` sous 5 s (64 en attente au plus), arrêt patientant 5 s, file d'événements de 256 attendue 5 s avant `lagged`, état `starting`.
+    /// Contexte aux valeurs par défaut : 16 Mio par trame, `hello` sous 5 s (8 en attente au plus, 3 clients identifiés au plus), arrêt patientant 5 s, file d'événements de 256 attendue 5 s avant `lagged`, état `starting`.
     pub fn new(host: Arc<Host>, token: Token) -> Self {
         Self {
             host,
@@ -43,6 +47,7 @@ impl ServerContext {
             event_queue: 256,
             event_lag_grace: Duration::from_secs(5),
             pending_hello: Arc::new(Semaphore::new(MAX_PENDING_HELLO)),
+            client_slots: Arc::new(Semaphore::new(MAX_CLIENTS)),
             shutdown_wait: Duration::from_secs(5),
             clients: Clients::default(),
             retry_unlock: Notify::new(),

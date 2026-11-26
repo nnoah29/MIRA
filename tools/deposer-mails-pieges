@@ -1,0 +1,25 @@
+#!/usr/bin/env python3
+"""Dépose les mails de docs/securite/mails-pieges dans une boîte d'un serveur IMAP LOCAL (127.0.0.1 seulement) pour les vérifications réelles. Usage : tools/deposer-mails-pieges PORT UTILISATEUR MOT_DE_PASSE [BOITE]"""
+import imaplib
+import sys
+import time
+from pathlib import Path
+
+DOSSIER = Path(__file__).resolve().parent.parent / "docs" / "securite" / "mails-pieges"
+
+
+def main():
+    if len(sys.argv) not in (4, 5):
+        sys.exit(__doc__)
+    port, user, password = int(sys.argv[1]), sys.argv[2], sys.argv[3]
+    boite = sys.argv[4] if len(sys.argv) == 5 else "INBOX"
+    client = imaplib.IMAP4("127.0.0.1", port)
+    client.login(user, password)
+    for fichier in sorted(DOSSIER.glob("*.eml")):
+        brut = fichier.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\n", "\r\n")
+        client.append(boite, None, imaplib.Time2Internaldate(time.time()), brut.encode("utf-8"))
+        print("déposé :", fichier.name)
+    client.logout()
+
+
+main()

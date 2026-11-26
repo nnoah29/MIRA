@@ -64,6 +64,15 @@ The assistant is off until you add a connection in the settings. There is no MIR
 
 **The AI never sends an email and never deletes anything for good.** It only proposes; MIRA applies a change after you ask for it or confirm it. Writing and mailbox actions need a model that supports tools.
 
+## Privacy and security
+
+- **Your passwords and tokens** are stored in your system keyring (Secret Service, Windows Credential Manager, Android Keystore), never in MIRA's files.
+- **Your mail on disk is not encrypted by MIRA.** The local copy (messages, drafts, contacts, AI memory) is a plain SQLite database in your user folder, protected by your account's file permissions only. If someone gets your disk, they can read it. **Turn on full-disk encryption** (LUKS on Linux, BitLocker on Windows); Android already isolates app data. This is the same choice most mail clients make.
+- **Remote images are blocked** until you allow them, so a message cannot tell the sender you opened it.
+- **Windows:** access protection of the local daemon is not yet hardened. On a PC shared with other accounts, keep MIRA in your own profile folder. See [`SECURITY.md`](SECURITY.md).
+
+To report a vulnerability, see [`SECURITY.md`](SECURITY.md).
+
 ## Install
 
 **Linux, no sudo** (installs and updates):

@@ -8,7 +8,7 @@ usage() {
 Usage : packaging/release.sh X.Y.Z [options]
 
 Prérequis : le tag annoté vX.Y.Z existe, est sur origin et dans l'historique de origin/main.
-Résultat  : packaging/out/ (.deb, .rpm, .tar.gz, AppImage, 2 APK, SHA256SUMS, install.sh, journal).
+Résultat  : packaging/out/ (.deb, .rpm, .tar.gz, AppImage, 2 APK, SBOM CycloneDX, SHA256SUMS, install.sh, journal).
 
   --check          vérifie seulement les prérequis ; ne construit rien, ne supprime rien
   --no-appimage    saute l'AppImage (appimagetool absent)
@@ -337,6 +337,8 @@ collect_assets() {
 publish_files() {
   local f
   collect_assets
+  assets+=("mira-mail-${version}.sbom.cdx.json")
+  (cd "$wt" && tools/generate-sbom "$version" "$wtout/mira-mail-${version}.sbom.cdx.json")
   cp "$wt/packaging/install.sh" "$wtout/install.sh"
   (cd "$wtout" && sha256sum "${assets[@]}" install.sh >SHA256SUMS)
   for f in "${assets[@]}" install.sh SHA256SUMS; do cp "$wtout/$f" "$out/$f"; done

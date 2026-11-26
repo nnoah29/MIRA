@@ -141,7 +141,7 @@ correspondent pas, si le numéro de build Android n'augmente pas, ou s'il manque
 outil (`appimagetool`, `cargo-ndk`, cibles Rust Android, NDK, identifiants OAuth de
 production). `--no-appimage`, `--no-android` et `--no-oauth` servent aux essais ;
 `--draft` les refuse. Après la construction, il contrôle chaque fichier (version,
-moteur présent, version du bundle), produit `SHA256SUMS` avec `install.sh` et
+moteur présent, version du bundle), produit le SBOM CycloneDX (`mira-mail-X.Y.Z.sbom.cdx.json`, par `tools/generate-sbom` : dépendances Rust et Dart), `SHA256SUMS` avec `install.sh` et
 écrit `packaging/out/release-X.Y.Z.log`. Il ne publie jamais : `--draft` crée un
 brouillon. Les étapes 5 (essais sur machine propre) et 7 (AUR) restent manuelles.
 

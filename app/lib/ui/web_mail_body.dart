@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_all/webview_all.dart';
 
 import '../engine/web_document.dart';
+import '../engine/web_navigation.dart';
 import '../platform_info.dart';
 import 'body_skeleton.dart';
 import 'html_body.dart';
@@ -98,7 +99,10 @@ class _WebMailBodyState extends State<WebMailBody>
     duration: _curtainDuration,
   );
   Timer? _fallback;
-  bool _revealed = false, _injectLate = false, _pagePaused = false;
+  bool _revealed = false,
+      _injectLate = false,
+      _loading = true,
+      _pagePaused = false;
   final _wheel = WheelFling();
   double _height = _initialHeight;
   double? _width;
@@ -153,6 +157,7 @@ class _WebMailBodyState extends State<WebMailBody>
   /// La page chargée et mesurée remplace le squelette en se dévoilant.
   void _reveal() {
     _fallback?.cancel();
+    _loading = false;
     if (_revealed || !mounted) return;
     setState(() => _revealed = true);
     _curtain.forward();
@@ -183,6 +188,7 @@ class _WebMailBodyState extends State<WebMailBody>
 
   /// Sans script de début de document (vieille vue web), le script de page est injecté une fois la page chargée.
   void _onPageFinished(String url) {
+    _loading = false;
     if (_injectLate) unawaited(_controller.runJavaScript(_pageScript));
   }
 
@@ -199,6 +205,7 @@ class _WebMailBodyState extends State<WebMailBody>
   Future<void> _load() async {
     await _ready;
     if (!mounted) return;
+    _loading = true;
     await _controller.loadHtmlString(
       webDocument(
         widget.html,
@@ -240,13 +247,11 @@ class _WebMailBodyState extends State<WebMailBody>
     }
   }
 
-  /// Le document lui-même se charge ; tout lien cliqué part dans le navigateur du système.
+  /// Seul le chargement du document lui-même navigue ; un lien http(s) ou mailto part dans le navigateur du système, tout le reste est refusé.
   Future<NavigationDecision> _onNavigate(NavigationRequest request) async {
-    final url = request.url;
-    if (url.startsWith('about:') || url.startsWith('data:')) {
-      return NavigationDecision.navigate;
-    }
-    await openLink(url);
+    final verdict = navigationVerdict(request.url, loading: _loading);
+    if (verdict == NavigationVerdict.load) return NavigationDecision.navigate;
+    if (verdict == NavigationVerdict.openExternal) await openLink(request.url);
     return NavigationDecision.prevent;
   }
 

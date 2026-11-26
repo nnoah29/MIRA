@@ -1,0 +1,10 @@
+From: Test piege <piege@example.invalid>
+To: moi@example.invalid
+Subject: [PIEGE 01] redirection automatique
+Date: Thu, 26 Nov 2026 10:00:00 +0000
+Message-ID: <01-meta-refresh@mira.test>
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+<html><head><meta http-equiv="refresh" content="0;url=http://127.0.0.1:8999/refresh"></head>
+<body><p>PIEGE 01 : si le navigateur s'ouvre ou si l'écouteur reçoit /refresh, c'est un échec.</p></body></html>

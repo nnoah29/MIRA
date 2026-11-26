@@ -15,10 +15,12 @@ import '../state/gif_playback.dart';
 import '../state/image_policy.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
+import 'body_renderer.dart';
 import 'body_skeleton.dart';
 import 'bottom_baseline.dart';
 import 'gif_image.dart';
 import 'mail_widget_factory.dart';
+import 'web_mail_body.dart';
 
 /// Au-delà, l'analyse du HTML part dans un isolat (le surcoût ne vaut que pour les gros courriels).
 const _asyncAbove = 30000;
@@ -83,12 +85,13 @@ class _MailHtmlState extends State<MailHtml> {
     if (!asyncBuild) _markReady();
     return _body = HtmlWidget(
       msg.html!,
+      key: ValueKey(remoteOk),
       buildAsync: asyncBuild,
       onLoadingBuilder: asyncBuild
           ? (_, _, _) => _LoadMarker(onGone: _markReady)
           : null,
       textStyle: style,
-      factoryBuilder: MailWidgetFactory.new,
+      factoryBuilder: () => MailWidgetFactory(remoteImages: remoteOk),
       customWidgetBuilder: (e) =>
           e.localName == 'img' ? _image(e, remoteOk, style) : null,
       customStylesBuilder: (e) => _styleOf(e, p, onPaper),
@@ -133,6 +136,11 @@ class _MailHtmlState extends State<MailHtml> {
       ImageAction.never => false,
       ImageAction.ask => msg.blocked.isEmpty,
     };
+    final raw = msg.htmlRaw;
+    final mode = context.select<MailStore, HtmlMode>((st) => st.htmlMode);
+    if (raw != null && usesWebView(raw, mode)) {
+      return _webBody(raw, remoteOk, action);
+    }
     final onPaper = imposesColors(msg.html!);
     final html = _htmlBody(p, remoteOk, onPaper);
     final card = onPaper
@@ -151,6 +159,18 @@ class _MailHtmlState extends State<MailHtml> {
         if (msg.blocked.isNotEmpty && action == ImageAction.ask)
           _RemoteBanner(msg: msg),
         _faded(card),
+      ],
+    );
+  }
+
+  /// Vue web : bandeau des images distantes, puis le message à sa hauteur complète, qui défile avec le lecteur.
+  Widget _webBody(String raw, bool remoteOk, ImageAction action) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (msg.blocked.isNotEmpty && action == ImageAction.ask)
+          _RemoteBanner(msg: msg),
+        WebMailBody(html: raw, inline: msg.inline, remoteImages: remoteOk),
       ],
     );
   }

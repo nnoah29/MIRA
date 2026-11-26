@@ -21,10 +21,12 @@ pub(super) fn unavailable(message: &'static str) -> MiraError {
     )
 }
 
-/// Relit et déchiffre toutes les entrées ; un fichier absent est un trousseau vide
+/// Relit et déchiffre toutes les entrées ; un fichier absent est un trousseau vide, toute autre erreur de lecture est refusée
 pub(super) fn load(path: &Path, key: &LessSafeKey) -> Result<BTreeMap<String, String>, MiraError> {
-    let Ok(mut sealed) = fs::read(path) else {
-        return Ok(BTreeMap::new());
+    let mut sealed = match fs::read(path) {
+        Ok(bytes) => bytes,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(BTreeMap::new()),
+        Err(_) => return Err(unavailable("trousseau illisible")),
     };
     if sealed.len() < NONCE_LEN {
         return Err(unavailable("trousseau illisible"));

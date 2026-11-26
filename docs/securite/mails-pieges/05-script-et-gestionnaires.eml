@@ -1,0 +1,13 @@
+From: Test piege <piege@example.invalid>
+To: moi@example.invalid
+Subject: [PIEGE 05] scripts et gestionnaires
+Date: Thu, 26 Nov 2026 10:00:00 +0000
+Message-ID: <05-script-et-gestionnaires@mira.test>
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+<script>fetch('http://127.0.0.1:8999/script')</script>
+<img src="x" onerror="fetch('http://127.0.0.1:8999/onerror')">
+<svg onload="fetch('http://127.0.0.1:8999/svg')"><circle r="5"/></svg>
+<body onload="fetch('http://127.0.0.1:8999/bodyload')">
+<p>PIEGE 05 : aucune requête /script, /onerror, /svg ni /bodyload.</p>

@@ -1,0 +1,11 @@
+From: Test piege <piege@example.invalid>
+To: moi@example.invalid
+Subject: [PIEGE 07] iframe, object, embed
+Date: Thu, 26 Nov 2026 10:00:00 +0000
+Message-ID: <07-cadres-objets@mira.test>
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+<iframe src="http://127.0.0.1:8999/iframe" width="200" height="100"></iframe>
+<object data="http://127.0.0.1:8999/object"></object><embed src="http://127.0.0.1:8999/embed">
+<p>PIEGE 07 : aucun cadre, aucun objet, aucune requête.</p>

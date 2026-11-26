@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+"""Génère le SBOM CycloneDX 1.5 (JSON) d'une release MIRA : dépendances Rust du pont et du démon livrés (cargo metadata sur bridge/ et engine/, chacun avec son Cargo.lock) et Dart (pubspec.lock). Usage : tools/generate-sbom X.Y.Z SORTIE.json"""
+import json
+import re
+import subprocess
+import sys
+import uuid
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def rust_components():
+    found = {}
+    for workspace in ("bridge", "engine"):
+        raw = subprocess.run(
+            ["cargo", "metadata", "--locked", "--format-version", "1"],
+            cwd=ROOT / workspace, check=True, capture_output=True, text=True,
+        ).stdout
+        for p in json.loads(raw)["packages"]:
+            if p["source"] is None:
+                continue
+            purl = f"pkg:cargo/{p['name']}@{p['version']}"
+            item = {"type": "library", "name": p["name"], "version": p["version"], "purl": purl, "bom-ref": purl}
+            if p.get("license"):
+                item["licenses"] = [{"expression": p["license"]}]
+            found[purl] = item
+    return sorted(found.values(), key=lambda c: (c["name"], c["version"]))
+
+
+def dart_components():
+    text = (ROOT / "app" / "pubspec.lock").read_text(encoding="utf-8")
+    block = re.compile(r"^  (\S+):\n((?:    .*\n|\n)+)", re.M)
+    out = []
+    for name, body in block.findall(text):
+        version = re.search(r'version: "?([^"\n]+)"?', body)
+        source = re.search(r"source: (\w+)", body)
+        if not version or not source or source.group(1) != "hosted":
+            continue
+        purl = f"pkg:pub/{name}@{version.group(1)}"
+        item = {"type": "library", "name": name, "version": version.group(1), "purl": purl, "bom-ref": purl}
+        digest = re.search(r'sha256: "?([0-9a-f]{64})"?', body)
+        if digest:
+            item["hashes"] = [{"alg": "SHA-256", "content": digest.group(1)}]
+        out.append(item)
+    return sorted(out, key=lambda c: (c["name"], c["version"]))
+
+
+def build(version):
+    return {
+        "bomFormat": "CycloneDX",
+        "specVersion": "1.5",
+        "serialNumber": f"urn:uuid:{uuid.uuid4()}",
+        "version": 1,
+        "metadata": {
+            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "component": {"type": "application", "name": "mira-mail", "version": version},
+        },
+        "components": rust_components() + dart_components(),
+    }
+
+
+def main():
+    if len(sys.argv) != 3 or not re.fullmatch(r"\d+\.\d+\.\d+", sys.argv[1]):
+        sys.exit(__doc__)
+    sbom = build(sys.argv[1])
+    Path(sys.argv[2]).write_text(json.dumps(sbom, indent=2) + "\n", encoding="utf-8")
+    print(f"SBOM : {len(sbom['components'])} composants -> {sys.argv[2]}")
+
+
+main()

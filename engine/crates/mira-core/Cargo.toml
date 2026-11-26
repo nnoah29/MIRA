@@ -12,6 +12,7 @@ workspace = true
 
 [dependencies]
 mira-vocabulary.workspace = true
+url.workspace = true
 rusqlite.workspace = true
 zstd.workspace = true
 uuid.workspace = true

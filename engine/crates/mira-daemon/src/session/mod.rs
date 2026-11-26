@@ -53,10 +53,7 @@ enum Outcome {
 /// Sert une connexion jusqu'à sa fin ; toute violation du protocole la ferme sans explication.
 pub async fn run(accepted: Accepted, ctx: Arc<ServerContext>) {
     let (mut reader, mut writer) = tokio::io::split(accepted.stream);
-    let Some(access) = greeting::greet(&mut reader, &mut writer, &ctx).await else {
-        return;
-    };
-    let Ok(_slot) = ctx.client_slots.clone().try_acquire_owned() else {
+    let Some((access, _slot)) = greeting::greet(&mut reader, &mut writer, &ctx).await else {
         return;
     };
     let _attached = ctx.clients.attach();

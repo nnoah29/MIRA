@@ -18,10 +18,10 @@ fn retry_unlock_round_trips() {
     assert_eq!(serde_json::to_string(&frame).unwrap(), text);
 }
 
-/// La version du protocole annonce l'ajout compatible de la phase 4.
+/// La version du protocole annonce l'ajout compatible du refus `busy` (SEC-06, décision de l'utilisateur du 2026-11-26) après celui de la phase 4.
 #[test]
-fn protocol_version_is_one_dot_one() {
-    assert_eq!((PROTOCOL_VERSION.major, PROTOCOL_VERSION.minor), (1, 1));
+fn protocol_version_is_one_dot_two() {
+    assert_eq!((PROTOCOL_VERSION.major, PROTOCOL_VERSION.minor), (1, 2));
 }
 
 /// `set_presence` porte l'identifiant de l'échange et l'état du focus, à plat.

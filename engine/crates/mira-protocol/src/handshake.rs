@@ -13,6 +13,7 @@ pub enum HelloRefusal {
     ContractVersion,
     Auth,
     Malformed,
+    Busy,
 }
 
 /// Vérifie les versions annoncées par le client ; le jeton se vérifie ailleurs.

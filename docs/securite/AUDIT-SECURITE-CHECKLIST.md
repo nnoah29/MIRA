@@ -57,23 +57,23 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 | ID | Contrôle | Statut | Preuve / à faire |
 |---|---|---|---|
 | SEC-A03-1 | SQL paramétré | ✅ | `format!` SQL ne porte que des constantes (`COLUMNS`, nom de table) ; `?1` partout. À confirmer pour `introspection.rs:39` (nom de table) |
-| SEC-A03-2 | Injection de commandes IMAP (noms de boîtes, critères de recherche) | 🟡 | `quote_mailbox` existe ; `select.rs:31` formate `{name}` : vérifier qu'il est déjà cité ; auditer la recherche |
-| SEC-A03-3 | Injection CRLF dans en-têtes SMTP/MIME (From, Subject, Reply-To, noms de fichiers) | 🟡 | aucun contrôle trouvé dans `smtp/` et `send/` ; `lettre` valide en partie |
+| SEC-A03-2 | Injection de commandes IMAP (noms de boîtes, critères de recherche) | ✅ | `quote`/`quote_mailbox` refusent CR/LF/NUL partout ; drapeaux en énumération fixe (lecture, 2026-11-26) |
+| SEC-A03-3 | Injection CRLF dans en-têtes SMTP/MIME (From, Subject, Reply-To, noms de fichiers) | ✅ | `smtp/compose/sanitize.rs` ; tests `smtp_compose_validation`, `smtp_compose_attachment_injection` |
 | SEC-A03-4 | XSS dans le rendu HTML (ammonia, schémas, `data:`, SVG, CSS) | 🟡 | `html/sanitize.rs` : schémas `http,https,mailto,cid,data` ; `data:` image hors SVG seulement. Tester corpus XSS, `<style>`, `srcset`, `<base>`, `<meta refresh>`, `<form>` |
 | SEC-A03-5 | WebView (Linux WebKitGTK / Android) : JavaScript désactivé, navigation et sous-ressources bloquées | 🟡 | `web_mail_body.dart` : **aucun réglage de sécurité trouvé** (JS, `NavigationDelegate`, accès fichiers). À instruire en priorité |
 | SEC-A03-6 | Ouverture de liens : liste blanche de schémas | ✅ | `html_body.dart` `openLink` (http/https/mailto) ; `Process.run` sans shell |
 | SEC-A03-7 | Hameçonnage par liens (texte ≠ cible, homographes IDN) | ❌ | aucune alerte constatée |
 | SEC-A03-8 | Injection de prompt via contenu de mail (IA) | 🟡 | voir section LLM |
-| SEC-A03-9 | Injection YAML des règles importées | 🟡 | auditer `rules/` (profondeur, taille, types) |
+| SEC-A03-9 | Injection YAML des règles importées | ✅ | alias, doublons, taille, éléments, imbrication : `portability_envelope_*` |
 
 ## A04 — Conception non sécurisée
 
 | ID | Contrôle | Statut | Preuve / à faire |
 |---|---|---|---|
-| SEC-A04-1 | Modèle de menaces écrit (STRIDE) | ❌ | aucun document ; à produire à partir de la surface ci-dessus |
-| SEC-A04-2 | Limites de taille/temps/profondeur (MIME, littéraux IMAP, HTML, pièces jointes) | 🟡 | `html/limits.rs` existe ; auditer MIME imbriqué, littéraux IMAP, en-têtes géants |
+| SEC-A04-1 | Modèle de menaces écrit (STRIDE) | ✅ | `MODELE-DE-MENACES.md` |
+| SEC-A04-2 | Limites de taille/temps/profondeur (MIME, littéraux IMAP, HTML, pièces jointes) | ✅ | MIME : `mime_structure_limits` ; YAML : `portability_envelope_limits`/`_depth` |
 | SEC-A04-3 | Chargement distant bloqué par défaut (pixels espions, confidentialité) | ✅ | `html/remote.rs` `is_blocked_until_allowed` |
-| SEC-A04-4 | Confirmation avant envoi/suppression irréversibles initiés par l'IA | 🟡 | voir LLM |
+| SEC-A04-4 | Confirmation avant envoi/suppression irréversibles initiés par l'IA | ✅ | aucun outil d'envoi ni de suppression ; propositions validées par clic |
 | SEC-A04-5 | Idempotence et reprise sur crash (envoi en double) | ✅ | invariants du projet |
 
 ## A05 — Mauvaise configuration de sécurité
@@ -85,17 +85,17 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 | SEC-A05-3 | Durcissement des paquets (deb/rpm/AppImage : permissions, scripts post-install) | 🟡 | auditer `packaging/` |
 | SEC-A05-4 | Android : `allowBackup`, `exported`, `usesCleartextTraffic`, capture d'écran | 🟡 | auditer `app/android` |
 | SEC-A05-5 | Processus IA local : environnement vidé, E/S neutralisées | ✅ | `ai/local/process.rs` `env_clear`, `kill_on_drop` |
-| SEC-A05-6 | Fichiers `SECURITY.md` et politique de divulgation | ❌ | absent |
+| SEC-A05-6 | Fichiers `SECURITY.md` et politique de divulgation | ✅ | `SECURITY.md` à la racine |
 
 ## A06 — Composants vulnérables et obsolètes
 
 | ID | Contrôle | Statut | Preuve / à faire |
 |---|---|---|---|
 | SEC-A06-1 | `cargo-deny` : bans, licences, sources | ✅ | `ci.sh:40-42` |
-| SEC-A06-2 | Avis de sécurité (RustSec) | ❌ | **explicitement exclus de la CI** (`check bans licenses sources`). Ajouter `cargo audit` / `cargo deny check advisories` |
+| SEC-A06-2 | Avis de sécurité (RustSec) | ✅ | `cargo deny check advisories` + `.github/workflows/securite.yml` |
 | SEC-A06-3 | Audit des dépendances Dart/Flutter (`pubspec.lock`) | ❌ | aucun outil constaté |
 | SEC-A06-4 | Dépendances sensibles : `zip`, `tar`, `flate2`, `ammonia`, `reqwest`, `rustls`, `keyring` | 🟡 | suivre les avis ; épingler les versions |
-| SEC-A06-5 | Mise à jour automatique des dépendances (Dependabot/Renovate) | 🟡 | `.github` présent ; vérifier la configuration |
+| SEC-A06-5 | Mise à jour automatique des dépendances (Dependabot/Renovate) | ✅ | `.github/dependabot.yml` |
 | SEC-A06-6 | SBOM publié avec les releases | ❌ | non constaté |
 
 ## A07 — Identification et authentification
@@ -133,8 +133,8 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 
 | ID | Contrôle | Statut | Preuve / à faire |
 |---|---|---|---|
-| SEC-A10-1 | URL de base IA éditable (`base_url_editable`) : refus de `file:`, HTTP clair, adresses privées/métadonnées cloud | 🟡 | `mira-ai-generic/descriptor.rs` |
-| SEC-A10-2 | Redirections HTTP (suivre, limiter, ne pas transmettre la clé inter-hôtes) | 🟡 | auditer `ai/transport` |
+| SEC-A10-1 | URL de base IA éditable (`base_url_editable`) : refus de `file:`, HTTP clair, adresses privées/métadonnées cloud | ✅ | `ai/base_url.rs` : refus de `file:`, clair hors boucle locale, identifiants ; LAN en HTTPS permis |
+| SEC-A10-2 | Redirections HTTP (suivre, limiter, ne pas transmettre la clé inter-hôtes) | ✅ | `ai/transport/client.rs` : `Policy::none()` |
 | SEC-A10-3 | Chargement d'images distantes : pas d'accès aux adresses locales | 🟡 | passe par WebView/moteur ; dépend de SEC-A03-5 |
 | SEC-A10-4 | Hôtes IMAP/SMTP saisis par l'utilisateur : ports, adresses internes | 🟡 | auditer l'auto-configuration (autodiscover) |
 | SEC-A10-5 | Fuite via requêtes DNS/préchargement de liens | 🟡 | WebView |
@@ -144,10 +144,10 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 | ID | Contrôle | Statut | Preuve / à faire |
 |---|---|---|---|
 | SEC-LLM01 | Injection de prompt indirecte par le contenu d'un mail | 🟡 | séparer clairement données/instructions ; tester un mail hostile |
-| SEC-LLM02 | Sortie non assainie : rendu Markdown/HTML de la réponse du modèle | 🟡 | vérifier que la sortie passe par le même assainissement |
-| SEC-LLM03 | Outils à agence excessive (envoi, suppression, règles, transfert) sans confirmation humaine | 🟡 | `ai_tools_*` ; exiger une confirmation pour les actions sortantes ou destructrices |
-| SEC-LLM04 | Exfiltration de données : le mail ordonne au modèle de transmettre du contenu par outil/lien/image | 🟡 | bloquer les images distantes dans les réponses IA |
-| SEC-LLM05 | Mémoire IA (`ai_memories`) empoisonnable par un mail | 🟡 | `storage/repositories/ai_memories` |
+| SEC-LLM02 | Sortie non assainie : rendu Markdown/HTML de la réponse du modèle | ✅ | `chat_markdown.dart` : gras, italique, code seulement ; ni lien ni image |
+| SEC-LLM03 | Outils à agence excessive (envoi, suppression, règles, transfert) sans confirmation humaine | ✅ | catalogue sans outil d'envoi ; `propose_action` validée par l'utilisateur ; consentement par type de contenu |
+| SEC-LLM04 | Exfiltration de données : le mail ordonne au modèle de transmettre du contenu par outil/lien/image | ✅ | pas d'image ni de lien rendus dans les réponses ; images de mail bloquées par défaut |
+| SEC-LLM05 | Mémoire IA (`ai_memories`) empoisonnable par un mail | ✅ | `remember`/`forget_memory` sont des propositions : rien n'est écrit avant le clic |
 | SEC-LLM06 | Envoi de contenu privé à un tiers : consentement par fournisseur, minimisation | 🟡 | auditer ce qui part vers les 9 fournisseurs |
 | SEC-LLM07 | Clés d'API : stockage, journalisation, envoi seulement à l'hôte prévu | 🟡 | `key_file.rs`, transports |
 | SEC-LLM08 | Déni de portefeuille / boucles d'outils : plafonds de jetons et d'itérations | 🟡 | `ai/chat/ending.rs` |
@@ -165,18 +165,17 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 | SEC-D-6 | Fuzzing des analyseurs (MIME, IMAP, HTML, YAML, protocole démon) | ❌ | aucun dossier `fuzz` |
 | SEC-D-7 | Désérialisation des trames du démon : taille maximale, version, fuzz | 🟡 | `mira-protocol/codec.rs`, `frame.rs` |
 
-## Lacunes confirmées (❌) à traiter
+## Lacunes restantes (❌)
 
-1. **SEC-A06-2** — avis RustSec exclus de la CI.
-2. **SEC-A06-3** — aucun audit des dépendances Dart.
+1. **SEC-A06-3** — audit des dépendances Dart pas encore exécuté (workflow en place, OSV-Scanner absent localement).
+2. **SEC-A06-6** — pas de SBOM publié.
 3. **SEC-A03-7** — pas d'alerte d'hameçonnage sur les liens.
 4. **SEC-A09-3** — pas de journal d'audit.
-5. **SEC-A05-2** — ACL Windows absentes.
-6. **SEC-A02-7** — pas de chiffrement au repos de la base.
-7. **SEC-A02-8** — secret OAuth embarqué simplement obscurci.
-8. **SEC-A04-1** — pas de modèle de menaces.
-9. **SEC-D-6** — pas de fuzzing.
-10. **SEC-A05-6** — pas de `SECURITY.md`.
+5. **SEC-A05-2** — ACL Windows absentes (`A-FAIRE-WINDOWS.md`).
+6. **SEC-A02-7** — pas de chiffrement au repos (décision à prendre).
+7. **SEC-D-6** — pas de fuzzing.
+
+Corrigées ou documentées : SEC-A06-2, SEC-A02-8 (documenté), SEC-A04-1, SEC-A05-6.
 
 ## Ordre d'instruction proposé
 

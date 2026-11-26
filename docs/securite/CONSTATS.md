@@ -92,7 +92,9 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 
 ---
 
-## 7. Les identifiants OAuth embarqués ne sont que masqués — gravité BASSE
+## 7. Les identifiants OAuth embarqués ne sont que masqués — gravité BASSE (documenté)
+
+**Statut (2026-11-26).** Aucun changement de mécanisme, c'est la recommandation. Documenté ici et dans `SECURITY.md` : ce secret est un simple masquage, il ne protège rien ; la protection vient de PKCE. Règle à garder : ne jamais mettre dans `oauth_embedded.rs` un secret réellement confidentiel.
 
 **Le problème.** Le secret client OAuth est chiffré dans le binaire, mais la clé de déchiffrement est livrée juste à côté (`mira-assembly/src/oauth_embedded.rs`). N'importe qui peut donc le retrouver.
 
@@ -116,8 +118,8 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 
 ## 9. Manques de documentation et de processus — gravité INFORMATIVE
 
-- Pas de **`SECURITY.md`** : personne ne sait comment signaler une faille.
-- Pas de **modèle de menaces** écrit (qui attaque quoi, par quel chemin).
+- ~~Pas de `SECURITY.md`~~ : écrit (2026-11-26), signalement privé par GitHub. À activer côté dépôt : *Settings → Code security → Private vulnerability reporting*.
+- ~~Pas de modèle de menaces~~ : écrit, `MODELE-DE-MENACES.md`.
 - Pas de **fuzzing** : on n'envoie pas de données déformées aux lecteurs de MIME, d'IMAP, de HTML, de YAML (règles) ni au protocole du démon.
 - Pas de **journal d'audit** (échecs de connexion au démon, ajout de compte, envois).
 - **Android** : le manifeste est correct (`allowBackup="false"`, pas de trafic non chiffré, secrets dans le Keystore). Il reste à vérifier les réglages de la WebView et les droits de l'activité exportée.
@@ -136,16 +138,18 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 - Téléchargement des modèles IA vérifié par somme de contrôle.
 - URL des connecteurs IA nettoyées : pas d'identifiants dans l'adresse, pas de clair hors machine locale.
 
-## À tester avant de conclure (non démontré)
+## Tests demandés par la première passe — résultats (2026-11-26)
 
-| Sujet | Hypothèse | Test |
+| Sujet | Résultat | Preuve |
 |---|---|---|
-| Injection d'en-têtes (retours à la ligne) dans un sujet ou une adresse | `mail_builder` encode correctement | envoyer `Sujet\r\nBcc: x` et lire le message produit |
-| Injection de commandes IMAP | `quote_mailbox` protège toutes les commandes | noms de boîtes avec `"`, `\r\n`, `{`, tester aussi la recherche |
-| Règles YAML importées | profondeur et taille limitées | fichier YAML géant ou imbriqué |
-| Mail MIME très imbriqué ou énorme | limites présentes | mail avec 10 000 parties |
-| Injection de prompt par un mail | masquage + propositions suffisent | mail hostile ordonnant d'envoyer un résumé à l'extérieur |
-| Réglages de la WebView Android | valeurs par défaut sûres | vérifier accès aux fichiers et contenu mixte |
+| Injection d'en-têtes (CRLF) dans sujet, nom, adresse | **Sûr** : valeurs mises sur une ligne, adresses piégées refusées | `smtp_compose_validation.rs` (existant) |
+| Idem pour nom et type des pièces jointes | **Sûr** | `smtp_compose_attachment_injection.rs` (nouveau) |
+| Injection de commandes IMAP | **Sûr par lecture du code** : `quote`/`quote_mailbox` refusent CR, LF, NUL et échappent `"` et `\\` ; drapeaux en énumération fixe ; recherche UTF-8 par littéral | `imap/protocol/quoting.rs`, `imap/operations/*` |
+| YAML des règles géant ou imbriqué | **Sûr** : 2 Mo, 500 éléments, alias et doublons refusés ; 100 000 niveaux refusés sur une pile de 512 Ko | `portability_envelope_limits.rs`, `portability_envelope_depth.rs` (nouveau) |
+| MIME à 10 000 parties ou 5 000 niveaux | **Sûr** : lu en quelques millisecondes, pas de dépassement de pile | `mime_structure_limits.rs` (nouveau) |
+| Injection de prompt par un mail | **Atténué par conception** : aucun outil d'envoi ou de suppression, uniquement des propositions validées par clic (`remember`, brouillon, action) ; consentement par type de contenu pour les connexions distantes ; réponses rendues sans image ni lien (`chat_markdown.dart`) | `ai/tools/catalog.rs`, `ai_tools_loop_consent.rs`. Reste un test de bout en bout avec un mail hostile |
+| URL de base IA éditable | **Acceptable** : refus de `file:`, du clair hors boucle locale, des identifiants ; aucune redirection. Une adresse HTTPS du réseau local reste permise (serveur auto-hébergé) | `ai/base_url.rs`, `ai/transport/client.rs` |
+| Réglages de la WebView Android | **Non vérifié** (demande l'application Android) | — |
 
 ## Ordre de correction conseillé
 

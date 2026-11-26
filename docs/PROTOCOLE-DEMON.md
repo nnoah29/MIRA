@@ -21,7 +21,7 @@ Une trame est un corps **JSON** précédé de sa longueur sur **4 octets, grand-
 |---|---|---|
 | `hello` | C→S | `protocol_version {major, minor}`, `contract_version {major, minor}`, `client_id`, `client_name`, `auth` |
 | `hello_ok` | S→C | `protocol_version`, `contract_version`, `host_state` |
-| `hello_err` | S→C | `reason` : `protocol_version`, `contract_version`, `auth` ou `malformed` (aucun texte libre ; `malformed` pour un `hello` illisible ou un moyen d'authentification inconnu) |
+| `hello_err` | S→C | `reason` : `protocol_version`, `contract_version`, `auth`, `busy` (protocole 1.2 : les trois places de client sont prises) ou `malformed` (aucun texte libre ; `malformed` pour un `hello` illisible ou un moyen d'authentification inconnu) |
 | `call` | C→S | `id`, `request` (la requête du contrat, objet JSON) |
 | `result` | S→C | `id`, `envelope` (l'enveloppe du contrat : `{contract_version, ok, data \| error}`) |
 | `open_events` | C→S | `id`, `after` (entier ou `null`), `credit` (fenêtre initiale) |
@@ -42,7 +42,7 @@ Une trame est un corps **JSON** précédé de sa longueur sur **4 octets, grand-
 
 1. Le client envoie `hello` **dans les 5 secondes** qui suivent la connexion (la lecture de la trame entière est bornée, pas octet par octet), et sa taille ne dépasse pas **8 Kio** (jugée sur l'en-tête). Au plus 8 connexions attendent leur `hello` en même temps ; quand la place manque, **la plus ancienne connexion en attente est fermée** et la nouvelle prend sa place (un programme qui rouvre des connexions muettes ne peut donc pas empêcher l'application de se connecter). Toute autre première trame, le silence ou la lenteur ferment la connexion sans réponse.
 2. Le démon vérifie le **jeton d'abord** (comparaison en temps constant), puis les versions : majeure du protocole égale ; version du contrat compatible selon la règle de `mira-vocabulary` (même majeure, mineure du client inférieure ou égale à celle du moteur).
-3. Succès : `hello_ok`. Échec : `hello_err` à raison fixe, puis fermeture. Le jeton n'est jamais renvoyé, journalisé ni écrit sur stdout ou stderr.
+3. Succès : `hello_ok`. Échec : `hello_err` à raison fixe, puis fermeture. Le démon accepte au plus **3 clients identifiés** ; la place est prise **avant** `hello_ok`, une fois le jeton et les versions acceptés : si elle manque, la réponse est `hello_err busy` (jamais pour un jeton faux, qui reçoit `auth`). Un client 1.1 qui reçoit `busy` le traite comme un refus inconnu (moteur indisponible). Le jeton n'est jamais renvoyé, journalisé ni écrit sur stdout ou stderr.
 4. Un second `hello` ferme la connexion.
 
 Le jeton est un fichier de 32 octets aléatoires en hexadécimal, créé en `0600` (`--token-file`, défaut `<dossier du profil>/daemon.token`). Un fichier lisible par le groupe ou les autres est refusé.

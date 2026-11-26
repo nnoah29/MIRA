@@ -1,6 +1,6 @@
 # Design — refus `busy` à la poignée de main du démon (SEC-04, point c)
 
-**Statut : proposition, en attente d'accord. Rien n'est codé.** Constat d'origine : `RESTE-A-FAIRE.md` §3.5, « Poignée de main du démon ».
+**Statut : accepté par l'utilisateur et implémenté le 2026-11-26 (branche `feat/SEC-06-busy`).** Constat d'origine : `RESTE-A-FAIRE.md` §3.5, « Poignée de main du démon ».
 
 ## Problème
 `session::run` répond `hello_ok` (`greeting::greet` puis `hello::handshake`), *puis* prend une place dans `client_slots` (`MAX_CLIENTS = 3`, `server/context.rs`). Un 4ᵉ client authentifié reçoit donc `hello_ok`, se croit connecté, puis la connexion est fermée sans explication : côté Dart, `ConnectionLost` au premier appel, message trompeur.

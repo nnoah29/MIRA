@@ -1,5 +1,5 @@
 /// Version du protocole de trames que ce client parle.
-const Map<String, int> clientProtocolVersion = {'major': 1, 'minor': 1};
+const Map<String, int> clientProtocolVersion = {'major': 1, 'minor': 2};
 
 /// Version du contrat d'API pour laquelle l'app est écrite.
 const Map<String, int> appContractVersion = {'major': 1, 'minor': 7};

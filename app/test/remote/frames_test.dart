@@ -37,8 +37,8 @@ void main() {
     expect(hostOpTestNotificationFrame(9), golden('host_op_test_notification'));
   });
 
-  test('the_client_speaks_protocol_1_1_and_contract_1_7', () {
-    expect(clientProtocolVersion, {'major': 1, 'minor': 1});
+  test('the_client_speaks_protocol_1_2_and_contract_1_7', () {
+    expect(clientProtocolVersion, {'major': 1, 'minor': 2});
     expect(appContractVersion, {'major': 1, 'minor': 7});
   });
 

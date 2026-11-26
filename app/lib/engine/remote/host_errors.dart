@@ -16,6 +16,14 @@ EngineException updateRequiredError() => EngineException.local(
   ),
 );
 
+/// Le démon accepte déjà son maximum de clients identifiés ; un nouvel essai retomberait sur le même refus.
+EngineException busyError() => EngineException.local(
+  'host.busy',
+  t(
+    'Trop d’applications MIRA sont déjà connectées au moteur en arrière-plan : fermez-en une, puis relancez MIRA',
+  ),
+);
+
 /// Le démon lancé par l'app s'est arrêté avant d'être prêt ; le code dit pourquoi.
 EngineException daemonExitedError(int code) =>
     EngineException.local('transport.daemon_exited', switch (code) {
@@ -32,6 +40,7 @@ EngineException refusalError(HandshakeRefused refusal) =>
         t('Accès refusé par le moteur en arrière-plan'),
       ),
       'protocol_version' || 'contract_version' => updateRequiredError(),
+      'busy' => busyError(),
       _ => unavailableError(),
     };
 

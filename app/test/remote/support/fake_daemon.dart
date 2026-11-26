@@ -7,7 +7,13 @@ import 'memory_channel.dart';
 
 /// Faux démon : vérifie `hello` comme le vrai, répond `pong`, et laisse le test lire et pousser des trames.
 class FakeDaemon {
-  FakeDaemon._(this._channel, this.token, this.hostState, this.contractMinor) {
+  FakeDaemon._(
+    this._channel,
+    this.token,
+    this.hostState,
+    this.contractMinor,
+    this.busy,
+  ) {
     _channel.incoming.listen(_onBytes, onDone: () => closedByClient = true);
   }
 
@@ -18,6 +24,9 @@ class FakeDaemon {
   /// Valeur de `host_state` annoncée.
   String hostState;
   final int contractMinor;
+
+  /// Vrai : le démon est plein, il refuse tout client authentifié par `busy`.
+  final bool busy;
 
   /// Toutes les trames reçues, dans l'ordre.
   final List<Map<String, dynamic>> received = [];
@@ -42,9 +51,10 @@ class FakeDaemon {
     String hostState = 'ready',
     int contractMinor = 7,
     bool mute = false,
+    bool busy = false,
   }) {
     final (client, server) = MemoryChannel.pair();
-    final daemon = FakeDaemon._(server, token, hostState, contractMinor)
+    final daemon = FakeDaemon._(server, token, hostState, contractMinor, busy)
       ..mute = mute;
     return (client, daemon);
   }
@@ -112,6 +122,8 @@ class FakeDaemon {
     } else if (contract['major'] != 1 ||
         (contract['minor'] as int) > contractMinor) {
       refusal = 'contract_version';
+    } else if (busy) {
+      refusal = 'busy';
     }
     if (refusal != null) return {'type': 'hello_err', 'reason': refusal};
     return {

@@ -40,7 +40,7 @@ Vue web et HTML d'origine durcis (constat 1) et **rebranchés** (retirés par er
 ### 3.5 Mineurs — traités le 2026-11-26 (branche `feat/SEC-04-mineurs`)
 - **Filtre d'adresses du désabonnement** : FAIT, Rust et Dart alignés, un test par plage (voir constat 2).
 - **Rebinding DNS** : FAIT (`connectionFactory` sur l'adresse contrôlée, TLS sur le nom, test avec certificat local).
-- **Poignée de main du démon** : **non codé**, design proposé dans `DESIGN-BUSY.md` (variante `busy`, protocole 1.2). **Attend l'accord de l'utilisateur.**
+- **Poignée de main du démon** : FAIT le 2026-11-26 (SEC-06) : `hello_err busy`, protocole 1.2 (`DESIGN-BUSY.md`).
 - **Vue web** : FAIT côté code (clics relayés par le script, navigation automatique bloquée) ; **à vérifier à la main** avec les mails piégés (ligne ajoutée à `VERIFICATIONS-REELLES.md`), le test unitaire ne peut pas piloter un vrai WebView.
 - **Tests de l'éviction** : FAIT, synchronisation explicite sur l'inscription des connexions.
 
@@ -71,6 +71,7 @@ Vue web et HTML d'origine durcis (constat 1) et **rebranchés** (retirés par er
 | 2026-11-26 | Branche `feat/SEC-01-audit-securite` non poussée ; fusionnée `--no-ff` dans `dev`, puis `dev` poussé. |
 | 2026-11-26 | Plafond du démon : évincer la plus ancienne connexion en attente (`server/pending.rs`, `session/greeting.rs`). |
 | 2026-11-26 | SEC-04 : navigation de la vue web — clics relayés par le script plutôt qu'un indicateur de geste ; refus `busy` en design seulement. |
+| 2026-11-26 | Refus `busy` accepté et codé (SEC-06) ; aperçu des notifications gardé par défaut ; alignement des verrous à faire ensuite. |
 | 2026-11-26 | SEC-05 : unité systemd `--user` non durcie (le démon lance l'app, `NoNewPrivileges` hériterait) ; `SecretValue` effacé à la destruction ; image distante vers machine privée refusée même autorisée. |
 | 2026-11-26 | Constat 10 : épingler la CI maintenant ; signature des releases reportée. |
 

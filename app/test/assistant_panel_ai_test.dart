@@ -197,6 +197,41 @@ void main() {
     await close(tester, store);
   });
 
+  testWidgets('sent_message_shows_its_attachments_above_the_text', (
+    tester,
+  ) async {
+    final engine = withDefaultConnection()
+      ..scripts.add([
+        {'type': 'done', 'reason': 'end_turn'},
+      ]);
+    final store = await pumpPanel(tester, engine);
+    final mail = store.recentInboxMails().first;
+    store.toggleChatAttachment(mail.id);
+    store.attachChatFile(
+      const ChatAttachedFile(id: 'f1', name: 'devis.txt', text: 'Total : 42'),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.text('RÉSUME CE MAIL'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const ValueKey('chat-attach-remove-f1')), findsNothing);
+    final sent = find.byKey(const ValueKey('chat-sent-attachments'));
+    expect(sent, findsOneWidget);
+    expect(find.text('devis.txt'), findsOneWidget);
+    expect(find.textContaining(mail.subject), findsWidgets);
+    final text = find.text('Résume ce mail');
+    if (text.evaluate().isNotEmpty) {
+      expect(
+        tester.getTopLeft(sent).dy,
+        lessThan(tester.getTopLeft(text.first).dy),
+      );
+    }
+    expect(
+      store.chat.firstWhere((m) => m.role == 'me').attachments,
+      hasLength(2),
+    );
+    await close(tester, store);
+  });
+
   testWidgets('chip_cross_detaches_the_mail', (tester) async {
     final store = await pumpPanel(tester, withDefaultConnection());
     final id = store.recentInboxMails().first.id;

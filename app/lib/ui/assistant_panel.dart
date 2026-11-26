@@ -502,6 +502,8 @@ class _Bubble extends StatelessWidget {
                   height: null,
                 ),
               ),
+              if (me && msg.attachments.isNotEmpty)
+                ChatSentAttachments(attachments: msg.attachments),
               if (shown.isNotEmpty)
                 Text.rich(
                   TextSpan(

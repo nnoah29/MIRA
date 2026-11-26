@@ -214,7 +214,11 @@ class ChatController extends ChangeNotifier {
     int stage,
   ) async {
     _lastInput = input;
-    final user = ChatMsg(role: 'me', text: q);
+    final user = ChatMsg(
+      role: 'me',
+      text: q,
+      attachments: chatAttachmentRefs(input),
+    );
     final reply = ChatMsg(role: 'ai', done: false, text: '', fromEngine: true);
     final request = buildChatStart(history: [...chat, user], input: input);
     final origin = ChatPending(connection, q, input, '', stage);

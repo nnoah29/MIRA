@@ -75,6 +75,19 @@ List<Map<String, String>> chatMailParts(ChatContextInput input) => [
   for (final extra in input.attached) chatMailPart(extra),
 ];
 
+String _senderName(String? from) {
+  final raw = from ?? '';
+  final cut = raw.indexOf(' <');
+  return cut > 0 ? raw.substring(0, cut) : raw;
+}
+
+/// Vignettes à montrer sur le message envoyé : un mail par « expéditeur · objet », un fichier par son nom.
+List<ChatAttachmentRef> chatAttachmentRefs(ChatContextInput input) => [
+  for (final m in [if (input.hasOwnMail) input, ...input.attached])
+    ChatAttachmentRef('mail', '${_senderName(m.from)} · ${m.subject ?? ''}'),
+  for (final f in input.files) ChatAttachmentRef('file', f.name),
+];
+
 /// Partie de contexte typée d'un fichier joint : nom en étiquette, texte clippé.
 Map<String, String> chatFilePart(ChatAttachedFile file) => {
   'kind': aiKindAttachment,

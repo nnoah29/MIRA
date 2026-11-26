@@ -37,6 +37,9 @@ Map<String, dynamic> _msgJson(ChatMsg m) => {
   'note': m.note,
   'masked': m.maskedCount,
   'engine': m.fromEngine,
+  'attachments': [
+    for (final a in m.attachments) {'kind': a.kind, 'label': a.label},
+  ],
 };
 
 /// Écrit les messages (sans l'accueil) en texte JSON `{"messages": [...]}`.
@@ -70,6 +73,10 @@ ChatMsg _msg(Map<String, dynamic> j) {
     failed: j['failed'] == true,
     note: j['note'] as String?,
     maskedCount: (j['masked'] as num?)?.toInt() ?? 0,
+    attachments: [
+      for (final a in (j['attachments'] as List?) ?? const [])
+        ChatAttachmentRef((a as Map)['kind'] as String, a['label'] as String),
+    ],
   );
   m.sources.addAll(_strings(j['sources']) ?? const []);
   for (final t in (j['tools'] as List?) ?? const []) {

@@ -7,6 +7,7 @@ import 'package:mira/state/chat_message.dart';
 const file = ChatAttachedFile(id: '1', name: 'devis.txt', text: 'Total : 42');
 
 void main() {
+  attachmentRefsTests();
   test('un fichier joint devient une partie de contexte attachment', () {
     final part = chatFilePart(file);
     expect(part['kind'], 'attachment');
@@ -48,5 +49,23 @@ void main() {
     expect(input.restrictedTo([aiKindAttachment]).hasMail, isFalse);
     expect(input.restrictedTo([aiKindAttachment]).files, hasLength(1));
     expect(input.restrictedTo(const []).kinds, isEmpty);
+  });
+}
+
+void attachmentRefsTests() {
+  test('les pièces jointes donnent une vignette chacune', () {
+    const input = ChatContextInput(
+      subject: 'Devis',
+      from: 'Alice Martin <alice@x.fr>',
+      body: 'b',
+      attached: [ChatContextInput(subject: 'Re', from: 'Bob <b@x.fr>')],
+      files: [file],
+    );
+    final refs = chatAttachmentRefs(input);
+    expect([for (final r in refs) r.kind], ['mail', 'mail', 'file']);
+    expect(refs[0].label, 'Alice Martin · Devis');
+    expect(refs[1].label, 'Bob · Re');
+    expect(refs[2].label, 'devis.txt');
+    expect(chatAttachmentRefs(const ChatContextInput()), isEmpty);
   });
 }

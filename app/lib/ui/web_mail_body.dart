@@ -32,6 +32,10 @@ const _jitter = 2.0;
 
 /// Script injecté par l'app (pas par le courriel, dont les scripts restent bloqués par la politique de contenu) :
 /// il signale la hauteur du document et renvoie la molette verticale au lecteur.
+/// Script de page exposé aux tests.
+@visibleForTesting
+const webPageScriptForTest = _pageScript;
+
 const _pageScript =
     '''
 (function() {
@@ -52,6 +56,13 @@ const _pageScript =
     fitWidth();
     post({height: Math.ceil(document.documentElement.getBoundingClientRect().height), loaded: loaded === true});
   }
+  document.addEventListener('click', function(event) {
+    if (!event.isTrusted) return;
+    var link = event.target && event.target.closest && event.target.closest('a[href],area[href]');
+    if (!link) return;
+    event.preventDefault();
+    post({link: link.href});
+  }, {capture: true});
   window.addEventListener('wheel', function(event) {
     if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
     event.preventDefault();
@@ -225,6 +236,11 @@ class _WebMailBodyState extends State<WebMailBody>
       return;
     }
     if (data is! Map || !mounted) return;
+    final link = clickedLink(data);
+    if (link != null) {
+      unawaited(openLink(link));
+      return;
+    }
     final height = data['height'];
     final wheel = data['wheel'];
     if (height is num && height > 0) {
@@ -247,12 +263,12 @@ class _WebMailBodyState extends State<WebMailBody>
     }
   }
 
-  /// Seul le chargement du document lui-même navigue ; un lien http(s) ou mailto part dans le navigateur du système, tout le reste est refusé.
-  Future<NavigationDecision> _onNavigate(NavigationRequest request) async {
-    final verdict = navigationVerdict(request.url, loading: _loading);
-    if (verdict == NavigationVerdict.load) return NavigationDecision.navigate;
-    if (verdict == NavigationVerdict.openExternal) await openLink(request.url);
-    return NavigationDecision.prevent;
+  /// Seul le chargement du document lui-même navigue ; une navigation demandée par la page n'ouvre jamais rien (les clics sont relayés par le script, voir `_onMessage`).
+  NavigationDecision _onNavigate(NavigationRequest request) {
+    final verdict = automaticNavigationVerdict(request.url, loading: _loading);
+    return verdict == NavigationVerdict.load
+        ? NavigationDecision.navigate
+        : NavigationDecision.prevent;
   }
 
   /// La vue native est posée par-dessus Flutter : une découpe non rectangulaire (coins arrondis) la ferait cacher par le plugin.

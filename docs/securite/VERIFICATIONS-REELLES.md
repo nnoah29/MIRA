@@ -26,6 +26,7 @@ Pour chaque mail, l'ouvrir dans MIRA, cliquer sur chaque lien et bouton, attendr
 | Mail | À faire | Attendu |
 |---|---|---|
 | 01 meta refresh | ouvrir | rien ne s'ouvre, aucune ligne `/refresh` |
+| 01 (suite) clic légitime | dans un mail riche en vue web, cliquer un lien `https` et un `mailto` | le lien s'ouvre une seule fois dans le système (clic relayé par le script de page, SEC-04) ; un lien `target="_blank"` aussi |
 | 02 lien `data:` et `javascript:` | cliquer les deux liens | rien ne s'ouvre, aucune ligne `/data` ni `/js` |
 | 03 formulaire | ouvrir, cliquer le bouton | aucune ligne `/form` |
 | 04 `<base>` | cliquer le lien relatif | aucune ligne `/base/…` |

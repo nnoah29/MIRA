@@ -1,4 +1,4 @@
-//! Vignettes des mails et fichiers joints : avec croix avant l'envoi, sans croix dans le message envoyé.
+//! Vignettes des mails et fichiers joints : une rangée défilante au-dessus de la saisie, sans croix dans le message envoyé.
 
 import 'package:flutter/material.dart';
 
@@ -7,6 +7,9 @@ import '../state/store.dart';
 import '../theme/app_theme.dart';
 import '../theme/icons.dart';
 import 'widgets.dart';
+
+/// Hauteur fixe de la rangée des vignettes au-dessus de la saisie.
+const chatChipRowHeight = 36.0;
 
 /// Une vignette : icône, libellé sur une ligne et, si [onRemove] est donné, une croix de retrait.
 class ChatAttachChip extends StatelessWidget {
@@ -59,7 +62,7 @@ class ChatAttachChip extends StatelessWidget {
   }
 }
 
-/// Rangée de vignettes au-dessus du champ de saisie ; vide quand rien n'est joint.
+/// Rangée d'une seule ligne, qui défile en largeur, au-dessus du cadre de saisie ; vide quand rien n'est joint.
 class ChatAttachChips extends StatelessWidget {
   final MailStore store;
   const ChatAttachChips({super.key, required this.store});
@@ -70,29 +73,41 @@ class ChatAttachChips extends StatelessWidget {
     final files = store.chatFiles;
     if (mails.isEmpty && files.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final m in mails)
-            ChatAttachChip(
-              id: m.id,
-              icon: 'inbox',
-              label: '${m.from.name} · ${m.subject}',
-              onRemove: () => store.detachChatMail(m.id),
-            ),
-          for (final f in files)
-            ChatAttachChip(
-              id: f.id,
-              icon: 'file',
-              label: f.name,
-              onRemove: () => store.detachChatFile(f.id),
-            ),
-        ],
+      padding: const EdgeInsets.only(bottom: 8),
+      child: SizedBox(
+        height: chatChipRowHeight,
+        child: SingleChildScrollView(
+          key: const ValueKey('chat-attach-row'),
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final m in mails)
+                _spaced(
+                  ChatAttachChip(
+                    id: m.id,
+                    icon: 'inbox',
+                    label: '${m.from.name} · ${m.subject}',
+                    onRemove: () => store.detachChatMail(m.id),
+                  ),
+                ),
+              for (final f in files)
+                _spaced(
+                  ChatAttachChip(
+                    id: f.id,
+                    icon: 'file',
+                    label: f.name,
+                    onRemove: () => store.detachChatFile(f.id),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
+
+  Widget _spaced(Widget chip) =>
+      Padding(padding: const EdgeInsets.only(right: 8), child: chip);
 }
 
 /// Vignettes sans croix des pièces jointes d'un message déjà envoyé.

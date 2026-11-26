@@ -341,7 +341,12 @@ class _AssistantPanelState extends State<AssistantPanel> {
               ],
             ),
           ),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: hp),
+            child: ChatAttachChips(store: s),
+          ),
           Container(
+            key: const ValueKey('chat-input-box'),
             margin: EdgeInsets.fromLTRB(hp, 0, hp, 24),
             decoration: BoxDecoration(
               color: p.surface,
@@ -350,7 +355,6 @@ class _AssistantPanelState extends State<AssistantPanel> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ChatAttachChips(store: s),
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,

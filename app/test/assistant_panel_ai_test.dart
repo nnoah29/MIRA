@@ -232,6 +232,24 @@ void main() {
     await close(tester, store);
   });
 
+  testWidgets('chips_sit_above_the_input_and_never_resize_it', (tester) async {
+    final store = await pumpPanel(tester, withDefaultConnection());
+    final box = find.byKey(const ValueKey('chat-input-box'));
+    final before = tester.getSize(box);
+    final ids = store.recentInboxMails().take(6).map((m) => m.id).toList();
+    ids.forEach(store.toggleChatAttachment);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.getSize(box), before);
+    final row = find.byKey(const ValueKey('chat-attach-row'));
+    expect(row, findsOneWidget);
+    expect(
+      tester.getBottomLeft(row).dy,
+      lessThanOrEqualTo(tester.getTopLeft(box).dy),
+    );
+    expect(tester.getSize(row).height, lessThanOrEqualTo(40));
+    await close(tester, store);
+  });
+
   testWidgets('chip_cross_detaches_the_mail', (tester) async {
     final store = await pumpPanel(tester, withDefaultConnection());
     final id = store.recentInboxMails().first.id;

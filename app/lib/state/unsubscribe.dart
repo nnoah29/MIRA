@@ -66,19 +66,40 @@ const _maxResponse = 64 * 1024;
 bool isPublicAddress(InternetAddress a) {
   final b = a.rawAddress;
   if (a.isLoopback || a.isLinkLocal || a.isMulticast) return false;
-  if (b.length == 4) {
-    return !(b[0] == 0 ||
-        b[0] == 10 ||
-        (b[0] == 172 && b[1] >= 16 && b[1] < 32) ||
-        (b[0] == 192 && b[1] == 168) ||
-        (b[0] == 100 && b[1] >= 64 && b[1] < 128));
-  }
+  return b.length == 4 ? _isPublicV4(b) : _isPublicV6(b);
+}
+
+bool _isPublicV4(List<int> b) {
+  return !(b[0] == 0 ||
+      b[0] == 10 ||
+      b[0] >= 240 ||
+      (b[0] == 172 && b[1] >= 16 && b[1] < 32) ||
+      (b[0] == 192 && b[1] == 168) ||
+      (b[0] == 192 && b[1] == 0 && b[2] == 0) ||
+      (b[0] == 198 && (b[1] == 18 || b[1] == 19)) ||
+      (b[0] == 100 && b[1] >= 64 && b[1] < 128));
+}
+
+bool _isPublicV6(List<int> b) {
   final mapped =
       b.sublist(0, 10).every((x) => x == 0) && b[10] == 255 && b[11] == 255;
-  if (mapped) {
-    return isPublicAddress(
-      InternetAddress.fromRawAddress(Uint8List.fromList(b.sublist(12))),
-    );
+  if (mapped) return _embeddedIsPublic(b);
+  const nat64 = [0, 0x64, 0xff, 0x9b, 0, 0, 0, 0, 0, 0, 0, 0];
+  if (_startsWith(b, nat64)) return _embeddedIsPublic(b);
+  return !(b.sublist(0, 12).every((x) => x == 0) ||
+      (b[0] & 0xfe) == 0xfc ||
+      (b[0] == 0xfe && (b[1] & 0xc0) == 0xc0));
+}
+
+bool _startsWith(List<int> b, List<int> prefix) {
+  for (var i = 0; i < 12; i++) {
+    if (b[i] != prefix[i]) return false;
   }
-  return !(b.every((x) => x == 0) || (b[0] & 0xfe) == 0xfc);
+  return true;
+}
+
+bool _embeddedIsPublic(List<int> b) {
+  return isPublicAddress(
+    InternetAddress.fromRawAddress(Uint8List.fromList(b.sublist(12))),
+  );
 }

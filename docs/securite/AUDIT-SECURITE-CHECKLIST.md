@@ -32,10 +32,10 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 | SEC-A01-2 | Jeton local en fichier privé, refus si 0o077 | ✅ | `token/file.rs` `refuse_shared` |
 | SEC-A01-3 | TCP lié à 127.0.0.1 seulement | ✅ | `transport/tcp.rs:18` |
 | SEC-A01-4 | Comparaison du jeton en temps constant | ✅ | `token/mod.rs:23` : HMAC + `hmac::verify` (corrigé après lecture) |
-| SEC-A01-5 | Contrôle du pair sur socket Unix (`SO_PEERCRED`, même UID) | 🟡 | non trouvé ; le 0600 couvre le cas courant |
-| SEC-A01-6 | Sous TCP loopback : tout processus local de n'importe quel utilisateur peut tenter de se connecter | 🟡 | seul le jeton protège ; évaluer limitation de tentatives |
-| SEC-A01-7 | Autorisations par opération (une session « lecture » ne peut pas écrire/envoyer) | 🟡 | `Auth` n'a qu'un `LocalToken` ; pas de notion de portée |
-| SEC-A01-8 | Isolation entre comptes/profils (accès croisé par identifiant) | 🟡 | `profile/paths.rs` valide le nom de profil ; auditer les handlers par `account_id` |
+| SEC-A01-5 | Contrôle du pair sur socket Unix (`SO_PEERCRED`, même UID) | ✅ | `transport/unix.rs:54-58` : `peer_cred()` (SO_PEERCRED) comparé à l'uid propriétaire de la socket, pair refusé sinon ; tests `transport_unix.rs` (même uid accepté, prédicat) — l'acceptation d'un autre uid n'est testée qu'au niveau du prédicat (demande root) ; 2026-11-26 |
+| SEC-A01-6 | Sous TCP loopback : tout processus local de n'importe quel utilisateur peut tenter de se connecter | ✅ | Jeton de 256 bits (`token/mod.rs`, `file.rs`), comparaison en temps constant, 5 s et 8 Kio avant `hello`, 8 attentes au plus avec éviction (`session_hello_limits.rs`, `session_pending_eviction.rs`) : l'énumération est hors de portée. TCP n'est actif que sous Windows ou sur `--tcp-port` (`config/mod.rs:68`). Reste documenté : port squatté qui récolte le jeton (`PROTOCOLE-DEMON.md`, « Limite connue du TCP loopback ») ; 2026-11-26 |
+| SEC-A01-7 | Autorisations par opération (une session « lecture » ne peut pas écrire/envoyer) | ✅ | Accepté par conception : `Auth` n'a qu'un `LocalToken` ; `Access` = `Full` ou `UpdateOnly` (`session/access.rs`). Le jeton est un fichier 0600 du même utilisateur que la base et le trousseau : un processus qui le lit peut déjà lire tout le reste, une portée par opération ne protégerait rien (modèle de menaces, « autre utilisateur local »). À reprendre si un second client moins privilégié apparaît ; 2026-11-26 |
+| SEC-A01-8 | Isolation entre comptes/profils (accès croisé par identifiant) | ✅ | Aucun handler de message, d'action ou de brouillon ne prend d'`account_id` du client (`api/handlers/*` : 3 occurrences, inscription et listes via `engine.account_ids()`) ; les identifiants sont ceux de la base d'un seul profil, un profil = un utilisateur. Isolation des profils : `profile/paths.rs` (nom validé, `profile_paths.rs` 4 tests, dossiers 0700) ; 2026-11-26 |
 | SEC-A01-9 | Opérations d'hôte (`Shutdown`, `RetryUnlock`) hors contrat d'API | ✅ | `protocol/auth.rs` `HostOp` |
 
 ## A02 — Défaillances cryptographiques
@@ -165,7 +165,7 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 | SEC-D-4 | Notifications : contenu affiché écran verrouillé | 🟡 | `mira-host/notifier` |
 | SEC-D-5 | Dictée vocale : audio traité localement, pas d'envoi non annoncé | 🟡 | `docs/VOICE.md` |
 | SEC-D-6 | Fuzzing des analyseurs (MIME, IMAP, HTML, YAML, protocole démon) | ❌ | aucun dossier `fuzz` |
-| SEC-D-7 | Désérialisation des trames du démon : taille maximale, version, fuzz | 🟡 | `mira-protocol/codec.rs`, `frame.rs` |
+| SEC-D-7 | Désérialisation des trames du démon : taille maximale, version, fuzz | ✅ | Taille jugée sur l'en-tête avant lecture du corps (`codec.rs:body_len`, `wire.rs:46-60` lit au plus `length` octets, mémoire croissante au fil des octets) ; `hello` ≤ 8 Kio ; tests `codec.rs` (6), `wire.rs`, `session_limits.rs`, `session_hello_limits.rs` verts ; profondeur JSON bornée par `serde_json` (128). Le fuzzing reste reporté (SEC-D-6) ; 2026-11-26 |
 
 ## Lacunes restantes (❌)
 

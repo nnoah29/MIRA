@@ -15,9 +15,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with: { toolchain: "1.99.0" }
       - run: cargo install cargo-deny --locked
-      - name: Avis de sécurité RustSec
+      - name: Avis de sécurité RustSec (moteur et démon)
         working-directory: engine
         run: cargo deny --log-level error check advisories
+      - name: Avis de sécurité RustSec (pont livré, son propre Cargo.lock)
+        run: cargo deny --manifest-path bridge/Cargo.toml --log-level error --config engine/deny.toml check advisories
   avis-dart:
     runs-on: ubuntu-22.04
     steps:

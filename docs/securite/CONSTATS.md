@@ -32,13 +32,13 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 
 ---
 
-## 2. Le désabonnement « en un clic » fait confiance à l'expéditeur — gravité MOYENNE
+## 2. Le désabonnement « en un clic » fait confiance à l'expéditeur — gravité MOYENNE (point 2 reporté)
 
 **Le problème.** Si un mail annonce un désabonnement en un clic, MIRA envoie directement une requête vers l'adresse fournie par le mail (`state/unsubscribe.dart`). Le moteur exige du HTTPS (`mime/unsubscribe.rs:30`), mais rien d'autre n'est contrôlé.
 
 **Pourquoi c'est un risque.** Un mail falsifié (usurpation d'un vrai expéditeur) peut fournir n'importe quelle adresse HTTPS, y compris une machine du réseau local (`https://192.168.x.x/…`) ou un site qui, en voyant la requête, sait que votre adresse est active. L'appel part de l'ordinateur de l'utilisateur, donc depuis son réseau privé.
 
-**Statut (2026-11-22).** Points 1 et 3 corrigés. Le moteur (`mime/unsubscribe_host.rs`) n'expose plus une adresse `https` visant une machine locale ou privée (boucle, `10.x`, `172.16–31.x`, `192.168.x`, `169.254.x`, `100.64/10`, IPv6 locales, noms sans point, `.local`, identifiants dans l'adresse) : le mailto reste proposé, sans « un clic ». Côté application (`state/unsubscribe.dart`), le nom est résolu et chaque adresse obtenue contrôlée (contre un nom public qui pointe en privé), les redirections ne sont pas suivies, la réponse est limitée à 64 Ko et 10 s. Tests : `mime_unsubscribe_private_hosts.rs`, `unsubscribe_one_click_safety_test.dart`. **Reste le point 2** (exiger un DKIM valide) : le moteur ne vérifie pas encore DKIM. Limite connue : entre la résolution et la connexion, un nom peut changer d'adresse (rebinding), risque faible et résiduel.
+**Statut (2026-11-22).** Points 1 et 3 corrigés. Le moteur (`mime/unsubscribe_host.rs`) n'expose plus une adresse `https` visant une machine locale ou privée (boucle, `10.x`, `172.16–31.x`, `192.168.x`, `169.254.x`, `100.64/10`, IPv6 locales, noms sans point, `.local`, identifiants dans l'adresse) : le mailto reste proposé, sans « un clic ». Côté application (`state/unsubscribe.dart`), le nom est résolu et chaque adresse obtenue contrôlée (contre un nom public qui pointe en privé), les redirections ne sont pas suivies, la réponse est limitée à 64 Ko et 10 s. Tests : `mime_unsubscribe_private_hosts.rs`, `unsubscribe_one_click_safety_test.dart`. **Point 2 reporté (décision du 2026-11-26)** (exiger un DKIM valide) : le moteur ne vérifie pas encore DKIM. Raison : gros chantier (vérification de signature, clés DNS, mails non signés) pour un risque déjà réduit par les points 1 et 3 ; il reste qu'un faux mail peut faire contacter un site public, ce qui révèle qu'une adresse est active (confidentialité, faible). Déclencheur de reprise : le jour où MIRA vérifie DKIM pour une autre raison (badge d'authentification, alerte constat 8). Limite connue : entre la résolution et la connexion, un nom peut changer d'adresse (rebinding), risque faible et résiduel.
 
 **Plateformes.** Toutes.
 
@@ -122,8 +122,8 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 
 - ~~Pas de `SECURITY.md`~~ : écrit (2026-11-26), signalement privé par GitHub. À activer côté dépôt : *Settings → Code security → Private vulnerability reporting*.
 - ~~Pas de modèle de menaces~~ : écrit, `MODELE-DE-MENACES.md`.
-- Pas de **fuzzing** : on n'envoie pas de données déformées aux lecteurs de MIME, d'IMAP, de HTML, de YAML (règles) ni au protocole du démon.
-- Pas de **journal d'audit** (échecs de connexion au démon, ajout de compte, envois).
+- Pas de **fuzzing** (MIME, IMAP, HTML, YAML, protocole du démon). **Reporté (2026-11-26)** : demande la toolchain nightly, de l'infrastructure et du tri ; aucun problème démontré (les tests de structures hostiles passent). À traiter comme un chantier à part, après la livraison des corrections actuelles.
+- Pas de **journal d'audit** (échecs de connexion au démon, ajout de compte, envois). **Reporté (2026-11-26)** : n'empêche aucune attaque, et un journal mal conçu risque d'enregistrer des données sensibles ; demande une conception (quoi consigner, rotation, taille). À reprendre si MIRA gagne un usage multi-utilisateur ou un besoin de diagnostic.
 - **Android** : le manifeste est correct (`allowBackup="false"`, pas de trafic non chiffré, secrets dans le Keystore). Il reste à vérifier les réglages de la WebView et les droits de l'activité exportée.
 
 **Correctif.** Les écrire ; le `SECURITY.md` et le modèle de menaces prennent une demi-journée.

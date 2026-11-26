@@ -170,9 +170,10 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 1. **SEC-A06-3** — audit des dépendances Dart pas encore exécuté (workflow en place, OSV-Scanner absent localement).
 2. **SEC-A06-6** — pas de SBOM publié.
 3. **SEC-A03-7** — pas d'alerte d'hameçonnage sur les liens.
-4. **SEC-A09-3** — pas de journal d'audit.
+4. **SEC-A09-3** — pas de journal d'audit, reporté (2026-11-26).
 5. **SEC-A05-2** — ACL Windows absentes, reporté (`A-FAIRE-WINDOWS.md`).
-6. **SEC-D-6** — pas de fuzzing.
+6. **SEC-D-6** — pas de fuzzing, reporté (2026-11-26).
+7. **DKIM pour le désabonnement** (constat 2, point 2), reporté (2026-11-26).
 
 Corrigées ou documentées : SEC-A06-2, SEC-A02-7 (décidé : documenté), SEC-A02-8 (documenté), SEC-A04-1, SEC-A05-6.
 

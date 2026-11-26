@@ -1,0 +1,32 @@
+# Écarts de versions acceptés entre engine/Cargo.lock et bridge/Cargo.lock (tools/check-lock-sync).
+# Un écart nouveau ou une ligne périmée fait échouer ci.sh : aligner les verrous (cargo update -p <crate> --precise <version> dans les deux) et retirer la ligne.
+bitflags engine=1.3.2,2.13.2 bridge=2.13.2
+cc engine=1.7.0 bridge=1.8.0
+core-foundation engine=0.10.1,0.9.4 bridge=0.10.1
+equivalent engine=1.0.2 bridge=1.0.3
+hashbrown engine=0.16.1,0.17.1 bridge=0.14.5,0.16.1,0.17.1
+inout engine=0.2.2 bridge=0.2.3
+keyring-core engine=1.0.0 bridge=1.0.1
+miniz_oxide engine=0.9.1 bridge=0.8.9,0.9.1
+rustix engine=1.1.6 bridge=1.1.5
+serde_json engine=1.0.152 bridge=1.0.154
+sha2 engine=0.10.9,0.11.0 bridge=0.10.9,0.11.1
+syn engine=2.0.119,3.0.7 bridge=2.0.119,3.0.9
+unicode-ident engine=1.0.26 bridge=1.0.27
+windows engine=0.61.3,0.62.2 bridge=0.62.2
+windows-collections engine=0.2.0,0.3.2 bridge=0.3.2
+windows-core engine=0.61.2,0.62.2 bridge=0.62.2
+windows-future engine=0.2.1,0.3.2 bridge=0.3.2
+windows-link engine=0.1.3,0.2.1 bridge=0.2.1
+windows-numerics engine=0.2.0,0.3.1 bridge=0.3.1
+windows-result engine=0.3.4,0.4.1 bridge=0.4.1
+windows-strings engine=0.4.2,0.5.1 bridge=0.5.1
+windows-threading engine=0.1.0,0.2.1 bridge=0.2.1
+zbus_names engine=4.3.4 bridge=4.3.5
+zerocopy engine=0.8.62 bridge=0.8.63
+zerocopy-derive engine=0.8.62 bridge=0.8.63
+zstd engine=0.14.4 bridge=0.14.5
+zstd-safe engine=8.3.0 bridge=8.4.0
+zstd-sys engine=2.1.3+zstd.1.5.7 bridge=2.2.0+zstd.1.6.0
+zvariant engine=5.15.0 bridge=5.15.1
+zvariant_derive engine=5.15.0 bridge=5.15.1

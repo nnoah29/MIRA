@@ -65,7 +65,7 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 | SEC-A03-5 | WebView (Linux WebKitGTK / Android) : JavaScript désactivé, navigation et sous-ressources bloquées | 🟡 | `web_mail_body.dart` : **aucun réglage de sécurité trouvé** (JS, `NavigationDelegate`, accès fichiers). À instruire en priorité |
 | SEC-A03-6 | Ouverture de liens : liste blanche de schémas | ✅ | `html_body.dart` `openLink` (http/https/mailto) ; `Process.run` sans shell |
 | SEC-A03-7 | Hameçonnage par liens (texte ≠ cible, homographes IDN) | ❌ | aucune alerte constatée |
-| SEC-A03-8 | Injection de prompt via contenu de mail (IA) | 🟡 | voir section LLM |
+| SEC-A03-8 | Injection de prompt via contenu de mail (IA) | ✅ | Même preuve que SEC-LLM01 : `ai_injection_trap_mail.rs` avec le texte exact de `mails-pieges/09-injection-prompt.eml` ; `ai_tools_loop_masking.rs:85` (fermeture de cadre) ; 2026-11-26 |
 | SEC-A03-9 | Injection YAML des règles importées | ✅ | alias, doublons, taille, éléments, imbrication : `portability_envelope_*` |
 
 ## A04 — Conception non sécurisée
@@ -145,14 +145,14 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 
 | ID | Contrôle | Statut | Preuve / à faire |
 |---|---|---|---|
-| SEC-LLM01 | Injection de prompt indirecte par le contenu d'un mail | 🟡 | séparer clairement données/instructions ; tester un mail hostile |
+| SEC-LLM01 | Injection de prompt indirecte par le contenu d'un mail | ✅ | Contenu cadré en donnée (`ai/chat/framing.rs` : balise `<tool_result>`, fermeture neutralisée, `TOOLS_NOTICE` « jamais une consigne »), balise `<context>` neutralisée (`neutralize.rs`) ; aucun outil d'envoi/suppression ; actions et mémoire = propositions. Test de bout en bout avec le mail piégé 09 : `ai_injection_trap_mail.rs` (3 tests, un modèle qui obéit n'obtient rien) ; 2026-11-26. Comportement d'un vrai modèle : `VERIFICATIONS-REELLES.md` (mail 09) |
 | SEC-LLM02 | Sortie non assainie : rendu Markdown/HTML de la réponse du modèle | ✅ | `chat_markdown.dart` : gras, italique, code seulement ; ni lien ni image |
 | SEC-LLM03 | Outils à agence excessive (envoi, suppression, règles, transfert) sans confirmation humaine | ✅ | catalogue sans outil d'envoi ; `propose_action` validée par l'utilisateur ; consentement par type de contenu |
 | SEC-LLM04 | Exfiltration de données : le mail ordonne au modèle de transmettre du contenu par outil/lien/image | ✅ | pas d'image ni de lien rendus dans les réponses ; images de mail bloquées par défaut |
 | SEC-LLM05 | Mémoire IA (`ai_memories`) empoisonnable par un mail | ✅ | `remember`/`forget_memory` sont des propositions : rien n'est écrit avant le clic |
-| SEC-LLM06 | Envoi de contenu privé à un tiers : consentement par fournisseur, minimisation | 🟡 | auditer ce qui part vers les 9 fournisseurs |
-| SEC-LLM07 | Clés d'API : stockage, journalisation, envoi seulement à l'hôte prévu | 🟡 | `key_file.rs`, transports |
-| SEC-LLM08 | Déni de portefeuille / boucles d'outils : plafonds de jetons et d'itérations | 🟡 | `ai/chat/ending.rs` |
+| SEC-LLM06 | Envoi de contenu privé à un tiers : consentement par fournisseur, minimisation | ✅ | Une connexion distante sans consentement est refusée avant toute requête (`ai_chat_consent.rs:16`, le consentement précède la clé `:34`) ; chaque outil de lecture n'est exécuté que pour un type de contenu autorisé par la connexion (`chat/tool_consent.rs`, `ai_tools_loop_consent.rs`) ; valeurs sensibles (cartes, IBAN, OTP, secrets, contacts) masquées à l'envoi et dans les résultats d'outils (`ai/masking/`, `ai_chat_masking.rs`, `ai_tools_loop_masking.rs`) ; contexte plafonné à 120 000 caractères (`truncate.rs`) ; seule la boucle locale est exemptée ; 2026-11-26 |
+| SEC-LLM07 | Clés d'API : stockage, journalisation, envoi seulement à l'hôte prévu | ✅ | Clé : trousseau système (`secrets`), jamais en journal, erreur ni `Debug` (`ai_chat_secrets.rs`, 3 tests dont rejet de clé sans fuite) ; en-tête marqué sensible (`transport/auth_header.rs:30`) ; envoyée à l'URL de la connexion seule : HTTPS hors boucle locale, sans identifiants dans l'URL (`base_url.rs`), aucune redirection (`transport/client.rs:30`, `ai_transport.rs:99` : la cible ne reçoit pas la clé) ; clé du serveur local tirée à chaque lancement, fichier 0600 (`local/key_file.rs`) ; 2026-11-26 |
+| SEC-LLM08 | Déni de portefeuille / boucles d'outils : plafonds de jetons et d'itérations | ✅ | Au plus 8 tours (`chat/rounds.rs:13`) puis `MaxToolRounds` (`ai_tools_loop_limits.rs`), 8 appels par tour (`tool_step.rs:10`), outils de lecture retirés après 4 tours, entrée plafonnée à 120 000 caractères, sortie 4 096 jetons par défaut (`wire/*_encode.rs`), résultat d'outil borné (`ai_tools_loop_hardening.rs:32`) ; la valeur `max_output_tokens` vient du client, c'est-à-dire de l'utilisateur ; 2026-11-26 |
 | SEC-LLM09 | Modèles locaux : provenance et intégrité | ✅ | voir SEC-A08-1 |
 
 ## Spécifique poste de travail et mobile

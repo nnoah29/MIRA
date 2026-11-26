@@ -44,12 +44,12 @@ Aucun n'est une faille connue ; aucun n'est vérifié. Chaque point instruit re�
 - **Autres** : A03-4 et A03-5 (couverts par les correctifs, à confirmer avec `VERIFICATIONS-REELLES.md`), A05-3 (paquets), A06-4, A09-4, A09-5, D-3, D-4, D-5.
 La liste exacte se relit avec : `grep "🟡" docs/securite/AUDIT-SECURITE-CHECKLIST.md`.
 
-### 3.5 Mineurs consignés, non corrigés (relecture indépendante du 2026-11-26)
-- **Filtre d'adresses du désabonnement** : plages oubliées — `255.255.255.255`, `240.0.0.0/4`, `198.18.0.0/15`, `192.0.0.0/24`, `fec0::/10`, IPv4-compatible `::a.b.c.d`, NAT64 `64:ff9b::/96` avec IPv4 privée, `ff00::/8` côté Rust. Fichiers : `engine/crates/mira-core/src/mime/unsubscribe_host.rs`, `app/lib/state/unsubscribe.dart` (`isPublicAddress`). Une liste partagée suffirait. Allocations inutiles dans la boucle des suffixes (`unsubscribe_host.rs`).
-- **Rebinding DNS** du désabonnement : résolution puis nouvelle résolution par `HttpClient`. Correctif fort : `HttpClient.connectionFactory` qui se connecte à l'adresse déjà contrôlée, avec SNI sur le nom.
-- **Poignée de main du démon** : le plafond de clients identifiés est pris après `hello_ok` ; un 4e client se croit connecté puis est fermé (`session/mod.rs`). Corriger demande une variante de refus `busy` dans le protocole.
-- **Vue web** : `NavigationRequest` ne dit pas si un clic est à l'origine ; une navigation http(s) automatique ouvrirait le navigateur. Les vecteurs connus sont fermés par trois couches (scripts retirés, `meta refresh` retiré, formulaires et cadres interdits par la CSP). JavaScript reste actif (mesure de hauteur). À confirmer avec les mails piégés 01 à 05.
-- **Tests de l'éviction** : l'ordre d'arrivée de deux connexions simultanées n'est pas déterministe ; les tests espacent leurs arrivées de 100 ms.
+### 3.5 Mineurs — traités le 2026-11-26 (branche `feat/SEC-04-mineurs`)
+- **Filtre d'adresses du désabonnement** : FAIT, Rust et Dart alignés, un test par plage (voir constat 2).
+- **Rebinding DNS** : FAIT (`connectionFactory` sur l'adresse contrôlée, TLS sur le nom, test avec certificat local).
+- **Poignée de main du démon** : **non codé**, design proposé dans `DESIGN-BUSY.md` (variante `busy`, protocole 1.2). **Attend l'accord de l'utilisateur.**
+- **Vue web** : FAIT côté code (clics relayés par le script, navigation automatique bloquée) ; **à vérifier à la main** avec les mails piégés (ligne ajoutée à `VERIFICATIONS-REELLES.md`), le test unitaire ne peut pas piloter un vrai WebView.
+- **Tests de l'éviction** : FAIT, synchronisation explicite sur l'inscription des connexions.
 
 ### 3.6 À exécuter par l'utilisateur
 - **Vérifications réelles** : `VERIFICATIONS-REELLES.md` avec `tools/deposer-mails-pieges` (serveur IMAP local sur `127.0.0.1` seulement). Consigner OK ou ÉCHEC par ligne et par plateforme dans `RESULTATS-VERIFICATIONS.md` (à créer). Un ÉCHEC est une faille : correctif, test de non-régression, nouvelle vérification.
@@ -77,6 +77,7 @@ La liste exacte se relit avec : `grep "🟡" docs/securite/AUDIT-SECURITE-CHECKL
 | 2026-11-26 | Vue web rebranchée (retrait accidentel de `33173df`) ; mode Auto : widgets pour les mails simples, vue web pour les riches. |
 | 2026-11-26 | Branche `feat/SEC-01-audit-securite` non poussée ; fusionnée `--no-ff` dans `dev`, puis `dev` poussé. |
 | 2026-11-26 | Plafond du démon : évincer la plus ancienne connexion en attente (`server/pending.rs`, `session/greeting.rs`). |
+| 2026-11-26 | SEC-04 : navigation de la vue web — clics relayés par le script plutôt qu'un indicateur de geste ; refus `busy` en design seulement. |
 | 2026-11-26 | Constat 10 : épingler la CI maintenant ; signature des releases reportée. |
 
 ## 6. Pour reprendre

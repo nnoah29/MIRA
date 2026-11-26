@@ -37,6 +37,11 @@ impl PendingHellos {
         }
     }
 
+    /// Nombre de connexions inscrites depuis le démarrage, évincées ou non ; sert à synchroniser les tests sur l'ordre d'arrivée.
+    pub fn registered(&self) -> u64 {
+        self.next.load(Ordering::Relaxed)
+    }
+
     /// Prévient la plus ancienne connexion en attente qu'elle doit partir ; dit s'il y en avait une.
     pub fn evict_oldest(&self) -> bool {
         let mut queue = self.queue.lock().unwrap_or_else(PoisonError::into_inner);

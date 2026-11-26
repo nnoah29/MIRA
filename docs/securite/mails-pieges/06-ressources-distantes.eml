@@ -1,0 +1,14 @@
+From: Test piege <piege@example.invalid>
+To: moi@example.invalid
+Subject: [PIEGE 06] images et feuilles distantes
+Date: Thu, 26 Nov 2026 10:00:00 +0000
+Message-ID: <06-ressources-distantes@mira.test>
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+<p>PIEGE 06 : aucune requête avant que vous autorisiez les images distantes.</p>
+<img src="http://127.0.0.1:8999/pixel.png" width="50" height="50">
+<img srcset="http://127.0.0.1:8999/srcset.png 1x" src="">
+<div style="background:url(http://127.0.0.1:8999/css-bg.png);width:50px;height:50px"></div>
+<style>@import url(http://127.0.0.1:8999/import.css); p{background:url(http://127.0.0.1:8999/style.png)}</style>
+<link rel="stylesheet" href="http://127.0.0.1:8999/link.css">

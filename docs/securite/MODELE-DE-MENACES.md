@@ -24,7 +24,7 @@ Complète `AUDIT-SECURITE-CHECKLIST.md` (surface d'attaque) et `CONSTATS.md`. M�
 
 | Frontière | Menace (STRIDE) | Parade en place | Reste |
 |---|---|---|---|
-| Mail → vue web | E : script, S : fausse page, I : pixel espion | nettoyage côté moteur, CSP, navigation filtrée, images distantes bloquées | vérification réelle par plateforme ; alerte d'hameçonnage (constat 8) |
+| Mail → affichage | E : script, S : fausse page, I : pixel espion | nettoyage du HTML côté moteur (`sanitize_original_html`) ; rendu actuel en widgets natifs (aucun script) ; images `<img>` distantes bloquées | arrière-plans CSS distants (constat 11) ; vue web durcie non branchée (constat 11) ; alerte d'hameçonnage (constat 8) |
 | Mail → analyseur MIME | D : parties ou imbrication géantes | plafonds de taille, tests de structures hostiles (`mime_structure_limits`) | fuzzing |
 | Application → SMTP | T : injection d'en-têtes | `single_line`, `bare_message_id`, adresses validées, tests CRLF y compris pièces jointes | — |
 | Moteur → IMAP | T : injection de commandes | `quote`/`quote_mailbox` refusent CR, LF, NUL ; drapeaux en énumération fixe | fuzzing |
@@ -32,8 +32,8 @@ Complète `AUDIT-SECURITE-CHECKLIST.md` (surface d'attaque) et `CONSTATS.md`. M�
 | Fichier importé (YAML) | D, T : bombe, alias | alias et doublons refusés, 2 Mo, 500 éléments, imbrication testée | — |
 | Mail → IA | T : injection de prompt, I : exfiltration | outils en lecture seule, propositions validées par clic, consentement par type de contenu, masquage, pas de rendu d'image ni de lien dans les réponses | tests avec mail hostile de bout en bout |
 | Moteur → fournisseur d'IA | I : fuite de clé | HTTPS (clair seulement en boucle locale), aucune redirection, clé jamais journalisée | — |
-| Disque | I : lecture de la base | secrets dans le trousseau, fichiers privés | base non chiffrée (constat 4, décision à prendre) |
-| Dépendances | T : composant vulnérable | `cargo deny` (avis compris), workflow hebdomadaire, Dependabot | SBOM, audit Dart |
+| Disque | I : lecture de la base | secrets dans le trousseau, fichiers privés | base non chiffrée : risque accepté (constat 4, décision du 2026-11-26), disque à chiffrer |
+| Dépendances | T : composant vulnérable | `cargo deny` (bans, licences, sources) dans la CI, avis RustSec dans `securite.yml` (hebdomadaire, à la main ou PR vers `main`), Dependabot, SBOM à chaque release | audit Dart, signature des releases et épinglage de la CI (constat 10) |
 
 ## Hors périmètre
 

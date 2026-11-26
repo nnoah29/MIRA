@@ -1,0 +1,11 @@
+From: Test piege <piege@example.invalid>
+To: moi@example.invalid
+Subject: [PIEGE 03] formulaire auto-envoye
+Date: Thu, 26 Nov 2026 10:00:00 +0000
+Message-ID: <03-formulaire@mira.test>
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+<form id="f" action="http://127.0.0.1:8999/form" method="post"><input name="x" value="1"><button>Envoyer</button></form>
+<script>document.getElementById('f').submit()</script>
+<p>PIEGE 03 : aucune requête /form ne doit arriver, même en cliquant le bouton.</p>

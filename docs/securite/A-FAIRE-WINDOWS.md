@@ -37,3 +37,7 @@ Recommandation : (1) d'abord, car c'est petit et couvre le jeton ; (2) ensuite, 
 ## Pour macOS
 
 À traiter dès le départ : socket Unix dans le dossier de l'utilisateur (0600/0700), pas de TCP.
+
+## À ajouter (relecture du 2026-11-26)
+
+Sous TCP sur `127.0.0.1`, n'importe quel compte local peut ouvrir 8 connexions muettes sans jeton et empêcher l'application de se connecter tant qu'il recommence toutes les 5 s (plafond des connexions en attente, `server/context.rs`). Un tube nommé réservé à l'utilisateur supprime ce point. À tester avec le second compte.

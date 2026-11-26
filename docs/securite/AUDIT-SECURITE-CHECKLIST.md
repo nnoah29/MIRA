@@ -4,6 +4,8 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 
 ## Légende
 
+- ❌ **accepté** : lacune connue, risque assumé par décision datée.
+
 - ✅ **Couvert** : mécanisme présent, preuve citée (reste à confirmer par un test dédié si non indiqué).
 - 🟡 **À vérifier** : mécanisme probable ou partiel, lecture de code approfondie nécessaire.
 - ❌ **Non couvert** : lacune constatée.
@@ -42,11 +44,11 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 |---|---|---|---|
 | SEC-A02-1 | TLS rustls, pas de `danger_accept_invalid_*` | ✅ | grep négatif ; `imap/connection/tls.rs` |
 | SEC-A02-2 | Refus du clair (IMAP/SMTP/OAuth) | ✅ | `imap/connection/policy.rs`, `auth/loopback.rs:17` |
-| SEC-A02-3 | Version TLS minimale (TLS 1.2+ explicite) | 🟡 | feature `tls12` activée ; confirmer qu'aucun TLS < 1.2 |
-| SEC-A02-4 | STARTTLS : protection contre le *downgrade* / injection avant TLS | 🟡 | auditer `imap/connection/starttls.rs` et SMTP |
+| SEC-A02-3 | Version TLS minimale (TLS 1.2+ explicite) | ✅ | rustls seul (TLS 1.2 et 1.3), aucun openssl ni native-tls dans `Cargo.lock` |
+| SEC-A02-4 | STARTTLS : protection contre le *downgrade* / injection avant TLS | ✅ | IMAP : `starttls.rs` refuse le repli (`require_ok`), `into_inner` jette les octets en clair déjà lus, capacités relues après TLS ; SMTP : `Tls::Required` |
 | SEC-A02-5 | Stockage des secrets dans le trousseau système | ✅ | `ports/secrets/keyring_store.rs` |
-| SEC-A02-6 | Repli si trousseau indisponible : pas de secret en clair sur disque | 🟡 | `file_secrets/` dans `mira-host` ; auditer chiffrement et permissions |
-| SEC-A02-7 | Base SQLite et corps de messages chiffrés au repos | ✅ | décision B du 2026-11-26 : non chiffré, documenté (`README.md`, `SECURITY.md`) |
+| SEC-A02-6 | Repli si trousseau indisponible : pas de secret en clair sur disque | ✅ | repli Android : AES-256-GCM, nonce neuf, clé du Keystore, 0600, écriture atomique (`file_secrets/sealed_file.rs`). Observation mineure : une erreur de lecture autre que « absent » est prise pour un trousseau vide |
+| SEC-A02-7 | Base SQLite et corps de messages chiffrés au repos | ❌ accepté | risque accepté, décision B du 2026-11-26 : non chiffré, documenté (`README.md`, `SECURITY.md`) |
 | SEC-A02-8 | Identifiants OAuth embarqués : clé AES stockée à côté du chiffré | ❌ | `oauth_embedded.rs` : simple obfuscation, `client_secret` extractable du binaire. Acceptable pour client public + PKCE, à documenter et à ne pas présenter comme un secret |
 | SEC-A02-9 | PKCE S256 + `state` aléatoire + redirection loopback | ✅ | `auth/pkce.rs`, `flow/start_key.rs` |
 | SEC-A02-10 | Aléa cryptographique pour jetons | ✅ | `random_hex` ; confirmer la source (`getrandom`/`ring`) |
@@ -71,7 +73,7 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 | ID | Contrôle | Statut | Preuve / à faire |
 |---|---|---|---|
 | SEC-A04-1 | Modèle de menaces écrit (STRIDE) | ✅ | `MODELE-DE-MENACES.md` |
-| SEC-A04-2 | Limites de taille/temps/profondeur (MIME, littéraux IMAP, HTML, pièces jointes) | ✅ | MIME : `mime_structure_limits` ; YAML : `portability_envelope_limits`/`_depth` |
+| SEC-A04-2 | Limites de taille/temps/profondeur (MIME, littéraux IMAP, HTML, pièces jointes) | 🟡 | MIME : `mime_structure_limits` ; YAML : `portability_envelope_*` ; **reste** : littéraux IMAP, `html/limits.rs`, pièces jointes, sans preuve citée |
 | SEC-A04-3 | Chargement distant bloqué par défaut (pixels espions, confidentialité) | ✅ | `html/remote.rs` `is_blocked_until_allowed` |
 | SEC-A04-4 | Confirmation avant envoi/suppression irréversibles initiés par l'IA | ✅ | aucun outil d'envoi ni de suppression ; propositions validées par clic |
 | SEC-A04-5 | Idempotence et reprise sur crash (envoi en double) | ✅ | invariants du projet |
@@ -83,7 +85,7 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 | SEC-A05-1 | Permissions des fichiers de données, export, clés IA | ✅ | `profile/paths.rs` 0700, `export_file.rs` 0600, `key_file.rs` 0600 |
 | SEC-A05-2 | Permissions Windows (ACL) pour jeton et données | ❌ | reporté le 2026-11-26 (`A-FAIRE-WINDOWS.md`), mention dans `SECURITY.md` |
 | SEC-A05-3 | Durcissement des paquets (deb/rpm/AppImage : permissions, scripts post-install) | 🟡 | auditer `packaging/` |
-| SEC-A05-4 | Android : `allowBackup`, `exported`, `usesCleartextTraffic`, capture d'écran | 🟡 | auditer `app/android` |
+| SEC-A05-4 | Android : `allowBackup`, `exported`, `usesCleartextTraffic`, capture d'écran | ✅ | manifeste lu : `allowBackup="false"`, une activité exportée, pas de clair ; preuve WebView sur appareil (`VERIFICATIONS-REELLES.md`) |
 | SEC-A05-5 | Processus IA local : environnement vidé, E/S neutralisées | ✅ | `ai/local/process.rs` `env_clear`, `kill_on_drop` |
 | SEC-A05-6 | Fichiers `SECURITY.md` et politique de divulgation | ✅ | `SECURITY.md` à la racine |
 
@@ -96,14 +98,14 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 | SEC-A06-3 | Audit des dépendances Dart/Flutter (`pubspec.lock`) | ❌ | aucun outil constaté |
 | SEC-A06-4 | Dépendances sensibles : `zip`, `tar`, `flate2`, `ammonia`, `reqwest`, `rustls`, `keyring` | 🟡 | suivre les avis ; épingler les versions |
 | SEC-A06-5 | Mise à jour automatique des dépendances (Dependabot/Renovate) | ✅ | `.github/dependabot.yml` |
-| SEC-A06-6 | SBOM publié avec les releases | ❌ | non constaté |
+| SEC-A06-6 | SBOM publié avec les releases | ✅ | `tools/generate-sbom`, joint aux releases (`release.yml`, `release.sh`) |
 
 ## A07 — Identification et authentification
 
 | ID | Contrôle | Statut | Preuve / à faire |
 |---|---|---|---|
 | SEC-A07-1 | OAuth2 PKCE pour Gmail/Outlook | ✅ | `auth/` |
-| SEC-A07-2 | Écouteur de rappel loopback : port éphémère, usage unique, `state` vérifié, délai | 🟡 | `flow/pending.rs` ; tester un second appel, un `state` erroné |
+| SEC-A07-2 | Écouteur de rappel loopback : port éphémère, usage unique, `state` vérifié, délai | ✅ | `start.rs` : `127.0.0.1:0`, `state` comparé en temps constant, délai, un `state` erroné n'abat pas le flux (`connection.rs`) |
 | SEC-A07-3 | Renouvellement/révocation des jetons, révocation à la suppression de compte | 🟡 | `auth/renewal.rs` ; vérifier la purge du trousseau |
 | SEC-A07-4 | Mots de passe d'application (Yahoo, générique) : stockage et journalisation | 🟡 | auditer `auth/form.rs` |
 | SEC-A07-5 | Verrouillage de l'application / déverrouillage trousseau | 🟡 | `unlock.rs`, `RetryUnlock` ; pas de verrou applicatif constaté |
@@ -114,17 +116,17 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 |---|---|---|---|
 | SEC-A08-1 | Téléchargement de modèles/serveur IA : somme SHA-256 vérifiée | ✅ | `ai/local/download_verify.rs` ; confirmer que la somme n'est pas lue depuis la même source que le fichier |
 | SEC-A08-2 | Extraction d'archives : *zip-slip*, liens symboliques, bombes de décompression | ✅ | `extract_check.rs`, `max_bytes` ; ajouter tests adverses |
-| SEC-A08-3 | Signature des paquets et des releases | 🟡 | auditer `packaging/release.sh` |
-| SEC-A08-4 | Mise à jour du logiciel (canal, signature) | 🟡 | aucun auto-update trouvé ; confirmer |
+| SEC-A08-3 | Signature des paquets et des releases | ❌ | aucune signature des paquets ni des releases : `SHA256SUMS` vient de la même source que les fichiers ; APK signés avec la clé de debug (`release.sh:173`). Voir constat 10 |
+| SEC-A08-4 | Mise à jour du logiciel (canal, signature) | ✅ | aucune mise à jour automatique ; `install.sh` manuel, somme SHA-256 vérifiée |
 | SEC-A08-5 | Import/export de profil : intégrité, chemins, écrasement | 🟡 | `portability/` |
-| SEC-A08-6 | Épinglage des actions CI et permissions minimales du workflow | 🟡 | `permissions:` présent ; vérifier épinglage par SHA |
+| SEC-A08-6 | Épinglage des actions CI et permissions minimales du workflow | ❌ | actions épinglées par étiquette (`@v4`) et non par SHA ; `securite.yml` télécharge OSV-Scanner `releases/latest` sans version ni somme. Voir constat 10 |
 
 ## A09 — Journalisation et supervision
 
 | ID | Contrôle | Statut | Preuve / à faire |
 |---|---|---|---|
 | SEC-A09-1 | Aucun secret dans journaux/erreurs | ✅ | `Debug` masqué de `Auth` ; test d'absence de secrets (règle projet) |
-| SEC-A09-2 | Journaux `tracing` : pas d'adresses, objets, corps de mails ni URL avec jeton | 🟡 | `account/add.rs`, `send/execute.rs`, `oauth_embedded.rs` |
+| SEC-A09-2 | Journaux `tracing` : pas d'adresses, objets, corps de mails ni URL avec jeton | ✅ | journaux : codes d'erreur et textes fixes ; seuls les noms de boîtes apparaissent (`sync/download/account.rs`, `sync/strategy/dispatch.rs`), ni corps, ni adresses, ni jetons |
 | SEC-A09-3 | Journal d'audit des événements sensibles (échecs d'authentification IPC, ajout de compte, envoi) | ❌ | non constaté |
 | SEC-A09-4 | Rapports de plantage / télémétrie sans données personnelles | 🟡 | confirmer qu'il n'y en a pas |
 | SEC-A09-5 | Sortie Flutter : `print`/`debugPrint` de données de mail | 🟡 | grep `print(` sans résultat ; vérifier en profondeur |
@@ -167,15 +169,16 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 
 ## Lacunes restantes (❌)
 
-1. **SEC-A06-3** — audit des dépendances Dart pas encore exécuté (workflow en place, OSV-Scanner absent localement).
-2. **SEC-A06-6** — pas de SBOM publié.
-3. **SEC-A03-7** — pas d'alerte d'hameçonnage sur les liens.
-4. **SEC-A09-3** — pas de journal d'audit, reporté (2026-11-26).
-5. **SEC-A05-2** — ACL Windows absentes, reporté (`A-FAIRE-WINDOWS.md`).
-6. **SEC-D-6** — pas de fuzzing, reporté (2026-11-26).
-7. **DKIM pour le désabonnement** (constat 2, point 2), reporté (2026-11-26).
+1. **SEC-A08-3** — releases non signées (constat 10).
+2. **SEC-A08-6** — actions CI et OSV-Scanner non épinglés (constat 10).
+3. **SEC-A06-3** — audit des dépendances Dart pas encore exécuté (workflow en place, OSV-Scanner absent localement).
+4. **SEC-A03-7** — pas d'alerte d'hameçonnage sur les liens.
+5. **SEC-A09-3** — pas de journal d'audit, reporté (2026-11-26).
+6. **SEC-A05-2** — ACL Windows absentes, reporté (`A-FAIRE-WINDOWS.md`).
+7. **SEC-D-6** — pas de fuzzing, reporté (2026-11-26).
+8. **DKIM pour le désabonnement** (constat 2, point 2), reporté (2026-11-26).
 
-Corrigées ou documentées : SEC-A06-2, SEC-A02-7 (décidé : documenté), SEC-A02-8 (documenté), SEC-A04-1, SEC-A05-6.
+Corrigées ou documentées : SEC-A06-2, SEC-A06-6 (SBOM), SEC-A02-7 (risque accepté, documenté), SEC-A02-8 (documenté), SEC-A04-1, SEC-A05-6.
 
 ## Ordre d'instruction proposé
 

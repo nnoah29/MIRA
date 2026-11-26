@@ -55,7 +55,7 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 
 **Pourquoi c'est un risque.** MIRA embarque des composants qui lisent des données hostiles : `ammonia` (HTML), `mail_parser` / `mail_builder` (mails), `zip` / `tar` / `flate2` (archives), `rustls` (TLS), `reqwest`. Une faille publiée dans l'un d'eux resterait inconnue tant que personne ne la cherche.
 
-**Statut (2026-11-22).** Premier passage de `cargo deny check advisories` : **plus de 25 avis réels**, dont `ammonia` (4 avis, dont XSS par SVG/MathML : c'est l'assainisseur du HTML des mails), `lettre` (injection de commandes SMTP, usurpation de réponses STARTTLS, mauvais destinataire), `rustls`/`rustls-webpki` (certificats refusés à tort acceptés, rétrogradation d'échange de clés), `url`, `zstd`, `tokio`, `rusqlite`/SQLite (CVE). **Tous corrigés** par mise à jour du verrou (`ammonia` 4.2.5, `lettre` 0.11.24, `rustls` 0.23.46, `rustls-webpki` 0.103.17, `tokio` 1.54.1, `url` 2.5.9, `zstd` 0.14.4, `webpki-roots` 1.0.12) et montée de `rusqlite` 0.40 → 0.41 (SQLite embarqué corrigé), sans changement de code ; tests ciblés HTML, SMTP et stockage verts. **Restent 4 avis « non maintenu »** (`chrono`, `zbus_names`, `zvariant`, `zvariant_derive`), sans correctif possible, inscrits avec justification dans `engine/deny.toml`. Ajoutés : `.github/workflows/securite.yml` (hebdomadaire + avant release : avis RustSec et OSV sur `pubspec.lock`) et `.github/dependabot.yml`. **Reste** : SBOM par release, et l'audit Dart n'a pas encore tourné (OSV-Scanner absent de cette machine).
+**Statut (2026-11-22).** Premier passage de `cargo deny check advisories` : **plus de 25 avis réels**, dont `ammonia` (4 avis, dont XSS par SVG/MathML : c'est l'assainisseur du HTML des mails), `lettre` (injection de commandes SMTP, usurpation de réponses STARTTLS, mauvais destinataire), `rustls`/`rustls-webpki` (certificats refusés à tort acceptés, rétrogradation d'échange de clés), `url`, `zstd`, `tokio`, `rusqlite`/SQLite (CVE). **Tous corrigés** par mise à jour du verrou (`ammonia` 4.2.5, `lettre` 0.11.24, `rustls` 0.23.46, `rustls-webpki` 0.103.17, `tokio` 1.54.1, `url` 2.5.9, `zstd` 0.14.4, `webpki-roots` 1.0.12) et montée de `rusqlite` 0.40 → 0.41 (SQLite embarqué corrigé), sans changement de code ; tests ciblés HTML, SMTP et stockage verts. **Restent 4 avis « non maintenu »** (`chrono`, `zbus_names`, `zvariant`, `zvariant_derive`), sans correctif possible, inscrits avec justification dans `engine/deny.toml`. Ajoutés : `.github/workflows/securite.yml` (hebdomadaire, à la main ou sur une PR vers `main` : avis RustSec et OSV sur `pubspec.lock` ; `release.yml` ne le déclenche pas) et `.github/dependabot.yml`. **SBOM (2026-11-26)** : `tools/generate-sbom` produit un CycloneDX 1.5 (Rust par `cargo metadata`, Dart par `pubspec.lock`, sans réseau ni outil externe), joint à chaque release par `release.yml` et `packaging/release.sh`, couvert par `tools/test-generate-sbom`. **Reste** : l'audit Dart n'a pas encore tourné (OSV-Scanner absent de cette machine ; son téléchargement et l'envoi de la liste des paquets à osv.dev sortent des règles réseau du projet, il tournera donc dans le workflow GitHub).
 
 **Plateformes.** Toutes (c'est la chaîne de fabrication).
 
@@ -90,7 +90,7 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 
 ## 6. Le démon accepte un nombre illimité de connexions — gravité BASSE (corrigé)
 
-**Statut (2026-11-22).** La première passe affirmait l'absence totale de plafond ; c'était inexact pour les connexions qui n'ont pas encore envoyé leur `hello` (plafonnées, avec délai de 5 s et taille maximale de trame), mais exact pour les connexions déjà identifiées. **Corrigé** (`server/context.rs`, `session/mod.rs`) : au plus **3 clients identifiés** en même temps (l'application n'en ouvre qu'un, multiplexé), les suivants sont fermés ; la place d'un client parti est réutilisable. Les connexions en attente de `hello` passent de 64 à **8**. Tests : `session_max_clients.rs` (2), `session_hello_limits.rs` (existant). Compromis connu : un programme local qui ouvre 8 connexions muettes peut retarder une connexion légitime pendant 5 s, mais ne peut rien lire sans le jeton.
+**Statut (2026-11-22).** La première passe affirmait l'absence totale de plafond ; c'était inexact pour les connexions qui n'ont pas encore envoyé leur `hello` (plafonnées, avec délai de 5 s et taille maximale de trame), mais exact pour les connexions déjà identifiées. **Corrigé** (`server/context.rs`, `session/mod.rs`) : au plus **3 clients identifiés** en même temps (l'application n'en ouvre qu'un, multiplexé), les suivants sont fermés ; la place d'un client parti est réutilisable. Les connexions en attente de `hello` passent de 64 à **8**. Tests : `session_max_clients.rs` (2), `session_hello_limits.rs` (existant). Compromis connu, **précisé à la relecture du 2026-11-26 (non corrigé dans le code)** : un programme local qui rouvre 8 connexions muettes toutes les 5 s peut empêcher l'application de se connecter tant qu'il continue (la nouvelle connexion est refusée tout de suite) ; il ne peut rien lire sans le jeton. Sous Linux le socket 0600 limite cela au même utilisateur ; sous Windows (TCP sur `127.0.0.1`) n'importe quel compte local le peut : ajouté à `A-FAIRE-WINDOWS.md`. Pistes : évincer la plus ancienne connexion en attente plutôt que refuser la nouvelle, ou raccourcir le délai de `hello`. De plus, le plafond est pris après l'envoi de `hello_ok` : un 4e client se croit connecté puis est fermé.
 
 ---
 
@@ -124,9 +124,34 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 - ~~Pas de modèle de menaces~~ : écrit, `MODELE-DE-MENACES.md`.
 - Pas de **fuzzing** (MIME, IMAP, HTML, YAML, protocole du démon). **Reporté (2026-11-26)** : demande la toolchain nightly, de l'infrastructure et du tri ; aucun problème démontré (les tests de structures hostiles passent). À traiter comme un chantier à part, après la livraison des corrections actuelles.
 - Pas de **journal d'audit** (échecs de connexion au démon, ajout de compte, envois). **Reporté (2026-11-26)** : n'empêche aucune attaque, et un journal mal conçu risque d'enregistrer des données sensibles ; demande une conception (quoi consigner, rotation, taille). À reprendre si MIRA gagne un usage multi-utilisateur ou un besoin de diagnostic.
-- **Android** : le manifeste est correct (`allowBackup="false"`, pas de trafic non chiffré, secrets dans le Keystore). Il reste à vérifier les réglages de la WebView et les droits de l'activité exportée.
+- **Android** : le manifeste est correct (`allowBackup="false"`, pas de trafic non chiffré, secrets dans le Keystore, une seule activité exportée). Les réglages de la WebView reposent sur les valeurs par défaut ; preuve sur appareil à faire (`VERIFICATIONS-REELLES.md`).
 
 **Correctif.** Les écrire ; le `SECURITY.md` et le modèle de menaces prennent une demi-journée.
+
+---
+
+## 10. Les releases ne sont pas signées et la CI n'est pas épinglée — gravité MOYENNE (nouveau, 2026-11-26)
+
+**Le problème.** `SHA256SUMS` est publié au même endroit que les paquets : il protège d'un téléchargement corrompu, pas d'une release remplacée (compte GitHub compromis, brèche de la CI). `install.sh` ne vérifie que cette somme. Les APK sont signés avec la clé de debug (`packaging/release.sh:173`). Les workflows référencent les actions par étiquette (`@v4`), et `securite.yml` télécharge OSV-Scanner en `releases/latest`, sans version ni somme : l'outil de surveillance est lui-même un maillon non vérifié.
+
+**Plateformes.** Toutes (chaîne de livraison).
+
+**Correctif proposé.**
+1. Épingler les actions par SHA de commit et OSV-Scanner par version et somme (demande de consulter les versions : à faire avec accès au web).
+2. Signer les releases (par exemple `minisign` ou signature Sigstore du `SHA256SUMS`) et faire vérifier la signature par `install.sh`.
+3. Pour Android : une clé de signature propre, conservée hors du dépôt.
+
+**Statut.** Constaté par lecture, aucun correctif. Décision à prendre : le point 2 change la procédure de release et demande une clé à garder.
+
+---
+
+## 11. Vue web durcie non branchée, arrière-plans CSS distants chargés — gravité MOYENNE (découvert à la relecture, 2026-11-26)
+
+**Ce que la relecture indépendante a établi (vérifié dans le code).**
+- `WebMailBody` (la vue web du constat 1) **n'est appelée nulle part** : son appel dans `html_body.dart` a été retiré par le commit `33173df` (25 octobre, intitulé « compteurs non lus corrigés… »), ce qui ressemble à un retrait accidentel. Le rendu réel est `MailHtml`, en widgets natifs (`flutter_widget_from_html`), sur le HTML d'origine nettoyé par `sanitize_original_html`. Les correctifs a et b du constat 1 et leurs tests sont justes mais protègent un chemin dormant ; **le nettoyage moteur (c) est, en pratique, la protection active**. `reader.dart` calcule encore `nativeBody` à partir de `usesWebView`.
+- **Images distantes** : `MailHtml` ne filtre que `<img>`. `flutter_widget_from_html_core` 0.17.4 charge aussi `background-image:url(…)` (`buildDecorationImage` → `imageProviderFromNetwork`), et `MailWidgetFactory` ne le surcharge pas ; `sanitize_original_html` garde `style` et `<style>`. Un mail avec `<td style="background-image:url(https://…/u?id=…)">` fait donc partir un pixel espion à l'ouverture, quelle que soit la politique d'images. Existait avant la branche.
+
+**Décisions à prendre.** (1) Rebrancher la vue web (si le retrait n'était pas voulu) ou assumer le rendu natif et réécrire le constat 1 en conséquence. (2) Le blocage des arrière-plans distants est un correctif sans ambiguïté : surcharger `imageProviderFromNetwork` dans `MailWidgetFactory`.
 
 ---
 
@@ -148,10 +173,10 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 | Idem pour nom et type des pièces jointes | **Sûr** | `smtp_compose_attachment_injection.rs` (nouveau) |
 | Injection de commandes IMAP | **Sûr par lecture du code** : `quote`/`quote_mailbox` refusent CR, LF, NUL et échappent `"` et `\\` ; drapeaux en énumération fixe ; recherche UTF-8 par littéral | `imap/protocol/quoting.rs`, `imap/operations/*` |
 | YAML des règles géant ou imbriqué | **Sûr** : 2 Mo, 500 éléments, alias et doublons refusés ; 100 000 niveaux refusés sur une pile de 512 Ko | `portability_envelope_limits.rs`, `portability_envelope_depth.rs` (nouveau) |
-| MIME à 10 000 parties ou 5 000 niveaux | **Sûr** : lu en quelques millisecondes, pas de dépassement de pile | `mime_structure_limits.rs` (nouveau) |
+| MIME à 10 000 parties ou 5 000 niveaux | **Sûr** : lu en moins de 10 s (borne du test), pas de dépassement de pile | `mime_structure_limits.rs` (nouveau) |
 | Injection de prompt par un mail | **Atténué par conception** : aucun outil d'envoi ou de suppression, uniquement des propositions validées par clic (`remember`, brouillon, action) ; consentement par type de contenu pour les connexions distantes ; réponses rendues sans image ni lien (`chat_markdown.dart`) | `ai/tools/catalog.rs`, `ai_tools_loop_consent.rs`. Reste un test de bout en bout avec un mail hostile |
 | URL de base IA éditable | **Acceptable** : refus de `file:`, du clair hors boucle locale, des identifiants ; aucune redirection. Une adresse HTTPS du réseau local reste permise (serveur auto-hébergé) | `ai/base_url.rs`, `ai/transport/client.rs` |
-| Réglages de la WebView Android | **Non vérifié** (demande l'application Android) | — |
+| Réglages de la WebView Android | **Lu, sain par défaut** : manifeste (une activité exportée, sauvegardes exclues, pas de clair), chargement par `loadHtmlString`. Réglages non explicites ; preuve sur appareil à faire | `app/android/.../AndroidManifest.xml`, `web_mail_body.dart`, `VERIFICATIONS-REELLES.md` §4 |
 
 ## Ordre de correction conseillé
 

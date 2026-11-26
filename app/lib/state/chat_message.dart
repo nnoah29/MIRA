@@ -53,6 +53,12 @@ class ProposedMemory {
   });
 }
 
+/// Pièce jointe d'un message envoyé : `kind` vaut `mail` ou `file`, `label` est ce qu'on lit sur la vignette.
+class ChatAttachmentRef {
+  final String kind, label;
+  const ChatAttachmentRef(this.kind, this.label);
+}
+
 class ChatMsg {
   final String role; // 'me' | 'ai'
   bool done;
@@ -60,6 +66,9 @@ class ChatMsg {
   String text;
   List<String>? draft;
   List<String>? refs;
+
+  /// Mails et fichiers joints à ce message de l'utilisateur, montrés au-dessus du texte.
+  final List<ChatAttachmentRef> attachments;
 
   /// Appels d'outils de l'IA pendant cette réponse, dans l'ordre.
   final List<ToolActivity> tools = [];
@@ -101,5 +110,6 @@ class ChatMsg {
     this.failed = false,
     this.note,
     this.maskedCount = 0,
+    this.attachments = const [],
   });
 }

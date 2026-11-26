@@ -7,8 +7,8 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master du 2026-11-15
         with:
           toolchain: "1.99.0"
       - name: Moteur et hôte (compilation)
@@ -34,7 +34,7 @@ jobs:
       - name: Pont FFI (bibliothèque)
         working-directory: bridge
         run: cargo build --release
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           flutter-version: "3.47.7"
           channel: stable

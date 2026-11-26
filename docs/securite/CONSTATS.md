@@ -1,5 +1,7 @@
 # Constats de sécurité MIRA — en clair
 
+> **Pour reprendre le chantier : lire `RESTE-A-FAIRE.md`** (ce qui reste, dans l'ordre, les reports et leurs déclencheurs, les décisions prises).
+
 Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **les plateformes touchées**, **le correctif**. Ils sont classés du plus grave au moins grave. La checklist technique (`AUDIT-SECURITE-CHECKLIST.md`) en est le complément.
 
 **Ce qui a été vérifié** : lecture du code du moteur, du démon, de l'application Flutter et du manifeste Android. **Ce qui ne l'a pas été** : aucun test en conditions réelles. Les points marqués « à confirmer par un test » sont une hypothèse fondée sur le code, pas une faille démontrée.
@@ -90,7 +92,7 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 
 ## 6. Le démon accepte un nombre illimité de connexions — gravité BASSE (corrigé)
 
-**Statut (2026-11-22).** La première passe affirmait l'absence totale de plafond ; c'était inexact pour les connexions qui n'ont pas encore envoyé leur `hello` (plafonnées, avec délai de 5 s et taille maximale de trame), mais exact pour les connexions déjà identifiées. **Corrigé** (`server/context.rs`, `session/mod.rs`) : au plus **3 clients identifiés** en même temps (l'application n'en ouvre qu'un, multiplexé), les suivants sont fermés ; la place d'un client parti est réutilisable. Les connexions en attente de `hello` passent de 64 à **8**. Tests : `session_max_clients.rs` (2), `session_hello_limits.rs` (existant). Compromis connu, **précisé à la relecture du 2026-11-26 (non corrigé dans le code)** : un programme local qui rouvre 8 connexions muettes toutes les 5 s peut empêcher l'application de se connecter tant qu'il continue (la nouvelle connexion est refusée tout de suite) ; il ne peut rien lire sans le jeton. Sous Linux le socket 0600 limite cela au même utilisateur ; sous Windows (TCP sur `127.0.0.1`) n'importe quel compte local le peut : ajouté à `A-FAIRE-WINDOWS.md`. Pistes : évincer la plus ancienne connexion en attente plutôt que refuser la nouvelle, ou raccourcir le délai de `hello`. De plus, le plafond est pris après l'envoi de `hello_ok` : un 4e client se croit connecté puis est fermé.
+**Statut (2026-11-22).** La première passe affirmait l'absence totale de plafond ; c'était inexact pour les connexions qui n'ont pas encore envoyé leur `hello` (plafonnées, avec délai de 5 s et taille maximale de trame), mais exact pour les connexions déjà identifiées. **Corrigé** (`server/context.rs`, `session/mod.rs`) : au plus **3 clients identifiés** en même temps (l'application n'en ouvre qu'un, multiplexé), les suivants sont fermés ; la place d'un client parti est réutilisable. Les connexions en attente de `hello` passent de 64 à **8**. Tests : `session_max_clients.rs` (2), `session_hello_limits.rs` (existant). **Compromis levé (2026-11-26, décision de l'utilisateur) :** à saturation des 8 places d'attente, la **plus ancienne** connexion en attente est évincée et la nouvelle est servie (`server/pending.rs`, `session/greeting.rs`) ; avant, la nouvelle était refusée et un programme local qui rouvrait 8 connexions muettes toutes les 5 s empêchait l'application de se connecter. Tests : `session_pending_eviction.rs` (3, stables sur 12 exécutions) ; l'ancien test « les suivantes sont refusées » est remplacé. **Reste** : un envoi de connexions plus rapide que la poignée de main d'un client légitime peut encore l'évincer (rafale d'au moins 8 connexions pendant quelques millisecondes), sans rien lire sans le jeton ; sous Windows (TCP sur `127.0.0.1`) n'importe quel compte local peut le tenter, ce que le tube nommé de `A-FAIRE-WINDOWS.md` supprimerait. De plus, le plafond est pris après l'envoi de `hello_ok` : un 4e client se croit connecté puis est fermé.
 
 ---
 
@@ -130,7 +132,7 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 
 ---
 
-## 10. Les releases ne sont pas signées et la CI n'est pas épinglée — gravité MOYENNE (nouveau, 2026-11-26)
+## 10. Les releases ne sont pas signées et la CI n'est pas épinglée — gravité MOYENNE (CI épinglée ; signature reportée)
 
 **Le problème.** `SHA256SUMS` est publié au même endroit que les paquets : il protège d'un téléchargement corrompu, pas d'une release remplacée (compte GitHub compromis, brèche de la CI). `install.sh` ne vérifie que cette somme. Les APK sont signés avec la clé de debug (`packaging/release.sh:173`). Les workflows référencent les actions par étiquette (`@v4`), et `securite.yml` télécharge OSV-Scanner en `releases/latest`, sans version ni somme : l'outil de surveillance est lui-même un maillon non vérifié.
 
@@ -141,7 +143,10 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 2. Signer les releases (par exemple `minisign` ou signature Sigstore du `SHA256SUMS`) et faire vérifier la signature par `install.sh`.
 3. Pour Android : une clé de signature propre, conservée hors du dépôt.
 
-**Statut.** Constaté par lecture, aucun correctif. Décision à prendre : le point 2 change la procédure de release et demande une clé à garder.
+**Statut (2026-11-26).** Décision de l'utilisateur : suivre la recommandation.
+- **Fait : épinglage.** Les 33 références d'actions des quatre workflows sont épinglées par SHA de commit (version en commentaire, SHA lus par `gh api`, pas recopiés) ; `cargo-deny` 0.20.2 (version éprouvée ici) et `cargo-ndk` 4.1.2 installés à version fixe ; OSV-Scanner v2.7.1 téléchargé à version fixe et vérifié par SHA-256. `tools/check-ci-pins` (et son auto-test) est branché sur `ci.sh` : une action sur étiquette, un `cargo install` libre ou un « latest » fait échouer la CI. Dependabot surveille aussi `/bridge` (absent jusqu'ici, ce qui a favorisé le constat 12) et met à jour les SHA épinglés. Non épinglés : les paquets `apt` et `choco` des runners.
+- **Non fait, décision reportée : signature des releases** (minisign ou Sigstore sur `SHA256SUMS`, vérifiée par `install.sh`) et **clé de signature Android propre**. Raison : la signature demande une clé à conserver hors du dépôt (perdue, on ne signe plus ; volée, elle ne vaut plus rien) et change la procédure de release ; le gain dépend de la diffusion (faible tant que MIRA reste installé par l'auteur et quelques proches, important s'il devient public). **Déclencheur de reprise : la première diffusion publique, ou un tiers qui installe MIRA.**
+- **À vérifier au prochain passage de la CI GitHub** : que les SHA épinglés fonctionnent (je n'ai pas pu lancer les workflows depuis cette machine).
 
 ---
 

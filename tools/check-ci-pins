@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Chaîne d'outillage de la CI épinglée (constat 10) : actions par SHA de commit, outils installés à version fixe, aucun « latest ». Usage : tools/check-ci-pins [DOSSIER_DES_WORKFLOWS]
+set -uo pipefail
+root="$(cd "$(dirname "$0")/.." && pwd)"
+dir="${1:-$root/.github/workflows}"
+fail=0
+if grep -nE '^\s*(-\s+)?uses:\s*[^./ ][^@ ]*@' "$dir"/*.yml | grep -vE '@[0-9a-f]{40}(\s|$)'; then
+    echo "check-ci-pins : action non épinglée par SHA de commit"; fail=1
+fi
+if grep -nE 'cargo install' "$dir"/*.yml | grep -vE -- '--version [0-9]'; then
+    echo "check-ci-pins : cargo install sans --version"; fail=1
+fi
+if grep -nE 'releases/latest|/latest/download' "$dir"/*.yml; then
+    echo "check-ci-pins : téléchargement « latest » interdit (version et somme fixes)"; fail=1
+fi
+[[ $fail -eq 0 ]] && echo "check-ci-pins : OK"
+exit $fail

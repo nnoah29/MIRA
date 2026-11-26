@@ -11,10 +11,10 @@ jobs:
   avis-rust:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master du 2026-11-15
         with: { toolchain: "1.99.0" }
-      - run: cargo install cargo-deny --locked
+      - run: cargo install cargo-deny --version 0.20.2 --locked
       - name: Avis de sécurité RustSec (moteur et démon)
         working-directory: engine
         run: cargo deny --log-level error check advisories
@@ -23,9 +23,10 @@ jobs:
   avis-dart:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Avis OSV sur pubspec.lock
         run: |
-          curl -fsSL -o osv-scanner https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64
+          curl -fsSL -o osv-scanner https://github.com/google/osv-scanner/releases/download/v2.7.1/osv-scanner_linux_amd64
+          echo "fb7dab19a8bd9bbe5c3189f09d4b7ee1820c9553a23bac202648a56efd2f6ee8  osv-scanner" | sha256sum -c -
           chmod +x osv-scanner
           ./osv-scanner scan source --lockfile app/pubspec.lock

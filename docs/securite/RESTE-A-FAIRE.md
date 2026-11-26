@@ -1,0 +1,92 @@
+# Audit de sécurité MIRA — reste à faire
+
+État au **2026-11-26**. Ce document est le point d'entrée pour reprendre le chantier dans une nouvelle session : il ne dépend d'aucune conversation. Lire d'abord `CLAUDE.md` à la racine (règles du projet), puis ce fichier, puis `CONSTATS.md` pour le détail d'un point.
+
+## 1. Où est quoi
+
+| Document | Contenu |
+|---|---|
+| `CONSTATS.md` | Les 12 constats : problème, contexte, correctif, statut daté. Source de vérité des décisions. |
+| `AUDIT-SECURITE-CHECKLIST.md` | Checklist OWASP (A01 à A10, LLM, poste de travail) avec statut et preuve par ligne ; « Lacunes restantes » en bas. |
+| `MODELE-DE-MENACES.md` | Attaquants, frontières de confiance, parades en place et manques. |
+| `VERIFICATIONS-REELLES.md` | Procédure à exécuter sur Linux, Android, Windows, avec les 9 mails de `mails-pieges/`. |
+| `A-FAIRE-WINDOWS.md` | Jeton du démon et tube nommé sous Windows (reporté). |
+| `../../SECURITY.md` | Politique publique de signalement (signalement privé GitHub activé). |
+
+## 2. Ce qui est fait (ne pas refaire)
+
+Vue web et HTML d'origine durcis (constat 1) et **rebranchés** (retirés par erreur par `33173df`) ; désabonnement sans machine privée (2) ; dépendances corrigées **dans les deux verrous**, moteur et pont (3, 12) ; SBOM par release (3) ; plafond de clients du démon et éviction de la plus ancienne connexion en attente (6) ; arrière-plans CSS distants bloqués (11) ; trousseau de secours Android (lecture illisible refusée) ; CI épinglée (10, partie épinglage) ; `SECURITY.md`, modèle de menaces, mails piégés. Fusionné dans `dev` : tout ce qui précède **sauf** la branche `feat/SEC-02-plafond-demon-ci-epinglee` (éviction, CI épinglée, ce document) tant qu'elle n'est pas fusionnée.
+
+## 3. À faire, par ordre de priorité recommandé
+
+### 3.1 Garde-fou contre la divergence des deux `Cargo.lock` (petit)
+- **Pourquoi** : `bridge/` et `engine/` ont chacun leur verrou ; c'est ce qui a laissé le pont vulnérable (constat 12). Seul le workflow hebdomadaire le détecterait.
+- **Faire** : un contrôle (dans `ci.sh` ou un workflow) qui échoue si une dépendance présente dans les deux verrous n'a pas la même version, et le contrôle des avis du pont quand le réseau est disponible (`cargo deny --manifest-path bridge/Cargo.toml --config engine/deny.toml check advisories`).
+- **Terminé quand** : modifier un seul des deux verrous fait échouer le contrôle (test de l'outil, comme `tools/test-check-ci-pins`).
+
+### 3.2 Alerte d'hameçonnage sur les liens (constat 8, gros)
+- **Pourquoi** : rien ne prévient quand le texte d'un lien affiche `banque.fr` et que la cible est `banque-secure.xyz`, ni pour les homographes (alphabets mélangés, IDN).
+- **Faire** : comparer texte visible et domaine cible avant d'ouvrir un lien ; afficher la vraie adresse et demander confirmation en cas d'écart ; avertissement quand l'authentification de l'expéditeur échoue. Côté moteur (analyse des liens, `mira-core/src/html`) et côté Flutter (`openLink` dans `html_body.dart`, `web_mail_body.dart`).
+- **Attention** : deux chemins d'affichage (widgets natifs et vue web) ; le lien cliqué dans la vue web passe par `_onNavigate` (`web_mail_body.dart`), dans les widgets par `onTapUrl: openLink`. Prévoir les liens de suivi légitimes (fausses alertes) et un test avec les mails piégés.
+- **Terminé quand** : tests moteur (comparaison de domaines, homographes) et tests widget des deux chemins ; mail piégé dédié ajouté à `mails-pieges/`.
+
+### 3.3 Consommation CPU de la vue web (signalée par l'utilisateur, à reprendre)
+- **Constat** : la vue web (vrai moteur de navigateur) consomme nettement plus de CPU que les widgets ; remarqué à l'usage le 2026-11-26.
+- **Pistes** : élargir la définition du mail « simple » (`isSimpleHtml` dans `app/lib/ui/body_renderer.dart`, seuils `_maxSimpleLength`, `_maxSimpleImages`, `_maxSimpleTables`, `_heavyTags`, `_heavyCss`) pour envoyer moins de mails à la vue web ; libérer la vue plus vite quand le mail n'est plus visible (voir `web_page_pause_test.dart` et les commits de pause des animations).
+- **Terminé quand** : une mesure avant/après (CPU sur un mail riche, par exemple LinkedIn) est consignée.
+
+### 3.4 Instruire les 29 points 🟡 de la checklist
+Aucun n'est une faille connue ; aucun n'est vérifié. Chaque point instruit reçoit : constat, preuve (fichier:ligne), gravité, correctif éventuel, test de non-régression, puis passe à ✅ ou ❌ dans la checklist. Les plus sensibles d'abord :
+- **Jeton et démon** : SEC-A01-5 (`SO_PEERCRED`), A01-6, A01-7 (portées par opération), A01-8 (accès croisé par identifiant de compte), D-7 (trames du démon).
+- **IA** : LLM01, LLM06, LLM07, LLM08, A03-8 (test de bout en bout avec le mail 09 piégé).
+- **Comptes et secrets** : A07-3 (révocation à la suppression), A07-4, A07-5, A02-11 (`zeroize`).
+- **Fichiers et réseau** : A04-2 (littéraux IMAP, `html/limits.rs`, pièces jointes : citer les preuves ou tester), A08-5 (import/export de profil), D-1 (pièces jointes), A10-3, A10-4, A10-5.
+- **Autres** : A03-4 et A03-5 (couverts par les correctifs, à confirmer avec `VERIFICATIONS-REELLES.md`), A05-3 (paquets), A06-4, A09-4, A09-5, D-3, D-4, D-5.
+La liste exacte se relit avec : `grep "🟡" docs/securite/AUDIT-SECURITE-CHECKLIST.md`.
+
+### 3.5 Mineurs consignés, non corrigés (relecture indépendante du 2026-11-26)
+- **Filtre d'adresses du désabonnement** : plages oubliées — `255.255.255.255`, `240.0.0.0/4`, `198.18.0.0/15`, `192.0.0.0/24`, `fec0::/10`, IPv4-compatible `::a.b.c.d`, NAT64 `64:ff9b::/96` avec IPv4 privée, `ff00::/8` côté Rust. Fichiers : `engine/crates/mira-core/src/mime/unsubscribe_host.rs`, `app/lib/state/unsubscribe.dart` (`isPublicAddress`). Une liste partagée suffirait. Allocations inutiles dans la boucle des suffixes (`unsubscribe_host.rs`).
+- **Rebinding DNS** du désabonnement : résolution puis nouvelle résolution par `HttpClient`. Correctif fort : `HttpClient.connectionFactory` qui se connecte à l'adresse déjà contrôlée, avec SNI sur le nom.
+- **Poignée de main du démon** : le plafond de clients identifiés est pris après `hello_ok` ; un 4e client se croit connecté puis est fermé (`session/mod.rs`). Corriger demande une variante de refus `busy` dans le protocole.
+- **Vue web** : `NavigationRequest` ne dit pas si un clic est à l'origine ; une navigation http(s) automatique ouvrirait le navigateur. Les vecteurs connus sont fermés par trois couches (scripts retirés, `meta refresh` retiré, formulaires et cadres interdits par la CSP). JavaScript reste actif (mesure de hauteur). À confirmer avec les mails piégés 01 à 05.
+- **Tests de l'éviction** : l'ordre d'arrivée de deux connexions simultanées n'est pas déterministe ; les tests espacent leurs arrivées de 100 ms.
+
+### 3.6 À exécuter par l'utilisateur
+- **Vérifications réelles** : `VERIFICATIONS-REELLES.md` avec `tools/deposer-mails-pieges` (serveur IMAP local sur `127.0.0.1` seulement). Consigner OK ou ÉCHEC par ligne et par plateforme dans `RESULTATS-VERIFICATIONS.md` (à créer). Un ÉCHEC est une faille : correctif, test de non-régression, nouvelle vérification.
+- **Audit Dart** : déclencher à la main le workflow `securite` sur GitHub (onglet Actions, « Run workflow ») ; traiter les avis sur `app/pubspec.lock`.
+- **Premier passage de la CI GitHub après l'épinglage** : vérifier que les SHA épinglés fonctionnent (les workflows n'ont pas pu être lancés depuis la machine de développement).
+
+## 4. Reporté, avec déclencheur de reprise
+
+| Sujet | Raison du report | Reprendre quand |
+|---|---|---|
+| DKIM pour le « un clic » du désabonnement (constat 2, point 2) | gros chantier (vérification de signature, clés DNS, mails non signés) pour un risque déjà réduit | MIRA vérifie DKIM pour une autre raison (badge d'authentification, alerte du constat 8) |
+| Fuzzing (MIME, IMAP, HTML, YAML, protocole du démon) | demande la toolchain nightly et de l'infrastructure ; aucun problème démontré | après la livraison des corrections actuelles, en chantier à part |
+| Journal d'audit | n'empêche aucune attaque ; risque d'y écrire des données sensibles ; demande une conception | usage multi-utilisateur ou besoin de diagnostic |
+| ACL Windows, tube nommé (constat 5) | demande une machine Windows à deux comptes ; un correctif non testé peut empêcher le démon de démarrer | une machine Windows à deux comptes, ou diffusion sur postes partagés (`A-FAIRE-WINDOWS.md`) |
+| Signature des releases et clé Android propre (constat 10) | demande une clé à conserver hors du dépôt ; gain faible tant que MIRA reste installé par l'auteur | première diffusion publique, ou un tiers qui installe MIRA |
+| Chiffrement de la base (SQLCipher) | risque accepté, documenté ; gain partiel pour un coût réel | exigence d'un public ou d'un audit externe (retour arrière possible) |
+
+## 5. Décisions prises (journal)
+
+| Date | Décision |
+|---|---|
+| 2026-11-26 | Constat 4 : base non chiffrée, documentée (`README.md`, `SECURITY.md`), disque à chiffrer. |
+| 2026-11-26 | Constat 5 : Windows reporté. |
+| 2026-11-26 | Reports : DKIM, fuzzing, journal d'audit. |
+| 2026-11-26 | Vue web rebranchée (retrait accidentel de `33173df`) ; mode Auto : widgets pour les mails simples, vue web pour les riches. |
+| 2026-11-26 | Branche `feat/SEC-01-audit-securite` non poussée ; fusionnée `--no-ff` dans `dev`, puis `dev` poussé. |
+| 2026-11-26 | Plafond du démon : évincer la plus ancienne connexion en attente (`server/pending.rs`, `session/greeting.rs`). |
+| 2026-11-26 | Constat 10 : épingler la CI maintenant ; signature des releases reportée. |
+
+## 6. Pour reprendre
+
+- **Règles** (`CLAUDE.md` du projet et du compte) : conversation et commits en français ; un chantier = un worktree + une branche `feat/<id>-<sujet>` créée depuis `dev`, jamais de travail direct sur `dev` ; test d'abord, vu en échec, puis le correctif à la cause racine ; **jamais supprimer ni affaiblir un test** pour passer au vert (un changement de règle décidé se documente et se commite avec la raison) ; tests ciblés pendant le travail ; `./ci.sh` complète **seulement avec l'accord de l'utilisateur** ; push, fusion dans `dev` et suppression sont soumis à confirmation ; pas de trailer `Co-Authored-By` dans les commits.
+- **Normes de code Rust** (`tools/check-norms`) : fonction ≤ 30 lignes, fichier ≤ 6 fonctions (tests compris), une ligne `///` avant chaque fonction, aucun commentaire dans un corps de fonction, zéro `unwrap`/`expect`/`panic!` hors tests.
+- **Tests ciblés utiles** : moteur `cargo test -p mira-core --test <fichier>` ; démon `cargo test -p mira-daemon --test session_pending_eviction` ; app `flutter test test/html_*_test.dart test/web_*_test.dart` ; outils `tools/test-check-ci-pins`, `tools/test-generate-sbom`. Limiter les tâches : `CARGO_BUILD_JOBS=4`.
+- **Deux verrous Cargo** : toute mise à jour de dépendance se fait dans `engine/Cargo.lock` **et** `bridge/Cargo.lock`.
+- **Construire et installer un essai local** : `CARGO_BUILD_JOBS=4 packaging/build-bundle.sh`, puis `packaging/tarball.sh`, `sha256sum` dans `packaging/out/SHA256SUMS`, puis `MIRA_INSTALL_FROM=$PWD/packaging/out packaging/install.sh --force --yes 2.4.0` ; redémarrer le démon (`systemctl --user restart mira-daemon.service`). Ne pas publier ce paquet : il embarque les identifiants OAuth locaux.
+
+## 7. Nettoyage à faire
+
+- Worktrees et branches locales une fois fusionnées : `feat/SEC-01-audit-securite` (worktree `.claude/worktrees/audit-securite`), puis `feat/SEC-02-plafond-demon-ci-epinglee` (worktree `.claude/worktrees/sec-02`). Ne pas toucher aux `git stash` existants : ils appartiennent à d'autres chantiers (`feat/E-02-html-render`).

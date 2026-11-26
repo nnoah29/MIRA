@@ -5,6 +5,7 @@ mod calls;
 mod chat;
 mod events;
 mod exchanges;
+mod greeting;
 mod hello;
 mod host_ops;
 mod open;
@@ -51,13 +52,8 @@ enum Outcome {
 
 /// Sert une connexion jusqu'à sa fin ; toute violation du protocole la ferme sans explication.
 pub async fn run(accepted: Accepted, ctx: Arc<ServerContext>) {
-    let Ok(permit) = ctx.pending_hello.clone().try_acquire_owned() else {
-        return;
-    };
     let (mut reader, mut writer) = tokio::io::split(accepted.stream);
-    let welcome = hello::handshake(&mut reader, &mut writer, &ctx).await;
-    drop(permit);
-    let Some(access) = welcome else {
+    let Some(access) = greeting::greet(&mut reader, &mut writer, &ctx).await else {
         return;
     };
     let Ok(_slot) = ctx.client_slots.clone().try_acquire_owned() else {

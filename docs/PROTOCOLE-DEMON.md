@@ -40,7 +40,7 @@ Une trame est un corps **JSON** précédé de sa longueur sur **4 octets, grand-
 
 ## 3. Poignée de main
 
-1. Le client envoie `hello` **dans les 5 secondes** qui suivent la connexion (la lecture de la trame entière est bornée, pas octet par octet), et sa taille ne dépasse pas **8 Kio** (jugée sur l'en-tête). Au plus 64 connexions attendent leur `hello` en même temps ; les suivantes sont fermées aussitôt. Toute autre première trame, le silence ou la lenteur ferment la connexion sans réponse.
+1. Le client envoie `hello` **dans les 5 secondes** qui suivent la connexion (la lecture de la trame entière est bornée, pas octet par octet), et sa taille ne dépasse pas **8 Kio** (jugée sur l'en-tête). Au plus 8 connexions attendent leur `hello` en même temps ; quand la place manque, **la plus ancienne connexion en attente est fermée** et la nouvelle prend sa place (un programme qui rouvre des connexions muettes ne peut donc pas empêcher l'application de se connecter). Toute autre première trame, le silence ou la lenteur ferment la connexion sans réponse.
 2. Le démon vérifie le **jeton d'abord** (comparaison en temps constant), puis les versions : majeure du protocole égale ; version du contrat compatible selon la règle de `mira-vocabulary` (même majeure, mineure du client inférieure ou égale à celle du moteur).
 3. Succès : `hello_ok`. Échec : `hello_err` à raison fixe, puis fermeture. Le jeton n'est jamais renvoyé, journalisé ni écrit sur stdout ou stderr.
 4. Un second `hello` ferme la connexion.

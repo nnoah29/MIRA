@@ -42,6 +42,7 @@ import 'chat_message.dart';
 import '../ui/chat_markdown.dart' show plainFromMarkdown;
 import 'contacts.dart';
 import 'folder_map.dart';
+import 'gif_playback.dart';
 import 'image_policy.dart';
 import 'rich_controller.dart';
 import 'mail_notifier.dart';
@@ -228,6 +229,7 @@ class MailStore extends ChangeNotifier {
     dense = prefs.getString('dense') == '1';
     historyGrid = prefs.getString('historyView') == 'grid';
     htmlMode = HtmlMode.parse(prefs.getString('htmlMode'));
+    gifPlayback = GifPlayback.parse(prefs.getString('gifPlayback'));
     live = prefs.getString('live') != '0';
     final extra = <Account>[];
     try {
@@ -415,6 +417,9 @@ class MailStore extends ChangeNotifier {
   /// Vrai quand l'historique des conversations s'affiche en grille de cartes (sinon en liste).
   bool historyGrid = false;
   late HtmlMode htmlMode;
+
+  /// Images animées des messages : figées (défaut), animées au survol, ou toujours animées.
+  late GifPlayback gifPlayback;
 
   /// Signature : celle de l'utilisateur, sinon la formule par défaut dans la langue active.
   String get sig => prefs.getString('sig') ?? t('Cordialement,\nNoah');
@@ -884,6 +889,9 @@ class MailStore extends ChangeNotifier {
       case 'htmlMode':
         htmlMode = HtmlMode.parse(v);
         prefs.setString('htmlMode', htmlMode.code);
+      case 'gifPlayback':
+        gifPlayback = GifPlayback.parse(v);
+        prefs.setString('gifPlayback', gifPlayback.code);
       case 'follow':
         followWallpaper = v == '1';
         prefs.setString('follow', v);

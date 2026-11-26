@@ -392,7 +392,6 @@ class _SettingsPanelState extends State<SettingsPanel> {
                   ('0', t('Confortable')),
                   ('1', t('Compacte')),
                 ], s.dense ? '1' : '0'),
-                last: !webViewEnabled,
               ),
               if (webViewEnabled)
                 srow(
@@ -405,8 +404,19 @@ class _SettingsPanelState extends State<SettingsPanel> {
                     ('web', t('Vue web')),
                     ('widgets', t('Widgets')),
                   ], s.htmlMode.code),
-                  last: true,
                 ),
+              srow(
+                t('Images animées (GIF)'),
+                t(
+                  'Figées : la première image seulement, sans consommer de processeur. Au survol : animées sous la souris. Animées : toujours en mouvement, même fenêtre au repos.',
+                ),
+                seg('gifPlayback', [
+                  ('off', t('Figées')),
+                  ('hover', t('Au survol')),
+                  ('always', t('Animées')),
+                ], s.gifPlayback.code),
+                last: true,
+              ),
             ]),
             1 => box([
               if (s.source == null)

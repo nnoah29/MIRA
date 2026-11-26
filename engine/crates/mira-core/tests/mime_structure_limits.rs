@@ -35,5 +35,5 @@ fn deeply_nested_multiparts_do_not_overflow_the_stack() {
         .spawn(move || parse_message(raw.as_bytes()).headers.subject)
         .unwrap()
         .join();
-    assert!(outcome.is_ok());
+    assert_eq!(outcome.expect("pas de dépassement de pile"), "x");
 }

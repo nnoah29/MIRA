@@ -47,7 +47,7 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 | SEC-A02-3 | Version TLS minimale (TLS 1.2+ explicite) | ✅ | rustls seul (TLS 1.2 et 1.3), aucun openssl ni native-tls dans `Cargo.lock` |
 | SEC-A02-4 | STARTTLS : protection contre le *downgrade* / injection avant TLS | ✅ | IMAP : `starttls.rs` refuse le repli (`require_ok`), `into_inner` jette les octets en clair déjà lus, capacités relues après TLS ; SMTP : `Tls::Required` |
 | SEC-A02-5 | Stockage des secrets dans le trousseau système | ✅ | `ports/secrets/keyring_store.rs` |
-| SEC-A02-6 | Repli si trousseau indisponible : pas de secret en clair sur disque | ✅ | repli Android : AES-256-GCM, nonce neuf, clé du Keystore, 0600, écriture atomique (`file_secrets/sealed_file.rs`). Observation mineure : une erreur de lecture autre que « absent » est prise pour un trousseau vide |
+| SEC-A02-6 | Repli si trousseau indisponible : pas de secret en clair sur disque | ✅ | repli Android : AES-256-GCM, nonce neuf, clé du Keystore, 0600, écriture atomique (`file_secrets/sealed_file.rs`). Une erreur de lecture autre que « absent » est désormais refusée (corrigé, `unreadable_file_is_an_error_not_an_empty_keyring`) |
 | SEC-A02-7 | Base SQLite et corps de messages chiffrés au repos | ❌ accepté | risque accepté, décision B du 2026-11-26 : non chiffré, documenté (`README.md`, `SECURITY.md`) |
 | SEC-A02-8 | Identifiants OAuth embarqués : clé AES stockée à côté du chiffré | ❌ | `oauth_embedded.rs` : simple obfuscation, `client_secret` extractable du binaire. Acceptable pour client public + PKCE, à documenter et à ne pas présenter comme un secret |
 | SEC-A02-9 | PKCE S256 + `state` aléatoire + redirection loopback | ✅ | `auth/pkce.rs`, `flow/start_key.rs` |

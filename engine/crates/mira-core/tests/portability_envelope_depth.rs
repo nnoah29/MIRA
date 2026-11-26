@@ -30,5 +30,6 @@ fn deeply_nested_mappings_are_refused_without_stack_overflow() {
         .spawn(move || code_of(unwrap(&text, "rules", "rules")))
         .unwrap()
         .join();
-    assert!(outcome.is_ok());
+    let code = outcome.expect("le thread ne doit pas dépasser sa pile");
+    assert_eq!(code, "invalid_input.yaml_syntax");
 }

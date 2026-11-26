@@ -8,6 +8,7 @@
 //! Support des tests du démon : démon jetable, client brut qui enregistre les octets reçus, moteur de test.
 
 pub mod ai_daemon;
+mod arrival;
 pub mod chat_helpers;
 pub mod client;
 pub mod daemon;

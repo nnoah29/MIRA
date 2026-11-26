@@ -6,7 +6,7 @@ mod support;
 use std::sync::Arc;
 use std::time::Duration;
 
-use support::{Recv, TestClient, TestDaemon};
+use support::{Recv, TestDaemon};
 use tokio::sync::Semaphore;
 
 /// Démarre un démon qui n'accepte que deux connexions en attente de `hello`.
@@ -18,11 +18,9 @@ async fn daemon_with_two_places() -> TestDaemon {
 #[tokio::test(flavor = "multi_thread")]
 async fn the_oldest_silent_connection_is_evicted_for_a_newcomer() {
     let daemon = daemon_with_two_places().await;
-    let mut oldest = TestClient::connect(&daemon).await;
-    tokio::time::sleep(Duration::from_millis(100)).await;
-    let mut second = TestClient::connect(&daemon).await;
-    tokio::time::sleep(Duration::from_millis(100)).await;
-    let mut newcomer = TestClient::connect(&daemon).await;
+    let mut oldest = daemon.connect_registered().await;
+    let mut second = daemon.connect_registered().await;
+    let mut newcomer = daemon.connect_registered().await;
     newcomer.hello_ok(daemon.token()).await;
     let outcome = oldest.recv_for(Duration::from_secs(1)).await;
     assert!(matches!(outcome, Recv::Closed), "{outcome:?}");
@@ -36,10 +34,9 @@ async fn a_flood_of_silent_connections_cannot_lock_out_a_real_client() {
     let daemon = daemon_with_two_places().await;
     let mut flood = Vec::new();
     for _ in 0..6 {
-        flood.push(TestClient::connect(&daemon).await);
-        tokio::time::sleep(Duration::from_millis(30)).await;
+        flood.push(daemon.connect_registered().await);
     }
-    let mut real = TestClient::connect(&daemon).await;
+    let mut real = daemon.connect_registered().await;
     real.hello_ok(daemon.token()).await;
 }
 
@@ -49,8 +46,7 @@ async fn evicted_connections_give_their_places_back() {
     let daemon = daemon_with_two_places().await;
     let mut all = Vec::new();
     for _ in 0..5 {
-        all.push(TestClient::connect(&daemon).await);
-        tokio::time::sleep(Duration::from_millis(30)).await;
+        all.push(daemon.connect_registered().await);
     }
     let mut closed = Vec::new();
     for client in all.iter_mut() {

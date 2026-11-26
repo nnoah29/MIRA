@@ -14,6 +14,7 @@ mod preview;
 mod summary;
 mod unsubscribe;
 mod unsubscribe_host;
+mod unsubscribe_ranges;
 
 pub use headers::{parse_headers, parse_unsubscribe_headers};
 pub use html_text::html_to_text;

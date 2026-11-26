@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Auto-test de tools/check-ci-pins : accepte des workflows épinglés, refuse une action sur étiquette, un cargo install libre et un « latest ».
+set -euo pipefail
+here="$(cd "$(dirname "$0")" && pwd)"
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+sha=0123456789abcdef0123456789abcdef01234567
+mkdir "$tmp/ok" "$tmp/tag" "$tmp/cargo" "$tmp/latest"
+printf 'steps:\n  - uses: a/b@%s # v1\n  - run: cargo install x --version 1.2.3 --locked\n' "$sha" > "$tmp/ok/w.yml"
+printf 'steps:\n  - uses: a/b@v4\n' > "$tmp/tag/w.yml"
+printf 'steps:\n  - run: cargo install x --locked\n' > "$tmp/cargo/w.yml"
+printf 'steps:\n  - run: curl https://x/releases/latest/download/y\n' > "$tmp/latest/w.yml"
+"$here/check-ci-pins" "$tmp/ok" >/dev/null
+for bad in tag cargo latest; do
+    if "$here/check-ci-pins" "$tmp/$bad" >/dev/null 2>&1; then echo "test-check-ci-pins : « $bad » aurait dû être refusé"; exit 1; fi
+done
+echo "test-check-ci-pins : OK"

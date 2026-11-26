@@ -8,6 +8,8 @@ step() { printf '\n== %s\n' "$1"; }
 step "Auto-tests des garde-fous"
 "$root/tools/test-check-norms"
 "$root/tools/test-check-architecture"
+"$root/tools/test-check-ci-pins"
+"$root/tools/test-generate-sbom"
 
 step "Normes de codage (§11)"
 "$root/tools/check-norms" "$root/engine/crates"
@@ -17,6 +19,9 @@ step "Architecture (5.3, invariants 1-3)"
 
 step "Motifs interdits"
 "$root/tools/check-forbidden-patterns"
+
+step "Chaîne d'outillage de la CI épinglée (constat 10)"
+"$root/tools/check-ci-pins"
 
 step "Traductions de l'app (couverture de chaque langue)"
 "$root/tools/i18n-audit"

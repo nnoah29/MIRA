@@ -116,10 +116,10 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 |---|---|---|---|
 | SEC-A08-1 | Téléchargement de modèles/serveur IA : somme SHA-256 vérifiée | ✅ | `ai/local/download_verify.rs` ; confirmer que la somme n'est pas lue depuis la même source que le fichier |
 | SEC-A08-2 | Extraction d'archives : *zip-slip*, liens symboliques, bombes de décompression | ✅ | `extract_check.rs`, `max_bytes` ; ajouter tests adverses |
-| SEC-A08-3 | Signature des paquets et des releases | ❌ | aucune signature des paquets ni des releases : `SHA256SUMS` vient de la même source que les fichiers ; APK signés avec la clé de debug (`release.sh:173`). Voir constat 10 |
+| SEC-A08-3 | Signature des paquets et des releases | ❌ reporté | aucune signature des paquets ni des releases : `SHA256SUMS` vient de la même source ; APK signés avec la clé de debug. Décision du 2026-11-26 : reporté, déclencheur = première diffusion publique (constat 10) |
 | SEC-A08-4 | Mise à jour du logiciel (canal, signature) | ✅ | aucune mise à jour automatique ; `install.sh` manuel, somme SHA-256 vérifiée |
 | SEC-A08-5 | Import/export de profil : intégrité, chemins, écrasement | 🟡 | `portability/` |
-| SEC-A08-6 | Épinglage des actions CI et permissions minimales du workflow | ❌ | actions épinglées par étiquette (`@v4`) et non par SHA ; `securite.yml` télécharge OSV-Scanner `releases/latest` sans version ni somme. Voir constat 10 |
+| SEC-A08-6 | Épinglage des actions CI et permissions minimales du workflow | ✅ | actions épinglées par SHA, outils à version fixe, OSV-Scanner vérifié par somme ; `tools/check-ci-pins` dans `ci.sh` |
 
 ## A09 — Journalisation et supervision
 
@@ -169,14 +169,13 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 
 ## Lacunes restantes (❌)
 
-1. **SEC-A08-3** — releases non signées (constat 10).
-2. **SEC-A08-6** — actions CI et OSV-Scanner non épinglés (constat 10).
-3. **SEC-A06-3** — audit des dépendances Dart pas encore exécuté (workflow en place, OSV-Scanner absent localement).
-4. **SEC-A03-7** — pas d'alerte d'hameçonnage sur les liens.
-5. **SEC-A09-3** — pas de journal d'audit, reporté (2026-11-26).
-6. **SEC-A05-2** — ACL Windows absentes, reporté (`A-FAIRE-WINDOWS.md`).
-7. **SEC-D-6** — pas de fuzzing, reporté (2026-11-26).
-8. **DKIM pour le désabonnement** (constat 2, point 2), reporté (2026-11-26).
+1. **SEC-A08-3** — releases non signées, reporté (constat 10).
+2. **SEC-A06-3** — audit des dépendances Dart pas encore exécuté (workflow en place, OSV-Scanner absent localement).
+3. **SEC-A03-7** — pas d'alerte d'hameçonnage sur les liens.
+4. **SEC-A09-3** — pas de journal d'audit, reporté (2026-11-26).
+5. **SEC-A05-2** — ACL Windows absentes, reporté (`A-FAIRE-WINDOWS.md`).
+6. **SEC-D-6** — pas de fuzzing, reporté (2026-11-26).
+7. **DKIM pour le désabonnement** (constat 2, point 2), reporté (2026-11-26).
 
 Corrigées ou documentées : SEC-A06-2, SEC-A06-6 (SBOM), SEC-A02-7 (risque accepté, documenté), SEC-A02-8 (documenté), SEC-A04-1, SEC-A05-6.
 

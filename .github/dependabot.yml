@@ -4,6 +4,10 @@ updates:
     directory: /engine
     schedule: { interval: weekly }
     open-pull-requests-limit: 5
+  - package-ecosystem: cargo
+    directory: /bridge
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
   - package-ecosystem: pub
     directory: /app
     schedule: { interval: weekly }

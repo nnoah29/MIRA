@@ -24,7 +24,7 @@ jobs:
     outputs:
       version: ${{ steps.find.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: { fetch-depth: 0 }
       - id: find
         name: Chercher le commit de release dans l'historique poussé
@@ -56,12 +56,12 @@ jobs:
     if: needs.plan.outputs.version != '' && github.event_name == 'push'
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master du 2026-11-15
         with: { toolchain: "1.99.0", components: "rustfmt, clippy" }
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with: { workspaces: "engine -> target" }
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with: { flutter-version: "3.47.7", channel: stable }
       - run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev libdbus-1-dev dbus
       - name: Tout vérifier (moteur, pont, app)
@@ -71,7 +71,7 @@ jobs:
     if: needs.plan.outputs.version != '' && github.event_name == 'push'
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Poser le tag annoté
         run: |
           v="${{ needs.plan.outputs.version }}"
@@ -84,11 +84,11 @@ jobs:
     if: ${{ !cancelled() && needs.plan.outputs.version != '' && (needs.tag.result == 'success' || needs.tag.result == 'skipped') }}
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: { ref: "v${{ needs.plan.outputs.version }}" }
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master du 2026-11-15
         with: { toolchain: "1.99.0" }
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with: { flutter-version: "3.47.7", channel: stable }
       - run: |
           sudo apt-get update
@@ -105,7 +105,7 @@ jobs:
           packaging/deb/build.sh
           packaging/rpm/build.sh
           packaging/tarball.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: linux
           path: |
@@ -117,15 +117,15 @@ jobs:
     if: ${{ !cancelled() && needs.plan.outputs.version != '' && (needs.tag.result == 'success' || needs.tag.result == 'skipped') }}
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: { ref: "v${{ needs.plan.outputs.version }}" }
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
         with: { distribution: temurin, java-version: "17" }
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master du 2026-11-15
         with: { toolchain: "1.99.0", targets: "aarch64-linux-android,x86_64-linux-android" }
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with: { flutter-version: "3.47.7", channel: stable }
-      - run: cargo install cargo-ndk --locked
+      - run: cargo install cargo-ndk --version 4.1.2 --locked
       - name: Identifiants OAuth
         run: |
           umask 077
@@ -138,18 +138,18 @@ jobs:
           v="${{ needs.plan.outputs.version }}"
           mv packaging/out/app-arm64-v8a-release.apk "packaging/out/mira-mail-$v-android-arm64-v8a.apk"
           mv packaging/out/app-x86_64-release.apk "packaging/out/mira-mail-$v-android-x86_64.apk"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with: { name: android, path: "packaging/out/*.apk" }
   windows:
     needs: [plan, tag]
     if: ${{ !cancelled() && needs.plan.outputs.version != '' && (needs.tag.result == 'success' || needs.tag.result == 'skipped') }}
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: { ref: "v${{ needs.plan.outputs.version }}" }
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master du 2026-11-15
         with: { toolchain: "1.99.0" }
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with: { flutter-version: "3.47.7", channel: stable }
       - name: Construire et archiver
         shell: pwsh
@@ -160,15 +160,15 @@ jobs:
           packaging\windows\build.ps1
           choco install innosetup -y --no-progress
           packaging\windows\build-installer.ps1 -Version '${{ needs.plan.outputs.version }}' -OutDir out
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with: { name: windows, path: "out/mira-mail-*-windows-x64*" }
   publish:
     needs: [plan, linux, android, windows]
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: { ref: "v${{ needs.plan.outputs.version }}" }
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with: { path: dist, merge-multiple: true }
       - name: Manifeste et brouillon de release
         env:

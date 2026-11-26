@@ -130,7 +130,7 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 
 ---
 
-## 10. Les releases ne sont pas signées et la CI n'est pas épinglée — gravité MOYENNE (nouveau, 2026-11-26)
+## 10. Les releases ne sont pas signées et la CI n'est pas épinglée — gravité MOYENNE (CI épinglée ; signature reportée)
 
 **Le problème.** `SHA256SUMS` est publié au même endroit que les paquets : il protège d'un téléchargement corrompu, pas d'une release remplacée (compte GitHub compromis, brèche de la CI). `install.sh` ne vérifie que cette somme. Les APK sont signés avec la clé de debug (`packaging/release.sh:173`). Les workflows référencent les actions par étiquette (`@v4`), et `securite.yml` télécharge OSV-Scanner en `releases/latest`, sans version ni somme : l'outil de surveillance est lui-même un maillon non vérifié.
 
@@ -141,7 +141,10 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 2. Signer les releases (par exemple `minisign` ou signature Sigstore du `SHA256SUMS`) et faire vérifier la signature par `install.sh`.
 3. Pour Android : une clé de signature propre, conservée hors du dépôt.
 
-**Statut.** Constaté par lecture, aucun correctif. Décision à prendre : le point 2 change la procédure de release et demande une clé à garder.
+**Statut (2026-11-26).** Décision de l'utilisateur : suivre la recommandation.
+- **Fait : épinglage.** Les 33 références d'actions des quatre workflows sont épinglées par SHA de commit (version en commentaire, SHA lus par `gh api`, pas recopiés) ; `cargo-deny` 0.20.2 (version éprouvée ici) et `cargo-ndk` 4.1.2 installés à version fixe ; OSV-Scanner v2.7.1 téléchargé à version fixe et vérifié par SHA-256. `tools/check-ci-pins` (et son auto-test) est branché sur `ci.sh` : une action sur étiquette, un `cargo install` libre ou un « latest » fait échouer la CI. Dependabot surveille aussi `/bridge` (absent jusqu'ici, ce qui a favorisé le constat 12) et met à jour les SHA épinglés. Non épinglés : les paquets `apt` et `choco` des runners.
+- **Non fait, décision reportée : signature des releases** (minisign ou Sigstore sur `SHA256SUMS`, vérifiée par `install.sh`) et **clé de signature Android propre**. Raison : la signature demande une clé à conserver hors du dépôt (perdue, on ne signe plus ; volée, elle ne vaut plus rien) et change la procédure de release ; le gain dépend de la diffusion (faible tant que MIRA reste installé par l'auteur et quelques proches, important s'il devient public). **Déclencheur de reprise : la première diffusion publique, ou un tiers qui installe MIRA.**
+- **À vérifier au prochain passage de la CI GitHub** : que les SHA épinglés fonctionnent (je n'ai pas pu lancer les workflows depuis cette machine).
 
 ---
 

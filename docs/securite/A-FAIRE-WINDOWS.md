@@ -40,4 +40,4 @@ Recommandation : (1) d'abord, car c'est petit et couvre le jeton ; (2) ensuite, 
 
 ## À ajouter (relecture du 2026-11-26)
 
-Sous TCP sur `127.0.0.1`, n'importe quel compte local peut ouvrir 8 connexions muettes sans jeton et empêcher l'application de se connecter tant qu'il recommence toutes les 5 s (plafond des connexions en attente, `server/context.rs`). Un tube nommé réservé à l'utilisateur supprime ce point. À tester avec le second compte.
+Sous TCP sur `127.0.0.1`, n'importe quel compte local peut ouvrir des connexions muettes sans jeton. Depuis le 2026-11-26 la plus ancienne connexion en attente est évincée à saturation (`server/pending.rs`) : le blocage durable de l'application est levé, mais une rafale d'au moins 8 connexions pendant la poignée de main d'un client légitime peut encore l'évincer, et rien n'arrête le bruit. Un tube nommé réservé à l'utilisateur supprime ce point. À tester avec le second compte.

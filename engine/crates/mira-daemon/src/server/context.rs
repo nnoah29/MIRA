@@ -7,7 +7,7 @@ use mira_host::Host;
 use mira_protocol::{HostState, MAX_FRAME_BYTES};
 use tokio::sync::{Notify, OnceCell, Semaphore, watch};
 
-use super::{Clients, TestHook};
+use super::{Clients, PendingHellos, TestHook};
 use crate::token::Token;
 
 /// Nombre de connexions qui peuvent attendre leur `hello` en même temps.
@@ -26,6 +26,7 @@ pub struct ServerContext {
     pub event_queue: usize,
     pub event_lag_grace: Duration,
     pub pending_hello: Arc<Semaphore>,
+    pub pending: PendingHellos,
     pub client_slots: Arc<Semaphore>,
     pub shutdown_wait: Duration,
     pub clients: Clients,
@@ -37,7 +38,7 @@ pub struct ServerContext {
 }
 
 impl ServerContext {
-    /// Contexte aux valeurs par défaut : 16 Mio par trame, `hello` sous 5 s (8 en attente au plus, 3 clients identifiés au plus), arrêt patientant 5 s, file d'événements de 256 attendue 5 s avant `lagged`, état `starting`.
+    /// Contexte aux valeurs par défaut : 16 Mio par trame, `hello` sous 5 s (8 en attente au plus, la plus ancienne évincée quand la place manque, 3 clients identifiés au plus), arrêt patientant 5 s, file d'événements de 256 attendue 5 s avant `lagged`, état `starting`.
     pub fn new(host: Arc<Host>, token: Token) -> Self {
         Self {
             host,
@@ -47,6 +48,7 @@ impl ServerContext {
             event_queue: 256,
             event_lag_grace: Duration::from_secs(5),
             pending_hello: Arc::new(Semaphore::new(MAX_PENDING_HELLO)),
+            pending: PendingHellos::default(),
             client_slots: Arc::new(Semaphore::new(MAX_CLIENTS)),
             shutdown_wait: Duration::from_secs(5),
             clients: Clients::default(),

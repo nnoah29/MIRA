@@ -86,3 +86,15 @@ fn file_store_roundtrips_an_ai_secret() {
     reopened.delete(&ai).unwrap();
     assert!(reopened.get(&ai).unwrap().is_none());
 }
+
+/// Un fichier illisible pour une autre raison que son absence n'est pas pris pour un trousseau vide
+#[test]
+fn unreadable_file_is_an_error_not_an_empty_keyring() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("secrets.bin");
+    std::fs::create_dir(&path).unwrap();
+    let store = FileSecretStore::new(path, &[7u8; 32]).unwrap();
+    let password = secret_ref(SecretKind::Password);
+    assert!(store.get(&password).is_err());
+    assert!(store.put(&password, &SecretValue::new("x")).is_err());
+}

@@ -1725,6 +1725,7 @@ dependencies = [
  "webpki-roots",
  "yaml-rust2",
  "yaml_serde",
+ "zeroize",
  "zip",
  "zstd",
 ]

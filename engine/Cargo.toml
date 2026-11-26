@@ -37,6 +37,7 @@ yaml-rust2 = "0.13"
 thiserror = "2"
 tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "net", "io-util", "sync", "time", "fs", "process"] }
 base64 = "0.22"
+zeroize = "1"
 sha2 = "0.10"
 rand = "0.9"
 regex = "1"

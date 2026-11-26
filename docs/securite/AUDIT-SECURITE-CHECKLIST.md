@@ -52,7 +52,7 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 | SEC-A02-8 | Identifiants OAuth embarqués : clé AES stockée à côté du chiffré | ❌ | `oauth_embedded.rs` : simple obfuscation, `client_secret` extractable du binaire. Acceptable pour client public + PKCE, à documenter et à ne pas présenter comme un secret |
 | SEC-A02-9 | PKCE S256 + `state` aléatoire + redirection loopback | ✅ | `auth/pkce.rs`, `flow/start_key.rs` |
 | SEC-A02-10 | Aléa cryptographique pour jetons | ✅ | `random_hex` ; confirmer la source (`getrandom`/`ring`) |
-| SEC-A02-11 | Effacement mémoire des secrets (`zeroize`) | 🟡 | à vérifier dans `secrets` et clés IA |
+| SEC-A02-11 | Effacement mémoire des secrets (`zeroize`) | ✅ | Constat 13 : `SecretValue` s'efface à la destruction (`ports/secrets/value.rs`, `ports_secret_value_zeroize.rs`) ; copies hors de ce type non couvertes, risque accepté (constat 13) ; 2026-11-26 |
 
 ## A03 — Injection
 
@@ -106,9 +106,9 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 |---|---|---|---|
 | SEC-A07-1 | OAuth2 PKCE pour Gmail/Outlook | ✅ | `auth/` |
 | SEC-A07-2 | Écouteur de rappel loopback : port éphémère, usage unique, `state` vérifié, délai | ✅ | `start.rs` : `127.0.0.1:0`, `state` comparé en temps constant, délai, un `state` erroné n'abat pas le flux (`connection.rs`) |
-| SEC-A07-3 | Renouvellement/révocation des jetons, révocation à la suppression de compte | 🟡 | `auth/renewal.rs` ; vérifier la purge du trousseau |
-| SEC-A07-4 | Mots de passe d'application (Yahoo, générique) : stockage et journalisation | 🟡 | auditer `auth/form.rs` |
-| SEC-A07-5 | Verrouillage de l'application / déverrouillage trousseau | 🟡 | `unlock.rs`, `RetryUnlock` ; pas de verrou applicatif constaté |
+| SEC-A07-3 | Renouvellement/révocation des jetons, révocation à la suppression de compte | ✅ | Suppression de compte : caches, puis mot de passe, jeton d'accès, jeton de rafraîchissement et expiration (`accounts/deletion.rs`, `auth/vault/delete.rs`) ; reprise après interruption ; tests `auth_vault.rs:88` (les autres comptes intacts), `api_accounts_lifecycle.rs` (S14), `storage_no_secret.rs` (aucun secret en base). **Limite connue** : le serveur n'est jamais contacté (S14), le jeton OAuth n'est donc pas révoqué chez le fournisseur ; l'utilisateur peut le faire dans les réglages de son compte ; 2026-11-26 |
+| SEC-A07-4 | Mots de passe d'application (Yahoo, générique) : stockage et journalisation | ✅ | Mot de passe rangé dans le trousseau et relu pour la connexion, `Debug` = `***` (`auth_vault.rs:17`), jamais en base (`storage_no_secret.rs`, invariant 15), jamais journalisé : les `tracing::` du moteur ne portent qu'un code d'erreur (grep sur `engine/crates/*/src`, aucun secret) ; `auth/form.rs` n'est qu'un encodeur de formulaires, la correspondance de la checklist était erronée ; 2026-11-26 |
+| SEC-A07-5 | Verrouillage de l'application / déverrouillage trousseau | ✅ | Trousseau verrouillé : annoncé `keyring_locked`, nouvel essai à 5 s puis 10, 20… 60 s et aussitôt sur `retry_unlock`, arrêt propre pendant l'attente (`mira-daemon/src/unlock.rs`, `keyring_locked.rs` 4 tests, `keyring_locked_stop.rs` 2 tests). **Choix** : pas de verrou applicatif propre à MIRA ; la protection d'un poste laissé ouvert est le verrouillage de session du système et du trousseau (même ligne que le constat 4) ; 2026-11-26 |
 
 ## A08 — Intégrité des logiciels et des données
 

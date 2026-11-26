@@ -172,6 +172,16 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 
 ---
 
+## 13. Les secrets en mémoire n'étaient pas effacés à leur destruction — gravité BASSE (corrigé en partie, 2026-11-26)
+
+**Le problème.** Aucun usage de `zeroize` dans le dépôt : `SecretValue` (mots de passe, jetons, clés d'IA lus du trousseau) restait en mémoire après sa destruction jusqu'à réutilisation de la page. Exploitable seulement par un processus qui lit la mémoire du démon (même utilisateur ou vidage mémoire), donc faible.
+
+**Correctif.** `SecretValue` implémente `Zeroize` et `ZeroizeOnDrop` (`mira-core/src/ports/secrets/value.rs`) ; `zeroize` 1.9.1 était déjà dans les deux verrous, seule la liste de dépendances de `mira-core` change (une ligne dans `engine/Cargo.lock` et `bridge/Cargo.lock`). Tests : `ports_secret_value_zeroize.rs` (3).
+
+**Reste.** Les copies hors de `SecretValue` ne sont pas effacées : chaînes du mot de passe saisi dans une requête de l'API avant son rangement, tampons internes de la bibliothèque du trousseau et du TLS, `Token` du démon (`String`), jeton lu côté Dart. Ce n'est pas corrigeable à coût raisonnable ; risque accepté (même frontière que le constat 4).
+
+---
+
 ## Points déjà bons (pour mémoire)
 
 - Jeton du démon comparé en temps constant (HMAC) ; **correction de ma première passe** qui l'avait signalé à vérifier.

@@ -2,9 +2,27 @@
 
 use std::fmt;
 
-/// Secret en clair ; `Debug` et `Display` affichent toujours `***`.
+use zeroize::{Zeroize, ZeroizeOnDrop};
+
+/// Secret en clair, effacé de la mémoire à sa destruction ; `Debug` et `Display` affichent toujours `***`.
 #[derive(Clone)]
 pub struct SecretValue(String);
+
+impl Zeroize for SecretValue {
+    /// Écrase la valeur en mémoire puis la vide
+    fn zeroize(&mut self) {
+        self.0.zeroize();
+    }
+}
+
+impl Drop for SecretValue {
+    /// Efface la valeur à la destruction
+    fn drop(&mut self) {
+        self.zeroize();
+    }
+}
+
+impl ZeroizeOnDrop for SecretValue {}
 
 impl SecretValue {
     /// Enveloppe une valeur secrète

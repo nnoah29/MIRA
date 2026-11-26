@@ -176,6 +176,7 @@ jobs:
         run: |
           v="${{ needs.plan.outputs.version }}"
           cp packaging/install.sh dist/install.sh
+          tools/generate-sbom "$v" "dist/mira-mail-$v.sbom.cdx.json"
           (cd dist && sha256sum * | grep -v ' SHA256SUMS$' > SHA256SUMS && sha256sum -c SHA256SUMS)
           gh release create "v$v" dist/* --title "MIRA $v" \
             --notes-file "docs/release-notes/v$v.md" --verify-tag --draft

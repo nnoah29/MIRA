@@ -12,12 +12,16 @@ const aiKindToolResult = 'tool_result';
 /// Type de contenu « souvenirs de la mémoire » tel que le moteur le nomme.
 const aiKindMemory = 'memory';
 
+/// Type de contenu « fichiers joints par l'utilisateur » tel que le moteur le nomme.
+const aiKindAttachment = 'attachment';
+
 /// Types de contenu que l'app sait produire aujourd'hui.
 const aiKnownKinds = [
   aiKindMail,
   aiKindMailList,
   aiKindToolResult,
   aiKindMemory,
+  aiKindAttachment,
 ];
 
 /// Catégories de données sensibles que le masquage reconnaît, dans l'ordre d'affichage.

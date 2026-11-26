@@ -414,7 +414,7 @@ class ChatController extends ChangeNotifier {
       return _grantFailed(pending, e);
     }
     if (!busy) return;
-    final input = kinds.contains(aiKindMail) ? pending.input : noContext;
+    final input = pending.input.restrictedTo(kinds);
     await _generate(ai, pending.connection, pending.question, input, 1);
   }
 

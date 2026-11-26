@@ -59,65 +59,71 @@ class _ConsentDialogState extends State<_ConsentDialog> {
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 460),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                t('Envoyer tes messages à {0} ?', [name]),
-                style: Fonts.sans(size: 16, w: FontWeight.w600, color: p.text),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                t(
-                  'Pour répondre, l’assistant envoie à {0} ta conversation et les contenus que tu autorises ci-dessous. Ce service applique sa propre politique de confidentialité. Rien n’est envoyé sans ton accord ; supprime la connexion dans les réglages pour le retirer.',
-                  [name],
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  t('Envoyer tes messages à {0} ?', [name]),
+                  style: Fonts.sans(
+                    size: 16,
+                    w: FontWeight.w600,
+                    color: p.text,
+                  ),
                 ),
-                style: Fonts.sans(size: 13.5, color: p.muted, height: 1.5),
-              ),
-              if (widget.host != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Text(
-                    t('Adresse du service : {0}', [widget.host]),
-                    key: const ValueKey('ai-consent-host'),
-                    style: Fonts.sans(
-                      size: 13.5,
-                      w: FontWeight.w500,
-                      color: p.text,
+                const SizedBox(height: 10),
+                Text(
+                  t(
+                    'Pour répondre, l’assistant envoie à {0} ta conversation et les contenus que tu autorises ci-dessous. Ce service applique sa propre politique de confidentialité. Rien n’est envoyé sans ton accord ; supprime la connexion dans les réglages pour le retirer.',
+                    [name],
+                  ),
+                  style: Fonts.sans(size: 13.5, color: p.muted, height: 1.5),
+                ),
+                if (widget.host != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Text(
+                      t('Adresse du service : {0}', [widget.host]),
+                      key: const ValueKey('ai-consent-host'),
+                      style: Fonts.sans(
+                        size: 13.5,
+                        w: FontWeight.w500,
+                        color: p.text,
+                      ),
                     ),
                   ),
+                const SizedBox(height: 16),
+                Mono(
+                  t('Contenu autorisé'),
+                  size: 10.5,
+                  ls: .12,
+                  color: p.muted,
+                  height: null,
                 ),
-              const SizedBox(height: 16),
-              Mono(
-                t('Contenu autorisé'),
-                size: 10.5,
-                ls: .12,
-                color: p.muted,
-                height: null,
-              ),
-              const SizedBox(height: 8),
-              _kinds(),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Btn(
-                    key: const ValueKey('ai-consent-refuse'),
-                    label: t('Refuser'),
-                    onTap: () => Navigator.pop(context),
-                  ),
-                  const SizedBox(width: 10),
-                  Btn(
-                    key: const ValueKey('ai-consent-accept'),
-                    label: t('Autoriser'),
-                    go: true,
-                    onTap: () => Navigator.pop(context, ticked.toList()),
-                  ),
-                ],
-              ),
-            ],
+                const SizedBox(height: 8),
+                _kinds(),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Btn(
+                      key: const ValueKey('ai-consent-refuse'),
+                      label: t('Refuser'),
+                      onTap: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 10),
+                    Btn(
+                      key: const ValueKey('ai-consent-accept'),
+                      label: t('Autoriser'),
+                      go: true,
+                      onTap: () => Navigator.pop(context, ticked.toList()),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

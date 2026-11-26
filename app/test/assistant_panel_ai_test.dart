@@ -1,8 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mira/state/chat_attached_file.dart';
 import 'package:mira/state/store.dart';
+import 'package:mira/ui/overlays.dart';
 import 'package:mira/ui/step_animator.dart';
 
 import 'ai_panel_harness.dart';
@@ -64,66 +64,148 @@ void main() {
     await close(tester, store);
   });
 
-  testWidgets('context_banner_is_vertically_centered', (tester) async {
+  testWidgets('context_banner_is_gone', (tester) async {
     final store = await pumpPanel(tester, withDefaultConnection());
-    double middle(String key) => tester.getCenter(find.byKey(ValueKey(key))).dy;
-    expect((middle('ctx-text') - middle('ctx-open')).abs(), lessThan(2));
-    expect((middle('ctx-icon') - middle('ctx-open')).abs(), lessThan(2));
-    expect((middle('ctx-drop') - middle('ctx-open')).abs(), lessThan(2));
-    await close(tester, store);
-  });
-
-  testWidgets('context_is_sent_by_default', (tester) async {
-    final engine = withDefaultConnection()
-      ..scripts.add([
-        {'type': 'done', 'reason': 'end_turn'},
-      ]);
-    final store = await pumpPanel(tester, engine);
-    await tester.tap(find.text('RÉSUME CE MAIL'));
-    await tester.pump(const Duration(milliseconds: 300));
-    final request = engine.chatStarts.single['request'] as Map;
-    expect((request['context'] as List).single['kind'], 'mail_message');
-    expect(jsonEncode(request['messages']), isNot(contains('<mail>')));
-    await close(tester, store);
-  });
-
-  testWidgets('context_drop_hides_the_mail_from_the_assistant', (tester) async {
-    final engine = withDefaultConnection()
-      ..scripts.add([
-        {'type': 'done', 'reason': 'end_turn'},
-      ]);
-    final store = await pumpPanel(tester, engine);
-    await tester.tap(find.byKey(const ValueKey('ctx-drop')));
-    await tester.pump(const Duration(milliseconds: 100));
-    expect(find.byKey(const ValueKey('ctx-restore')), findsOneWidget);
+    expect(find.byKey(const ValueKey('ctx-text')), findsNothing);
+    expect(find.byKey(const ValueKey('ctx-icon')), findsNothing);
     expect(find.byKey(const ValueKey('ctx-drop')), findsNothing);
-    expect(find.byKey(const ValueKey('ctx-open')), findsNothing);
+    await close(tester, store);
+  });
+
+  testWidgets('opening_a_mail_does_not_add_it_to_the_context', (tester) async {
+    final engine = withDefaultConnection()
+      ..scripts.add([
+        {'type': 'done', 'reason': 'end_turn'},
+      ]);
+    final store = await pumpPanel(tester, engine);
+    expect(store.open, isNotNull);
+    expect(store.chatAttachedIds, isEmpty);
     await tester.tap(find.text('RÉSUME CE MAIL'));
     await tester.pump(const Duration(milliseconds: 300));
     final request = engine.chatStarts.single['request'] as Map;
     expect(request['context'], isEmpty);
-    expect(jsonEncode(request), isNot(contains('mail_message')));
     await close(tester, store);
   });
 
-  testWidgets('context_can_be_restored', (tester) async {
+  testWidgets('attach_menu_lists_recent_mails_and_attaches_several', (
+    tester,
+  ) async {
     final store = await pumpPanel(tester, withDefaultConnection());
-    await tester.tap(find.byKey(const ValueKey('ctx-drop')));
+    await tester.tap(find.byKey(const ValueKey('chat-attach')));
     await tester.pump(const Duration(milliseconds: 100));
-    await tester.tap(find.byKey(const ValueKey('ctx-restore')));
+    expect(find.byKey(const ValueKey('chat-attach-menu')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('chat-attach-option-mail')));
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.byKey(const ValueKey('ctx-drop')), findsOneWidget);
-    expect(find.byKey(const ValueKey('ctx-restore')), findsNothing);
-    expect(store.chatInput().subject, isNotEmpty);
+    expect(find.byKey(const ValueKey('chat-mail-picker')), findsOneWidget);
+    final ids = store.recentInboxMails().take(2).map((m) => m.id).toList();
+    for (final id in ids) {
+      await tester.tap(find.byKey(ValueKey('chat-mail-row-$id')));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(store.chatAttachedIds, ids);
+    for (final id in ids) {
+      expect(find.byKey(ValueKey('chat-attach-chip-$id')), findsOneWidget);
+    }
+    Pops.close();
+    await tester.pump();
     await close(tester, store);
   });
 
-  testWidgets('context_returns_when_another_mail_is_opened', (tester) async {
+  testWidgets('attach_popover_closes_on_outside_click', (tester) async {
     final store = await pumpPanel(tester, withDefaultConnection());
-    store.dropCtx();
-    expect(store.chatInput().subject, isNull);
-    store.openMail(store.mails.firstWhere((m) => m.id != store.open).id);
-    expect(store.chatInput().subject, isNotEmpty);
+    await tester.tap(find.byKey(const ValueKey('chat-attach')));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.byKey(const ValueKey('chat-attach-option-mail')));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byKey(const ValueKey('chat-mail-picker')), findsOneWidget);
+    await tester.tapAt(const Offset(300, 100));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byKey(const ValueKey('chat-mail-picker')), findsNothing);
+    expect(find.byKey(const ValueKey('chat-attach-menu')), findsNothing);
+    await close(tester, store);
+  });
+
+  testWidgets('attach_menu_offers_a_file_option', (tester) async {
+    final store = await pumpPanel(tester, withDefaultConnection());
+    await tester.tap(find.byKey(const ValueKey('chat-attach')));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(
+      find.byKey(const ValueKey('chat-attach-option-mail')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('chat-attach-option-file')),
+      findsOneWidget,
+    );
+    Pops.close();
+    await tester.pump();
+    await close(tester, store);
+  });
+
+  testWidgets('attached_file_shows_a_chip_is_sent_then_cleared', (
+    tester,
+  ) async {
+    final engine = withDefaultConnection()
+      ..scripts.add([
+        {'type': 'done', 'reason': 'end_turn'},
+      ]);
+    final store = await pumpPanel(tester, engine);
+    store.attachChatFile(
+      const ChatAttachedFile(id: 'f1', name: 'devis.txt', text: 'Total : 42'),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byKey(const ValueKey('chat-attach-chip-f1')), findsOneWidget);
+    await tester.tap(find.text('RÉSUME CE MAIL'));
+    await tester.pump(const Duration(milliseconds: 300));
+    final request = engine.chatStarts.single['request'] as Map;
+    final part = (request['context'] as List).single as Map;
+    expect(part['kind'], 'attachment');
+    expect(part['label'], 'devis.txt');
+    expect(store.chatFiles, isEmpty);
+    await close(tester, store);
+  });
+
+  testWidgets('file_chip_cross_detaches_the_file', (tester) async {
+    final store = await pumpPanel(tester, withDefaultConnection());
+    store.attachChatFile(
+      const ChatAttachedFile(id: 'f1', name: 'devis.txt', text: 'Total : 42'),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.byKey(const ValueKey('chat-attach-remove-f1')));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(store.chatFiles, isEmpty);
+    expect(find.byKey(const ValueKey('chat-attach-chip-f1')), findsNothing);
+    await close(tester, store);
+  });
+
+  testWidgets('attached_mails_are_sent_then_cleared', (tester) async {
+    final engine = withDefaultConnection()
+      ..scripts.add([
+        {'type': 'done', 'reason': 'end_turn'},
+      ]);
+    final store = await pumpPanel(tester, engine);
+    final ids = store.recentInboxMails().take(2).map((m) => m.id).toList();
+    ids.forEach(store.toggleChatAttachment);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.text('RÉSUME CE MAIL'));
+    await tester.pump(const Duration(milliseconds: 300));
+    final request = engine.chatStarts.single['request'] as Map;
+    final context = request['context'] as List;
+    expect(context, hasLength(2));
+    expect(context.first['kind'], 'mail_message');
+    expect(store.chatAttachedIds, isEmpty);
+    await close(tester, store);
+  });
+
+  testWidgets('chip_cross_detaches_the_mail', (tester) async {
+    final store = await pumpPanel(tester, withDefaultConnection());
+    final id = store.recentInboxMails().first.id;
+    store.toggleChatAttachment(id);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.byKey(ValueKey('chat-attach-remove-$id')));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(store.chatAttachedIds, isEmpty);
+    expect(find.byKey(ValueKey('chat-attach-chip-$id')), findsNothing);
     await close(tester, store);
   });
 }

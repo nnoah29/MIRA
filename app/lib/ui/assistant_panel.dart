@@ -14,6 +14,8 @@ import '../theme/icons.dart';
 import 'ai_consent_dialog.dart';
 import 'ai_content_dialog.dart';
 import 'chat_action_card.dart';
+import 'chat_attach_chips.dart';
+import 'chat_attach_popup.dart';
 import 'chat_memory_card.dart';
 import 'chat_draft_card.dart';
 import 'chat_history_view.dart';
@@ -23,6 +25,7 @@ import 'chat_sources.dart';
 import 'chat_tool_chips.dart';
 import 'mail_ref.dart';
 import 'demo_banner.dart';
+import 'overlays.dart';
 import 'widgets.dart';
 import '../i18n/i18n.dart';
 
@@ -69,6 +72,14 @@ class _AssistantPanelState extends State<AssistantPanel> {
     if (!mounted) return s.chatCtl.declineContent();
     await _askContent(s);
   }
+
+  /// Ouvre ou ferme le popover de jonction, ancré sur le bouton « + » ; il se ferme d'un clic à côté.
+  void _toggleAttach(BuildContext anchor, MailStore s) => Pops.show(
+    anchor,
+    'chat-attach',
+    (ctx, close) => ChatAttachPopup(store: s, close: close),
+    maxWidth: 420,
+  );
 
   /// Affiche ou masque la liste des conversations ; elle se relit à chaque ouverture.
   void _toggleHistory(MailStore s) {
@@ -150,51 +161,6 @@ class _AssistantPanelState extends State<AssistantPanel> {
     }
   }
 
-  /// Texte du bandeau de contexte : sujet du mail ouvert, mail retiré ou aucun message.
-  String _ctxLabel(MailStore s, String? subject) {
-    if (subject == null) {
-      return t(
-        ' · aucun message sélectionné. Clique sur un mail dans la liste.',
-      );
-    }
-    return s.ctxDropped
-        ? t(' · retiré : l’assistant ne voit pas ce mail.')
-        : ' · $subject';
-  }
-
-  /// Boutons du bandeau : ouvrir ou retirer le contexte, ou le rétablir une fois retiré.
-  List<Widget> _ctxActions(MailStore s, bool hasMail) {
-    if (!hasMail) return const [];
-    const pad = EdgeInsets.symmetric(horizontal: 10, vertical: 6);
-    if (s.ctxDropped) {
-      return [
-        Btn(
-          key: const ValueKey('ctx-restore'),
-          label: t('Rétablir'),
-          padding: pad,
-          fontSize: 9.5,
-          onTap: s.restoreCtx,
-        ),
-      ];
-    }
-    return [
-      Btn(
-        key: const ValueKey('ctx-open'),
-        label: t('Ouvrir'),
-        padding: pad,
-        fontSize: 9.5,
-        onTap: s.openCtx,
-      ),
-      const SizedBox(width: 6),
-      IBtn(
-        'x',
-        key: const ValueKey('ctx-drop'),
-        tip: t('Retirer le contexte'),
-        onTap: s.dropCtx,
-      ),
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
     final s = context.watch<MailStore>();
@@ -202,7 +168,6 @@ class _AssistantPanelState extends State<AssistantPanel> {
     final w = MediaQuery.sizeOf(context).width;
     final narrow = w <= 1100;
     final hp = narrow ? 16.0 : 32.0;
-    final m = s.byId(s.open);
     final demo = s.chatCtl.demo;
 
     // Défilement automatique en bas à chaque mise à jour du fil.
@@ -314,33 +279,6 @@ class _AssistantPanelState extends State<AssistantPanel> {
           )
         else ...[
           ..._historyNotes(s, hp),
-          Container(
-            margin: EdgeInsets.fromLTRB(hp, 4, hp, 0),
-            child: DashedBox(
-              color: p.line,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: Row(
-                children: [
-                  KeyedSubtree(
-                    key: const ValueKey('ctx-icon'),
-                    child: Ico('inbox', color: p.muted),
-                  ),
-                  const SizedBox(width: 12),
-                  Mono(t('Contexte'), color: p.accent, height: null),
-                  Expanded(
-                    child: Text(
-                      _ctxLabel(s, m?.subject),
-                      key: const ValueKey('ctx-text'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Fonts.sans(size: 14, color: p.muted),
-                    ),
-                  ),
-                  ..._ctxActions(s, m != null),
-                ],
-              ),
-            ),
-          ),
           Expanded(
             child: ListView(
               controller: thread,
@@ -412,6 +350,7 @@ class _AssistantPanelState extends State<AssistantPanel> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                ChatAttachChips(store: s),
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -452,6 +391,15 @@ class _AssistantPanelState extends State<AssistantPanel> {
                   ),
                   child: Row(
                     children: [
+                      Builder(
+                        builder: (anchor) => IBtn(
+                          'plus',
+                          key: const ValueKey('chat-attach'),
+                          tip: t('Joindre'),
+                          onTap: () => _toggleAttach(anchor, s),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Ico('spark', size: 13, color: p.dim),
                       const SizedBox(width: 8),
                       Mono(

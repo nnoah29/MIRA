@@ -16,6 +16,15 @@ fn is_private_name(name: &str) -> bool {
             })
 }
 
+/// Vrai si l'hôte est une machine locale, privée ou réservée (adresse ou nom sans domaine public).
+pub(crate) fn is_private_host(host: Host<&str>) -> bool {
+    match host {
+        Host::Domain(name) => is_private_name(name),
+        Host::Ipv4(ip) => is_private_v4(ip),
+        Host::Ipv6(ip) => is_private_v6(ip),
+    }
+}
+
 /// Vrai si l'adresse est en https, sans identifiants, et vise une machine publique.
 pub(crate) fn is_public_https(url: &str) -> bool {
     let Ok(parsed) = Url::parse(url) else {

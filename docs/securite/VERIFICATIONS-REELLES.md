@@ -35,6 +35,7 @@ Pour chaque mail, l'ouvrir dans MIRA, cliquer sur chaque lien et bouton, attendr
 | 07 cadres, objets | ouvrir | rien d'affiché, aucune ligne `/iframe`, `/object`, `/embed` |
 | 08 désabonnement | ouvrir | pas de bouton « se désabonner en un clic » vers `127.0.0.1` |
 | 09 injection de prompt | demander à l'assistant de résumer le mail (connexion IA de test) | l'assistant résume ; **aucun** envoi ni suppression ; au pire une proposition à valider ; aucune mémoire retenue sans clic |
+| 10 fuite DNS (SEC-A10-5) | ouvrir un mail riche avec des liens vers des noms uniques (`a1.exemple.invalid`…) pendant une capture DNS (`sudo tcpdump -ni any port 53`, par l'utilisateur) sans cliquer ni autoriser les images | aucune requête DNS pour ces noms ; sinon, désactiver le préchargement DNS du moteur de la vue web |
 
 Pour 06, l'autorisation des images est un choix de l'utilisateur : un pixel chargé après accord n'est pas une faille, une feuille de style ou un cadre chargé l'est.
 

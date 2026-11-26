@@ -182,6 +182,16 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 
 ---
 
+## 14. Une image distante autorisée pouvait viser une machine locale — gravité BASSE (corrigé en partie, 2026-11-26)
+
+**Le problème.** Une fois le contenu distant autorisé pour un message ou un expéditeur (jamais par défaut), rien ne filtrait l'hôte des images : `<img src="http://192.168.1.1/…">` ou `http://127.0.0.1:port/…` faisait émettre par l'ordinateur de l'utilisateur une requête GET aveugle vers son réseau local (équipement à interface web, service local), la règle CSP de la vue web (`img-src data: https: http:`) et le moteur de widgets laissant tout passer. Découvert en instruisant SEC-A10-3.
+
+**Correctif.** Les deux assainisseurs du moteur retirent l'attribut qui chargerait automatiquement (`img src`, `srcset`, `video poster`, `background`…) une ressource dont l'hôte est une adresse locale, privée ou réservée, ou un nom sans domaine public (`localhost`, `.local`, `.lan`…), **même avec l'accord de l'utilisateur** : `html/sanitize.rs` (widgets ; la ressource est consignée dans `blocked_resources`) et `html/original.rs` (vue web). Mêmes plages que le filtre du désabonnement (`mime/unsubscribe_ranges.rs`). Tests : `html_remote_private_targets.rs` (4, vus rouges d'abord).
+
+**Reste.** Un nom public qui se résout vers une adresse privée (rebinding DNS) n'est pas détecté : le moteur ne résout pas les noms. Les arrière-plans écrits dans un attribut `style` ne sont pas filtrés par hôte. `http:` en clair reste admis pour une image autorisée.
+
+---
+
 ## Points déjà bons (pour mémoire)
 
 - Jeton du démon comparé en temps constant (HMAC) ; **correction de ma première passe** qui l'avait signalé à vérifier.

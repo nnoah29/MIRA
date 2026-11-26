@@ -73,7 +73,7 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 | ID | Contrôle | Statut | Preuve / à faire |
 |---|---|---|---|
 | SEC-A04-1 | Modèle de menaces écrit (STRIDE) | ✅ | `MODELE-DE-MENACES.md` |
-| SEC-A04-2 | Limites de taille/temps/profondeur (MIME, littéraux IMAP, HTML, pièces jointes) | 🟡 | MIME : `mime_structure_limits` ; YAML : `portability_envelope_*` ; **reste** : littéraux IMAP, `html/limits.rs`, pièces jointes, sans preuve citée |
+| SEC-A04-2 | Limites de taille/temps/profondeur (MIME, littéraux IMAP, HTML, pièces jointes) | ✅ | IMAP : ligne 1 Mio, littéral 64 Mio, réponse 64 Mio, annonce refusée avant allocation, délai d'inactivité réarmé (`imap/protocol/limits.rs:12-14`, `imap_reader_limits.rs` 5 tests) ; HTML 2 Mio et imbrication 512 (`html/limits.rs`, `html_sanitize_limits.rs` 5 tests) ; MIME 50 Mio, 10 000 parties, 5 000 niveaux (`mime/message.rs:11`, `mime_structure_limits.rs`) ; pièce jointe locale 25 Mio lue en une ouverture (`drafts/attachments/local_file.rs:14,50-58`, `drafts_attachments.rs` 5 tests) ; import YAML 2 Mio, 500 éléments, alias refusés (`portability_envelope_*`) ; 2026-11-26 |
 | SEC-A04-3 | Chargement distant bloqué par défaut (pixels espions, confidentialité) | ✅ | `html/remote.rs` `is_blocked_until_allowed` |
 | SEC-A04-4 | Confirmation avant envoi/suppression irréversibles initiés par l'IA | ✅ | aucun outil d'envoi ni de suppression ; propositions validées par clic |
 | SEC-A04-5 | Idempotence et reprise sur crash (envoi en double) | ✅ | invariants du projet |
@@ -118,7 +118,7 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 | SEC-A08-2 | Extraction d'archives : *zip-slip*, liens symboliques, bombes de décompression | ✅ | `extract_check.rs`, `max_bytes` ; ajouter tests adverses |
 | SEC-A08-3 | Signature des paquets et des releases | ❌ reporté | aucune signature des paquets ni des releases : `SHA256SUMS` vient de la même source ; APK signés avec la clé de debug. Décision du 2026-11-26 : reporté, déclencheur = première diffusion publique (constat 10) |
 | SEC-A08-4 | Mise à jour du logiciel (canal, signature) | ✅ | aucune mise à jour automatique ; `install.sh` manuel, somme SHA-256 vérifiée |
-| SEC-A08-5 | Import/export de profil : intégrité, chemins, écrasement | 🟡 | `portability/` |
+| SEC-A08-5 | Import/export de profil : intégrité, chemins, écrasement | ✅ | L'import est celui des libellés et des règles en YAML : taille 2 Mio, 500 éléments, alias et clés doubles refusés, version et type vérifiés, références inconnues refusées (`portability/envelope.rs`, `scan.rs`, 23 tests `portability_*`), aucun chemin dans le fichier, aucune action d'envoi ou de transfert possible dans une règle (`RuleAction`). L'export du profil (`maintenance/profile_export.rs`) ne contient ni secret ni miroir ; fichier 0600 créé en exclusif puis renommé, un lien symbolique planté est remplacé, jamais suivi (`export_file.rs`, `maintenance_export_file.rs` 3 tests) ; 2026-11-26 |
 | SEC-A08-6 | Épinglage des actions CI et permissions minimales du workflow | ✅ | actions épinglées par SHA, outils à version fixe, OSV-Scanner vérifié par somme ; `tools/check-ci-pins` dans `ci.sh` |
 
 ## A09 — Journalisation et supervision
@@ -137,9 +137,9 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 |---|---|---|---|
 | SEC-A10-1 | URL de base IA éditable (`base_url_editable`) : refus de `file:`, HTTP clair, adresses privées/métadonnées cloud | ✅ | `ai/base_url.rs` : refus de `file:`, clair hors boucle locale, identifiants ; LAN en HTTPS permis |
 | SEC-A10-2 | Redirections HTTP (suivre, limiter, ne pas transmettre la clé inter-hôtes) | ✅ | `ai/transport/client.rs` : `Policy::none()` |
-| SEC-A10-3 | Chargement d'images distantes : pas d'accès aux adresses locales | 🟡 | passe par WebView/moteur ; dépend de SEC-A03-5 |
-| SEC-A10-4 | Hôtes IMAP/SMTP saisis par l'utilisateur : ports, adresses internes | 🟡 | auditer l'auto-configuration (autodiscover) |
-| SEC-A10-5 | Fuite via requêtes DNS/préchargement de liens | 🟡 | WebView |
+| SEC-A10-3 | Chargement d'images distantes : pas d'accès aux adresses locales | ✅ | Constat 14 : image distante autorisée vers une machine locale ou privée retirée par les deux assainisseurs (`html/sanitize.rs`, `html/original.rs`, `html_remote_private_targets.rs`) ; par défaut aucune image distante (`web_document.dart:9`). Reste : rebinding DNS et `style` non filtrés (constat 14) ; 2026-11-26 |
+| SEC-A10-4 | Hôtes IMAP/SMTP saisis par l'utilisateur : ports, adresses internes | ✅ | Pas d'auto-configuration réseau : serveurs du provider ou saisis (`accounts/servers.rs:15`) ; clair refusé hors boucle locale (`imap/connection/policy.rs:9`, `imap_connection_errors.rs:28`) ; STARTTLS exigé quand choisi, réponse `NO` = échec sans repli en clair, tampon lu avant TLS jeté (`starttls.rs:12`, `wire.rs:58`) ; un serveur interne saisi par l'utilisateur est légitime (auto-hébergé), le moteur n'agit que sur ses ordres ; 2026-11-26 |
+| SEC-A10-5 | Fuite via requêtes DNS/préchargement de liens | 🟡 | Pas de preuve possible sans WebView : `<link>` et `<meta>` sont retirés par les assainisseurs (pas de `dns-prefetch`/`preconnect` écrits par le mail), images distantes bloquées par défaut ; reste à savoir si WebKitGTK préfetche le DNS des liens `<a>`. Procédure ajoutée à `VERIFICATIONS-REELLES.md` (capture DNS) ; 2026-11-26 |
 
 ## OWASP Top 10 pour applications LLM (connecteurs IA)
 
@@ -159,7 +159,7 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 
 | ID | Contrôle | Statut | Preuve / à faire |
 |---|---|---|---|
-| SEC-D-1 | Pièces jointes : nom assaini, pas d'exécution automatique, avertissement sur types exécutables | 🟡 | `drafts/attachments/local_file.rs`, `fetching/atomic_write.rs` |
+| SEC-D-1 | Pièces jointes : nom assaini, pas d'exécution automatique, avertissement sur types exécutables | ✅ | Nom : seul le dernier composant, sans contrôle ni inversion bidi, 255 octets (`mime/attachment_name.rs:26`, `mime_attachment_names.rs`), puis `safeFileName` et `freeName` côté app (jamais d'écrasement : `app/lib/data/attachment_save.dart`) ; écriture atomique par temporaire exclusif (`fetching/atomic_write.rs`) ; aucune ouverture ni exécution de pièce jointe dans l'app (aucun `Process`/ouverture de fichier hors liens http, https, mailto de `openLink`) ; fichier enregistré sans bit exécutable (umask). Pas d'avertissement sur les types exécutables : sans objet tant que l'app n'ouvre rien ; 2026-11-26 |
 | SEC-D-2 | Écriture atomique et suivi des liens symboliques dans les dossiers de destination | ✅ | `atomic_write.rs` ; test de lien symbolique à ajouter |
 | SEC-D-3 | Presse-papiers : données sensibles | 🟡 | `original_dialog.dart` copie du texte |
 | SEC-D-4 | Notifications : contenu affiché écran verrouillé | 🟡 | `mira-host/notifier` |

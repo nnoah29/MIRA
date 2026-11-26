@@ -1,5 +1,7 @@
 //! Liste blanche des ressources chargées automatiquement : seules les images incorporées passent.
 
+use super::private_target::targets_private_host;
+
 const AUTO_LOADING_ATTRIBUTES: &[(&str, &str)] = &[
     ("img", "src"),
     ("img", "srcset"),
@@ -52,6 +54,11 @@ pub(crate) fn is_blocked_until_allowed(element: &str, attribute: &str, value: &s
         return false;
     }
     attribute == "srcset" || !is_embedded_resource(value)
+}
+
+/// Indique si cette ressource chargée automatiquement vise une machine locale ou privée : refusée même quand le contenu distant est autorisé
+pub(crate) fn targets_private_machine(element: &str, attribute: &str, value: &str) -> bool {
+    is_auto_loading(element, attribute) && targets_private_host(&normalize_url(value))
 }
 
 /// Indique si un lien porterait un contenu `data:` que le lecteur afficherait

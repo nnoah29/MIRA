@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use serde::{Deserialize, Serialize};
 
 use super::limits::{escaped_text_fallback, is_within_limits};
-use super::remote::{is_blocked_until_allowed, is_data_link};
+use super::remote::{is_blocked_until_allowed, is_data_link, targets_private_machine};
 
 /// HTML sûr à afficher, avec la liste des ressources distantes retirées.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -63,7 +63,8 @@ fn filter_attribute<'v>(
     if is_data_link(attribute, value) {
         return None;
     }
-    if allow_remote || !is_blocked_until_allowed(element, attribute, value) {
+    let refused = targets_private_machine(element, attribute, value);
+    if !refused && (allow_remote || !is_blocked_until_allowed(element, attribute, value)) {
         return Some(Cow::Borrowed(value));
     }
     blocked

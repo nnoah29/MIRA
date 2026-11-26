@@ -21,3 +21,4 @@ pub use html_text::html_to_text;
 pub use message::{attachment_bytes, parse_message};
 pub use model::{HeaderSummary, ParsedAttachment, ParsedMessage};
 pub use preview::preview_text;
+pub(crate) use unsubscribe_host::is_private_host;

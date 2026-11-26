@@ -11,6 +11,7 @@ import '../platform_info.dart';
 import 'body_skeleton.dart';
 import 'html_body.dart';
 import 'native_cover.dart';
+import 'web_page_pause.dart';
 import 'wheel_fling.dart';
 
 /// Canal par lequel notre script de page parle à Flutter.
@@ -70,7 +71,7 @@ const _pageScript =
   window.addEventListener('load', function() { measure(true); });
   window.addEventListener('resize', measure);
 })();
-''';
+$webPagePauseScript''';
 
 /// Corps d'un message affiché par un vrai moteur web (WebKitGTK sur Linux) : le HTML reçu, tel quel, sous une politique de contenu stricte.
 /// La vue prend la hauteur complète du courriel et défile avec le lecteur ; la molette au-dessus d'elle fait défiler le lecteur.
@@ -90,7 +91,7 @@ class WebMailBody extends StatefulWidget {
 }
 
 class _WebMailBodyState extends State<WebMailBody>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final _controller = WebViewController();
   late final Future<void> _ready = _prepare();
   late final _curtain = AnimationController(
@@ -98,7 +99,10 @@ class _WebMailBodyState extends State<WebMailBody>
     duration: _curtainDuration,
   );
   Timer? _fallback;
-  bool _revealed = false, _injectLate = false, _loading = true;
+  bool _revealed = false,
+      _injectLate = false,
+      _loading = true,
+      _pagePaused = false;
   final _wheel = WheelFling();
   double _height = _initialHeight;
   double? _width;
@@ -106,12 +110,15 @@ class _WebMailBodyState extends State<WebMailBody>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _syncPause();
     _fallback = Timer(_revealAfter, _reveal);
     _load();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _fallback?.cancel();
     _wheel.dispose();
     _curtain.dispose();
@@ -127,6 +134,24 @@ class _WebMailBodyState extends State<WebMailBody>
     } on Object {
       return;
     }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) => _syncPause();
+
+  /// Les animations du courriel s'arrêtent quand la fenêtre perd le focus et reprennent quand elle le retrouve.
+  void _syncPause() {
+    final state = WidgetsBinding.instance.lifecycleState;
+    final paused = state != null && state != AppLifecycleState.resumed;
+    if (paused == _pagePaused) return;
+    _pagePaused = paused;
+    _applyPause();
+  }
+
+  /// Envoie l'état voulu à la page ; sans effet tant que son script n'est pas arrivé (elle le reçoit alors une fois chargée).
+  void _applyPause() {
+    final script = 'window.__miraPause && window.__miraPause($_pagePaused)';
+    unawaited(_controller.runJavaScript(script).catchError((Object _) {}));
   }
 
   /// La page chargée et mesurée remplace le squelette en se dévoilant.
@@ -205,7 +230,10 @@ class _WebMailBodyState extends State<WebMailBody>
     if (height is num && height > 0) {
       final next = height.toDouble().clamp(1.0, _maxHeight);
       if ((next - _height).abs() > _jitter) setState(() => _height = next);
-      if (data['loaded'] == true) _reveal();
+      if (data['loaded'] == true) {
+        _reveal();
+        if (_pagePaused) _applyPause();
+      }
     } else if (wheel is num && wheel.isFinite) {
       final position = Scrollable.maybeOf(context)?.position;
       if (position == null) return;

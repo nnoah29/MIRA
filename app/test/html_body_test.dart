@@ -7,6 +7,7 @@ import 'package:mira/data/models.dart';
 import 'package:mira/state/store.dart';
 import 'package:mira/theme/app_theme.dart';
 import 'package:mira/ui/body_skeleton.dart';
+import 'package:mira/ui/gif_image.dart';
 import 'package:mira/ui/html_body.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -165,6 +166,24 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       expect(tester.widget<AnimatedOpacity>(fade.first).opacity, 1);
+    },
+  );
+
+  testWidgets(
+    'un GIF passe par l\'image qui suit le réglage, une image PNG non',
+    (tester) async {
+      final gif = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
+      final png = 'data:image/png;base64,${base64Encode(_pixel)}';
+      await _show(
+        tester,
+        _msg('<p>x</p><img src="$gif" width="30" height="30">'),
+      );
+      expect(find.byType(GifImage), findsOneWidget);
+      await _show(
+        tester,
+        _msg('<p>x</p><img src="$png" width="30" height="30">'),
+      );
+      expect(find.byType(GifImage), findsNothing);
     },
   );
 }

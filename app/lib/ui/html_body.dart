@@ -11,12 +11,14 @@ import '../data/models.dart';
 import '../i18n/i18n.dart';
 import '../platform_info.dart';
 import '../platform_open.dart';
+import '../state/gif_playback.dart';
 import '../state/image_policy.dart';
 import '../state/store.dart';
 import '../theme/app_theme.dart';
 import 'body_renderer.dart';
 import 'body_skeleton.dart';
 import 'bottom_baseline.dart';
+import 'gif_image.dart';
 import 'mail_widget_factory.dart';
 import 'web_mail_body.dart';
 
@@ -200,15 +202,11 @@ class _MailHtmlState extends State<MailHtml> {
         : BottomBaseline(
             child: _rounded(
               e,
-              Image(
-                image: image,
-                width: width,
-                height: height,
-                fit: width != null && height != null
-                    ? BoxFit.fill
-                    : BoxFit.contain,
-                errorBuilder: (_, _, _) =>
-                    alt.isEmpty ? const SizedBox.shrink() : fallback,
+              _picture(
+                image,
+                width,
+                height,
+                (_, _, _) => alt.isEmpty ? const SizedBox.shrink() : fallback,
               ),
               width,
             ),
@@ -220,6 +218,36 @@ class _MailHtmlState extends State<MailHtml> {
       child: picture,
     );
     return _isBlock(e) ? loose : InlineCustomWidget(child: loose);
+  }
+
+  /// Une image ordinaire, ou, pour un GIF, une image qui suit le réglage des images animées.
+  Widget _picture(
+    ImageProvider image,
+    double? width,
+    double? height,
+    ImageErrorWidgetBuilder errorBuilder,
+  ) {
+    final fit = width != null && height != null ? BoxFit.fill : BoxFit.contain;
+    if (!isGifSource(image)) {
+      return Image(
+        image: image,
+        width: width,
+        height: height,
+        fit: fit,
+        errorBuilder: errorBuilder,
+      );
+    }
+    return Selector<MailStore, GifPlayback>(
+      selector: (_, st) => st.gifPlayback,
+      builder: (_, playback, _) => GifImage(
+        image: image,
+        playback: playback,
+        width: width,
+        height: height,
+        fit: fit,
+        errorBuilder: errorBuilder,
+      ),
+    );
   }
 
   ImageProvider? _provider(String src, bool remoteOk) {

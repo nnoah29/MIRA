@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Auto-test de tools/check-lock-sync : accepte des verrous alignés ou un écart consigné, refuse un écart nouveau, une version modifiée d'un seul côté et une consigne périmée.
+set -euo pipefail
+here="$(cd "$(dirname "$0")" && pwd)"
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+lock() { printf '[[package]]\nname = "serde"\nversion = "%s"\n\n[[package]]\nname = "zstd"\nversion = "%s"\n' "$1" "$2"; }
+lock 1.0.1 0.14.4 > "$tmp/engine.lock"
+lock 1.0.1 0.14.4 > "$tmp/bridge-ok.lock"
+lock 1.0.2 0.14.4 > "$tmp/bridge-bumped.lock"
+lock 1.0.1 0.14.5 > "$tmp/bridge-zstd.lock"
+: > "$tmp/vide.txt"
+printf 'serde engine=1.0.1 bridge=1.0.2\n' > "$tmp/serde.txt"
+printf 'serde engine=1.0.1 bridge=1.0.2\nzstd engine=0.14.4 bridge=0.14.5\n' > "$tmp/perime.txt"
+check() { "$here/check-lock-sync" "$tmp/engine.lock" "$tmp/$1" "$tmp/$2" >/dev/null 2>&1; }
+check bridge-ok.lock vide.txt || { echo "test-check-lock-sync : verrous alignés refusés"; exit 1; }
+check bridge-bumped.lock serde.txt || { echo "test-check-lock-sync : écart consigné refusé"; exit 1; }
+for bad in "bridge-bumped.lock vide.txt" "bridge-zstd.lock serde.txt" "bridge-ok.lock serde.txt" "bridge-bumped.lock perime.txt"; do
+    if check $bad; then echo "test-check-lock-sync : « $bad » aurait dû être refusé"; exit 1; fi
+done
+echo "test-check-lock-sync : OK"

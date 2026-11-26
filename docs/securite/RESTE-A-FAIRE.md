@@ -19,10 +19,9 @@ Vue web et HTML d'origine durcis (constat 1) et **rebranchés** (retirés par er
 
 ## 3. À faire, par ordre de priorité recommandé
 
-### 3.1 Garde-fou contre la divergence des deux `Cargo.lock` (petit)
-- **Pourquoi** : `bridge/` et `engine/` ont chacun leur verrou ; c'est ce qui a laissé le pont vulnérable (constat 12). Seul le workflow hebdomadaire le détecterait.
-- **Faire** : un contrôle (dans `ci.sh` ou un workflow) qui échoue si une dépendance présente dans les deux verrous n'a pas la même version, et le contrôle des avis du pont quand le réseau est disponible (`cargo deny --manifest-path bridge/Cargo.toml --config engine/deny.toml check advisories`).
-- **Terminé quand** : modifier un seul des deux verrous fait échouer le contrôle (test de l'outil, comme `tools/test-check-ci-pins`).
+### 3.1 Garde-fou contre la divergence des deux `Cargo.lock` — FAIT (2026-11-26, branche `feat/SEC-03-garde-fou-verrous`)
+- **Fait** : `tools/check-lock-sync` échoue si une dépendance présente dans les deux verrous n'a pas le même ensemble de versions ; test de l'outil `tools/test-check-lock-sync` (écrit et vu rouge d'abord), branché dans `ci.sh`. Le contrôle des avis du pont (`cargo deny --manifest-path bridge/Cargo.toml --config engine/deny.toml check advisories`) est aussi dans `ci.sh`, ignoré avec un message si le réseau est indisponible ; vérifié vert le 2026-11-26.
+- **Écarts existants** : les verrous divergeaient déjà sur 30 crates (`cc`, `serde_json`, `zstd`, `zerocopy`, `windows-*`…, aucun avis ouvert). Ils sont consignés dans `tools/lock-sync-ecarts.txt` : seul un écart nouveau ou une consigne périmée fait échouer. **Reste** : aligner les verrous (`cargo update -p <crate> --precise <version>` dans les deux, puis retirer la ligne) ; non fait ici car cela touche les dépendances livrées et demande un build et des tests complets.
 
 ### 3.2 Alerte d'hameçonnage sur les liens (constat 8, gros)
 - **Pourquoi** : rien ne prévient quand le texte d'un lien affiche `banque.fr` et que la cible est `banque-secure.xyz`, ni pour les homographes (alphabets mélangés, IDN).

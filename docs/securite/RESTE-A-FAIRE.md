@@ -34,14 +34,8 @@ Vue web et HTML d'origine durcis (constat 1) et **rebranchés** (retirés par er
 - **Pistes** : élargir la définition du mail « simple » (`isSimpleHtml` dans `app/lib/ui/body_renderer.dart`, seuils `_maxSimpleLength`, `_maxSimpleImages`, `_maxSimpleTables`, `_heavyTags`, `_heavyCss`) pour envoyer moins de mails à la vue web ; libérer la vue plus vite quand le mail n'est plus visible (voir `web_page_pause_test.dart` et les commits de pause des animations).
 - **Terminé quand** : une mesure avant/après (CPU sur un mail riche, par exemple LinkedIn) est consignée.
 
-### 3.4 Instruire les 29 points 🟡 de la checklist
-Aucun n'est une faille connue ; aucun n'est vérifié. Chaque point instruit reçoit : constat, preuve (fichier:ligne), gravité, correctif éventuel, test de non-régression, puis passe à ✅ ou ❌ dans la checklist. Les plus sensibles d'abord :
-- **Jeton et démon** : SEC-A01-5 (`SO_PEERCRED`), A01-6, A01-7 (portées par opération), A01-8 (accès croisé par identifiant de compte), D-7 (trames du démon).
-- **IA** : LLM01, LLM06, LLM07, LLM08, A03-8 (test de bout en bout avec le mail 09 piégé).
-- **Comptes et secrets** : A07-3 (révocation à la suppression), A07-4, A07-5, A02-11 (`zeroize`).
-- **Fichiers et réseau** : A04-2 (littéraux IMAP, `html/limits.rs`, pièces jointes : citer les preuves ou tester), A08-5 (import/export de profil), D-1 (pièces jointes), A10-3, A10-4, A10-5.
-- **Autres** : A03-4 et A03-5 (couverts par les correctifs, à confirmer avec `VERIFICATIONS-REELLES.md`), A05-3 (paquets), A06-4, A09-4, A09-5, D-3, D-4, D-5.
-La liste exacte se relit avec : `grep "🟡" docs/securite/AUDIT-SECURITE-CHECKLIST.md`.
+### 3.4 Instruire les points 🟡 de la checklist — FAIT, un seul reste (2026-11-26, branche `feat/SEC-05-checklist-orange`)
+28 points sur 29 sont passés à ✅ avec preuve citée dans `AUDIT-SECURITE-CHECKLIST.md`. Trouvailles pendant l'instruction : constat 13 (`SecretValue` non effacé, corrigé) et constat 14 (image distante autorisée vers une machine locale, corrigé en partie). **Reste 🟡 : SEC-A10-5** (le WebView préfetche-t-il le DNS des liens ?), non démontrable sans WebView : procédure de capture DNS ajoutée à `VERIFICATIONS-REELLES.md`, à exécuter par l'utilisateur. Choix à confirmer : aperçu des notifications activé par défaut (D-4) ; aucun verrou applicatif (A07-5) ; unité systemd non durcie, justification dans A05-3.
 
 ### 3.5 Mineurs — traités le 2026-11-26 (branche `feat/SEC-04-mineurs`)
 - **Filtre d'adresses du désabonnement** : FAIT, Rust et Dart alignés, un test par plage (voir constat 2).
@@ -77,6 +71,7 @@ La liste exacte se relit avec : `grep "🟡" docs/securite/AUDIT-SECURITE-CHECKL
 | 2026-11-26 | Branche `feat/SEC-01-audit-securite` non poussée ; fusionnée `--no-ff` dans `dev`, puis `dev` poussé. |
 | 2026-11-26 | Plafond du démon : évincer la plus ancienne connexion en attente (`server/pending.rs`, `session/greeting.rs`). |
 | 2026-11-26 | SEC-04 : navigation de la vue web — clics relayés par le script plutôt qu'un indicateur de geste ; refus `busy` en design seulement. |
+| 2026-11-26 | SEC-05 : unité systemd `--user` non durcie (le démon lance l'app, `NoNewPrivileges` hériterait) ; `SecretValue` effacé à la destruction ; image distante vers machine privée refusée même autorisée. |
 | 2026-11-26 | Constat 10 : épingler la CI maintenant ; signature des releases reportée. |
 
 ## 6. Pour reprendre

@@ -2,6 +2,8 @@
 
 Issu du constat 5 de l'audit (`CONSTATS.md`). **Non implémenté** : il demande une machine Windows réelle (au moins deux comptes) pour être validé. Le développeur principal travaille sous Linux ; ce document est un point de départ pour qui le fera.
 
+**Décision du 2026-11-26 : reporté.** Déclencheur pour reprendre : disposer d'une machine Windows avec deux comptes, ou une première diffusion Windows sur postes partagés. Une fois corrigé, retirer la mention « Windows » de `README.md` (section « Privacy and security ») et la rubrique « Known limitations » de `SECURITY.md`.
+
 ## Le problème
 
 Sous Linux, le fichier du jeton est en 0600, son dossier en 0700 et le socket est réservé à l'utilisateur. Sous Windows, aucun de ces contrôles n'existe :

@@ -66,7 +66,7 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 
 ---
 
-## 4. Données de mail non chiffrées sur le disque — gravité MOYENNE
+## 4. Données de mail non chiffrées sur le disque — gravité MOYENNE (décidé : documenté)
 
 **Le problème.** La base locale est du SQLite ordinaire (`rusqlite` avec `bundled`, aucun chiffrement). Les mails, les brouillons, les contacts et la mémoire de l'IA y sont lisibles par quiconque accède au fichier.
 
@@ -74,15 +74,17 @@ Chaque constat dit : **le problème**, **le contexte** (pourquoi ça compte), **
 
 **Plateformes.** Linux, Windows, macOS. **Android** est protégé par l'isolation des applications (et `allowBackup="false"`).
 
-**Correctif.** Deux options, à trancher :
+**Décision (2026-11-26) : option B, ne pas chiffrer et documenter.** Raison : le gain de SQLCipher est partiel (un programme sous le même compte demande la clé au trousseau) pour un coût réel (build multi-plateforme, perte de la base si la clé du trousseau disparaît, migration des bases existantes). Fait : encart « Privacy and security » dans le `README`, rubrique dans `SECURITY.md`. Retour arrière : SQLCipher reste possible plus tard.
+
+**Options examinées.**
 - chiffrer la base avec SQLCipher, clé conservée dans le trousseau (coût : build et performances) ;
-- ne pas chiffrer, mais **le documenter clairement** et recommander le chiffrement du disque. C'est ce que font la plupart des clients mail.
+- ne pas chiffrer, mais **le documenter clairement** et recommander le chiffrement du disque (**retenu**). C'est ce que font la plupart des clients mail.
 
 ---
 
-## 5. Windows : protection du jeton du démon à confirmer — gravité MOYENNE (à confirmer)
+## 5. Windows : protection du jeton du démon à confirmer — gravité MOYENNE (reporté)
 
-**Reporté, à faire sous Windows.** Sous Linux le jeton et le socket sont réservés à l'utilisateur ; sous Windows la vérification est vide (`token/file.rs`, « phase Windows ») et le démon écoute en TCP sur `127.0.0.1`. Ce point demande une machine Windows à deux comptes pour être validé : problème, pistes de correctif et tests sont dans **`docs/securite/A-FAIRE-WINDOWS.md`**. Décision du 2026-11-22 : ne pas l'implémenter depuis Linux.
+**Décision (2026-11-26) : reporté**, à faire quand une machine Windows à deux comptes sera disponible ; un correctif d'ACL non testé pourrait empêcher le démon de démarrer. Le risque est signalé aux utilisateurs dans `README.md` et `SECURITY.md` (« Known limitations »). **Reporté, à faire sous Windows.** Sous Linux le jeton et le socket sont réservés à l'utilisateur ; sous Windows la vérification est vide (`token/file.rs`, « phase Windows ») et le démon écoute en TCP sur `127.0.0.1`. Ce point demande une machine Windows à deux comptes pour être validé : problème, pistes de correctif et tests sont dans **`docs/securite/A-FAIRE-WINDOWS.md`**. Décision du 2026-11-22 : ne pas l'implémenter depuis Linux.
 
 ---
 

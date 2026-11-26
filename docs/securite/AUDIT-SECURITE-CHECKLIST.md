@@ -46,7 +46,7 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 | SEC-A02-4 | STARTTLS : protection contre le *downgrade* / injection avant TLS | 🟡 | auditer `imap/connection/starttls.rs` et SMTP |
 | SEC-A02-5 | Stockage des secrets dans le trousseau système | ✅ | `ports/secrets/keyring_store.rs` |
 | SEC-A02-6 | Repli si trousseau indisponible : pas de secret en clair sur disque | 🟡 | `file_secrets/` dans `mira-host` ; auditer chiffrement et permissions |
-| SEC-A02-7 | Base SQLite et corps de messages chiffrés au repos | ❌ | non constaté ; décision produit à documenter (risque : vol d'appareil) |
+| SEC-A02-7 | Base SQLite et corps de messages chiffrés au repos | ✅ | décision B du 2026-11-26 : non chiffré, documenté (`README.md`, `SECURITY.md`) |
 | SEC-A02-8 | Identifiants OAuth embarqués : clé AES stockée à côté du chiffré | ❌ | `oauth_embedded.rs` : simple obfuscation, `client_secret` extractable du binaire. Acceptable pour client public + PKCE, à documenter et à ne pas présenter comme un secret |
 | SEC-A02-9 | PKCE S256 + `state` aléatoire + redirection loopback | ✅ | `auth/pkce.rs`, `flow/start_key.rs` |
 | SEC-A02-10 | Aléa cryptographique pour jetons | ✅ | `random_hex` ; confirmer la source (`getrandom`/`ring`) |
@@ -81,7 +81,7 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 | ID | Contrôle | Statut | Preuve / à faire |
 |---|---|---|---|
 | SEC-A05-1 | Permissions des fichiers de données, export, clés IA | ✅ | `profile/paths.rs` 0700, `export_file.rs` 0600, `key_file.rs` 0600 |
-| SEC-A05-2 | Permissions Windows (ACL) pour jeton et données | ❌ | `refuse_shared` est un no-op hors Unix (« phase Windows ») |
+| SEC-A05-2 | Permissions Windows (ACL) pour jeton et données | ❌ | reporté le 2026-11-26 (`A-FAIRE-WINDOWS.md`), mention dans `SECURITY.md` |
 | SEC-A05-3 | Durcissement des paquets (deb/rpm/AppImage : permissions, scripts post-install) | 🟡 | auditer `packaging/` |
 | SEC-A05-4 | Android : `allowBackup`, `exported`, `usesCleartextTraffic`, capture d'écran | 🟡 | auditer `app/android` |
 | SEC-A05-5 | Processus IA local : environnement vidé, E/S neutralisées | ✅ | `ai/local/process.rs` `env_clear`, `kill_on_drop` |
@@ -171,11 +171,10 @@ Branche `feat/SEC-01-audit-securite` (depuis `dev` @ 947f4af). Référentiels : 
 2. **SEC-A06-6** — pas de SBOM publié.
 3. **SEC-A03-7** — pas d'alerte d'hameçonnage sur les liens.
 4. **SEC-A09-3** — pas de journal d'audit.
-5. **SEC-A05-2** — ACL Windows absentes (`A-FAIRE-WINDOWS.md`).
-6. **SEC-A02-7** — pas de chiffrement au repos (décision à prendre).
-7. **SEC-D-6** — pas de fuzzing.
+5. **SEC-A05-2** — ACL Windows absentes, reporté (`A-FAIRE-WINDOWS.md`).
+6. **SEC-D-6** — pas de fuzzing.
 
-Corrigées ou documentées : SEC-A06-2, SEC-A02-8 (documenté), SEC-A04-1, SEC-A05-6.
+Corrigées ou documentées : SEC-A06-2, SEC-A02-7 (décidé : documenté), SEC-A02-8 (documenté), SEC-A04-1, SEC-A05-6.
 
 ## Ordre d'instruction proposé
 

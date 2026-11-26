@@ -12,19 +12,29 @@ String contentPolicy({required bool remoteImages}) {
 }
 
 final _meta = RegExp(
-  r'''<meta\b[^>]*?\bhttp-equiv\s*=\s*(["']?)([^"'\s>]*)\1[^>]*>''',
+  r'''<meta\b(?:[^>"']|"[^"]*"|'[^']*')*>''',
+  caseSensitive: false,
+);
+final _equiv = RegExp(
+  r'''\bhttp-equiv\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))''',
   caseSensitive: false,
 );
 final _base = RegExp(r'<base\b[^>]*>', caseSensitive: false);
 const _keptEquiv = {'content-type', 'x-ua-compatible', 'content-language'};
 
+/// Garde une balise `meta` sans `http-equiv` ou à `http-equiv` inoffensif ; toute autre est retirée.
+String _keepHarmlessMeta(Match tag) {
+  final equiv = _equiv.firstMatch(tag.group(0)!);
+  if (equiv == null) return tag.group(0)!;
+  final value = (equiv.group(1) ?? equiv.group(2) ?? equiv.group(3) ?? '')
+      .trim()
+      .toLowerCase();
+  return _keptEquiv.contains(value) ? tag.group(0)! : '';
+}
+
 /// Retire du courriel ce qui redirige ou change la base des adresses (`refresh`, `<base>`, `http-equiv` inconnu).
-String _withoutNavigation(String html) => html
-    .replaceAllMapped(
-      _meta,
-      (m) => _keptEquiv.contains(m.group(2)!.toLowerCase()) ? m.group(0)! : '',
-    )
-    .replaceAll(_base, '');
+String _withoutNavigation(String html) =>
+    html.replaceAllMapped(_meta, _keepHarmlessMeta).replaceAll(_base, '');
 
 /// La page ne défile pas elle-même : c'est le lecteur qui la fait défiler, à sa hauteur complète.
 /// Ses hauteurs ne suivent pas celle de la vue (`height:100%`, fréquent dans les courriels) : la vue prend la hauteur du contenu, qui sinon grandirait avec elle sans fin.

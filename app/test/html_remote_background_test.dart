@@ -18,7 +18,7 @@ Msg _blockedMsg() =>
       ..inline = {};
 
 Future<void> _show(WidgetTester tester, Msg m) async {
-  SharedPreferences.setMockInitialValues({});
+  SharedPreferences.setMockInitialValues({'htmlMode': 'widgets'});
   final store = MailStore(await SharedPreferences.getInstance());
   await tester.pumpWidget(
     ChangeNotifierProvider.value(

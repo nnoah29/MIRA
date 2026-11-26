@@ -65,4 +65,20 @@ void main() {
     expect(doc, contains('<meta charset="utf-8">'));
     expect(doc, contains('name="viewport" content="width=600"'));
   });
+
+  test('un chevron dans un attribut précédant http-equiv ne cache pas la redirection', () {
+    final variants = [
+      '<meta content="0;url=https://e.test/?a=>" http-equiv="refresh">',
+      "<meta content='0;url=https://e.test/?a=>' http-equiv='refresh'>",
+      '<meta name="a>b" content="0;url=https://e.test" http-equiv=refresh>',
+    ];
+    for (final tag in variants) {
+      final doc = webDocument(
+        '<html><head>$tag</head><p>t</p></html>',
+        remoteImages: false,
+      );
+      expect(doc.toLowerCase(), isNot(contains('refresh')), reason: tag);
+      expect(doc.toLowerCase(), isNot(contains('e.test')), reason: tag);
+    }
+  });
 }
